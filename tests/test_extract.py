@@ -1,0 +1,114 @@
+"""Stages 5-8 on small hand-built scenes that follow KiCad's drawing conventions."""
+
+from schem2net import geometry, profile, symbols
+from schem2net.nets import Netlister
+from schem2net.primitives import Text
+from schem2net.scene import Label, Scene, Shape, _join_runs
+
+KICAD = profile.load("kicad")
+
+
+class SceneBuilder:
+    """Adds primitives in drawing order, the way a KiCad PDF lists them."""
+
+    def __init__(self):
+        self.scene = Scene(page=1)
+        self.seq = 0
+
+    def shape(self, *points, width=0.152):
+        self.seq += 1
+        s = Shape(len(self.scene.shapes), list(points), width, geometry.bbox_of(points), self.seq)
+        self.scene.shapes.append(s)
+
+    def field(self, text, x, y):
+        self.seq += 1
+        box = (x, y, x + 0.8 * len(text), y + 1.27)
+        self.scene.fields.append(Text(self.seq, text, box, 1.27, 0.0, (0, 100, 100), self.seq))
+
+    def resistor(self, x, y, ref, value):
+        """Vertical resistor with its body at (x, y) and hidden pin numbers."""
+        self.shape((x - 1, y), (x + 1, y), (x + 1, y + 5), (x - 1, y + 5), (x - 1, y))
+        self.shape((x, y), (x, y - 2.54))
+        self.shape((x, y + 5), (x, y + 7.54))
+        self.field(ref, x + 2, y + 1)
+        self.field(value, x + 2, y + 3)
+
+    def ground(self, x, y):
+        """Ground symbol connecting at (x, y)."""
+        self.shape((x, y), (x, y + 1.27), (x + 1.27, y + 1.27), (x, y + 2.54), (x - 1.27, y + 1.27))
+        self.field("GND", x - 1.5, y + 3)
+
+    def capacitor(self, x, y, ref, value):
+        """Vertical capacitor: two plates that do not touch, one pin on each."""
+        self.shape((x - 2, y), (x + 2, y), width=0.508)
+        self.shape((x - 2, y + 1.5), (x + 2, y + 1.5), width=0.508)
+        self.shape((x, y - 0.25), (x, y - 2.8))
+        self.shape((x, y + 1.75), (x, y + 4.3))
+        self.field(ref, x + 3, y - 1)
+        self.field(value, x + 3, y + 1)
+
+
+def netlist(scene: Scene):
+    netlister = Netlister()
+    netlister.add_page(scene, symbols.find(scene, KICAD))
+    components, nets, _ = netlister.result()
+    return {c.ref: c for c in components}, {n.name: n for n in nets}
+
+
+def test_two_resistors_on_a_labelled_wire_and_ground():
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "10k")
+    b.ground(10, 17.54)  # directly on R1 pin 2, no wire
+    b.resistor(20, 10, "R2", "1k")
+    b.scene.wires.append(((10, 7.46), (20, 7.46)))
+    b.scene.labels.append(Label("SDA", "local", (13, 6.0, 16, 7.2), 0.0))
+
+    components, nets = netlist(b.scene)
+
+    assert {ref: c.value for ref, c in components.items()} == {"R1": "10k", "R2": "1k"}
+    assert nets["SDA"].pins == [("R1", "1"), ("R2", "1")]
+    assert nets["GND"].pins == [("R1", "2")]
+    assert ("R2", "2") not in {p for n in nets.values() for p in n.pins}
+
+
+def test_capacitor_plates_form_one_part():
+    b = SceneBuilder()
+    b.capacitor(10, 10, "C1", "100n")
+    b.ground(10, 14.3)
+    b.scene.wires.append(((10, 7.2), (20, 7.2)))
+    b.scene.labels.append(Label("VIN", "local", (13, 5.7, 16, 6.9), 0.0))
+
+    components, nets = netlist(b.scene)
+
+    assert [p.num for p in components["C1"].pins] == ["1", "2"]
+    assert nets["VIN"].pins == [("C1", "1")]
+    assert nets["GND"].pins == [("C1", "2")]
+
+
+def test_wires_join_at_junctions_but_not_plain_crossings():
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.resistor(30, 10, "R2", "1k")
+    b.resistor(50, 10, "R3", "1k")
+    b.scene.wires += [
+        ((10, 7.46), (30, 7.46)),  # R1 to R2
+        ((20, 0), (20, 7.46)),  # T into the first wire, with a dot
+        ((40, 3), (40, 12)),  # crosses the R2-R3 wire without a dot
+        ((30, 7.46), (50, 7.46)),
+    ]
+    b.scene.junctions.append((20, 7.46))
+
+    _, nets = netlist(b.scene)
+    (net,) = [n for n in nets.values() if ("R1", "1") in n.pins]
+    assert net.pins == [("R1", "1"), ("R2", "1"), ("R3", "1")]
+    assert net.confidence == 1.0
+
+
+def test_split_label_text_is_rejoined():
+    pieces = [
+        Text(1, "PCIe", (0, 0, 4.4, 1.4), 1.27, 0.0, (15, 15, 15), 1),
+        Text(2, "C5x4", (4.3, 0.6, 6.8, 1.6), 0.76, 0.0, (15, 15, 15), 2),
+        Text(3, ".RST", (6.7, 0, 10.3, 1.4), 1.27, 0.0, (15, 15, 15), 3),
+        Text(4, "NEXT", (0, 5, 4, 6.4), 1.27, 0.0, (15, 15, 15), 4),
+    ]
+    assert [t.text for t in _join_runs(pieces)] == ["PCIeC5x4.RST", "NEXT"]

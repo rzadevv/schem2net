@@ -42,10 +42,12 @@ def _collect(objects, parent: Matrix, textpage, out: Page) -> None:
         if kind == raw.FPDF_PAGEOBJ_PATH:
             path = _read_path(obj, matrix, len(out.paths))
             if path:
+                path.seq = len(out.paths) + len(out.texts)
                 out.paths.append(path)
         elif kind == raw.FPDF_PAGEOBJ_TEXT:
             text = _read_text(obj, matrix, parent, textpage, len(out.texts))
             if text:
+                text.seq = len(out.paths) + len(out.texts)
                 out.texts.append(text)
         elif kind == raw.FPDF_PAGEOBJ_IMAGE:
             out.images += 1

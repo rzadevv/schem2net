@@ -19,6 +19,7 @@ class Path:
     stroke: Color | None
     fill: Color | None
     curved: bool = False
+    seq: int = 0  # position in the page's drawing order
 
     @property
     def bbox(self) -> BBox:
@@ -35,6 +36,7 @@ class Text:
     size: float
     angle: float
     color: Color | None
+    seq: int = 0
 
 
 @dataclass(slots=True)

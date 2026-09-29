@@ -10,9 +10,16 @@ public benchmark.
 
 ## Status
 
-Early development. The PDF reader, the intermediate format and the benchmark
-work. Connectivity extraction is not written yet, so the extractor currently
-scores 0.
+Early development. KiCad PDFs work end to end; other generators need their own
+profile and are not supported yet. Hierarchical sheets and buses are not
+handled yet.
+
+Corpus A, dev split, 57 designs:
+
+| Designs | Pins | Pin accuracy | Connection F1 |
+|---|---|---|---|
+| All | 25,608 | 0.70 | 0.73 |
+| Single page | 4,281 | 0.78 | 0.66 |
 
 ## Install
 
