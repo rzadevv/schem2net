@@ -1,0 +1,361 @@
+# Corpus A: KiCad projects rendered with kicad-cli.
+# Only references are stored here. Run `make corpus` to fetch and render them.
+
+test_share = 0.1
+
+[[project]]
+name = "demo-cm5-minima-3"
+schematic = "cm5_minima/CM5_MINIMA_3.kicad_sch"
+
+[[project]]
+name = "demo-complex-hierarchy"
+schematic = "complex_hierarchy/complex_hierarchy.kicad_sch"
+
+[[project]]
+name = "demo-ecc83-pp"
+schematic = "ecc83/ecc83-pp.kicad_sch"
+
+[[project]]
+name = "demo-ecc83-pp-v2"
+schematic = "ecc83/ecc83-pp_v2.kicad_sch"
+
+[[project]]
+name = "demo-interf-u"
+schematic = "interf_u/interf_u.kicad_sch"
+
+[[project]]
+name = "demo-jetson-agx-thor-baseboard"
+schematic = "jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_sch"
+
+[[project]]
+name = "demo-kit-dev-coldfire-xilinx-5213"
+schematic = "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_sch"
+
+[[project]]
+name = "demo-multichannel-mixer"
+schematic = "multichannel/multichannel_mixer.kicad_sch"
+
+[[project]]
+name = "demo-one-air-max"
+schematic = "openair-max/One-Air-Max.kicad_sch"
+
+[[project]]
+name = "demo-pic-programmer"
+schematic = "pic_programmer/pic_programmer.kicad_sch"
+
+[[project]]
+name = "demo-royalblue54l-nfc-antenna"
+schematic = "royalblue54L_feather/nfc_antenna/RoyalBlue54L-NFC-Antenna/RoyalBlue54L-NFC-Antenna.kicad_sch"
+
+[[project]]
+name = "demo-royalblue54l-feather"
+schematic = "royalblue54L_feather/RoyalBlue54L-Feather.kicad_sch"
+
+[[project]]
+name = "demo-amplifier-ac"
+schematic = "simulation/amplifier-ac/amplifier-ac.kicad_sch"
+
+[[project]]
+name = "demo-a-multi"
+schematic = "simulation/analog-multiplier/a-multi.kicad_sch"
+
+[[project]]
+name = "demo-class-d"
+schematic = "simulation/class-d/Class-D.kicad_sch"
+
+[[project]]
+name = "demo-mult-vca810"
+schematic = "simulation/gain_control/mult_vca810.kicad_sch"
+
+[[project]]
+name = "demo-generic-opamp-bip"
+schematic = "simulation/generic_models/generic_opamp_bip.kicad_sch"
+
+[[project]]
+name = "demo-ibis"
+schematic = "simulation/ibis/ibis.kicad_sch"
+
+[[project]]
+name = "demo-laser-driver"
+schematic = "simulation/laser_driver/laser_driver.kicad_sch"
+
+[[project]]
+name = "demo-smps-com"
+schematic = "simulation/power_supplies/boost/smps-com.kicad_sch"
+
+[[project]]
+name = "demo-buck-conv"
+schematic = "simulation/power_supplies/buck_conv/buck_conv.kicad_sch"
+
+[[project]]
+name = "demo-hv-converter"
+schematic = "simulation/power_supplies/hv_converter/hv_converter.kicad_sch"
+
+[[project]]
+name = "demo-power-supply"
+schematic = "simulation/power_supplies/LM317_power_supply/power_supply.kicad_sch"
+
+[[project]]
+name = "demo-royer1"
+schematic = "simulation/power_supplies/royer/royer1.kicad_sch"
+
+[[project]]
+name = "demo-q17ng"
+schematic = "simulation/q17/Q17ng.kicad_sch"
+
+[[project]]
+name = "demo-rectifier"
+schematic = "simulation/rectifier/rectifier.kicad_sch"
+
+[[project]]
+name = "demo-sallen-key"
+schematic = "simulation/sallen_key/sallen_key.kicad_sch"
+
+[[project]]
+name = "demo-mainsheet"
+schematic = "simulation/subsheets/mainsheet.kicad_sch"
+
+[[project]]
+name = "demo-up-down-c"
+schematic = "simulation/up-down-counter/up-down-c.kicad_sch"
+
+[[project]]
+name = "demo-v-i-sources"
+schematic = "simulation/v_i_sources/v_i_sources.kicad_sch"
+
+[[project]]
+name = "demo-sonde-xilinx"
+schematic = "sonde xilinx/sonde xilinx.kicad_sch"
+
+[[project]]
+name = "demo-stickhub"
+schematic = "stickhub/StickHub.kicad_sch"
+
+[[project]]
+name = "demo-tinytapeout-demo"
+schematic = "tiny_tapeout/tinytapeout-demo.kicad_sch"
+
+[[project]]
+name = "demo-video"
+schematic = "video/video.kicad_sch"
+
+[[project]]
+name = "demo-vme-wren"
+schematic = "vme-wren/vme-wren.kicad_sch"
+
+[[project]]
+name = "mikoto"
+repo = "https://github.com/zhiayang/mikoto"
+commit = "86318f6c69495b8308354b6393d85229177b26ae"
+schematic = "mikoto.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "rs485-moist-sensor"
+repo = "https://github.com/Miceuz/rs485-moist-sensor"
+commit = "8cba0cd29e35b25de832e92b6521192ec9c6ec69"
+schematic = "rs485-moist-sensor.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "dmxsun-baseboard"
+repo = "https://github.com/OpenLightingProject/rp2040-dmxsun"
+commit = "f3b1749c982da85770dc9a11eada035404edc25d"
+schematic = "hardware/baseboard_4slots/baseboard_4slots.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "dmxsun-ioboard"
+repo = "https://github.com/OpenLightingProject/rp2040-dmxsun"
+commit = "f3b1749c982da85770dc9a11eada035404edc25d"
+schematic = "hardware/ioboard_4ports_isolated/ioboard_4ports_isolated.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "iot12-control"
+repo = "https://github.com/atoomnetmarc/IoT12"
+commit = "1154267f27544549b1881297fec97138cbeeebdf"
+schematic = "hardware/Control Board/IoT12 Control Board.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "iot12-power"
+repo = "https://github.com/atoomnetmarc/IoT12"
+commit = "1154267f27544549b1881297fec97138cbeeebdf"
+schematic = "hardware/Power Supply/IoT12 Power Supply.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "tanen"
+repo = "https://github.com/hmd83/tanen"
+commit = "ca8ccd244d5bfc714e1de03404fc59857a6abd71"
+schematic = "Tanen_Base_pcb/XIAO_nRF54L15 V1.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "seatalk-wifi"
+repo = "https://github.com/atonizzo/seatalk_wifi"
+commit = "9c18c1f3d418caf6bba024d145b0292354519ec6"
+schematic = "hw/seatalk_wifi.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "jetson-nano-baseboard"
+repo = "https://github.com/antmicro/jetson-nano-baseboard"
+commit = "d8d0b2d71ab4cc4bcdb204a09f78be40d4c8cda3"
+schematic = "jetson-nano-baseboard.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "hdmi-mipi-bridge"
+repo = "https://github.com/antmicro/hdmi-mipi-bridge"
+commit = "6c683289a3191ee6c92cf4f9065ca9b6cb2c0784"
+schematic = "antmicro-hdmi-mipi-bridge-hw.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "sdi-mipi-bridge"
+repo = "https://github.com/antmicro/sdi-mipi-bridge-hw"
+commit = "0d08a865eba70ac02bfe16601bbf6d719d5c9d41"
+schematic = "sdi-mipi-bridge.kicad_sch"
+license = "Apache-2.0"
+
+[[project]]
+name = "ottercast-audio"
+repo = "https://github.com/Ottercast/OtterCastAudioV2"
+commit = "199395d7249aaf12432e42bff828dd665546d6a4"
+schematic = "OtterCastAudioV2.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "funbox-v3"
+repo = "https://github.com/GuitarML/FunBox"
+commit = "c0409dde8e381027688f3cc212951c605247a18f"
+schematic = "hardware/funbox_v3_midi_exp/funbox_v3.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "mackerel-08"
+repo = "https://github.com/crmaykish/mackerel-68k"
+commit = "50786ed64897e037c57989c3322f02ea375584b7"
+schematic = "hardware/mackerel-08-v1/mackerel-08-v1.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "mackerel-10"
+repo = "https://github.com/crmaykish/mackerel-68k"
+commit = "50786ed64897e037c57989c3322f02ea375584b7"
+schematic = "hardware/mackerel-10-v1/mackerel-10-v1.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "mackerel-30"
+repo = "https://github.com/crmaykish/mackerel-68k"
+commit = "50786ed64897e037c57989c3322f02ea375584b7"
+schematic = "hardware/mackerel-30-proto/mackerel-30-proto.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "ef-s-adapter"
+repo = "https://github.com/Jana-Marie/EF-S-Adapter"
+commit = "fea1dd99eeb21a772cd7713c1606622355f8a774"
+schematic = "hardware/v1.1/lensmount-v1.1.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "urchin"
+repo = "https://github.com/duckyb/urchin"
+commit = "aef241da7870dbae322416a00fbb269f1a24d8b1"
+schematic = "main.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "tokay-camera"
+repo = "https://github.com/maxlab-io/tokay-lite-pcb"
+commit = "fd04d94a332d745ad4c09e4e2da0fbb61fde3218"
+schematic = "ai-camera-rev3.2/ai-camera-rev3.2.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "rp-micro"
+repo = "https://github.com/siderakb/rp-micro"
+commit = "a7baf36025b974ed55b4676ad1e9f7e79f16bba1"
+schematic = "hardware/rp-micro.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "moco-bkd8316"
+repo = "https://github.com/ziteh/moco"
+commit = "e0caae5762ac5f7731c79ccb5e8fe11ee3f4468e"
+schematic = "hardware/moco-bkd8316/moco-bkd8316.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "moco-rd501"
+repo = "https://github.com/ziteh/moco"
+commit = "e0caae5762ac5f7731c79ccb5e8fe11ee3f4468e"
+schematic = "hardware/moco-rd501/moco-rd501.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "moco-sc1"
+repo = "https://github.com/ziteh/moco"
+commit = "e0caae5762ac5f7731c79ccb5e8fe11ee3f4468e"
+schematic = "hardware/moco-sc1/moco-sc1.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "soleil"
+repo = "https://github.com/protolux-electronics/soleil_hardware"
+commit = "8c7c922c1e5248b8808cf1ac2964644eca952a06"
+schematic = "soleil.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "trellis-core"
+repo = "https://github.com/protolux-electronics/trellis_core"
+commit = "db4fe71623c14bcea47d7457d0db4c99d3899124"
+schematic = "src/trellis_core.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "patchlogic"
+repo = "https://github.com/Unicamp-Odhin/PatchLogic"
+commit = "d9a5112f68374779b1cb35d0ddb220429ca65769"
+schematic = "PatchLogic.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "granit"
+repo = "https://github.com/laenzlinger/granit"
+commit = "6a0d1e8db286441adbb0e3731e77066fbb4f4359"
+schematic = "hardware/granit.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "mvme712m-p2"
+repo = "https://github.com/parceval/MVME712M_P2"
+commit = "c36ba9bc60f9ad3a48e13420d1bde59b45d5ec2a"
+schematic = "MVME712M_P2_Adapter.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "tsuraragb-main"
+repo = "https://github.com/rniwase/tsuraraGB"
+commit = "04d25e09f39777cabaa92c77b82b80f0ed53e2da"
+schematic = "pcb/main/tGB-main.kicad_sch"
+license = "BSD-3-Clause"
+
+[[project]]
+name = "tsuraragb-prog"
+repo = "https://github.com/rniwase/tsuraraGB"
+commit = "04d25e09f39777cabaa92c77b82b80f0ed53e2da"
+schematic = "pcb/programmer/tGB-prog.kicad_sch"
+license = "BSD-3-Clause"
+
+[[project]]
+name = "nessionator"
+repo = "https://github.com/KabukiFlux/NES-IO-Board-nessionator"
+commit = "3617dd8a1d23131035c734626b504feaac115d52"
+schematic = "kicad/Nes_xieles.kicad_sch"
+license = "BSD-3-Clause"

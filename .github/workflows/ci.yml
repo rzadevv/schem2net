@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - run: make lint
+      - run: make test
+
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: bench/build
+          key: corpus-a-${{ hashFiles('bench/corpus_a.toml', 'docker/Dockerfile.kicad') }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: make corpus
+      - run: uv run schem2net bench a --split dev --json bench-dev.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-dev
+          path: bench-dev.json

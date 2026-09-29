@@ -1,0 +1,38 @@
+[project]
+name = "schem2net"
+version = "0.0.1"
+description = "Recover netlists from vector schematic PDFs."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pydantic>=2.6",
+    "pypdfium2>=4.30",
+    "scipy>=1.11",
+    "typer>=0.12",
+]
+
+[project.scripts]
+schem2net = "schem2net.cli:app"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.100",
+    "pytest>=8",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
