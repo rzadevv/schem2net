@@ -1,0 +1,25 @@
+# Altium Designer's default schematic colours.
+
+[colors]
+wire = [[0, 0, 128]]  # buses too, drawn thicker
+symbol = [[128, 0, 0], [0, 0, 255]]  # part bodies and power ports
+pin = [[0, 0, 0]]  # pins have their own colour
+field = [[0, 0, 128]]  # designators and comments
+pin_number = [[0, 0, 0]]  # pin names too; those sit inside the body
+local_label = [[128, 0, 0]]  # net labels, and the names of power ports
+
+[power]
+names_in_labels = true  # power port names use the net label colour
+unnamed_ground = "GND"  # ground ports usually show no name
+
+[order]
+fields_follow_symbol = true  # each part's text is drawn right after its graphics
+designator_first = false  # the comment and parameters come before the designator
+
+[wires]
+thick_are_buses = true  # pages are scaled to fit, so thickness is relative
+
+[pins]
+max_width = 1.0   # mm; pins are told apart by colour
+min_length = 0.3  # mm
+numbers_above = true  # above horizontal pins, left of vertical ones

@@ -128,6 +128,7 @@ def _read_text(obj, matrix: Matrix, parent: Matrix, textpage, id: int) -> Text |
         size=size.value * _scale(matrix),
         angle=round(math.degrees(math.atan2(-b, a)), 1) % 360,
         color=_color(raw.FPDFPageObj_GetFillColor, obj),
+        visible=raw.FPDFTextObj_GetTextRenderMode(obj) != raw.FPDF_TEXTRENDERMODE_INVISIBLE,
     )
 
 

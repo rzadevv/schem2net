@@ -9,9 +9,9 @@ and the benchmark read.
 | 1 | Detect the generator and page kind | `ingest.py` | done |
 | 2 | Read paths and text in millimetres, top-left origin | `pdf.py` | done |
 | 3 | Drop duplicates, rejoin split text | `scene.py` | done |
-| 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py` | KiCad |
+| 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py` | KiCad, Altium |
 | 5 | Join wires at shared ends and junction dots | `nets.py` | done |
-| 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad |
+| 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad, Altium |
 | 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad |
 | 8 | Build nets and score confidence | `nets.py` | partial |
 | 9 | KiCad netlist, BOM, HTML report, MCP server | `export.py`, `report.py`, `mcp_server.py` | done |
@@ -60,9 +60,19 @@ the labels that use its prefix.
 
 Everything specific to one EDA tool lives in `profiles/<name>.toml`: the
 colours of each kind of primitive, pin line limits, and drawing order
-conventions. KiCad draws each symbol's texts right after its graphics, so
+conventions.
+
+KiCad draws each symbol's texts right after its graphics, reference first, so
 drawing order ties designators and power names to their symbols and rejoins
-symbols drawn in several pieces.
+symbols drawn in several pieces. Wires take their net class colour, but are
+all drawn in one run.
+
+Altium draws pins in their own colour, so a pin's inner end is the one that
+meets body graphics. Power port names use the net label colour, ground ports
+usually have no name and are recognised by their stacked bars, and pages are
+scaled to fit, so buses are told from wires by relative thickness. Text drawn
+in invisible mode, such as the pin markers of a Smart PDF, is not part of the
+drawing and is ignored.
 
 ## Confidence
 

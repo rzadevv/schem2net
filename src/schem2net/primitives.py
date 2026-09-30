@@ -37,6 +37,7 @@ class Text:
     angle: float
     color: Color | None
     seq: int = 0
+    visible: bool = True  # False for text drawn in invisible mode, such as search layers
 
 
 @dataclass(slots=True)

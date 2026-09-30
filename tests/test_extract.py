@@ -6,6 +6,7 @@ from schem2net.primitives import Text
 from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs
 
 KICAD = profile.load("kicad")
+ALTIUM = profile.load("altium")
 
 
 class SceneBuilder:
@@ -15,10 +16,12 @@ class SceneBuilder:
         self.scene = Scene(page=1)
         self.seq = 0
 
-    def shape(self, *points, width=0.152):
+    def shape(self, *points, width=0.152, color=None):
         self.seq += 1
-        s = Shape(len(self.scene.shapes), list(points), width, geometry.bbox_of(points), self.seq)
-        self.scene.shapes.append(s)
+        box = geometry.bbox_of(points)
+        self.scene.shapes.append(
+            Shape(len(self.scene.shapes), list(points), width, box, self.seq, color)
+        )
 
     def field(self, text, x, y):
         self.seq += 1
@@ -48,10 +51,10 @@ class SceneBuilder:
         self.field(value, x + 3, y + 1)
 
 
-def netlist(*scenes: Scene):
+def netlist(*scenes: Scene, rules=KICAD):
     netlister = Netlister()
     for scene in scenes:
-        netlister.add_page(scene, symbols.find(scene, KICAD))
+        netlister.add_page(scene, symbols.find(scene, rules))
     components, nets, *_ = netlister.result()
     return {c.ref: c for c in components}, {n.name: n for n in nets}
 
@@ -199,3 +202,24 @@ def test_vector_bus_members_match_by_position():
     _, nets = netlist(parent.scene, child.scene)
     assert nets["D4"].pins == [("R1", "1"), ("R3", "1")]
     assert nets["D5"].pins == [("R2", "1"), ("R4", "1")]
+
+
+def test_altium_conventions():
+    """Black pins, a blue body touching them tip to tip, an unnamed ground, a net label."""
+    black, blue, dark_red = (0, 0, 0), (0, 0, 255), (128, 0, 0)
+    b = SceneBuilder()
+    # R1: black pins at both ends of a blue zigzag.
+    b.shape((10, 5), (10, 8), color=black)
+    b.shape((10, 8), (11, 9), (9, 10), (11, 11), (10, 12), color=blue)
+    b.shape((10, 12), (10, 15), color=black)
+    b.field("R1", 12, 9)
+    # Ground port: a stem and three shrinking bars, no name.
+    b.shape((10, 17), (10, 18), color=dark_red)
+    for i, half in enumerate((1.5, 1.0, 0.5)):
+        b.shape((10 - half, 18 + 0.5 * i), (10 + half, 18 + 0.5 * i), color=dark_red)
+    b.scene.wires += [((10, 15), (10, 17)), ((10, 5), (20, 5))]
+    b.scene.labels.append(Label("SENSE", "local", (13, 3.6, 17, 4.8), 0.0))
+
+    _, nets = netlist(b.scene, rules=ALTIUM)
+    assert nets["GND"].pins == [("R1", "2")]
+    assert nets["SENSE"].pins == [("R1", "1")]

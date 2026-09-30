@@ -7,7 +7,7 @@ from schem2net.primitives import Document, Page
 # Matched against the PDF Creator and Producer fields, lower-cased.
 SIGNATURES = {
     "kicad": ("kicad", "eeschema"),
-    "altium": ("altium",),
+    "altium": ("altium", "llpdflib"),  # llPDFLib is the PDF engine inside Altium
     "orcad": ("orcad", "capture cis", "cadence"),
     "eagle": ("eagle",),
 }

@@ -11,7 +11,7 @@ from schem2net.primitives import Page
 from schem2net.scene import Scene
 from schem2net.symbols import Symbol
 
-PROFILES = {"kicad"}
+PROFILES = {"kicad", "altium"}
 
 
 @dataclass

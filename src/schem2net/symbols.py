@@ -83,25 +83,39 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
         body_b, tips_b = _contacts(b, ids, scene, index)
         if body_a and body_b:
             continue
-        if body_a != body_b:
-            a_inner = body_a
-        else:
-            # Neither end is on a body: decide by drawing order, then by wires.
-            a_inner = None
-            if profile.fields_follow_symbol:
-                own_a = any(_drawn_together(chain[0], scene.shapes[j], breaks) for j in tips_a)
-                own_b = any(_drawn_together(chain[0], scene.shapes[j], breaks) for j in tips_b)
-                if own_a != own_b:
-                    a_inner = own_a
-            if a_inner is None:
-                wired_a, wired_b = (_on_wire(p, scene.wires, wires) for p in (a, b))
-                if wired_a == wired_b:
-                    continue
-                a_inner = wired_b
+        a_inner = body_a if body_a != body_b else None
+        if a_inner is None:
+            a_inner = _inner_by_neighbours(chain[0], tips_a, tips_b, scene, profile, breaks)
+        if a_inner is None:
+            wired_a, wired_b = (_on_wire(p, scene.wires, wires) for p in (a, b))
+            if wired_a == wired_b:
+                continue
+            a_inner = wired_b
         pin = Pin(chain[0].id, (a, b) if a_inner else (b, a))
         for shape in chain:
             pins[shape.id] = pin
     return pins
+
+
+def _inner_by_neighbours(
+    line: Shape, tips_a: list[int], tips_b: list[int], scene: Scene, profile: Profile, breaks
+) -> bool | None:
+    """When neither end sits on a body, tell which end belongs to the symbol, if possible.
+
+    With pins in their own colour, the inner end meets body graphics tip to tip.
+    Otherwise, with symbols drawn one at a time, it meets graphics drawn with it.
+    """
+    pin_colour = bool(profile.colors.get("pin"))
+    if not pin_colour and not profile.fields_follow_symbol:
+        return None
+
+    def own(tips: list[int]) -> bool:
+        if pin_colour:
+            return any(not profile.is_("pin", scene.shapes[j].color) for j in tips)
+        return any(_drawn_together(line, scene.shapes[j], breaks) for j in tips)
+
+    own_a, own_b = own(tips_a), own(tips_b)
+    return own_a if own_a != own_b else None
 
 
 def _chains(
@@ -145,6 +159,8 @@ def _chain_ends(chain: list[Shape]) -> tuple[Point, Point]:
 
 def _is_pin_like(shape: Shape, profile: Profile) -> bool:
     if len(shape.points) != 2 or shape.width > profile.pin_max_width:
+        return False
+    if profile.colors.get("pin") and not profile.is_("pin", shape.color):
         return False
     a, b = shape.points
     return geometry.distance(a, b) >= profile.pin_min_length and geometry.is_axis_aligned((a, b))

@@ -1,14 +1,16 @@
 """Stages 3-4: sort a page's primitives into wires, symbol graphics and texts."""
 
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Literal
 
 from schem2net import geometry
 from schem2net.geometry import GridIndex, Segment
-from schem2net.primitives import BBox, Page, Path, Point, Text
+from schem2net.primitives import BBox, Color, Page, Path, Point, Text
 from schem2net.profile import Profile
 
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
+BUS_WIDTH_RATIO = 1.8  # a wire-coloured line this much thicker than usual is a bus
 SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
 
 
@@ -19,6 +21,7 @@ class Shape:
     width: float
     bbox: BBox
     seq: int = 0
+    color: Color | None = None
 
     @property
     def closed(self) -> bool:
@@ -78,34 +81,26 @@ def build(page: Page, profile: Profile) -> Scene:
     pin_outlines: list[list[Point]] = []
 
     paths = _unique_paths(page.paths)
+    thick = _thick_lines(paths, profile) if profile.thick_wires_are_buses else set()
     wire_like, dot_like = set(), set()
     if profile.wires_drawn_together:
         wire_like = _drawn_with_wires(paths, page.texts, profile, _is_line)
         dot_like = _drawn_with_wires(paths, page.texts, profile, _is_dot)
 
     for path in paths:
-        if path.seq in dot_like:
+        color = path.stroke or path.fill
+        if path.seq in dot_like or (profile.is_("wire", color) and path.fill and path.curved):
             scene.junctions.append(geometry.center(path.bbox))
-        elif path.seq in wire_like and not any(
-            profile.is_(r, path.stroke) for r in ("bus", "note")
-        ):
-            scene.wires.append(tuple(path.subpaths[0]))
-        elif profile.is_("wire", path.stroke or path.fill):
-            if path.fill and path.curved:
-                scene.junctions.append(geometry.center(path.bbox))
-            else:
-                scene.wires.extend(
-                    s for sub in path.subpaths for s in geometry.segments(sub) if s[0] != s[1]
-                )
-        elif profile.is_("bus", path.stroke):
-            scene.buses.extend(
-                s for sub in path.subpaths for s in geometry.segments(sub) if s[0] != s[1]
-            )
-        elif profile.is_("symbol", path.stroke or path.fill):
+        elif path.seq in thick or profile.is_("bus", path.stroke):
+            scene.buses.extend(_segments(path))
+        elif _is_wire(path, wire_like, profile):
+            scene.wires.extend(_segments(path))
+        elif profile.is_("symbol", color) or profile.is_("pin", color):
             for sub in path.subpaths:
                 box = geometry.bbox_of(sub)
                 if box[2] - box[0] > 1e-3 or box[3] - box[1] > 1e-3:  # skip zero-length dots
-                    scene.shapes.append(Shape(len(scene.shapes), sub, path.width, box, path.seq))
+                    shape = Shape(len(scene.shapes), sub, path.width, box, path.seq, color)
+                    scene.shapes.append(shape)
         elif profile.is_("hier_label", path.stroke):
             outlines["hier"].extend(path.subpaths)
         elif profile.is_("sheet_pin", path.stroke):
@@ -113,7 +108,8 @@ def build(page: Page, profile: Profile) -> Scene:
 
     label_texts = {"global": [], "hier": []}
     sheet_files, bus_texts = [], []
-    for text in _join_runs(_unique_texts(page.texts)):
+    visible = [t for t in page.texts if t.visible]
+    for text in _join_runs(_unique_texts(visible)):
         if profile.sheet_path_prefix and text.text.startswith(profile.sheet_path_prefix):
             scene.path = name_key(text.text.removeprefix(profile.sheet_path_prefix))
         elif profile.sheet_file_prefix and text.text.startswith(profile.sheet_file_prefix):
@@ -154,6 +150,28 @@ def build(page: Page, profile: Profile) -> Scene:
     for i, shape in enumerate(scene.shapes):
         shape.id = i
     return scene
+
+
+def _is_wire(path: Path, drawn_with_wires: set[int], profile: Profile) -> bool:
+    if profile.is_("wire", path.stroke):
+        return True
+    return path.seq in drawn_with_wires and not profile.is_("note", path.stroke)
+
+
+def _segments(path: Path) -> list[Segment]:
+    return [s for sub in path.subpaths for s in geometry.segments(sub) if s[0] != s[1]]
+
+
+def _thick_lines(paths: list[Path], profile: Profile) -> set[int]:
+    """Wire-coloured lines much thicker than the usual wire on the page: buses.
+
+    Pages are often scaled to fit the paper, so only relative thickness means anything.
+    """
+    wires = [p for p in paths if profile.is_("wire", p.stroke) and not p.fill]
+    if not wires:
+        return set()
+    usual = Counter(round(p.width, 3) for p in wires).most_common(1)[0][0]
+    return {p.seq for p in wires if p.width > BUS_WIDTH_RATIO * usual}
 
 
 def _drawn_with_wires(paths: list[Path], texts: list[Text], profile: Profile, kind) -> set[int]:
@@ -332,7 +350,9 @@ def _continues(prev: Text, text: Text) -> bool:
     _, end = _along(prev.bbox, prev.angle)
     lo_a, hi_a = _across(prev.bbox, prev.angle)
     lo_b, hi_b = _across(text.bbox, text.angle)
-    return -0.5 <= start - end <= 0.8 * prev.size and min(hi_a, hi_b) > max(lo_a, lo_b)
+    # An underscore sits below the other letters, so allow a small vertical gap.
+    beside = min(hi_a, hi_b) > max(lo_a, lo_b) - 0.3 * prev.size
+    return -0.5 <= start - end <= 0.8 * prev.size and beside
 
 
 def _along(box: BBox, angle: float) -> tuple[float, float]:

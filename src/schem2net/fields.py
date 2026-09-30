@@ -29,7 +29,7 @@ OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
-LATER_FIELD_COST = 1.0  # the designator is the first text drawn after its symbol
+LATER_FIELD_COST = 1.0  # where the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 
 # Prefix, number, optional unit letter: "R12", "U5A", "SW_POWER0", "Bat+1".
@@ -44,7 +44,14 @@ COMMON_PREFIXES = {
 def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs | None) -> None:
     texts = _Texts(scene.fields)
     _name_power_symbols(symbols, texts, scene, profile, runs)
-    _assign_refs(symbols, texts, runs)
+    if profile.power_names_in_labels:
+        _name_power_from_labels(symbols, scene, profile)
+    if profile.unnamed_ground:
+        for symbol in filter(_could_be_power, symbols):
+            if _looks_like_ground(symbol, scene):
+                symbol.power = profile.unnamed_ground
+                symbol.anchors = _anchors(symbol, scene)
+    _assign_refs(symbols, texts, runs, profile)
     _number_pins(symbols, scene, profile)
     _assign_values(symbols, texts, runs)
 
@@ -78,22 +85,59 @@ def _name_power_symbols(
     symbols: list[Symbol], texts: _Texts, scene: Scene, profile: Profile, runs: Runs | None
 ) -> None:
     """Power symbols are small, have at most one pin and a net name next to them."""
-    for symbol in symbols:
-        x0, y0, x1, y1 = symbol.bbox
-        if len(symbol.pins) > 1 or not symbol.body or max(x1 - x0, y1 - y0) > POWER_MAX_SIZE:
-            continue
+    for symbol in filter(_could_be_power, symbols):
         for _, i in texts.near(symbol.bbox, POWER_NAME_GAP):
             text = texts.texts[i]
-            if not _is_net_name(text.text) or text.text in profile.not_power_nets:
+            if not _is_power_name(text.text, profile):
                 continue
-            if is_common_ref(text.text):
-                continue  # a one-pin part, such as a test point
             # The name is the first text drawn after the symbol, or else sits in line with it.
             if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text):
                 symbol.power = text.text
                 symbol.anchors = _anchors(symbol, scene)
                 texts.used.add(i)
                 break
+
+
+def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
+    """Some generators write power port names in the net label colour."""
+    local = [label for label in scene.labels if label.kind == "local" and not label.outline]
+    pool = _Texts([Text(i, lb.text, lb.bbox, 0.0, lb.angle, None) for i, lb in enumerate(local)])
+    for symbol in filter(_could_be_power, symbols):
+        for _, i in pool.near(symbol.bbox, POWER_NAME_GAP):
+            text = pool.texts[i]
+            if _is_power_name(text.text, profile) and _in_line(symbol, text):
+                symbol.power = text.text
+                symbol.anchors = _anchors(symbol, scene)
+                pool.used.add(i)
+                break
+    claimed = {id(local[i]) for i in pool.used}
+    scene.labels = [label for label in scene.labels if id(label) not in claimed]
+
+
+def _could_be_power(symbol: Symbol) -> bool:
+    x0, y0, x1, y1 = symbol.bbox
+    small = max(x1 - x0, y1 - y0) <= POWER_MAX_SIZE
+    return not symbol.power and len(symbol.pins) <= 1 and bool(symbol.body) and small
+
+
+def _is_power_name(text: str, profile: Profile) -> bool:
+    # A designator nearby means a one-pin part, such as a test point.
+    return _is_net_name(text) and text not in profile.not_power_nets and not is_common_ref(text)
+
+
+def _looks_like_ground(symbol: Symbol, scene: Scene) -> bool:
+    """The ground sign: three or more parallel bars, each shorter than the one before."""
+    lines = [scene.shapes[i].points for i in symbol.shapes if len(scene.shapes[i].points) == 2]
+    for horizontal in (True, False):
+        bars = [ln for ln in lines if geometry.is_horizontal(tuple(ln)) == horizontal]
+        across = 1 if horizontal else 0
+        by_offset = sorted(bars, key=lambda ln: ln[0][across])
+        lengths = [geometry.distance(*ln) for ln in by_offset]
+        shrinking = lengths in (sorted(lengths), sorted(lengths, reverse=True))
+        distinct = len({round(v, 2) for v in lengths}) == len(lengths)
+        if len(lengths) >= 3 and shrinking and distinct:
+            return True
+    return False
 
 
 def _anchors(symbol: Symbol, scene: Scene) -> list[Point]:
@@ -115,7 +159,7 @@ def _in_line(symbol: Symbol, text: Text) -> bool:
     return left_or_right if geometry.is_horizontal(symbol.pins[0].line) else above_or_below
 
 
-def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> None:
+def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profile: Profile) -> None:
     parts = [s for s in symbols if s.pins and not s.power]
     candidates = []
     for si, symbol in enumerate(parts):
@@ -129,7 +173,7 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> Non
                 cost += UNKNOWN_PREFIX_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
-            elif runs and runs.first_text(symbol) != text.seq:
+            elif runs and profile.designator_first and runs.first_text(symbol) != text.seq:
                 cost += LATER_FIELD_COST
             candidates.append((cost, si, ti))
     candidates.sort()
@@ -182,7 +226,8 @@ def _set_ref(symbol: Symbol, text: str) -> None:
 
 def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
     numbers = scene.pin_numbers
-    pins = [p for s in symbols if s.ref for p in s.pins]
+    owned = [(p, s) for s in symbols if s.ref for p in s.pins]
+    pins = [p for p, _ in owned]
     index = GridIndex()
     for i, pin in enumerate(pins):
         index.add(i, geometry.bbox_of(pin.line))
@@ -193,6 +238,8 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
         for i in index.near(geometry.center(text.bbox), PIN_NUMBER_GAP + 1):
             if geometry.is_horizontal(pins[i].line) == vertical_text:
                 continue
+            if _inside_body(owned[i][1], text):
+                continue  # a pin name
             gap = _number_gap(text.bbox, pins[i].line, profile.pin_numbers_above)
             if gap is not None:
                 options.append((gap, t, i))
@@ -276,6 +323,14 @@ def _assign_values(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> N
             _, i = min(options)
             symbol.value = texts.texts[i].text
             texts.used.add(i)
+
+
+def _inside_body(symbol: Symbol, text: Text) -> bool:
+    if len(symbol.pins) <= 2 or not symbol.body:
+        return False
+    cx, cy = geometry.center(text.bbox)
+    x0, y0, x1, y1 = symbol.body
+    return x0 + 0.3 <= cx <= x1 - 0.3 and y0 + 0.3 <= cy <= y1 - 0.3
 
 
 def _is_net_name(text: str) -> bool:

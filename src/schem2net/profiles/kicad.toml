@@ -22,6 +22,7 @@ not_nets = ["PWR_FLAG"]  # drawn like a power symbol, but joins nothing by name
 
 [order]
 fields_follow_symbol = true  # each symbol's text is drawn right after its graphics
+designator_first = true  # the reference comes before the value
 wires_drawn_together = true  # all wires in one run, whatever their net class colour
 
 [pins]
