@@ -93,6 +93,25 @@ def test_swapped_pins_on_parts_named_by_value():
     assert score(predicted, truth).metrics()["pin_accuracy"] == pytest.approx(0.5)
 
 
+def test_many_swapped_decoupling_capacitors_are_not_errors():
+    caps = [part(f"C{i}", "Device:C") for i in range(1, 6)]
+    truth = design(
+        {
+            "GND": [("U1", "1")] + [(c.ref, "1") for c in caps],
+            "VCC": [("U1", "2")] + [(c.ref, "2") for c in caps],
+        },
+        caps,
+    )
+    # With most capacitors turned round, VCC would look like the best match for GND.
+    predicted = design(
+        {
+            "GND": [("U1", "1"), ("C1", "1")] + [(c.ref, "2") for c in caps[1:]],
+            "VCC": [("U1", "2"), ("C1", "2")] + [(c.ref, "1") for c in caps[1:]],
+        }
+    )
+    assert score(predicted, truth).metrics()["pin_accuracy"] == 1
+
+
 def test_merged_nets():
     predicted = design(
         {

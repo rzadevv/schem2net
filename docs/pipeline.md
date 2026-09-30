@@ -68,11 +68,19 @@ symbols drawn in several pieces. Wires take their net class colour, but are
 all drawn in one run.
 
 Altium draws pins in their own colour, so a pin's inner end is the one that
-meets body graphics. Power port names use the net label colour, ground ports
-usually have no name and are recognised by their stacked bars, and pages are
-scaled to fit, so buses are told from wires by relative thickness. Text drawn
-in invisible mode, such as the pin markers of a Smart PDF, is not part of the
-drawing and is ignored.
+meets body graphics. Some libraries draw pins in the body colour; those are
+taken only where a wire meets them. When both ends look alike, drawing order
+decides: graphics separated from the pin by a designator belong to another
+symbol, such as a ground port placed over the pin's end.
+
+Power port names use the net label colour. Ground ports usually have no name
+and are recognised by their stacked bars or their triangle. Designers often
+change the wire colour, so each page's wire colour is learned from the lines
+that end on pin ends. Junctions may be drawn as rings, and wires crossing
+without a connection may jump over each other with a small arc, which is read
+as a straight wire. Pages are scaled to fit, so buses are told from wires by
+relative thickness. Text drawn in invisible mode, such as the pin markers of a
+Smart PDF, is not part of the drawing and is ignored.
 
 ## Confidence
 

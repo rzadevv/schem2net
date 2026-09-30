@@ -65,7 +65,9 @@ ferrite bead, fuse or crystal is not counted as an error. These parts are
 recognised by their KiCad symbol, or by designator (R, C, L, FB, F) when the
 symbol is named after a value or package. Symbols whose names mark them as
 polarised (`CP`, `C_Polarized`, electrolytic, tantalum) are not treated this
-way.
+way. Nets are first paired without the pins of these parts, so a board full of
+decoupling capacitors turned the other way round cannot pair its supply nets
+the wrong way.
 
 Power nets are recognised by name: names starting with `+` or `-`, voltages
 such as `3V3`, `VCC`, `VDD`, `VSS`, `VBUS` and anything containing `GND`.

@@ -80,7 +80,9 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     pred_nets = [set(n.pins) for n in nonempty]
     confidence = [n.confidence for n in nonempty]
 
-    match = _match(true_nets, pred_nets)
+    # Pins of symmetric parts may be swapped, so they take no part in the first match.
+    loose = {(c.ref, n) for c in truth.components if _is_symmetric(c) for n in ("1", "2")}
+    match = _match([n - loose for n in true_nets], [n - loose for n in pred_nets])
     pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, match, truth.components)
     match = _match(true_nets, pred_nets)
 

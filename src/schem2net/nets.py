@@ -106,12 +106,14 @@ class Netlister:
         points: list[tuple[Point, tuple]] = []
         bus_points: list[tuple[Point, tuple]] = []
         pin_lines: list[tuple[Segment, tuple]] = []
+        ports: set[tuple] = set()
         for si, symbol in enumerate(symbols):
             if symbol.power:
                 node = ("s", page, si)
                 self.names[node] = symbol.power
                 self.join(node, ("global", name_key(symbol.power)), "global_name")
                 points += [(p, node) for p in symbol.anchors]
+                ports.add(node)
                 continue
             for pin in symbol.pins:
                 node = ("p", page, pin.shape)
@@ -185,6 +187,17 @@ class Netlister:
                 q, other = points[m]
                 if other != node and geometry.distance(p, q) <= TOL:
                     self.join(node, other, "direct")
+
+        # A power port placed over the end of a pin, rather than at its tip.
+        pin_index = GridIndex()
+        for k, (line, _) in enumerate(pin_lines):
+            pin_index.add(k, geometry.bbox_of(line))
+        for p, node in points:
+            if node in ports:
+                for k in pin_index.near(p, TOL):
+                    line, pin = pin_lines[k]
+                    if geometry.distance_to_segment(p, line) <= TOL:
+                        self.join(node, pin, "t_contact")
 
         # A wire end that touches nothing usually means a connection was missed.
         for i, seg in enumerate(wires):

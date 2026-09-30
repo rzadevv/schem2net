@@ -1,7 +1,7 @@
 """Stages 3-4: sort a page's primitives into wires, symbol graphics and texts."""
 
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from schem2net import geometry
@@ -10,6 +10,7 @@ from schem2net.primitives import BBox, Color, Page, Path, Point, Text
 from schem2net.profile import Profile
 
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
+MIN_COLOUR_HITS = 5  # pin ends a colour must reach to be taken as a wire or body colour
 BUS_WIDTH_RATIO = 1.8  # a wire-coloured line this much thicker than usual is a bus
 SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
 
@@ -81,6 +82,9 @@ def build(page: Page, profile: Profile) -> Scene:
     pin_outlines: list[list[Point]] = []
 
     paths = _unique_paths(page.paths)
+    if profile.infer_wire_colour:
+        profile = _with_wire_colour(paths, profile)
+        profile = _with_body_colours(paths, profile)
     thick = _thick_lines(paths, profile) if profile.thick_wires_are_buses else set()
     wire_like, dot_like = set(), set()
     if profile.wires_drawn_together:
@@ -89,12 +93,12 @@ def build(page: Page, profile: Profile) -> Scene:
 
     for path in paths:
         color = path.stroke or path.fill
-        if path.seq in dot_like or (profile.is_("wire", color) and path.fill and path.curved):
+        if path.seq in dot_like or (profile.is_("wire", color) and _is_dot_or_ring(path)):
             scene.junctions.append(geometry.center(path.bbox))
         elif path.seq in thick or profile.is_("bus", path.stroke):
             scene.buses.extend(_segments(path))
         elif _is_wire(path, wire_like, profile):
-            scene.wires.extend(_segments(path))
+            scene.wires.extend(_chords(path) if _is_hop(path) else _segments(path))
         elif profile.is_("symbol", color) or profile.is_("pin", color):
             for sub in path.subpaths:
                 box = geometry.bbox_of(sub)
@@ -152,6 +156,68 @@ def build(page: Page, profile: Profile) -> Scene:
     return scene
 
 
+def _with_wire_colour(paths: list[Path], profile: Profile) -> Profile:
+    """Add the page's own wire colour: the colour of the lines that end on pin ends.
+
+    Some designers change the wire colour, so the default one finds nothing.
+    """
+    pin_ends = GridIndex(cell=1.0)
+    ends = []
+    for p in paths:
+        if profile.is_("pin", p.stroke) and len(p.subpaths[0]) == 2:
+            for end in p.subpaths[0]:
+                pin_ends.add(len(ends), (*end, *end))
+                ends.append(end)
+    known = set().union(*profile.colors.values())
+    hits = Counter()
+    for p in paths:
+        if p.fill or not p.stroke or p.stroke in known:
+            continue
+        for sub in p.subpaths:
+            for end in (sub[0], sub[-1]):
+                if any(geometry.distance(end, ends[k]) < 0.05 for k in pin_ends.near(end, 0.05)):
+                    hits[p.stroke] += 1
+    if not hits or hits.most_common(1)[0][1] < MIN_COLOUR_HITS:
+        return profile
+    colour = hits.most_common(1)[0][0]
+    return replace(profile, colors={**profile.colors, "wire": profile.colors["wire"] | {colour}})
+
+
+def _with_body_colours(paths: list[Path], profile: Profile) -> Profile:
+    """Add body colours of the page: colours of outlines that pins start from.
+
+    Pins meet a body square on, partway along its edge, which a wire never does,
+    nor the diagonal cross of a no-connect mark.
+    """
+    known = set().union(*profile.colors.values())
+    outlines = GridIndex()
+    candidates = [p for p in paths if p.stroke and p.stroke not in known]
+    for k, p in enumerate(candidates):
+        outlines.add(k, p.bbox)
+    hits = Counter()
+    for p in paths:
+        if not profile.is_("pin", p.stroke) or len(p.subpaths[0]) != 2:
+            continue
+        along = geometry.unit(*p.subpaths[0])
+        for end in p.subpaths[0]:
+            for k in outlines.near(end, 0.05):
+                other = candidates[k]
+                if any(
+                    geometry.is_interior(end, seg, 0.05) and _square(along, geometry.unit(*seg))
+                    for sub in other.subpaths
+                    for seg in geometry.segments(sub)
+                ):
+                    hits[other.stroke] += 1
+    found = {c for c, n in hits.items() if n >= MIN_COLOUR_HITS}
+    if not found:
+        return profile
+    return replace(profile, colors={**profile.colors, "symbol": profile.colors["symbol"] | found})
+
+
+def _square(a: Point, b: Point) -> bool:
+    return abs(a[0] * b[0] + a[1] * b[1]) < 0.1
+
+
 def _is_wire(path: Path, drawn_with_wires: set[int], profile: Profile) -> bool:
     if profile.is_("wire", path.stroke):
         return True
@@ -162,12 +228,22 @@ def _segments(path: Path) -> list[Segment]:
     return [s for sub in path.subpaths for s in geometry.segments(sub) if s[0] != s[1]]
 
 
+def _is_hop(path: Path) -> bool:
+    """A small arc drawn where a wire crosses another without joining it."""
+    x0, y0, x1, y1 = path.bbox
+    return path.curved and max(x1 - x0, y1 - y0) < 2.0 and not _closed(path.subpaths[0])
+
+
+def _chords(path: Path) -> list[Segment]:
+    return [(sub[0], sub[-1]) for sub in path.subpaths if sub[0] != sub[-1]]
+
+
 def _thick_lines(paths: list[Path], profile: Profile) -> set[int]:
     """Wire-coloured lines much thicker than the usual wire on the page: buses.
 
     Pages are often scaled to fit the paper, so only relative thickness means anything.
     """
-    wires = [p for p in paths if profile.is_("wire", p.stroke) and not p.fill]
+    wires = [p for p in paths if profile.is_("wire", p.stroke) and not p.fill and not p.curved]
     if not wires:
         return set()
     usual = Counter(round(p.width, 3) for p in wires).most_common(1)[0][0]
@@ -200,6 +276,12 @@ def _is_line(path: Path) -> bool:
         and len(path.subpaths[0]) == 2
         and path.subpaths[0][0] != path.subpaths[0][1]
     )
+
+
+def _is_dot_or_ring(path: Path) -> bool:
+    """A junction dot, or the outline some generators draw around it."""
+    x0, y0, x1, y1 = path.bbox
+    return path.curved and max(x1 - x0, y1 - y0) < 2.0 and (path.fill or _closed(path.subpaths[0]))
 
 
 def _is_dot(path: Path) -> bool:

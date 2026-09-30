@@ -18,6 +18,7 @@ designator_first = false  # the comment and parameters come before the designato
 
 [wires]
 thick_are_buses = true  # pages are scaled to fit, so thickness is relative
+infer_colour = true  # designers often change the wire colour; learn it from what meets the pins
 
 [pins]
 max_width = 1.0   # mm; pins are told apart by colour

@@ -14,15 +14,15 @@ Early development.
 
 - KiCad PDFs work end to end, including hierarchical sheets and buses.
 - Altium PDFs exported as Smart PDF carry their netlist in the bookmarks,
-  which is read directly. Extraction from the Altium drawing itself is
-  early work.
+  which is read directly. Extraction from the Altium drawing itself works
+  for most boards; hidden pin numbers are the main gap.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
-| A, KiCad | Dev | 57 | 25,608 | 0.84 | 0.93 |
-| A, KiCad | Test | 9 | 2,863 | 0.84 | 0.85 |
-| B, Altium, drawing only | Dev | 30 | 6,677 | 0.59 | 0.40 |
+| A, KiCad | Dev | 57 | 25,608 | 0.85 | 0.93 |
+| A, KiCad | Test | 9 | 2,863 | 0.86 | 0.88 |
+| B, Altium, drawing only | Dev | 30 | 6,677 | 0.79 | 0.71 |
 
 ## Install
 

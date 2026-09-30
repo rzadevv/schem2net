@@ -18,6 +18,7 @@ class Profile:
     designator_first: bool = False
     wires_drawn_together: bool = False
     thick_wires_are_buses: bool = False
+    infer_wire_colour: bool = False
     not_power_nets: frozenset[str] = frozenset()
     power_names_in_labels: bool = False
     unnamed_ground: str | None = None
@@ -45,6 +46,7 @@ def load(name: str) -> Profile:
         designator_first=order.get("designator_first", False),
         wires_drawn_together=order.get("wires_drawn_together", False),
         thick_wires_are_buses=wires.get("thick_are_buses", False),
+        infer_wire_colour=wires.get("infer_colour", False),
         not_power_nets=frozenset(power.get("not_nets", [])),
         power_names_in_labels=power.get("names_in_labels", False),
         unnamed_ground=power.get("unnamed_ground"),

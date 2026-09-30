@@ -31,13 +31,16 @@ UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a val
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 1.0  # where the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
+CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 
 # Prefix, number, optional unit letter: "R12", "U5A", "SW_POWER0", "Bat+1".
+# A part value such as 100nF, 4.7uH, 10k or 0R, which is never a power net.
+PART_VALUE = re.compile(r"^\d+([.,]\d+)?\s*[pnuμµmkKMG]?\s*(F|H|R|Ω|ohms?)?$")
 REFDES = re.compile(r"^([A-Za-z][A-Za-z_+\-]*?)(\d+)([A-Z]?)$")
 COMMON_PREFIXES = {
-    "A", "BT", "C", "CN", "CON", "D", "DS", "F", "FB", "FID", "H", "IC", "J", "JP", "K", "L",
-    "LED", "LS", "M", "MH", "P", "Q", "R", "RN", "RV", "S", "SW", "T", "TH", "TP", "U", "VR",
-    "X", "Y", "Z",
+    "A", "BT", "C", "CN", "CON", "D", "DS", "F", "FB", "FD", "FID", "H", "IC", "J", "JP", "K",
+    "L", "LED", "LS", "M", "MH", "P", "Q", "R", "RN", "RV", "S", "SW", "T", "TH", "TP", "U",
+    "VR", "X", "Y", "Z",
 }  # fmt: skip
 
 
@@ -48,7 +51,8 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
         _name_power_from_labels(symbols, scene, profile)
     if profile.unnamed_ground:
         for symbol in filter(_could_be_power, symbols):
-            if _looks_like_ground(symbol, scene):
+            # A part with a real pin is a component, such as a mounting hole.
+            if not _has_pin_in_colour(symbol, scene, profile) and _looks_like_ground(symbol, scene):
                 symbol.power = profile.unnamed_ground
                 symbol.anchors = _anchors(symbol, scene)
     _assign_refs(symbols, texts, runs, profile)
@@ -122,11 +126,56 @@ def _could_be_power(symbol: Symbol) -> bool:
 
 def _is_power_name(text: str, profile: Profile) -> bool:
     # A designator nearby means a one-pin part, such as a test point.
-    return _is_net_name(text) and text not in profile.not_power_nets and not is_common_ref(text)
+    return (
+        _is_net_name(text)
+        and text not in profile.not_power_nets
+        and not is_common_ref(text)
+        and not PART_VALUE.match(text)
+    )
+
+
+def _has_pin_in_colour(symbol: Symbol, scene: Scene, profile: Profile) -> bool:
+    return any(profile.is_("pin", scene.shapes[p.shape].color) for p in symbol.pins)
 
 
 def _looks_like_ground(symbol: Symbol, scene: Scene) -> bool:
-    """The ground sign: three or more parallel bars, each shorter than the one before."""
+    """The ground sign: shrinking parallel bars, or a triangle pointing away from the stem."""
+    return _has_bars(symbol, scene) or _has_triangle(symbol, scene)
+
+
+def _has_triangle(symbol: Symbol, scene: Scene) -> bool:
+    """A stem meeting the middle of a base, with two sides closing at an apex beyond it."""
+    straight = [scene.shapes[i].points for i in symbol.shapes if len(scene.shapes[i].points) <= 4]
+    segs = [seg for points in straight for seg in geometry.segments(points)]
+    corners = [p for seg in segs for p in seg]
+
+    def joined(a: Point, b: Point) -> bool:
+        return any(
+            geometry.distance_to_segment(a, seg) <= CORNER_GAP
+            and geometry.distance_to_segment(b, seg) <= CORNER_GAP
+            for seg in segs
+        )
+
+    for base in segs:
+        mid = geometry.center(geometry.bbox_of(base))
+        along = geometry.unit(*base)
+        for stem in segs:
+            near, far = sorted(stem, key=lambda p: geometry.distance(p, mid))
+            if stem is base or geometry.distance(near, mid) > CORNER_GAP:
+                continue
+            up = geometry.unit(mid, far)
+            if abs(up[0] * along[0] + up[1] * along[1]) > 0.1:
+                continue
+            for apex in corners:
+                dx, dy = apex[0] - mid[0], apex[1] - mid[1]
+                beyond = -(dx * up[0] + dy * up[1]) > CORNER_GAP
+                centred = abs(dx * along[0] + dy * along[1]) <= CORNER_GAP
+                if beyond and centred and joined(base[0], apex) and joined(base[1], apex):
+                    return True
+    return False
+
+
+def _has_bars(symbol: Symbol, scene: Scene) -> bool:
     lines = [scene.shapes[i].points for i in symbol.shapes if len(scene.shapes[i].points) == 2]
     for horizontal in (True, False):
         bars = [ln for ln in lines if geometry.is_horizontal(tuple(ln)) == horizontal]
@@ -326,10 +375,15 @@ def _assign_values(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> N
 
 
 def _inside_body(symbol: Symbol, text: Text) -> bool:
+    """Inside the edge the pins start from, which markers drawn outside it do not move."""
     if len(symbol.pins) <= 2 or not symbol.body:
         return False
+    x0, y0, x1, y1 = geometry.bbox_of(p.line[0] for p in symbol.pins)
+    if x1 - x0 < 1:
+        x0, x1 = symbol.body[0], symbol.body[2]
+    if y1 - y0 < 1:
+        y0, y1 = symbol.body[1], symbol.body[3]
     cx, cy = geometry.center(text.bbox)
-    x0, y0, x1, y1 = symbol.body
     return x0 + 0.3 <= cx <= x1 - 0.3 and y0 + 0.3 <= cy <= y1 - 0.3
 
 

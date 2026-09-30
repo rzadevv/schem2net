@@ -1,9 +1,12 @@
 """Stages 5-8 on small hand-built scenes that follow KiCad's drawing conventions."""
 
+import math
+
 from schem2net import buses, geometry, profile, symbols
 from schem2net.nets import Netlister
-from schem2net.primitives import Text
+from schem2net.primitives import Page, Path, Text
 from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs
+from schem2net.scene import build as build_scene
 
 KICAD = profile.load("kicad")
 ALTIUM = profile.load("altium")
@@ -223,3 +226,80 @@ def test_altium_conventions():
     _, nets = netlist(b.scene, rules=ALTIUM)
     assert nets["GND"].pins == [("R1", "2")]
     assert nets["SENSE"].pins == [("R1", "1")]
+
+
+def test_altium_ground_overlapping_a_pin_is_a_separate_part():
+    """Values come before the graphics and the designator after, as Altium draws them."""
+    black, blue, dark_red = (0, 0, 0), (0, 0, 255), (128, 0, 0)
+    b = SceneBuilder()
+    b.field("1μF", 12, 9)
+    b.shape((10, 5), (10, 8), color=black)
+    b.shape((9, 8), (11, 8), color=blue)
+    b.shape((9, 8.5), (11, 8.5), color=blue)
+    b.shape((10, 8.5), (10, 11.5), color=black)
+    b.field("C1", 12, 7)
+    # The ground stem runs back over the end of the pin.
+    b.shape((10, 11), (10, 12), color=dark_red)
+    for i, half in enumerate((1.5, 1.0, 0.5)):
+        b.shape((10 - half, 12 + 0.5 * i), (10 + half, 12 + 0.5 * i), color=dark_red)
+    b.scene.wires.append(((10, 5), (20, 5)))
+    b.scene.labels.append(Label("VIN", "local", (13, 3.6, 17, 4.8), 0.0))
+
+    components, nets = netlist(b.scene, rules=ALTIUM)
+    assert "C1" in components
+    assert nets["GND"].pins == [("C1", "2")]
+    assert nets["VIN"].pins == [("C1", "1")]
+
+
+def test_wire_hop_does_not_join_the_crossed_wire():
+    navy = (0, 0, 128)
+    arc = [(10 + 0.5 * math.sin(math.pi * i / 8), 9.5 + i / 8) for i in range(9)]
+    page = Page(1, 100, 100)
+    page.paths = [
+        Path(0, [[(0, 10), (20, 10)]], 0.2, navy, None),
+        Path(1, [[(10, 0), (10, 9.5)]], 0.2, navy, None),
+        Path(2, [arc], 0.2, navy, None, curved=True),
+        Path(3, [[(10, 10.5), (10, 20)]], 0.2, navy, None),
+    ]
+    for i, path in enumerate(page.paths):
+        path.seq = i
+    built = build_scene(page, ALTIUM)
+    netlister = Netlister()
+    netlister.add_page(built, [])
+    net = [netlister.uf.find(("w", 1, i)) for i in range(len(built.wires))]
+    assert len(built.wires) == 4
+    assert net[0] != net[1]
+    assert net[1] == net[2] == net[3]
+
+
+def test_altium_triangle_ground():
+    black, blue, dark_red = (0, 0, 0), (0, 0, 255), (128, 0, 0)
+    b = SceneBuilder()
+    b.shape((10, 5), (10, 8), color=black)
+    b.shape((10, 8), (11, 9), (9, 10), (11, 11), (10, 12), color=blue)
+    b.shape((10, 12), (10, 15), color=black)
+    b.field("R1", 12, 9)
+    b.shape((10, 15), (10, 17), color=dark_red)
+    b.shape((8.5, 17), (11.5, 17), color=dark_red)
+    b.shape((8.5, 17), (10, 18.5), color=dark_red)
+    b.shape((11.5, 17), (10, 18.5), color=dark_red)
+
+    _, nets = netlist(b.scene, rules=ALTIUM)
+    assert nets["GND"].pins == [("R1", "2")]
+
+
+def test_altium_pins_in_body_colour_where_wires_meet_them():
+    blue = (0, 0, 255)
+    b = SceneBuilder()
+    b.shape((10, 5), (10, 8), color=blue)
+    b.shape((9, 8), (11, 8), color=blue)
+    b.shape((9, 8.5), (11, 8.5), color=blue)
+    b.shape((10, 8.5), (10, 11.5), color=blue)
+    b.field("C1", 12, 7)
+    b.scene.wires += [((10, 5), (20, 5)), ((10, 11.5), (20, 11.5))]
+    b.scene.labels.append(Label("VIN", "local", (13, 3.6, 17, 4.8), 0.0))
+    b.scene.labels.append(Label("OUT", "local", (13, 10.1, 17, 11.3), 0.0))
+
+    _, nets = netlist(b.scene, rules=ALTIUM)
+    assert nets["VIN"].pins == [("C1", "1")]
+    assert nets["OUT"].pins == [("C1", "2")]
