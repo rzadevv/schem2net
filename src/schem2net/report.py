@@ -1,7 +1,8 @@
 """An HTML page that draws the extracted nets over the schematic.
 
-Each net gets its own colour. Pins of low-confidence nets are circled in red,
-pins without a number in orange. Clicking a net in the list highlights it.
+Each net gets its own colour. Pins of low-confidence nets are circled in red;
+pins without a number and wire ends touching nothing are marked in orange.
+Clicking a net in the list highlights it.
 """
 
 from html import escape
@@ -73,7 +74,7 @@ def render(extraction: Extraction) -> str:
 
     items = "\n".join(_net_item(net) for net in design.nets)
     pages = "\n".join(
-        _page(result, extraction.wire_nets, net_of_pin, nets)
+        _page(result, extraction.wire_nets, net_of_pin, nets, design.issues)
         for result in extraction.pages
         if result.scene is not None
     )
@@ -119,7 +120,9 @@ def _net_item(net: Net) -> str:
     )
 
 
-def _page(result: PageResult, wire_nets: dict, net_of_pin: dict, nets: dict[str, Net]) -> str:
+def _page(
+    result: PageResult, wire_nets: dict, net_of_pin: dict, nets: dict[str, Net], issues: list
+) -> str:
     page, scene = result.page, result.scene
     out = [
         f"<section><h2>Page {page.number}{' · ' + escape(scene.path) if scene.path else ''}</h2>",
@@ -164,6 +167,13 @@ def _page(result: PageResult, wire_nets: dict, net_of_pin: dict, nets: dict[str,
                 out.append(
                     f'<circle class="low" data-net="{net}" cx="{x:.2f}" cy="{y:.2f}" r="1.2"/>'
                 )
+    for issue in issues:
+        if issue.page == page.number and issue.at and issue.kind == "dangling_wire":
+            x, y = issue.at
+            out.append(
+                f'<circle class="unnumbered" cx="{x:.2f}" cy="{y:.2f}" r="0.8">'
+                "<title>wire end touching nothing</title></circle>"
+            )
     out.append("</svg></section>")
     return "\n".join(out)
 

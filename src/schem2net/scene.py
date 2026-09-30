@@ -77,8 +77,20 @@ def build(page: Page, profile: Profile) -> Scene:
     outlines: dict[str, list[list[Point]]] = {"global": [], "hier": []}
     pin_outlines: list[list[Point]] = []
 
-    for path in _unique_paths(page.paths):
-        if profile.is_("wire", path.stroke or path.fill):
+    paths = _unique_paths(page.paths)
+    wire_like, dot_like = set(), set()
+    if profile.wires_drawn_together:
+        wire_like = _drawn_with_wires(paths, page.texts, profile, _is_line)
+        dot_like = _drawn_with_wires(paths, page.texts, profile, _is_dot)
+
+    for path in paths:
+        if path.seq in dot_like:
+            scene.junctions.append(geometry.center(path.bbox))
+        elif path.seq in wire_like and not any(
+            profile.is_(r, path.stroke) for r in ("bus", "note")
+        ):
+            scene.wires.append(tuple(path.subpaths[0]))
+        elif profile.is_("wire", path.stroke or path.fill):
             if path.fill and path.curved:
                 scene.junctions.append(geometry.center(path.bbox))
             else:
@@ -138,6 +150,39 @@ def build(page: Page, profile: Profile) -> Scene:
     for i, shape in enumerate(scene.shapes):
         shape.id = i
     return scene
+
+
+def _drawn_with_wires(paths: list[Path], texts: list[Text], profile: Profile, kind) -> set[int]:
+    """Paths of one kind drawn in an unbroken run with wire-coloured ones.
+
+    Wires take the colour of their net class, so colour alone misses some. A
+    generator that draws all wires in one run lets drawing order find them.
+    """
+    items = sorted([(p.seq, p) for p in paths] + [(t.seq, None) for t in texts], key=lambda i: i[0])
+    found, run = set(), []
+    for _, path in [*items, (None, None)]:
+        if path is not None and kind(path):
+            run.append(path)
+            continue
+        if any(profile.is_("wire", p.stroke or p.fill) for p in run):
+            found |= {p.seq for p in run}
+        run = []
+    return found
+
+
+def _is_line(path: Path) -> bool:
+    return (
+        path.stroke is not None
+        and path.fill is None
+        and len(path.subpaths) == 1
+        and len(path.subpaths[0]) == 2
+        and path.subpaths[0][0] != path.subpaths[0][1]
+    )
+
+
+def _is_dot(path: Path) -> bool:
+    x0, y0, x1, y1 = path.bbox
+    return path.fill is not None and path.curved and max(x1 - x0, y1 - y0) < 2.0
 
 
 def _find_sheets(

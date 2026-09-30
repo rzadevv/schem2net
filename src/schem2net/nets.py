@@ -29,6 +29,7 @@ WEIGHTS = {
     "label": 0.9,
     "bus": 0.9,
     "t_contact": 0.85,
+    "dangling": 0.6,  # a wire end touching nothing: often a connection that was missed
 }
 LONE_PIN_CONFIDENCE = 0.5
 
@@ -47,6 +48,7 @@ class Netlister:
         self.names: dict[tuple, str] = {}
         self.pins: list[tuple[tuple, int, Symbol, Pin]] = []
         self.local_names: dict[int, set[str]] = defaultdict(set)
+        self.issues: list[Issue] = []
         # Buses crossing into child sheets: (page, child path, name) -> bus on this page
         self.sheet_buses: list[tuple[int, str, str, busnames.Bus]] = []
         # Bus labels on child pages: (path, name) -> (page, bus)
@@ -86,6 +88,7 @@ class Netlister:
             for j in through[1:]:
                 self.join(("w", page, through[0]), ("w", page, j), "junction")
 
+        labelled: set[int] = set()
         buses = scene.buses
         bus_index = GridIndex()
         vector_labels: list[tuple[tuple, Label, busnames.Bus]] = []
@@ -144,6 +147,8 @@ class Netlister:
                 target = _under_label(label, wires, wire_index, pin_lines, ("w", page))
                 if target:
                     self.join(node, target, "label")
+                    if target[0] == "w":
+                        labelled.add(target[2])
 
         # A sheet pin on this page is the same net as the matching label on the child page.
         for si, sheet in enumerate(scene.sheets if scene.path else []):
@@ -180,6 +185,23 @@ class Netlister:
                 q, other = points[m]
                 if other != node and geometry.distance(p, q) <= TOL:
                     self.join(node, other, "direct")
+
+        # A wire end that touches nothing usually means a connection was missed.
+        for i, seg in enumerate(wires):
+            if i in labelled:
+                continue
+            for end in seg:
+                touches = (
+                    any(j != i and _on(end, wires[j]) for j in wire_index.near(end, TOL))
+                    or any(
+                        geometry.distance(end, points[m][0]) <= TOL
+                        for m in point_index.near(end, TOL)
+                    )
+                    or any(_on(end, buses[j]) for j in bus_index.near(end, TOL))
+                )
+                if not touches:
+                    self.join(("w", page, i), ("dangling", page, i, end), "dangling")
+                    self.issues.append(Issue(kind="dangling_wire", page=page, at=end))
 
     def _touch(self, node: tuple, p: Point, wire: tuple, seg: Segment, dotted) -> None:
         """Join a point to a wire it touches: at an end, or partway along it."""
@@ -233,7 +255,7 @@ class Netlister:
         components: dict[str, Component] = {}
         members: dict[tuple, set[tuple[str, str]]] = defaultdict(set)
         pages: dict[tuple, set[int]] = defaultdict(set)
-        issues = []
+        issues = list(self.issues)
         for node, page, symbol, pin in self.pins:
             comp = components.setdefault(
                 symbol.ref,
@@ -282,6 +304,10 @@ class Netlister:
             if node[0] == "w"
         }
         return Result(sorted(components.values(), key=lambda c: c.ref), nets, issues, wire_nets)
+
+
+def _on(p: Point, seg: Segment) -> bool:
+    return geometry.distance_to_segment(p, seg) <= TOL
 
 
 def _label_tips(label: Label) -> list[Point]:

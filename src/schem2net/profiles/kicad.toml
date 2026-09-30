@@ -11,6 +11,7 @@ local_label = [[15, 15, 15]]
 global_label = [[132, 0, 0]]
 hier_label = [[114, 86, 0]]
 sheet_pin = [[0, 100, 100]]
+note = [[0, 0, 194]]  # free text and drawing lines
 
 [sheets]
 file_prefix = "File:"  # below each sheet symbol, in the hierarchical label colour
@@ -21,6 +22,7 @@ not_nets = ["PWR_FLAG"]  # drawn like a power symbol, but joins nothing by name
 
 [order]
 fields_follow_symbol = true  # each symbol's text is drawn right after its graphics
+wires_drawn_together = true  # all wires in one run, whatever their net class colour
 
 [pins]
 max_width = 0.2   # mm; thicker lines are body graphics

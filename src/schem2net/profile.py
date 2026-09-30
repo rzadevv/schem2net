@@ -14,6 +14,7 @@ class Profile:
     pin_max_width: float
     pin_min_length: float
     fields_follow_symbol: bool = False
+    wires_drawn_together: bool = False
     not_power_nets: frozenset[str] = frozenset()
     pin_numbers_above: bool = False
     sheet_file_prefix: str | None = None
@@ -34,6 +35,7 @@ def load(name: str) -> Profile:
         pin_min_length=data["pins"]["min_length"],
         pin_numbers_above=data["pins"].get("numbers_above", False),
         fields_follow_symbol=data.get("order", {}).get("fields_follow_symbol", False),
+        wires_drawn_together=data.get("order", {}).get("wires_drawn_together", False),
         not_power_nets=frozenset(data.get("power", {}).get("not_nets", [])),
         sheet_file_prefix=data.get("sheets", {}).get("file_prefix"),
         sheet_path_prefix=data.get("sheets", {}).get("path_prefix"),

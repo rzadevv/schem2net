@@ -91,9 +91,10 @@ def test_wires_join_at_junctions_but_not_plain_crossings():
     b.resistor(10, 10, "R1", "1k")
     b.resistor(30, 10, "R2", "1k")
     b.resistor(50, 10, "R3", "1k")
+    b.resistor(20, -10, "R4", "1k")  # pin 2 ends at (20, -2.46)
     b.scene.wires += [
         ((10, 7.46), (30, 7.46)),  # R1 to R2
-        ((20, 0), (20, 7.46)),  # T into the first wire, with a dot
+        ((20, -2.46), (20, 7.46)),  # T from R4 into the first wire, with a dot
         ((40, 3), (40, 12)),  # crosses the R2-R3 wire without a dot
         ((30, 7.46), (50, 7.46)),
     ]
@@ -101,8 +102,23 @@ def test_wires_join_at_junctions_but_not_plain_crossings():
 
     _, nets = netlist(b.scene)
     (net,) = [n for n in nets.values() if ("R1", "1") in n.pins]
-    assert net.pins == [("R1", "1"), ("R2", "1"), ("R3", "1")]
+    assert net.pins == [("R1", "1"), ("R2", "1"), ("R3", "1"), ("R4", "2")]
     assert net.confidence == 1.0
+
+
+def test_dangling_wire_lowers_confidence():
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.resistor(20, 10, "R2", "1k")
+    b.scene.wires += [
+        ((10, 7.46), (20, 7.46)),
+        ((20, 7.46), (30, 7.46)),
+    ]  # second one leads nowhere
+
+    _, nets = netlist(b.scene)
+    (net,) = nets.values()
+    assert net.pins == [("R1", "1"), ("R2", "1")]
+    assert net.confidence < 0.8
 
 
 def test_split_label_text_is_rejoined():
