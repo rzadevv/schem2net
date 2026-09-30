@@ -22,7 +22,7 @@ class Shape:
 
     @property
     def closed(self) -> bool:
-        return len(self.points) > 2 and geometry.distance(self.points[0], self.points[-1]) < 1e-3
+        return _closed(self.points)
 
 
 @dataclass(slots=True)
@@ -134,7 +134,11 @@ def build(page: Page, profile: Profile) -> Scene:
 
     # Global labels share the symbol colour, so their outlines are found among the shapes.
     outlines["global"] = [s.points for s in scene.shapes if s.closed]
-    used = _find_sheets(scene, sheet_files, pin_outlines, bus_texts)
+    # Sheet borders can have any colour, so every closed outline is a candidate.
+    outlines_any = [
+        sub for p in paths if p.stroke and not p.fill for sub in p.subpaths if _closed(sub)
+    ]
+    used = _find_sheets(scene, sheet_files, pin_outlines, bus_texts, outlines_any)
     for text, outline in _outlined(label_texts["global"], outlines["global"]):
         scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
         used.add(id(outline))
@@ -186,50 +190,59 @@ def _is_dot(path: Path) -> bool:
 
 
 def _find_sheets(
-    scene: Scene, files: list[Text], pin_outlines: list[list[Point]], bus_texts: list[Text]
+    scene: Scene,
+    files: list[Text],
+    pin_outlines: list[list[Point]],
+    bus_texts: list[Text],
+    outlines: list[list[Point]],
 ) -> set[int]:
     """Find sheet boxes by their file text, and take their names and pins out of the texts.
 
     Returns the ids of the box outlines, which are not symbol graphics.
     """
-    boxes = [s for s in scene.shapes if s.closed]
+    boxes = [(geometry.bbox_of(o), o) for o in outlines]
     used = set()
     for file in files:
-        fx, fy = file.bbox[0], file.bbox[1]
-        box = next(
-            (s for s in boxes if abs(s.bbox[0] - fx) < 1 and 0 <= fy - s.bbox[3] < SHEET_TEXT_GAP),
-            None,
-        )
-        if box is None:
+        fx0, fy0, _, fy1 = file.bbox
+        # The file name sits below the box's left corner, or above it for short sheets.
+        found = [
+            (b, o)
+            for b, o in boxes
+            if abs(b[0] - fx0) < 1
+            and (0 <= fy0 - b[3] < SHEET_TEXT_GAP or -0.5 <= b[1] - fy1 < SHEET_TEXT_GAP)
+        ]
+        if not found:
             continue
-        x0, y0, x1, y1 = box.bbox
-        name = next(
-            (
-                t
-                for t in scene.fields
-                if abs(t.bbox[0] - x0) < 1 and 0 <= y0 - t.bbox[3] < SHEET_TEXT_GAP
-            ),
-            None,
-        )
-        if name is None:
+        box, outline = found[0]
+        x0, y0, x1, y1 = box
+        top = min(y0, fy0)
+        names = [
+            t
+            for t in scene.fields
+            if abs(t.bbox[0] - x0) < 1 and 0 <= top - t.bbox[3] < SHEET_TEXT_GAP
+        ]
+        if not names:
             continue
-        sheet = Sheet(name.text, box.bbox)
-        taken = [name]
-        for outline in pin_outlines:
-            at = _on_edge(geometry.bbox_of(outline), box.bbox)
+        sheet = Sheet(names[0].text, box)
+        taken = [names[0]]
+        for pin_outline in pin_outlines:
+            pin_box = geometry.bbox_of(pin_outline)
+            at = _on_edge(pin_box, box)
             if at is None:
                 continue
-            outline_box = geometry.bbox_of(outline)
-            candidates = scene.fields + bus_texts
-            text = min(candidates, key=lambda t: geometry.bbox_gap(t.bbox, outline_box))
-            if geometry.bbox_gap(text.bbox, outline_box) < 1.5:
+            text = min(scene.fields + bus_texts, key=lambda t: geometry.bbox_gap(t.bbox, pin_box))
+            if geometry.bbox_gap(text.bbox, pin_box) < 1.5:
                 sheet.pins.append(SheetPin(text.text, at))
                 taken.append(text)
         scene.fields = [t for t in scene.fields if not any(t is u for u in taken)]
         bus_texts[:] = [t for t in bus_texts if not any(t is u for u in taken)]
         scene.sheets.append(sheet)
-        used.add(id(box.points))
+        used.add(id(outline))
     return used
+
+
+def _closed(points: list[Point]) -> bool:
+    return len(points) > 2 and geometry.distance(points[0], points[-1]) < 1e-3
 
 
 def _on_edge(pin: BBox, box: BBox, tol: float = 0.05) -> Point | None:

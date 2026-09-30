@@ -4,7 +4,8 @@ A vector bus `D[0..7]` carries the nets D0 to D7, matched by position when
 it crosses into another sheet. A group bus `I2C{SCL SDA}` carries I2C.SCL and
 I2C.SDA, matched by member name. A group can also name an alias, `I2C{BUS}`,
 whose members are defined outside the drawing; its members are then taken
-from the labels that use its prefix.
+from the labels that use its prefix. A bare alias, `{BUS}`, takes the alias
+name as its prefix: BUS.SCL.
 """
 
 import re
@@ -34,9 +35,10 @@ def parse(name: str) -> Bus | None:
         step = 1 if last >= first else -1
         return Bus(name_key(m[1]), tuple(str(i) for i in range(first, last + step, step)), True)
     if m := GROUP.match(name):
-        inner = m[2].split()
-        members = tuple(name_key(n) for n in inner) if len(inner) > 1 else None
-        return Bus(name_key(m[1]), members, False)
+        prefix, inner = name_key(m[1]), m[2].split()
+        if len(inner) > 1:
+            return Bus(prefix, tuple(name_key(n) for n in inner), False)
+        return Bus(prefix or name_key(m[2]), None, False)
     return None
 
 

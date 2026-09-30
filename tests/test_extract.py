@@ -144,6 +144,9 @@ def test_bus_names():
     names = {"I2C_SYS.SCL", "I2C_SYS.SDA", "OTHER"}
     assert buses.member_nets(alias, names) == {"SCL": "I2C_SYS.SCL", "SDA": "I2C_SYS.SDA"}
 
+    bare = buses.parse("{VME}")
+    assert buses.member_nets(bare, {"VME.IRQ", "VME.ACK"}) == {"IRQ": "VME.IRQ", "ACK": "VME.ACK"}
+
     assert buses.parse("SCL") is None
 
 
