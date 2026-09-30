@@ -29,6 +29,7 @@ OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
+LATER_FIELD_COST = 1.0  # the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 
 # Prefix, number, optional unit letter: "R12", "U5A", "SW_POWER0", "Bat+1".
@@ -128,6 +129,8 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> Non
                 cost += UNKNOWN_PREFIX_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
+            elif runs and runs.first_text(symbol) != text.seq:
+                cost += LATER_FIELD_COST
             candidates.append((cost, si, ti))
     candidates.sort()
 

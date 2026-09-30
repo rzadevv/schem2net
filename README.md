@@ -13,13 +13,14 @@ public benchmark.
 Early development. KiCad PDFs work end to end, including hierarchical sheets
 and buses. Other generators need their own profile and are not supported yet.
 
-Corpus A, dev split, 57 designs:
+Corpus A:
 
-| Designs | Pins | Pin accuracy | Connection F1 |
-|---|---|---|---|
-| All | 25,608 | 0.81 | 0.91 |
-| Single page | 4,281 | 0.86 | 0.85 |
-| Multi-page | 21,327 | 0.81 | 0.91 |
+| Split | Designs | Pins | Pin accuracy | Connection F1 |
+|---|---|---|---|---|
+| Dev | 57 | 25,608 | 0.82 | 0.92 |
+| Dev, single page | 35 | 4,281 | 0.86 | 0.87 |
+| Dev, multi-page | 22 | 21,327 | 0.81 | 0.92 |
+| Test | 9 | 2,863 | 0.84 | 0.85 |
 
 ## Install
 

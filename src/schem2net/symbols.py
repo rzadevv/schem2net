@@ -18,6 +18,7 @@ from schem2net.scene import Scene, Shape
 TOUCH = 0.03  # mm, on top of half the stroke widths
 HALF_GAP = 6.0  # mm between the two halves of a capacitor-like symbol
 PIECE_GAP = 2.6  # mm between pieces of one drawn symbol
+PIECE_MAX_SIZE = 50.0  # mm; larger drawings without pins are frames and borders
 
 
 @dataclass(slots=True)
@@ -67,13 +68,19 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
     # Reference designators end one symbol's drawing and start the next.
     breaks = sorted(t.seq for t in scene.fields if fields.is_common_ref(t.text))
 
+    lines = [s for s in scene.shapes if _is_pin_like(s, profile)]
+    if profile.fields_follow_symbol:
+        # Pieces of one pin are drawn with no text at all between them.
+        chains = _chains(lines, scene, index, sorted(t.seq for t in scene.fields))
+    else:
+        chains = [[line] for line in lines]
+
     pins = {}
-    for shape in scene.shapes:
-        if not _is_pin_like(shape, profile):
-            continue
-        a, b = shape.points
-        body_a, tips_a = _contacts(a, shape, scene, index)
-        body_b, tips_b = _contacts(b, shape, scene, index)
+    for chain in chains:
+        a, b = _chain_ends(chain)
+        ids = {s.id for s in chain}
+        body_a, tips_a = _contacts(a, ids, scene, index)
+        body_b, tips_b = _contacts(b, ids, scene, index)
         if body_a and body_b:
             continue
         if body_a != body_b:
@@ -82,8 +89,8 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
             # Neither end is on a body: decide by drawing order, then by wires.
             a_inner = None
             if profile.fields_follow_symbol:
-                own_a = any(_drawn_together(shape, scene.shapes[j], breaks) for j in tips_a)
-                own_b = any(_drawn_together(shape, scene.shapes[j], breaks) for j in tips_b)
+                own_a = any(_drawn_together(chain[0], scene.shapes[j], breaks) for j in tips_a)
+                own_b = any(_drawn_together(chain[0], scene.shapes[j], breaks) for j in tips_b)
                 if own_a != own_b:
                     a_inner = own_a
             if a_inner is None:
@@ -91,8 +98,49 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
                 if wired_a == wired_b:
                     continue
                 a_inner = wired_b
-        pins[shape.id] = Pin(shape.id, (a, b) if a_inner else (b, a))
+        pin = Pin(chain[0].id, (a, b) if a_inner else (b, a))
+        for shape in chain:
+            pins[shape.id] = pin
     return pins
+
+
+def _chains(
+    lines: list[Shape], scene: Scene, index: GridIndex, breaks: list[int]
+) -> list[list[Shape]]:
+    """Join straight pieces that continue each other, such as a pin drawn in two parts."""
+    ids = {s.id for s in lines}
+    joined = UnionFind()
+    for line in lines:
+        joined.find(line.id)
+        for end in line.points:
+            for j in index.near(end, TOUCH):
+                other = scene.shapes[j]
+                if j <= line.id or j not in ids or not _drawn_together(line, other, breaks):
+                    continue
+                if not _continues(line, other, end):
+                    continue
+                # Only where nothing else meets them, so a pin never runs through a body.
+                on_body, others = _contacts(end, {line.id, j}, scene, index)
+                if not on_body and not others:
+                    joined.union(line.id, j)
+    return [[scene.shapes[i] for i in group] for group in joined.groups().values()]
+
+
+def _continues(a: Shape, b: Shape, end: Point) -> bool:
+    """True if b starts where a ends and carries on in the same direction."""
+    far_a = a.points[1] if geometry.distance(a.points[0], end) <= TOUCH else a.points[0]
+    near_b, far_b = b.points if geometry.distance(b.points[0], end) <= TOUCH else b.points[::-1]
+    if geometry.distance(near_b, end) > TOUCH:
+        return False
+    d, e = geometry.unit(far_a, end), geometry.unit(end, far_b)
+    return d[0] * e[0] + d[1] * e[1] > 0.999
+
+
+def _chain_ends(chain: list[Shape]) -> tuple[Point, Point]:
+    points = [p for s in chain for p in s.points]
+    a = max(points, key=lambda p: geometry.distance(p, chain[0].points[0]))
+    b = max(points, key=lambda p: geometry.distance(p, a))
+    return a, b
 
 
 def _is_pin_like(shape: Shape, profile: Profile) -> bool:
@@ -102,7 +150,7 @@ def _is_pin_like(shape: Shape, profile: Profile) -> bool:
     return geometry.distance(a, b) >= profile.pin_min_length and geometry.is_axis_aligned((a, b))
 
 
-def _contacts(end: Point, shape: Shape, scene: Scene, index: GridIndex) -> tuple[bool, list[int]]:
+def _contacts(end: Point, own: set[int], scene: Scene, index: GridIndex) -> tuple[bool, list[int]]:
     """Whether this end sits on body graphics, and which open shapes it meets tip to tip.
 
     Meeting another open shape tip to tip says nothing alone: it may be a second
@@ -110,11 +158,12 @@ def _contacts(end: Point, shape: Shape, scene: Scene, index: GridIndex) -> tuple
     line, on a corner of a polyline or on a closed outline is body.
     """
     tips = []
+    width = max(scene.shapes[i].width for i in own)
     for j in index.near(end, 1.0):
-        if j == shape.id:
+        if j in own:
             continue
         other = scene.shapes[j]
-        tol = (shape.width + other.width) / 2 + TOUCH
+        tol = (width + other.width) / 2 + TOUCH
         for seg in geometry.segments(other.points):
             if geometry.distance_to_segment(end, seg) > tol:
                 continue
@@ -161,7 +210,7 @@ def _group(scene: Scene, index: GridIndex, pins: dict[int, Pin]) -> list[Symbol]
         body = [scene.shapes[m].bbox for m in members if m not in pins]
         body_box = _union(body) if body else None
         # A line that ends inside the body is drawing, not a pin.
-        own = [pins[m] for m in members if m in pins]
+        own = list({id(pins[m]): pins[m] for m in members if m in pins}.values())
         own = [p for p in own if not body_box or not _inside(p.at, body_box)]
         box = _union([scene.shapes[m].bbox for m in members])
         symbols.append(Symbol(sorted(members), box, own, body=body_box))
@@ -238,6 +287,7 @@ class Runs:
             joined.find(id(s))
             by_run.setdefault(self.run[id(s)], []).append(s)
         for parts in by_run.values():
+            parts = [p for p in parts if p.pins or _size(p.bbox) <= PIECE_MAX_SIZE]
             for i, a in enumerate(parts):
                 for b in parts[i + 1 :]:
                     if geometry.bbox_gap(a.bbox, b.bbox) <= PIECE_GAP:
@@ -277,6 +327,10 @@ def _union(boxes: list[BBox]) -> BBox:
     for other in boxes[1:]:
         box = geometry.union_bbox(box, other)
     return box
+
+
+def _size(box: BBox) -> float:
+    return max(box[2] - box[0], box[3] - box[1])
 
 
 def _inside(p: Point, box: BBox) -> bool:
