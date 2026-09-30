@@ -12,12 +12,11 @@ and the benchmark read.
 | 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py` | KiCad |
 | 5 | Join wires at shared ends and junction dots | `nets.py` | done |
 | 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad |
-| 7 | Attach labels and power symbols, merge names across pages | `nets.py` | partial |
+| 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad |
 | 8 | Build nets and score confidence | `nets.py` | partial |
 | 9 | Export KiCad netlist, BOM, overlay; MCP server | | |
 
-Not handled yet: hierarchical sheets, buses, hidden power pins, and
-consistency checks in stage 8.
+Not handled yet: hidden power pins, and consistency checks in stage 8.
 
 ## Coordinates
 
@@ -36,6 +35,19 @@ power symbol sits on a pin.
 Symbols are groups of graphics that touch, except through a pin's free end.
 Two one-pin pieces facing each other on one axis are joined, which covers
 capacitor plates.
+
+## Sheets and buses
+
+Each page's hierarchical path comes from its title block. A sheet box on a
+parent page is found by its file name; the child page's path is the parent's
+path plus the sheet name. A sheet pin joins the hierarchical label of the same
+name on the child page.
+
+Buses join their member nets. A vector bus `D[0..7]` is matched by position
+where it crosses into a sheet, so `D[8..15]` on the parent can feed `D[0..7]`
+on the child. A group bus `I2C{SCL SDA}` is matched by member name. When a
+group names an alias defined outside the drawing, its members are taken from
+the labels that use its prefix.
 
 ## Generator profiles
 

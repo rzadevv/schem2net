@@ -6,12 +6,13 @@ weakest join, so a net held together by one guess is marked as such.
 
 from collections import Counter, defaultdict
 
+from schem2net import buses as busnames
 from schem2net import geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.ir import Component, Evidence, Issue, Net
 from schem2net.ir import Pin as PinOut
 from schem2net.primitives import Point
-from schem2net.scene import Label, Scene
+from schem2net.scene import Label, Scene, name_key
 from schem2net.symbols import Pin, Symbol
 
 TOL = 0.05  # mm; KiCad places connections exactly
@@ -23,7 +24,9 @@ WEIGHTS = {
     "direct": 0.95,
     "global_name": 0.95,
     "local_name": 0.95,
+    "hier_name": 0.95,
     "label": 0.9,
+    "bus": 0.9,
     "t_contact": 0.85,
 }
 LONE_PIN_CONFIDENCE = 0.5
@@ -35,6 +38,11 @@ class Netlister:
         self.edges: list[tuple[tuple, tuple, str]] = []
         self.names: dict[tuple, str] = {}
         self.pins: list[tuple[tuple, int, Symbol, Pin]] = []
+        self.local_names: dict[int, set[str]] = defaultdict(set)
+        # Buses crossing into child sheets: (page, child path, name) -> bus on this page
+        self.sheet_buses: list[tuple[int, str, str, busnames.Bus]] = []
+        # Bus labels on child pages: (path, name) -> (page, bus)
+        self.label_buses: dict[tuple[str, str], list[tuple[int, busnames.Bus]]] = defaultdict(list)
 
     def join(self, a: tuple, b: tuple, kind: str) -> None:
         self.uf.union(a, b)
@@ -70,13 +78,28 @@ class Netlister:
             for j in through[1:]:
                 self.join(("w", page, through[0]), ("w", page, j), "junction")
 
+        buses = scene.buses
+        bus_index = GridIndex()
+        vector_labels: list[tuple[tuple, Label, busnames.Bus]] = []
+        # Buses crossing sheets, named once this page's buses are joined: (node, at, key, bus)
+        crossings: list[tuple[tuple, Point, tuple, busnames.Bus]] = []
+        for i, seg in enumerate(buses):
+            bus_index.add(i, geometry.bbox_of(seg))
+            self.uf.find(("b", page, i))
+        for i, seg in enumerate(buses):
+            for end in seg:
+                for j in bus_index.near(end, TOL):
+                    if j != i and geometry.distance_to_segment(end, buses[j]) <= TOL:
+                        self.join(("b", page, i), ("b", page, j), "bus")
+
         points: list[tuple[Point, tuple]] = []
+        bus_points: list[tuple[Point, tuple]] = []
         pin_lines: list[tuple[Segment, tuple]] = []
         for si, symbol in enumerate(symbols):
             if symbol.power:
                 node = ("s", page, si)
                 self.names[node] = symbol.power
-                self.join(node, ("global", symbol.power), "global_name")
+                self.join(node, ("global", name_key(symbol.power)), "global_name")
                 points += [(p, node) for p in symbol.anchors]
                 continue
             for pin in symbol.pins:
@@ -88,17 +111,56 @@ class Netlister:
 
         for li, label in enumerate(scene.labels):
             node = ("l", page, li)
+            key = name_key(label.text)
             self.names[node] = label.text
             if label.kind == "global":
-                self.join(node, ("global", label.text), "global_name")
+                self.join(node, ("global", key), "global_name")
             else:
-                self.join(node, ("local", page, label.text), "local_name")
-            if label.outline:
-                points += [(v, node) for v in _label_tips(label)]
-            else:
-                target = _under_label(label, wires, wire_index, pin_lines, page)
+                self.join(node, ("local", page, key), "local_name")
+                self.local_names[page].add(key)
+            bus = busnames.parse(label.text)
+            if label.kind == "hier" and scene.path:
+                self.join(node, ("hier", scene.path, key), "hier_name")
+                if bus and label.outline:
+                    crossings.append((node, label.outline[0], ("label", scene.path, key), bus))
+            if label.kind == "bus":
+                target = _under_label(label, buses, bus_index, [], ("b", page))
                 if target:
                     self.join(node, target, "label")
+                    if bus and bus.vector:
+                        vector_labels.append((target, label, bus))
+            elif label.outline:
+                tips = [(v, node) for v in _label_tips(label)]
+                (bus_points if bus else points).extend(tips)
+            else:
+                target = _under_label(label, wires, wire_index, pin_lines, ("w", page))
+                if target:
+                    self.join(node, target, "label")
+
+        # A sheet pin on this page is the same net as the matching label on the child page.
+        for si, sheet in enumerate(scene.sheets if scene.path else []):
+            child = scene.path + name_key(sheet.name) + "/"
+            for k, pin in enumerate(sheet.pins):
+                node = ("sp", page, si, k)
+                key = name_key(pin.name)
+                self.names[node] = pin.name
+                self.join(node, ("hier", child, key), "hier_name")
+                bus = busnames.parse(pin.name)
+                if not bus:
+                    points.append((pin.at, node))
+                    continue
+                bus_points.append((pin.at, node))
+                crossings.append((node, pin.at, ("sheet", child, key), bus))
+
+        for p, node in bus_points:
+            self._join_near(p, node, buses, bus_index, page)
+        for node, at, (side, path, key), bus in crossings:
+            if bus.vector:
+                bus = self._named_on_page(at, node, bus, vector_labels)
+            if side == "sheet":
+                self.sheet_buses.append((page, path, key, bus))
+            else:
+                self.label_buses[path, key].append((page, bus))
 
         point_index = GridIndex()
         for k, (p, _) in enumerate(points):
@@ -118,7 +180,40 @@ class Netlister:
         elif geometry.distance_to_segment(p, seg) <= TOL:
             self.join(node, wire, "junction" if dotted(p) else "t_contact")
 
+    def _join_near(self, p: Point, node: tuple, buses: list[Segment], index: GridIndex, page: int):
+        for j in index.near(p, TOL):
+            if geometry.distance_to_segment(p, buses[j]) <= TOL:
+                self.join(node, ("b", page, j), "bus")
+
+    def _named_on_page(self, at: Point, node: tuple, bus: busnames.Bus, labels) -> busnames.Bus:
+        """The names a vector bus's members have on this page.
+
+        They come from the nearest bus label of the same width on the same bus,
+        such as D[8..15] on the branch leading to a sheet pin named D[0..7].
+        """
+        own = self.uf.find(node)
+        same = [
+            (geometry.bbox_gap(label.bbox, (*at, *at)), other)
+            for segment, label, other in labels
+            if self.uf.find(segment) == own and len(other.members) == len(bus.members)
+        ]
+        return min(same, key=lambda s: s[0])[1] if same else bus
+
+    def _join_bus_members(self) -> None:
+        """Join the member nets of each bus crossing into a child sheet."""
+        for page, child, key, bus in self.sheet_buses:
+            for child_page, child_bus in self.label_buses.get((child, key), []):
+                if child_bus.vector != bus.vector:
+                    continue
+                up = busnames.member_nets(bus, self.local_names[page])
+                down = busnames.member_nets(child_bus, self.local_names[child_page])
+                for member in up.keys() & down.keys() if bus.vector else up.keys() | down.keys():
+                    above = up.get(member, bus.prefix + bus.separator + member)
+                    below = down.get(member, child_bus.prefix + child_bus.separator + member)
+                    self.join(("local", page, above), ("local", child_page, below), "bus")
+
     def result(self) -> tuple[list[Component], list[Net], list[Issue]]:
+        self._join_bus_members()
         find = self.uf.find
         kinds: dict[tuple, Counter] = defaultdict(Counter)
         for a, _, kind in self.edges:
@@ -183,13 +278,13 @@ def _under_label(
     wires: list[Segment],
     wire_index: GridIndex,
     pin_lines: list[tuple[Segment, tuple]],
-    page: int,
+    node_of: tuple,
 ) -> tuple | None:
-    """The wire or pin a local label sits on: parallel, just below its baseline."""
+    """The wire or pin a label without an outline sits on: parallel, just below its baseline."""
     x0, y0, x1, y1 = label.bbox
     vertical = round(label.angle) % 180 == 90
     region = (x0 - LABEL_GAP, y0 - LABEL_GAP, x1 + LABEL_GAP, y1 + LABEL_GAP)
-    candidates = [(wires[j], ("w", page, j)) for j in wire_index.within(region)]
+    candidates = [(wires[j], (*node_of, j)) for j in wire_index.within(region)]
     candidates += [
         (line, node)
         for line, node in pin_lines

@@ -19,12 +19,13 @@ from schem2net.profile import Profile
 from schem2net.scene import Scene
 
 if TYPE_CHECKING:
-    from schem2net.symbols import Pin, Runs, Symbol
+    from schem2net.symbols import Runs, Symbol
 
 REF_SEARCH = 10.0  # mm around a symbol body
 POWER_NAME_GAP = 2.5  # mm between a power symbol and its name
 POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
+OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
@@ -43,7 +44,7 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
     texts = _Texts(scene.fields)
     _name_power_symbols(symbols, texts, scene, profile, runs)
     _assign_refs(symbols, texts, runs)
-    _number_pins(symbols, scene.pin_numbers)
+    _number_pins(symbols, scene, profile)
     _assign_values(symbols, texts, runs)
 
 
@@ -176,39 +177,85 @@ def _set_ref(symbol: Symbol, text: str) -> None:
     symbol.unit = unit or None
 
 
-def _number_pins(symbols: list[Symbol], numbers: list[Text]) -> None:
+def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
+    numbers = scene.pin_numbers
     pins = [p for s in symbols if s.ref for p in s.pins]
     index = GridIndex()
     for i, pin in enumerate(pins):
         index.add(i, geometry.bbox_of(pin.line))
 
-    best: dict[int, tuple[float, str]] = {}
-    for text in numbers:
-        c = geometry.center(text.bbox)
+    options = []
+    for t, text in enumerate(numbers):
         vertical_text = round(text.angle) % 180 == 90
-        options = [
-            (geometry.distance_to_segment(c, pins[i].line), i)
-            for i in index.near(c, PIN_NUMBER_GAP)
-            if geometry.is_horizontal(pins[i].line) != vertical_text
-        ]
-        if options:
-            gap, i = min(options)
-            if gap <= PIN_NUMBER_GAP and (i not in best or gap < best[i][0]):
-                best[i] = (gap, text.text)
-    for i, (_, number) in best.items():
-        pins[i].number = number
+        for i in index.near(geometry.center(text.bbox), PIN_NUMBER_GAP + 1):
+            if geometry.is_horizontal(pins[i].line) == vertical_text:
+                continue
+            gap = _number_gap(text.bbox, pins[i].line, profile.pin_numbers_above)
+            if gap is not None:
+                options.append((gap, t, i))
 
-    by_ref: dict[str, list[Pin]] = {}
+    # Each number names one pin and each pin has one number: closest pairs first.
+    named, used = set(), set()
+    for _, t, i in sorted(options):
+        if t not in used and i not in named:
+            pins[i].number = numbers[t].text
+            named.add(i)
+            used.add(t)
+
+    # Small parts often hide pin numbers. A diode's cathode is pin 1;
+    # otherwise number them top-left first.
+    by_ref: dict[str, list[Symbol]] = {}
     for s in symbols:
         if s.ref:
-            by_ref.setdefault(s.ref, []).extend(s.pins)
-    for part_pins in by_ref.values():
-        if any(p.number for p in part_pins):
+            by_ref.setdefault(s.ref, []).append(s)
+    for parts in by_ref.values():
+        part_pins = [p for s in parts for p in s.pins]
+        if len(part_pins) > 2 or any(p.number for p in part_pins):
             continue
-        # Small parts often hide pin numbers. Number them top-left first.
-        if len(part_pins) <= 2:
-            for number, pin in enumerate(sorted(part_pins, key=lambda p: (p.at[1], p.at[0])), 1):
-                pin.number = str(number)
+        tips = [v for s in parts for v in _triangle_corners(s, scene)]
+        if len(part_pins) == 2 and tips:
+            order = sorted(
+                part_pins, key=lambda p: min(geometry.distance(p.line[0], v) for v in tips)
+            )
+        else:
+            order = sorted(part_pins, key=lambda p: (p.at[1], p.at[0]))
+        for number, pin in enumerate(order, 1):
+            pin.number = str(number)
+
+
+def _triangle_corners(symbol: Symbol, scene: Scene) -> list[Point]:
+    """Corners of closed three-sided outlines, such as the body of a diode."""
+    corners = []
+    for i in symbol.shapes:
+        shape = scene.shapes[i]
+        unique = {(round(x, 2), round(y, 2)) for x, y in shape.points}
+        if shape.closed and len(unique) == 3:
+            corners += list(unique)
+    return corners
+
+
+def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | None:
+    """Distance from a pin to a number placed beside it, or None if it is not beside it.
+
+    With `above`, numbers usually sit above horizontal pins and left of vertical
+    ones; mirrored symbols put them on the other side, at a small extra cost.
+    """
+    (ax, ay), (bx, by) = line
+    if geometry.is_horizontal(line):
+        along, lo, hi, at = (box[0] + box[2]) / 2, min(ax, bx), max(ax, bx), ay
+        near, far = at - box[3], box[1] - at
+    else:
+        along, lo, hi, at = (box[1] + box[3]) / 2, min(ay, by), max(ay, by), ax
+        near, far = at - box[2], box[0] - at
+    if not lo - 0.5 <= along <= hi + 0.5:
+        return None
+    if not above:
+        gap = min(abs(near), abs(far))
+    elif near >= -0.3:
+        gap = near
+    else:
+        gap = far + OTHER_SIDE_COST
+    return gap if -0.3 <= gap <= PIN_NUMBER_GAP else None
 
 
 def _assign_values(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> None:

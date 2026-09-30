@@ -10,6 +10,11 @@ pin_number = [[169, 0, 0], [165, 164, 162]]
 local_label = [[15, 15, 15]]
 global_label = [[132, 0, 0]]
 hier_label = [[114, 86, 0]]
+sheet_pin = [[0, 100, 100]]
+
+[sheets]
+file_prefix = "File:"  # below each sheet symbol, in the hierarchical label colour
+path_prefix = "Sheet:"  # in the title block of every page
 
 [power]
 not_nets = ["PWR_FLAG"]  # drawn like a power symbol, but joins nothing by name
@@ -20,3 +25,4 @@ fields_follow_symbol = true  # each symbol's text is drawn right after its graph
 [pins]
 max_width = 0.2   # mm; thicker lines are body graphics
 min_length = 0.5  # mm
+numbers_above = true  # above horizontal pins, left of vertical ones

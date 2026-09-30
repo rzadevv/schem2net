@@ -23,7 +23,10 @@ SYMMETRIC_SYMBOLS = {
     "FerriteBead", "FerriteBead_Small", "Ferrite_Bead", "Ferrite_Bead_Small",
     "Fuse", "Fuse_Small", "Crystal", "Crystal_Small",
 }  # fmt: skip
-SYMMETRIC_PREFIXES = {"R", "L", "FB"}  # used when the symbol is unknown
+# Parts named after their value or package ("R0402_10K", "C_100n_0402") are
+# recognised by designator, unless the name marks them as polarised.
+SYMMETRIC_PREFIXES = {"R", "C", "L", "FB", "F"}
+POLARISED = re.compile(r"pol|^CP|elec|tant", re.I)
 
 POWER_NET = re.compile(r"^([+-].*|\d+(\.\d+)?V\d*|V(CC|DD|EE|SS|BUS|BAT)\w*|\w*GND\w*)$", re.I)
 
@@ -173,9 +176,10 @@ def _is_symmetric(comp: Component) -> bool:
     pins = {p.num for p in comp.pins}
     if pins and pins != {"1", "2"}:
         return False
-    if comp.symbol:
-        return comp.symbol.rsplit(":", 1)[-1] in SYMMETRIC_SYMBOLS
-    return comp.ref.rstrip("0123456789") in SYMMETRIC_PREFIXES
+    name = (comp.symbol or "").rsplit(":", 1)[-1]
+    if name in SYMMETRIC_SYMBOLS:
+        return True
+    return not POLARISED.search(name) and comp.ref.rstrip("0123456789") in SYMMETRIC_PREFIXES
 
 
 def _owners(nets: list[set[PinRef]]) -> dict[PinRef, int]:

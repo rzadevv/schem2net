@@ -9,6 +9,7 @@ from schem2net.primitives import BBox, Page, Path, Point, Text
 from schem2net.profile import Profile
 
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
+SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
 
 
 @dataclass(slots=True)
@@ -27,26 +28,54 @@ class Shape:
 @dataclass(slots=True)
 class Label:
     text: str
-    kind: Literal["local", "global", "hier"]
+    kind: Literal["local", "global", "hier", "bus"]
     bbox: BBox
     angle: float
     outline: list[Point] = field(default_factory=list)
 
 
+@dataclass(slots=True)
+class SheetPin:
+    name: str
+    at: Point
+
+
+@dataclass
+class Sheet:
+    """A box on a parent page standing for a child page."""
+
+    name: str
+    bbox: BBox
+    pins: list[SheetPin] = field(default_factory=list)
+
+
 @dataclass
 class Scene:
     page: int
+    path: str | None = None  # hierarchical path of this page, such as "/Power/"
     wires: list[Segment] = field(default_factory=list)
+    buses: list[Segment] = field(default_factory=list)
     junctions: list[Point] = field(default_factory=list)
     shapes: list[Shape] = field(default_factory=list)
     fields: list[Text] = field(default_factory=list)
     pin_numbers: list[Text] = field(default_factory=list)
     labels: list[Label] = field(default_factory=list)
+    sheets: list[Sheet] = field(default_factory=list)
+
+
+def name_key(text: str) -> str:
+    """A name as compared between labels.
+
+    Whitespace is dropped because text extraction does not keep it reliably, and
+    some fonts map the minus sign to a control character.
+    """
+    return "".join(text.replace("\x02", "-").split())
 
 
 def build(page: Page, profile: Profile) -> Scene:
     scene = Scene(page=page.number)
     outlines: dict[str, list[list[Point]]] = {"global": [], "hier": []}
+    pin_outlines: list[list[Point]] = []
 
     for path in _unique_paths(page.paths):
         if profile.is_("wire", path.stroke or path.fill):
@@ -56,6 +85,10 @@ def build(page: Page, profile: Profile) -> Scene:
                 scene.wires.extend(
                     s for sub in path.subpaths for s in geometry.segments(sub) if s[0] != s[1]
                 )
+        elif profile.is_("bus", path.stroke):
+            scene.buses.extend(
+                s for sub in path.subpaths for s in geometry.segments(sub) if s[0] != s[1]
+            )
         elif profile.is_("symbol", path.stroke or path.fill):
             for sub in path.subpaths:
                 box = geometry.bbox_of(sub)
@@ -63,10 +96,18 @@ def build(page: Page, profile: Profile) -> Scene:
                     scene.shapes.append(Shape(len(scene.shapes), sub, path.width, box, path.seq))
         elif profile.is_("hier_label", path.stroke):
             outlines["hier"].extend(path.subpaths)
+        elif profile.is_("sheet_pin", path.stroke):
+            pin_outlines.extend(path.subpaths)
 
     label_texts = {"global": [], "hier": []}
+    sheet_files, bus_texts = [], []
     for text in _join_runs(_unique_texts(page.texts)):
-        if profile.is_("field", text.color):
+        if profile.sheet_path_prefix and text.text.startswith(profile.sheet_path_prefix):
+            scene.path = name_key(text.text.removeprefix(profile.sheet_path_prefix))
+        elif profile.sheet_file_prefix and text.text.startswith(profile.sheet_file_prefix):
+            if profile.is_("hier_label", text.color):
+                sheet_files.append(text)
+        elif profile.is_("field", text.color):
             scene.fields.append(text)
         elif profile.is_("pin_number", text.color):
             scene.pin_numbers.append(text)
@@ -76,18 +117,115 @@ def build(page: Page, profile: Profile) -> Scene:
             label_texts["hier"].append(text)
         elif profile.is_("global_label", text.color):
             label_texts["global"].append(text)
+        elif profile.is_("bus", text.color):
+            bus_texts.append(text)
 
     # Global labels share the symbol colour, so their outlines are found among the shapes.
     outlines["global"] = [s.points for s in scene.shapes if s.closed]
-    used = set()
-    for kind in ("global", "hier"):
-        for text, outline in _outlined(label_texts[kind], outlines[kind]):
-            scene.labels.append(Label(text.text, kind, text.bbox, text.angle, outline))
-            used.add(id(outline))
+    used = _find_sheets(scene, sheet_files, pin_outlines, bus_texts)
+    for text, outline in _outlined(label_texts["global"], outlines["global"]):
+        scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
+        used.add(id(outline))
+    # Bus names are drawn in the bus colour, whether they are labels or hierarchical labels.
+    flagged = set()
+    for text, anchor in _flagged(label_texts["hier"] + bus_texts, outlines["hier"]):
+        scene.labels.append(Label(text.text, "hier", text.bbox, text.angle, [anchor]))
+        flagged.add(id(text))
+    for text in bus_texts:
+        if id(text) not in flagged:
+            scene.labels.append(Label(text.text, "bus", text.bbox, text.angle))
     scene.shapes = [s for s in scene.shapes if id(s.points) not in used]
     for i, shape in enumerate(scene.shapes):
         shape.id = i
     return scene
+
+
+def _find_sheets(
+    scene: Scene, files: list[Text], pin_outlines: list[list[Point]], bus_texts: list[Text]
+) -> set[int]:
+    """Find sheet boxes by their file text, and take their names and pins out of the texts.
+
+    Returns the ids of the box outlines, which are not symbol graphics.
+    """
+    boxes = [s for s in scene.shapes if s.closed]
+    used = set()
+    for file in files:
+        fx, fy = file.bbox[0], file.bbox[1]
+        box = next(
+            (s for s in boxes if abs(s.bbox[0] - fx) < 1 and 0 <= fy - s.bbox[3] < SHEET_TEXT_GAP),
+            None,
+        )
+        if box is None:
+            continue
+        x0, y0, x1, y1 = box.bbox
+        name = next(
+            (
+                t
+                for t in scene.fields
+                if abs(t.bbox[0] - x0) < 1 and 0 <= y0 - t.bbox[3] < SHEET_TEXT_GAP
+            ),
+            None,
+        )
+        if name is None:
+            continue
+        sheet = Sheet(name.text, box.bbox)
+        taken = [name]
+        for outline in pin_outlines:
+            at = _on_edge(geometry.bbox_of(outline), box.bbox)
+            if at is None:
+                continue
+            outline_box = geometry.bbox_of(outline)
+            candidates = scene.fields + bus_texts
+            text = min(candidates, key=lambda t: geometry.bbox_gap(t.bbox, outline_box))
+            if geometry.bbox_gap(text.bbox, outline_box) < 1.5:
+                sheet.pins.append(SheetPin(text.text, at))
+                taken.append(text)
+        scene.fields = [t for t in scene.fields if not any(t is u for u in taken)]
+        bus_texts[:] = [t for t in bus_texts if not any(t is u for u in taken)]
+        scene.sheets.append(sheet)
+        used.add(id(box.points))
+    return used
+
+
+def _on_edge(pin: BBox, box: BBox, tol: float = 0.05) -> Point | None:
+    """Where a sheet pin's outline meets the edge of its sheet box, if it does."""
+    cx, cy = geometry.center(pin)
+    if box[1] <= cy <= box[3]:
+        for x in (box[0], box[2]):
+            if abs(pin[0] - x) < tol or abs(pin[2] - x) < tol:
+                return x, cy
+    if box[0] <= cx <= box[2]:
+        for y in (box[1], box[3]):
+            if abs(pin[1] - y) < tol or abs(pin[3] - y) < tol:
+                return cx, y
+    return None
+
+
+def _flagged(texts: list[Text], outlines: list[list[Point]]):
+    """Pair each text with the small flag drawn beside it, and find where the flag connects.
+
+    The flag connects on the text's centre line, at its side away from the text.
+    """
+    index = GridIndex()
+    boxes = [geometry.bbox_of(o) for o in outlines]
+    for i, box in enumerate(boxes):
+        index.add(i, box)
+    for text in texts:
+        x0, y0, x1, y1 = text.bbox
+        near = [
+            (geometry.bbox_gap(text.bbox, boxes[i]), i)
+            for i in index.within((x0 - 1, y0 - 1, x1 + 1, y1 + 1))
+        ]
+        near = [(gap, i) for gap, i in near if gap < 1.0]
+        if not near:
+            continue
+        box = boxes[min(near)[1]]
+        tx, ty = geometry.center(text.bbox)
+        fx, fy = geometry.center(box)
+        if round(text.angle) % 180 == 90:
+            yield text, (fx, box[1] if fy < ty else box[3])
+        else:
+            yield text, (box[0] if fx < tx else box[2], ty)
 
 
 def _outlined(texts: list[Text], outlines: list[list[Point]]):

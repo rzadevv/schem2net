@@ -81,6 +81,18 @@ def test_swapped_polarised_capacitor_is_an_error():
     assert score(predicted, truth).metrics()["pin_accuracy"] == pytest.approx(0.5)
 
 
+def test_swapped_pins_on_parts_named_by_value():
+    truth = design(
+        {"A": [("C7", "1"), ("U1", "1")], "B": [("C7", "2"), ("U1", "2")]},
+        [part("C7", "Project:C_100n_0402")],
+    )
+    predicted = design({"A": [("C7", "2"), ("U1", "1")], "B": [("C7", "1"), ("U1", "2")]})
+    assert score(predicted, truth).metrics()["pin_accuracy"] == 1
+
+    truth.components = [part("C7", "Device:CP")]
+    assert score(predicted, truth).metrics()["pin_accuracy"] == pytest.approx(0.5)
+
+
 def test_merged_nets():
     predicted = design(
         {

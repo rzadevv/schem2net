@@ -44,8 +44,11 @@ single pin in the ground truth are not scored.
 Corpus totals are summed over pins, not averaged over designs.
 
 Swapping the two pins of a resistor, non-polarised capacitor, inductor,
-ferrite bead, fuse or crystal is not counted as an error. Polarised parts
-are not treated this way.
+ferrite bead, fuse or crystal is not counted as an error. These parts are
+recognised by their KiCad symbol, or by designator (R, C, L, FB, F) when the
+symbol is named after a value or package. Symbols whose names mark them as
+polarised (`CP`, `C_Polarized`, electrolytic, tantalum) are not treated this
+way.
 
 Power nets are recognised by name: names starting with `+` or `-`, voltages
 such as `3V3`, `VCC`, `VDD`, `VSS`, `VBUS` and anything containing `GND`.
