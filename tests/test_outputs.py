@@ -1,6 +1,6 @@
 """Export, queries and the HTML report, on a small made-up design."""
 
-from schem2net import export, kicad, report, symbols
+from schem2net import bookmarks, export, kicad, report, symbols
 from schem2net.ir import Component, Design, Net, Pin, Source
 from schem2net.nets import Netlister
 from schem2net.pipeline import Extraction, PageResult
@@ -77,3 +77,29 @@ def test_report_draws_each_net():
     (net,) = design.nets
     assert f'data-net="{net.id}"' in html
     assert "R1.1" in html and "<svg" in html
+
+
+def test_netlist_from_altium_bookmarks():
+    outline = [
+        (0, "Schematic Prints"),
+        (1, "Board.SchDoc"),
+        (2, "Components"),
+        (3, "C1"),
+        (3, "J-1"),
+        (2, "Nets"),
+        (3, "GND"),
+        (4, "Pins"),
+        (5, "C1-2"),
+        (5, "J-1-3"),
+        (4, "NetLabels"),
+        (3, "NetC1_1"),
+        (4, "Pins"),
+        (5, "C1-1"),
+        (5, "J-1-1"),
+    ]
+    design = bookmarks.from_outline(outline, Source(file="board.pdf"))
+    assert {n.name: n.pins for n in design.nets} == {
+        "GND": [("C1", "2"), ("J-1", "3")],
+        "NetC1_1": [("C1", "1"), ("J-1", "1")],
+    }
+    assert bookmarks.from_outline([(0, "Page 1")], Source(file="x.pdf")) is None

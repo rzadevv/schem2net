@@ -5,18 +5,35 @@
 | Corpus | Source | Ground truth |
 |---|---|---|
 | A | Open KiCad projects rendered with `kicad-cli` (KiCad 10) | Netlist exported by `kicad-cli` |
-| B | Vendor PDFs (Altium, OrCAD) | Design sources where published, hand labels otherwise |
+| B | Altium schematic PDFs published in open hardware repositories | The netlist the PDF carries, checked against the board file |
 
 Manifests (`bench/corpus_*.toml`) store references only: a repository URL and
-commit, or a demo that ships with KiCad. PDFs are rendered without property
-popups and hierarchy links, so the extractor sees only the drawing.
+commit, or a demo that ships with KiCad.
 
-Corpus B is not built yet.
+Corpus A PDFs are rendered without property popups and hierarchy links, so the
+extractor sees only the drawing.
+
+Corpus B PDFs are used as published. Altium's Smart PDF export stores the
+schematic's own netlist in the bookmarks, and every PDF in the corpus has one;
+it is the ground truth. The board file (`.PcbDoc`) from the same folder is
+read with KiCad's Python inside the benchmark Docker image as a cross-check,
+written to `board.net`. The two agree on at least 95% of pins for most
+boards. Where they do not, the board has usually moved on or is unfinished,
+so the board is only used when a PDF carries no netlist.
+
+A PDF and a board were kept as a pair only when at least 95% of the board's
+designators appear in the PDF's text. One board per project, so revisions of
+one design do not end up on both sides of the split.
+
+Because the truth comes from the PDF, reading it back scores 1.0. Corpus B is
+meant for `--drawing-only`, which ignores the embedded netlist and measures
+extraction from the drawing.
 
 ## Splits
 
 Each project is assigned to `dev` or `test` by a hash of its name, so the
-split cannot drift. Tune on `dev`. Report `test`.
+split cannot drift. Corpus A holds out 10%, corpus B a third. Tune on `dev`.
+Report `test`.
 
 ```sh
 schem2net bench a --split dev

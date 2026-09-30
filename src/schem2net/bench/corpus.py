@@ -1,16 +1,24 @@
-"""Benchmark corpora: KiCad projects rendered to (PDF, netlist) pairs.
+"""Benchmark corpora: schematic PDFs paired with their true netlists.
 
-Manifests list projects by reference only (repo URL and commit, or a demo that
-ships with KiCad). Nothing third-party is stored in this repository.
+A project is either a KiCad schematic, rendered to a PDF and a netlist with
+kicad-cli, or a published PDF paired with the board file it was made with,
+whose pads give the netlist. Manifests list projects by reference only (repo
+URL and commit, or a demo that ships with KiCad). Nothing third-party is
+stored in this repository.
 """
 
 import hashlib
 import os
+import re
+import shutil
 import subprocess
 import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+
+from schem2net import bookmarks, export, kicad
+from schem2net.bench.score import score
 
 IMAGE = "schem2net-kicad:10.0.6"
 KICAD_DEMOS = "/usr/share/kicad/demos"
@@ -20,12 +28,15 @@ EXPORT_PDF = [
     "--exclude-pdf-property-popups", "--exclude-pdf-hierarchical-links",
 ]  # fmt: skip
 EXPORT_NETLIST = ["sch", "export", "netlist", "-o", "/out/truth.net"]
+PCB_NETLIST = Path(__file__).with_name("pcb_netlist.py")
 
 
 @dataclass(frozen=True)
 class Project:
     name: str
-    schematic: str  # root sheet, relative to the repo or to the KiCad demos
+    schematic: str | None = None  # KiCad root sheet, in the repo or the KiCad demos
+    pdf: str | None = None  # a published schematic PDF, in the repo
+    pcb: str | None = None  # the board file the PDF belongs to
     repo: str | None = None
     commit: str | None = None
     license: str | None = None
@@ -66,6 +77,10 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
         out = corpus.build_dir(project)
         out.mkdir(parents=True, exist_ok=True)
         try:
+            if project.pcb:
+                note = _build_from_board(project, corpus.root / "cache" / "repos", out, image)
+                log(f"built {project.name}: {note}")
+                continue
             if project.repo:
                 src = _checkout(project, corpus.root / "cache" / project.name)
                 mounts = ["-v", f"{src.resolve()}:/src"]
@@ -74,13 +89,54 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
                 mounts = []
                 schematic = f"{KICAD_DEMOS}/{project.schematic}"
             mounts += ["-v", f"{out.resolve()}:/out"]
-            _kicad_cli(image, mounts, [*EXPORT_PDF, schematic])
-            _kicad_cli(image, mounts, [*EXPORT_NETLIST, schematic])
+            _docker(image, mounts, [*EXPORT_PDF, schematic])
+            _docker(image, mounts, [*EXPORT_NETLIST, schematic])
             log(f"built {project.name}")
         except subprocess.CalledProcessError as e:
             failed.append(project.name)
             log(f"failed {project.name}: {(e.stderr or e.stdout or '').strip()}")
     return failed
+
+
+def _build_from_board(project: Project, cache: Path, out: Path, image: str) -> str:
+    repo = cache / re.sub(r"[^A-Za-z0-9]+", "_", project.repo.removeprefix("https://github.com/"))
+    if not repo.exists():
+        _run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout", project.repo, str(repo)])
+    files = repo.with_name(repo.name + "-files") / project.commit
+    pdf, pcb = (_show(repo, project.commit, path, files) for path in (project.pdf, project.pcb))
+    shutil.copyfile(pdf, out / "schematic.pdf")
+    mounts = ["-v", f"{pcb.parent.resolve()}:/w", "-v", f"{out.resolve()}:/out"]
+    mounts += ["-v", f"{PCB_NETLIST.parent.resolve()}:/tools:ro", "--entrypoint", "python3"]
+    _docker(image, mounts, [f"/tools/{PCB_NETLIST.name}", f"/w/{pcb.name}", "/out/board.net"])
+    return _choose_truth(out)
+
+
+def _choose_truth(out: Path) -> str:
+    """Prefer the netlist the PDF carries, which is the schematic's own; else the board's.
+
+    The board can drift from the drawing between revisions, so it is only a
+    cross-check when the PDF has its own netlist. Returns how the two agree.
+    """
+    board = kicad.read_netlist(out / "board.net")
+    carried = bookmarks.read(out / "schematic.pdf", board.source)
+    if carried is None:
+        shutil.copyfile(out / "board.net", out / "truth.net")
+        return "truth from the board"
+    (out / "truth.net").write_text(export.kicad_netlist(carried))
+    agreement = score(carried, board).metrics()["pin_accuracy"]
+    return f"truth from the PDF's netlist, board agrees on {agreement:.0%} of pins"
+
+
+def _show(repo: Path, commit: str, path: str, dest: Path) -> Path:
+    """Write one file of a commit, fetching only that file."""
+    out = dest / path
+    if not out.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        blob = subprocess.run(
+            ["git", "-C", str(repo), "show", f"{commit}:{path}"], check=True, capture_output=True
+        )
+        out.write_bytes(blob.stdout)
+    return out
 
 
 def _checkout(project: Project, dest: Path) -> Path:
@@ -91,9 +147,9 @@ def _checkout(project: Project, dest: Path) -> Path:
     return dest
 
 
-def _kicad_cli(image: str, mounts: list[str], args: list[str]) -> None:
+def _docker(image: str, options: list[str], args: list[str]) -> None:
     user = f"{os.getuid()}:{os.getgid()}"
-    _run(["docker", "run", "--rm", "--user", user, *mounts, image, *args])
+    _run(["docker", "run", "--rm", "--user", user, *options, image, *args])
 
 
 def _run(cmd: list[str]) -> None:

@@ -1,6 +1,6 @@
 IMAGE := schem2net-kicad:10.0.6
 
-.PHONY: install test lint format image corpus bench
+.PHONY: install test lint format image corpus bench corpus-b bench-b
 
 install:
 	uv sync
@@ -24,3 +24,9 @@ corpus: image
 
 bench: corpus
 	uv run schem2net bench a --split dev
+
+corpus-b: image
+	uv run schem2net build-corpus b
+
+bench-b: corpus-b
+	uv run schem2net bench b --split dev --drawing-only

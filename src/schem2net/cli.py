@@ -1,5 +1,6 @@
 import json
 from enum import StrEnum
+from functools import partial
 from pathlib import Path
 from typing import Annotated
 
@@ -116,9 +117,15 @@ def bench(
     sample: Annotated[int | None, typer.Option(help="Score a fixed random sample.")] = None,
     bench_dir: BenchDir = Path("bench"),
     json_out: Annotated[Path | None, typer.Option("--json", help="Write metrics as JSON.")] = None,
+    drawing_only: Annotated[
+        bool, typer.Option(help="Ignore netlists carried in the PDF, such as Altium bookmarks.")
+    ] = False,
 ) -> None:
     """Score the extractor against a built corpus."""
-    results = runner.run(corpora.load(corpus, bench_dir), split=split, sample=sample)
+    extract = partial(pipeline.extract, embedded=not drawing_only)
+    results = runner.run(
+        corpora.load(corpus, bench_dir), split=split, sample=sample, extract=extract
+    )
     if not results:
         typer.echo("nothing to score; run build-corpus first", err=True)
         raise typer.Exit(1)

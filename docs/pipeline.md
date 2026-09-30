@@ -18,6 +18,13 @@ and the benchmark read.
 
 Not handled yet: hidden power pins, and consistency checks in stage 8.
 
+## Netlists carried in the PDF
+
+Altium's Smart PDF export can store the netlist in the bookmarks: every net
+with its pins, written as `C1-2`. When a PDF has these, `bookmarks.py` reads
+them and the drawing is not analysed. `schem2net bench --drawing-only` turns
+this off to measure extraction from the drawing alone.
+
 ## Coordinates
 
 All primitives use millimetres with the origin at the top-left of the page as

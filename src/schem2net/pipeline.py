@@ -4,7 +4,7 @@ import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from schem2net import ingest, pdf, profile, scene, symbols
+from schem2net import bookmarks, ingest, pdf, profile, scene, symbols
 from schem2net.ir import Design, Issue, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Page
@@ -30,11 +30,12 @@ class Extraction:
     wire_nets: dict[tuple[int, int], str] = field(default_factory=dict)
 
 
-def extract(file: str | Path) -> Design:
-    return run(file).design
+def extract(file: str | Path, embedded: bool = True) -> Design:
+    return run(file, embedded).design
 
 
-def run(file: str | Path) -> Extraction:
+def run(file: str | Path, embedded: bool = True) -> Extraction:
+    """Extract a design. With `embedded`, a netlist carried in the file is used as is."""
     file = Path(file)
     doc = pdf.read(file)
     generator = ingest.detect_generator(doc)
@@ -47,6 +48,9 @@ def run(file: str | Path) -> Extraction:
         )
     )
     pages = [PageResult(page) for page in doc.pages]
+    carried = bookmarks.read(file, design.source) if embedded else None
+    if carried:
+        return Extraction(carried, pages)
     if generator not in PROFILES:
         design.issues.append(Issue(kind="no_profile", severity="error"))
         return Extraction(design, pages)

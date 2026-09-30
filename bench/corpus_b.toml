@@ -1,0 +1,328 @@
+# Corpus B: published Altium schematic PDFs, paired with the board file they belong to.
+# The board's pads give the true netlist. Only references are stored here.
+
+test_share = 0.33
+
+[[project]]
+name = "hwatch-hardware"
+repo = "https://github.com/ETH-PBL/H-Watch"
+commit = "e9dbea83dbdb97609336a0d382aeed99a23b9c35"
+pdf = "Hardware/H-Watch_V0.2/Documentation/H-Watch_complete_documentation.PDF"
+pcb = "Hardware/H-Watch_V0.2/H-Watch.PcbDoc"
+license = "GPL-3.0"
+
+[[project]]
+name = "tinycore-hardware"
+repo = "https://github.com/Mister-Industries/tinyCore"
+commit = "d9556f40f20b25e07e1790a8dd56a353cab7c206"
+pdf = "Hardware/Electronics/tinyCore V2 Schematic.pdf"
+pcb = "Hardware/Electronics/CAD/Altium/tinyCore.PcbDoc"
+license = "GPL-3.0"
+
+[[project]]
+name = "uwarg-12-5v-buck-elrs-rx"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/12-5V Buck + ELRS RX/Schematic.pdf"
+pcb = "Projects/12-5V Buck + ELRS RX/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-12-5v-protected-buck"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/12-5V Protected Buck/12V-5V @ 5A Buck Converter.pdf"
+pcb = "Projects/12-5V Protected Buck/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-12v-5v-buck-converter"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/12V-5V Buck Converter/Schematic PDF_[No Variations].pdf"
+pcb = "Projects/12V-5V Buck Converter/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-24v-12v-5v-buck-converter"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/24V-12V,5V Buck Converter/Schematic PDF_[No Variations].pdf"
+pcb = "Projects/24V-12V,5V Buck Converter/BuckConverter24V.PcbDoc"
+
+[[project]]
+name = "uwarg-4s-5v-buck-converter"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/4s-5V Buck Converter/4s-5V Buck Converter.pdf"
+pcb = "Projects/4s-5V Buck Converter/4s-5V Buck Converter.PcbDoc"
+
+[[project]]
+name = "uwarg-bldc-motor-reversal"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/BLDC Motor Reversal/Rev2/BLDC Motor Reversal.pdf"
+pcb = "Projects/BLDC Motor Reversal/Rev2/BLDC Motor Reversal.PcbDoc"
+
+[[project]]
+name = "uwarg-battery-management-system"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Battery Management System/BMS_PDFs/BMS_Rev1_02_13.pdf"
+pcb = "Projects/Battery Management System/Battery Management System.PcbDoc"
+
+[[project]]
+name = "uwarg-can-splitter"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/CAN Splitter/CAN Splitter.pdf"
+pcb = "Projects/CAN Splitter/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-elrs-gemini-tx"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/ELRS Gemini TX/Schematic PDF_[No Variations].pdf"
+pcb = "Projects/ELRS Gemini TX/ELRS Gemini TX.PcbDoc"
+
+[[project]]
+name = "uwarg-led-board-rev-3"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/LED Board Rev 3/LED Board Rev 3.pdf"
+pcb = "Projects/LED Board Rev 3/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-m3-tracking-antenna-controller-rev-2"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/M3 Tracking Antenna Controller Rev 2/M3 Tracking Antenna Controller Rev 2.pdf"
+pcb = "Projects/M3 Tracking Antenna Controller Rev 2/TrackingAntennaControllerPCB.PcbDoc"
+
+[[project]]
+name = "uwarg-power-distribution"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Power Distribution/Rev 2/Kevin Li/SH1 - 5V BUCK CONVERTER.pdf"
+pcb = "Projects/Power Distribution/Rev 2/Kevin Li/Copy of Power Distribution.PcbDoc"
+
+[[project]]
+name = "uwarg-rpi-interface-rev-b"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/RPi Interface Rev B/RPi Interface Rev B.pdf"
+pcb = "Projects/RPi Interface Rev B/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-single-servo-driver"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Single Servo Driver/Single Servo Driver.pdf"
+pcb = "Projects/Single Servo Driver/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-unified-vtx"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Unified_VTX/Unified_VTX.pdf"
+pcb = "Projects/Unified_VTX/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-water-system-controller"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Water System Controller/Water System Controller.pdf"
+pcb = "Projects/Water System Controller/PCB.PcbDoc"
+
+[[project]]
+name = "uwarg-zeropilot-2-0"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Zeropilot 2.0/Zeropilot 2.0.pdf"
+pcb = "Projects/Zeropilot 2.0/Zeropilot 2.0.PcbDoc"
+
+[[project]]
+name = "uwarg-zeropilot-3-0-interface"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Zeropilot 3.0 Interface/Schematic PDF_[No Variations].pdf"
+pcb = "Projects/Zeropilot 3.0 Interface/MAIN.PcbDoc"
+
+[[project]]
+name = "uwarg-zeropilot-3-0-primary"
+repo = "https://github.com/UWARG/hardware"
+commit = "1a8a174272ee8c49b80664ef169feeb1a332ccd4"
+pdf = "Projects/Zeropilot 3.0 Primary/Schematic PDF_[No Variations].pdf"
+pcb = "Projects/Zeropilot 3.0 Primary/ZeroPilot3.0.PcbDoc"
+
+[[project]]
+name = "usb-cereal-ecad"
+repo = "https://github.com/oxda/usb-cereal"
+commit = "7023a901696f387a93e038ec02a35ef138592ae2"
+pdf = "docs/usb-cereal-cp-schematics.pdf"
+pcb = "ecad/cp2102n/usb-cereal-cp-pcb.PcbDoc"
+license = "Apache-2.0"
+
+[[project]]
+name = "pixhawk-pixhawk-debug-adapter"
+repo = "https://github.com/pixhawk/Hardware"
+commit = "bbf3de5360f0e145645c40c170fe8c4f50865a6a"
+pdf = "Pixhawk_debug_adapter/Project Outputs/pixhawk_debug_adapter_mini_Schem.PDF"
+pcb = "Pixhawk_debug_adapter/pixhawk_debug_adapter_mini.PcbDoc"
+
+[[project]]
+name = "marsrover-24v-multiphase-buck"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/24V Multiphase Buck/Rev 2/24V Multiphase Buck.pdf"
+pcb = "Projects/24V Multiphase Buck/Rev 2/24V Multiphase Buck.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-30to50v-24v-pdb"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/30to50V-24V PDB/Rev1/30to50V-24V PDB/30to50V-24V_10A.pdf"
+pcb = "Projects/30to50V-24V PDB/Rev1/30to50V-24V PDB/30to50V-24V_10A.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-48v-24v-buck-converter"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/48V-24V Buck Converter/Rev1/48V-24V Buck Converter.pdf"
+pcb = "Projects/48V-24V Buck Converter/Rev1/48V-24V Buck Converter.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-48v-5v-buck"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/48V-5V Buck/Rev2/48V-5V Buck.pdf"
+pcb = "Projects/48V-5V Buck/Rev2/48V-5V Buck.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-arm"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Arm/Rev2/Arm.pdf"
+pcb = "Projects/Arm/Rev2/Arm.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-battery-management-system"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Battery Management System/Rev1/Battery Management System.pdf"
+pcb = "Projects/Battery Management System/Rev1/BMS.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-can-breakout"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/CAN Breakout/Rev2/CAN Breakout.pdf"
+pcb = "Projects/CAN Breakout/Rev2/CAN Breakout.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-evaluationboards"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/EvaluationBoards/BLDC_MOTOR_DRIVER/BLDC Gate Driver Breakout/BLDC Gate Driver Breakout.pdf"
+pcb = "Projects/EvaluationBoards/BLDC_MOTOR_DRIVER/BLDC Gate Driver Breakout/BLDC Gate Driver Breakout.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-gimbal"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Gimbal/2021/Rev2/Gimbal.pdf"
+pcb = "Projects/Gimbal/2021/Rev2/Gimbal.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-hall-effect-current-sensor"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Hall Effect Current Sensor/Rev2/Current Sensor.pdf"
+pcb = "Projects/Hall Effect Current Sensor/Rev2/Current Sensor.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-high-power-brushed-motor-controller"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/High Power Brushed Motor Controller/Rev1/High Power Brushed DC MC.pdf"
+pcb = "Projects/High Power Brushed Motor Controller/Rev1/High Power Brushed DC MC.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-jetson-agx-xavier-carrier-board"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Jetson AGX Xavier Carrier Board/Rev1/Jetson AGX Xavier Carrier Board.pdf"
+pcb = "Projects/Jetson AGX Xavier Carrier Board/Rev1/Buck Converter Rev 2.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-led-matrix"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/LED Matrix/Rev1/LED Matrix.pdf"
+pcb = "Projects/LED Matrix/Rev1/LED Matrix.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-low-power-brushed-motor-controller"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Low Power Brushed Motor Controller/Rev2/Low Power Brushed Motor Controller.pdf"
+pcb = "Projects/Low Power Brushed Motor Controller/Rev2/Low Power Brushed Motor Controller.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-power-distribution-board"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Power Distribution Board/Rev2/Power Distribution Board.pdf"
+pcb = "Projects/Power Distribution Board/Rev2/Power Distribution Board.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-rs422-breakout"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/RS422 Breakout/Rev1/RS422 Breakout.pdf"
+pcb = "Projects/RS422 Breakout/Rev1/RS422 Breakout.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-robot-controller"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Robot Controller/Rev1/Robot Controller.pdf"
+pcb = "Projects/Robot Controller/Rev1/Robot Controller.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-spi-lvds-master"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/SPI LVDS Master/Rev1/SPI LVDS Master.pdf"
+pcb = "Projects/SPI LVDS Master/Rev1/SPI LVDS Master.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-science"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/Science/Rev2/Science.pdf"
+pcb = "Projects/Science/Rev2/Science.PcbDoc"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "marsrover-dd-current-sense"
+repo = "https://github.com/uwrobotics/MarsRoverHardware"
+commit = "602b52c1fb2bbb91b9ad74089614d83a8d2abd92"
+pdf = "Projects/dd_current_sense/Rev1_a3sanjay/DD_Current_Sense/DD_Current_Sense.pdf"
+pcb = "Projects/dd_current_sense/Rev1_a3sanjay/DD_Current_Sense/DD_Current_Sense.PcbDoc"
+license = "CC-BY-SA-4.0"

@@ -10,17 +10,19 @@ public benchmark.
 
 ## Status
 
-Early development. KiCad PDFs work end to end, including hierarchical sheets
-and buses. Other generators need their own profile and are not supported yet.
+Early development.
 
-Corpus A:
+- KiCad PDFs work end to end, including hierarchical sheets and buses.
+- Altium PDFs exported as Smart PDF carry their netlist in the bookmarks,
+  which is read directly. Extraction from the Altium drawing itself is not
+  done yet.
+- Other generators are not supported yet.
 
-| Split | Designs | Pins | Pin accuracy | Connection F1 |
-|---|---|---|---|---|
-| Dev | 57 | 25,608 | 0.82 | 0.92 |
-| Dev, single page | 35 | 4,281 | 0.86 | 0.87 |
-| Dev, multi-page | 22 | 21,327 | 0.81 | 0.92 |
-| Test | 9 | 2,863 | 0.84 | 0.85 |
+| Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
+|---|---|---|---|---|---|
+| A, KiCad | Dev | 57 | 25,608 | 0.84 | 0.93 |
+| A, KiCad | Test | 9 | 2,863 | 0.84 | 0.85 |
+| B, Altium, drawing only | Dev | 30 | 6,677 | 0.00 | 0.00 |
 
 ## Install
 
@@ -61,8 +63,10 @@ PDF and exports its netlist, and the extractor is scored on the PDF. Building
 the corpus needs Docker.
 
 ```sh
-make corpus   # fetch and render corpus A
-make bench    # score the extractor on the dev split
+make corpus     # fetch and render corpus A (KiCad)
+make bench      # score the extractor on its dev split
+make corpus-b   # fetch corpus B (Altium PDFs and their boards)
+make bench-b    # score extraction from the drawing on its dev split
 ```
 
 See [docs/benchmark.md](docs/benchmark.md) for the corpora and metrics, and
