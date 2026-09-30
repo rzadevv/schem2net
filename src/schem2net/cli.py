@@ -1,13 +1,16 @@
 import json
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from schem2net import pdf, pipeline, svg
+from schem2net import export as exporters
+from schem2net import pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
 from schem2net.bench import runner
 from schem2net.bench.score import Counts
+from schem2net.ir import Design
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -28,6 +31,58 @@ def extract(
         f"{output}: {len(design.components)} components, "
         f"{len(design.nets)} nets, {len(design.issues)} issues"
     )
+
+
+class Format(StrEnum):
+    kicad_net = "kicad-net"
+    bom = "bom"
+
+
+SUFFIXES = {Format.kicad_net: ".net", Format.bom: ".bom.csv"}
+
+
+@app.command()
+def export(
+    file: Annotated[Path, typer.Argument(help="A schematic PDF, or JSON written by extract.")],
+    to: Annotated[Format, typer.Option(help="Output format.")] = Format.kicad_net,
+    output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
+) -> None:
+    """Write a KiCad netlist or a bill of materials."""
+    design = _load(file)
+    text = exporters.kicad_netlist(design) if to == Format.kicad_net else exporters.bom_csv(design)
+    output = output or file.with_name(file.name.split(".")[0] + SUFFIXES[to])
+    output.write_text(text)
+    typer.echo(output)
+
+
+def _load(file: Path) -> Design:
+    if file.suffix.lower() == ".pdf":
+        return pipeline.extract(file)
+    return Design.load(file)
+
+
+@app.command("report")
+def report_(
+    file: Path,
+    output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
+) -> None:
+    """Write an HTML page showing the extracted nets over the schematic."""
+    output = output or file.with_suffix(".html")
+    output.write_text(report.render(pipeline.run(file)))
+    typer.echo(output)
+
+
+@app.command("serve-mcp")
+def serve_mcp(
+    file: Annotated[Path, typer.Argument(help="A schematic PDF, or JSON written by extract.")],
+) -> None:
+    """Serve a design to agents over MCP (stdio)."""
+    try:
+        from schem2net import mcp_server
+    except ImportError:
+        typer.echo('The MCP server needs: pip install "schem2net[mcp]"', err=True)
+        raise typer.Exit(1) from None
+    mcp_server.build(_load(file)).run()
 
 
 @app.command()

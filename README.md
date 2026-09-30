@@ -32,8 +32,27 @@ uv sync
 
 ```sh
 schem2net extract board.pdf -o board.ir.json   # PDF to JSON netlist
-schem2net draw board.pdf --page 2              # extracted primitives as SVG
+schem2net export board.pdf --to kicad-net      # KiCad netlist, board.net
+schem2net export board.pdf --to bom            # parts grouped by value, board.bom.csv
+schem2net report board.pdf                     # nets drawn over the schematic, board.html
 ```
+
+`export` also takes the JSON written by `extract`. The KiCad netlist imports
+into the PCB editor; footprints are not in the PDF, so assign them in KiCad.
+
+The report colours each net, circles pins of low-confidence nets in red and
+unnumbered pins in orange. Click a net in the list to highlight it.
+
+## MCP server
+
+```sh
+pip install "schem2net[mcp]"
+schem2net serve-mcp board.pdf
+```
+
+Serves one design over stdio with read-only tools: `list_components`,
+`get_net` (by name or by pin, such as `U3.14`), `pins_of`, `trace` (through
+series passives), `low_confidence` and `bom`.
 
 ## Benchmark
 

@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA = "schem2net/ir@0.1"
+LOW_CONFIDENCE = 0.8  # nets below this deserve a look
 
 PinRef = tuple[str, str]  # (refdes, pin number), the same key KiCad netlists use
 

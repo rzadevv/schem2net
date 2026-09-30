@@ -14,7 +14,7 @@ and the benchmark read.
 | 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad |
 | 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad |
 | 8 | Build nets and score confidence | `nets.py` | partial |
-| 9 | Export KiCad netlist, BOM, overlay; MCP server | | |
+| 9 | KiCad netlist, BOM, HTML report, MCP server | `export.py`, `report.py`, `mcp_server.py` | done |
 
 Not handled yet: hidden power pins, and consistency checks in stage 8.
 

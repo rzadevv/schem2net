@@ -1,4 +1,4 @@
-"""Minimal S-expression reader for KiCad files."""
+"""Minimal S-expression reader and writer for KiCad files."""
 
 import re
 
@@ -48,3 +48,19 @@ def value(node: Node, head: str, default: str | None = None) -> str | None:
     if found is None or len(found) < 2 or isinstance(found[1], list):
         return default
     return found[1]
+
+
+def dump(node: Node, depth: int = 0) -> str:
+    """Write a node the way KiCad does: the head bare, every leaf quoted."""
+    head, *rest = node
+    leaves = [_quote(x) for x in rest if not isinstance(x, list)]
+    nodes = [x for x in rest if isinstance(x, list)]
+    first = "(" + " ".join([head, *leaves])
+    if not nodes:
+        return first + ")"
+    pad = "  " * (depth + 1)
+    return "\n".join([first, *(pad + dump(n, depth + 1) for n in nodes)]) + ")"
+
+
+def _quote(text: str) -> str:
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'

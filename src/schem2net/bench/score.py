@@ -12,9 +12,7 @@ from dataclasses import dataclass, fields
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from schem2net.ir import Component, Design, PinRef
-
-LOW_CONFIDENCE = 0.8
+from schem2net.ir import LOW_CONFIDENCE, Component, Design, PinRef
 
 # Two-pin parts whose pins are interchangeable; swapping them is not an error.
 SYMMETRIC_SYMBOLS = {

@@ -16,6 +16,11 @@ dependencies = [
 [project.scripts]
 schem2net = "schem2net.cli:app"
 
+[project.optional-dependencies]
+mcp = [
+    "mcp>=2.2",
+]
+
 [dependency-groups]
 dev = [
     "hypothesis>=6.100",

@@ -5,6 +5,7 @@ weakest join, so a net held together by one guess is marked as such.
 """
 
 from collections import Counter, defaultdict
+from typing import NamedTuple
 
 from schem2net import buses as busnames
 from schem2net import geometry
@@ -30,6 +31,13 @@ WEIGHTS = {
     "t_contact": 0.85,
 }
 LONE_PIN_CONFIDENCE = 0.5
+
+
+class Result(NamedTuple):
+    components: list[Component]
+    nets: list[Net]
+    issues: list[Issue]
+    wire_nets: dict[tuple[int, int], str]  # (page, wire index) -> net id, for drawing
 
 
 class Netlister:
@@ -212,7 +220,7 @@ class Netlister:
                     below = down.get(member, child_bus.prefix + child_bus.separator + member)
                     self.join(("local", page, above), ("local", child_page, below), "bus")
 
-    def result(self) -> tuple[list[Component], list[Net], list[Issue]]:
+    def result(self) -> Result:
         self._join_bus_members()
         find = self.uf.find
         kinds: dict[tuple, Counter] = defaultdict(Counter)
@@ -241,7 +249,7 @@ class Netlister:
             members[root].add((symbol.ref, pin.number))
             pages[root].add(page)
 
-        nets = []
+        nets, roots = [], {}
         for root, pins in members.items():
             if len(pins) < 2 and not kinds[root]:
                 continue  # an unconnected pin
@@ -249,21 +257,31 @@ class Netlister:
             if len(pins) < 2:
                 confidence = min(confidence, LONE_PIN_CONFIDENCE)
             seen = [name for name, _ in names[root].most_common()]
-            nets.append(
-                Net(
-                    id="",
-                    name=seen[0] if seen else None,
-                    names_seen=seen,
-                    pins=sorted(pins),
-                    confidence=confidence,
-                    evidence=[Evidence(type=k, count=n) for k, n in sorted(kinds[root].items())],
-                    pages=sorted(pages[root]),
-                )
+            net = Net(
+                id="",
+                name=seen[0] if seen else None,
+                names_seen=seen,
+                pins=sorted(pins),
+                confidence=confidence,
+                evidence=[Evidence(type=k, count=n) for k, n in sorted(kinds[root].items())],
+                pages=sorted(pages[root]),
             )
+            nets.append(net)
+            roots[id(net)] = root
         nets.sort(key=lambda n: (n.name is None, n.name or "", n.pins))
+        net_of_root = {}
         for i, net in enumerate(nets, 1):
             net.id = f"n{i}"
-        return sorted(components.values(), key=lambda c: c.ref), nets, issues
+            net_of_root[roots[id(net)]] = net.id
+
+        wire_nets = {
+            (node[1], node[2]): net_of_root[root]
+            for root, group in self.uf.groups().items()
+            if root in net_of_root
+            for node in group
+            if node[0] == "w"
+        }
+        return Result(sorted(components.values(), key=lambda c: c.ref), nets, issues, wire_nets)
 
 
 def _label_tips(label: Label) -> list[Point]:

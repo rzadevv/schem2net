@@ -52,7 +52,7 @@ def netlist(*scenes: Scene):
     netlister = Netlister()
     for scene in scenes:
         netlister.add_page(scene, symbols.find(scene, KICAD))
-    components, nets, _ = netlister.result()
+    components, nets, *_ = netlister.result()
     return {c.ref: c for c in components}, {n.name: n for n in nets}
 
 
