@@ -38,9 +38,15 @@ def extract(
 class Format(StrEnum):
     kicad_net = "kicad-net"
     bom = "bom"
+    spice = "spice"
 
 
-SUFFIXES = {Format.kicad_net: ".net", Format.bom: ".bom.csv"}
+SUFFIXES = {Format.kicad_net: ".net", Format.bom: ".bom.csv", Format.spice: ".cir"}
+WRITERS = {
+    Format.kicad_net: exporters.kicad_netlist,
+    Format.bom: exporters.bom_csv,
+    Format.spice: exporters.spice_netlist,
+}
 
 
 @app.command()
@@ -49,9 +55,9 @@ def export(
     to: Annotated[Format, typer.Option(help="Output format.")] = Format.kicad_net,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
 ) -> None:
-    """Write a KiCad netlist or a bill of materials."""
+    """Write a KiCad netlist, a bill of materials or a SPICE netlist."""
     design = _load(file)
-    text = exporters.kicad_netlist(design) if to == Format.kicad_net else exporters.bom_csv(design)
+    text = WRITERS[to](design)
     output = output or file.with_name(file.name.split(".")[0] + SUFFIXES[to])
     output.write_text(text)
     typer.echo(output)

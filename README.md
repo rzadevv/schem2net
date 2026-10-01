@@ -37,6 +37,7 @@ uv sync
 schem2net extract board.pdf -o board.ir.json   # PDF to JSON netlist
 schem2net export board.pdf --to kicad-net      # KiCad netlist, board.net
 schem2net export board.pdf --to bom            # parts grouped by value, board.bom.csv
+schem2net export board.pdf --to spice          # SPICE netlist to start a simulation, board.cir
 schem2net report board.pdf                     # nets drawn over the schematic, board.html
 schem2net schematic board.pdf                  # editable KiCad project, board-kicad/
 ```

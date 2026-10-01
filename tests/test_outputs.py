@@ -141,3 +141,25 @@ def test_kicad_schematic_places_parts_where_they_were_drawn(tmp_path):
     assert len(sexpr.children(sheet, "wire")) == 1
     assert root.name == "board.kicad_sch"
     assert (tmp_path / "board.kicad_sym").exists() and (tmp_path / "sym-lib-table").exists()
+
+
+def test_spice_netlist():
+    text = export.spice_netlist(DESIGN)
+    lines = text.splitlines()
+    assert "RR10 LED N2 10k" in lines
+    assert "CC1 VIN 0 100n" in lines  # GND is node 0
+    assert "XU1 N2 VIN 0 MCU" in lines
+    assert lines[-1] == ".end"
+
+
+def test_spice_values():
+    values = ["10k", "4.7uF", "1MΩ", "4R7", "2k2", "0R", "22pF"]
+    assert [export._spice_value(v) for v in values] == [
+        "10k",
+        "4.7u",
+        "1Meg",
+        "4.7",
+        "2.2k",
+        "0",
+        "22p",
+    ]
