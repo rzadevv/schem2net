@@ -1,10 +1,12 @@
 """An HTML page that draws the extracted nets over the schematic.
 
 Each net gets its own colour. Pins of low-confidence nets are circled in red;
-pins without a number and wire ends touching nothing are marked in orange.
+problems found by the checks, such as wire ends touching nothing, are marked in
+orange and listed under the summary.
 Clicking a net in the list highlights it.
 """
 
+from collections import Counter
 from html import escape
 
 from schem2net.ir import LOW_CONFIDENCE, Net
@@ -24,6 +26,7 @@ aside { border-right: 1px solid var(--line); overflow: auto; padding: 16px; }
 main { overflow: auto; padding: 16px; }
 h1 { font-size: 16px; margin: 0 0 4px; word-break: break-all; }
 .meta { color: var(--muted); margin-bottom: 12px; }
+.issues { color: var(--muted); margin-bottom: 12px; }
 ul { list-style: none; margin: 0; padding: 0; }
 li { padding: 4px 6px; border-radius: 4px; cursor: pointer; display: flex; gap: 8px; }
 li:hover, li.on { background: var(--line); }
@@ -66,6 +69,21 @@ for (const item of items) {
 """
 
 
+ISSUE_TEXT = {
+    "dangling_wire": "wire end touching nothing",
+    "unnumbered_pin": "pin without a number",
+    "unattached_label": "label on no wire or pin",
+    "designator_without_part": "designator with no part found",
+    "duplicate_pin": "pin number used twice in one part",
+    "power_nets_merged": "two power nets joined",
+    "unconnected_pin": "pin on no net, without a no-connect flag",
+    "connected_no_connect": "pin flagged no-connect but connected",
+    "board_page": "board drawing, skipped",
+    "table_page": "table, skipped",
+    "raster_page": "scanned page, skipped",
+}
+
+
 def render(extraction: Extraction) -> str:
     design = extraction.design
     nets = {net.id: net for net in design.nets}
@@ -96,6 +114,7 @@ def render(extraction: Extraction) -> str:
 <aside>
 <h1>{title}</h1>
 <div class="meta">{meta}</div>
+{_issue_summary(design.issues)}
 <ul>
 {items}
 </ul>
@@ -107,6 +126,16 @@ def render(extraction: Extraction) -> str:
 </body>
 </html>
 """
+
+
+def _issue_summary(issues: list) -> str:
+    counts = Counter(issue.kind for issue in issues)
+    if not counts:
+        return ""
+    rows = "".join(
+        f"<li>{n} × {escape(ISSUE_TEXT.get(kind, kind))}</li>" for kind, n in counts.most_common()
+    )
+    return f'<ul class="issues">{rows}</ul>'
 
 
 def _net_item(net: Net) -> str:
@@ -168,11 +197,12 @@ def _page(
                     f'<circle class="low" data-net="{net}" cx="{x:.2f}" cy="{y:.2f}" r="1.2"/>'
                 )
     for issue in issues:
-        if issue.page == page.number and issue.at and issue.kind == "dangling_wire":
+        if issue.page == page.number and issue.at:
             x, y = issue.at
+            text = escape(ISSUE_TEXT.get(issue.kind, issue.kind))
             out.append(
                 f'<circle class="unnumbered" cx="{x:.2f}" cy="{y:.2f}" r="0.8">'
-                "<title>wire end touching nothing</title></circle>"
+                f"<title>{text}</title></circle>"
             )
     out.append("</svg></section>")
     return "\n".join(out)

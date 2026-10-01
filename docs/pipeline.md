@@ -12,11 +12,11 @@ and the benchmark read.
 | 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py` | KiCad, Altium |
 | 5 | Join wires at shared ends and junction dots | `nets.py` | done |
 | 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad, Altium |
-| 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad |
-| 8 | Build nets and score confidence | `nets.py` | partial |
+| 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad, Altium |
+| 8 | Build nets, check them and score confidence | `nets.py` | done |
 | 9 | KiCad netlist, BOM, HTML report, MCP server | `export.py`, `report.py`, `mcp_server.py` | done |
 
-Not handled yet: hidden power pins, and consistency checks in stage 8.
+Not handled yet: hidden power pins and pin numbers, which the PDF does not show.
 
 ## Pages that are not schematics
 
@@ -104,6 +104,23 @@ Every join is recorded with its kind. A net's confidence is the weight of its
 weakest join: shared ends and junction dots are trusted fully, wire ends
 landing on the middle of another wire without a dot less so. A net with a
 single pin is flagged.
+
+Checks then look for things that cannot be right, report them as issues, and
+cap the confidence of the nets involved:
+
+| Issue | Meaning | Net confidence |
+|---|---|---|
+| `power_nets_merged` | two power names on one net, such as GND and 3V3 | capped at 0.4 |
+| `duplicate_pin` | a pin number used twice in one unit of a part | capped at 0.6 |
+| `dangling_wire` | a wire end touching nothing and no no-connect flag | 0.6 |
+| `unconnected_pin` | a pin on no net, without a no-connect flag | |
+| `connected_no_connect` | a pin flagged no-connect that is connected | |
+| `designator_without_part` | a designator that no part claimed | |
+| `unattached_label` | a net label on no wire or pin | |
+| `unnumbered_pin` | a pin whose number was not found | |
+
+A pin drawn in several units of one part, such as a supply pin, is one pad, so
+its units are joined.
 
 ## Checking extraction
 

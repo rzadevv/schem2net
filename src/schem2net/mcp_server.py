@@ -46,6 +46,12 @@ def build(design: Design) -> MCPServer:
         return query.low_confidence()
 
     @server.tool()
+    def issues(kind: str = "") -> list[dict]:
+        """Problems the checks found, such as two power nets joined or a pin on no net.
+        Pass a kind, such as "power_nets_merged", to see only those."""
+        return query.issues(kind)
+
+    @server.tool()
     def bom() -> list[dict]:
         """Parts grouped by value."""
         return query.bom()

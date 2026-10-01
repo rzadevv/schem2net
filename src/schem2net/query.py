@@ -76,6 +76,13 @@ class Query:
     def low_confidence(self) -> list[dict]:
         return [_net(n) for n in self.design.nets if n.confidence < LOW_CONFIDENCE]
 
+    def issues(self, kind: str = "") -> list[dict]:
+        return [
+            issue.model_dump(exclude_none=True)
+            for issue in self.design.issues
+            if not kind or issue.kind == kind
+        ]
+
     def bom(self) -> list[dict]:
         groups: dict[str, list[str]] = {}
         for comp in self.design.components:

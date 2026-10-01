@@ -1,7 +1,7 @@
 """Export, queries and the HTML report, on a small made-up design."""
 
 from schem2net import bookmarks, export, kicad, report, symbols
-from schem2net.ir import Component, Design, Net, Pin, Source
+from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 from schem2net.nets import Netlister
 from schem2net.pipeline import Extraction, PageResult
 from schem2net.primitives import Page
@@ -54,6 +54,9 @@ def test_queries():
     assert q.pins_of("R10") == [{"pin": "1", "net": "LED"}, {"pin": "2", "net": "n2"}]
     assert [row["net"] for row in q.trace("U1.1")] == ["n2", "LED", "VIN"]
     assert [n["id"] for n in q.low_confidence()] == ["n4"]
+    design = DESIGN.model_copy(deep=True)
+    design.issues = [Issue(kind="dangling_wire", page=1), Issue(kind="power_nets_merged")]
+    assert [i["kind"] for i in Query(design).issues("power_nets_merged")] == ["power_nets_merged"]
     assert q.components_list("R") == [
         {"ref": "R10", "value": "10k", "pins": 2},
         {"ref": "R2", "value": "10k", "pins": 2},

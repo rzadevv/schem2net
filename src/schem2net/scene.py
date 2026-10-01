@@ -1,5 +1,6 @@
 """Stages 3-4: sort a page's primitives into wires, symbol graphics and texts."""
 
+import math
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from typing import Literal
@@ -14,6 +15,7 @@ LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
 MIN_COLOUR_HITS = 5  # pin ends a colour must reach to be taken as a wire or body colour
 BUS_WIDTH_RATIO = 1.8  # a wire-coloured line this much thicker than usual is a bus
 SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
+NO_CONNECT_MAX_SIZE = 3.0  # mm, the length of one stroke of a no-connect cross
 
 
 @dataclass(slots=True)
@@ -66,6 +68,7 @@ class Scene:
     pin_numbers: list[Text] = field(default_factory=list)
     labels: list[Label] = field(default_factory=list)
     sheets: list[Sheet] = field(default_factory=list)
+    no_connects: list[Point] = field(default_factory=list)  # centres of no-connect crosses
 
 
 def name_key(text: str) -> str:
@@ -83,6 +86,8 @@ def build(page: Page, profile: Profile) -> Scene:
     pin_outlines: list[list[Point]] = []
 
     paths = _unique_paths(page.paths)
+    crosses, scene.no_connects = _no_connect_crosses(paths)
+    paths = [p for p in paths if p.seq not in crosses]
     if profile.infer_wire_colour:
         profile = _with_wire_colour(paths, profile)
         profile = _with_body_colours(paths, profile)
@@ -180,6 +185,26 @@ def build(page: Page, profile: Profile) -> Scene:
     for i, shape in enumerate(scene.shapes):
         shape.id = i
     return scene
+
+
+def _no_connect_crosses(paths: list[Path]) -> tuple[set[int], list[Point]]:
+    """Small crosses of two equal diagonal strokes: the no-connect flags on pins."""
+    strokes = []
+    for p in paths:
+        if p.fill or not p.stroke or len(p.subpaths) != 1 or len(p.subpaths[0]) != 2:
+            continue
+        (x0, y0), (x1, y1) = p.subpaths[0]
+        dx, dy = x1 - x0, y1 - y0
+        if 0.5 < math.hypot(dx, dy) < NO_CONNECT_MAX_SIZE and abs(abs(dx) - abs(dy)) < 0.05:
+            strokes.append((p, ((x0 + x1) / 2, (y0 + y1) / 2), dx * dy > 0))
+    seqs, centres = set(), []
+    for i, (a, mid_a, down_a) in enumerate(strokes):
+        for b, mid_b, down_b in strokes[i + 1 :]:
+            same_size = abs(geometry.distance(*a.subpaths[0]) - geometry.distance(*b.subpaths[0]))
+            if down_a != down_b and geometry.distance(mid_a, mid_b) < 0.05 and same_size < 0.05:
+                seqs |= {a.seq, b.seq}
+                centres.append(mid_a)
+    return seqs, centres
 
 
 def _with_wire_colour(paths: list[Path], profile: Profile) -> Profile:

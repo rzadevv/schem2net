@@ -13,6 +13,7 @@ from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.ir import Component, Evidence, Issue, Net
 from schem2net.ir import Pin as PinOut
 from schem2net.primitives import Point
+from schem2net.refdes import REFDES, is_common_ref
 from schem2net.scene import Label, Scene, name_key
 from schem2net.symbols import Pin, Symbol
 
@@ -29,9 +30,13 @@ WEIGHTS = {
     "label": 0.9,
     "bus": 0.9,
     "t_contact": 0.85,
+    "shared_pin": 0.95,  # one pin drawn in several units
     "dangling": 0.6,  # a wire end touching nothing: often a connection that was missed
 }
 LONE_PIN_CONFIDENCE = 0.5
+# Consistency checks: a net that fails one is capped at this confidence.
+MERGED_POWER_CONFIDENCE = 0.4  # two power names on one net: a short somewhere
+DUPLICATE_PIN_CONFIDENCE = 0.6  # a pin number used twice in one part
 
 
 class Result(NamedTuple):
@@ -46,6 +51,7 @@ class Netlister:
         # Net labels with one name are one net on every page, unless sheets are nested.
         self.labels_span_pages = labels_span_pages
         self.nested = False
+        self.no_connect: set[tuple] = set()  # pins flagged as left unconnected on purpose
         self.uf = UnionFind()
         self.edges: list[tuple[tuple, tuple, str]] = []
         self.names: dict[tuple, str] = {}
@@ -63,6 +69,16 @@ class Netlister:
 
     def add_page(self, scene: Scene, symbols: list[Symbol]) -> None:
         page = scene.page
+        # A designator no part claimed usually means a part was missed.
+        named = {s.ref for s in symbols if s.ref}
+        bodies = [s.body for s in symbols if s.body]
+        for text in scene.fields:
+            match = REFDES.match(text.text)
+            if not is_common_ref(text.text) or match.group(1) + match.group(2) in named:
+                continue
+            c = geometry.center(text.bbox)
+            if not any(b[0] <= c[0] <= b[2] and b[1] <= c[1] <= b[3] for b in bodies):
+                self.issues.append(Issue(kind="designator_without_part", page=page, at=c))
         wires = scene.wires
         wire_index = GridIndex()
         for i, seg in enumerate(wires):
@@ -122,6 +138,8 @@ class Netlister:
                 node = ("p", page, pin.shape)
                 self.uf.find(node)
                 self.pins.append((node, page, symbol, pin))
+                if any(geometry.distance(pin.at, c) <= TOL for c in scene.no_connects):
+                    self.no_connect.add(node)
                 points.append((pin.at, node))
                 pin_lines.append((pin.line, node))
 
@@ -154,6 +172,9 @@ class Netlister:
                     self.join(node, target, "label")
                     if target[0] == "w":
                         labelled.add(target[2])
+                else:
+                    at = geometry.center(label.bbox)
+                    self.issues.append(Issue(kind="unattached_label", page=page, at=at))
 
         # A sheet pin on this page is the same net as the matching label on the child page.
         self.nested |= bool(scene.sheets)
@@ -215,6 +236,7 @@ class Netlister:
                         for m in point_index.near(end, TOL)
                     )
                     or any(_on(end, buses[j]) for j in bus_index.near(end, TOL))
+                    or any(geometry.distance(end, c) <= TOL for c in scene.no_connects)
                 )
                 if not touches:
                     self.join(("w", page, i), ("dangling", page, i, end), "dangling")
@@ -261,6 +283,15 @@ class Netlister:
 
     def result(self) -> Result:
         self._join_bus_members()
+        # A pin drawn in several units of one part is one pad.
+        shared: dict[tuple[str, str], dict[str, tuple]] = defaultdict(dict)
+        for node, _, symbol, pin in self.pins:
+            if pin.number is not None and symbol.unit:
+                shared[symbol.ref, pin.number].setdefault(symbol.unit, node)
+        for by_unit in shared.values():
+            nodes = list(by_unit.values())
+            for node in nodes[1:]:
+                self.join(nodes[0], node, "shared_pin")
         if self.labels_span_pages and not self.nested:
             for page, keys in self.local_names.items():
                 for key in keys:
@@ -274,6 +305,9 @@ class Netlister:
             names[find(node)][name] += 1
 
         components: dict[str, Component] = {}
+        self._pin_numbers: dict[str, dict[str, list[tuple]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         members: dict[tuple, set[tuple[str, str]]] = defaultdict(set)
         pages: dict[tuple, set[int]] = defaultdict(set)
         issues = list(self.issues)
@@ -287,16 +321,45 @@ class Netlister:
             if pin.number is None:
                 issues.append(Issue(kind="unnumbered_pin", page=page, at=pin.at))
                 continue
+            self._pin_numbers[symbol.ref][pin.number].append((node, (page, symbol.unit)))
             comp.pins.append(PinOut(num=pin.number, at=pin.at))
             root = find(node)
             members[root].add((symbol.ref, pin.number))
             pages[root].add(page)
 
+        # Consistency checks. Each failure is reported and caps the confidence of its nets.
+        caps: dict[tuple, float] = defaultdict(lambda: 1.0)
+        power: dict[tuple, set[str]] = defaultdict(set)
+        for node, name in self.names.items():
+            if node[0] == "s":
+                power[find(node)].add(name_key(name))
+        for root, found in power.items():
+            if len(found) > 1:
+                caps[root] = min(caps[root], MERGED_POWER_CONFIDENCE)
+                issues.append(Issue(kind="power_nets_merged", severity="error"))
+        # Pins on no net should carry a no-connect flag, and flagged pins should be on none.
+        for node, page, _, pin in self.pins:
+            if pin.number is None:
+                continue
+            alone = len(members[find(node)]) < 2 and not kinds[find(node)]
+            if alone and node not in self.no_connect:
+                issues.append(Issue(kind="unconnected_pin", severity="info", page=page, at=pin.at))
+            elif not alone and node in self.no_connect:
+                issues.append(Issue(kind="connected_no_connect", page=page, at=pin.at))
+        for numbers in self._pin_numbers.values():
+            for drawn in numbers.values():
+                units = Counter(unit for _, unit in drawn)
+                if any(n > 1 for n in units.values()):
+                    issues.append(Issue(kind="duplicate_pin", page=drawn[0][0][1]))
+                    for node, _ in drawn:
+                        caps[find(node)] = min(caps[find(node)], DUPLICATE_PIN_CONFIDENCE)
+
         nets, roots = [], {}
         for root, pins in members.items():
             if len(pins) < 2 and not kinds[root]:
-                continue  # an unconnected pin
+                continue  # an unconnected pin, reported below
             confidence = min((WEIGHTS[k] for k in kinds[root]), default=1.0)
+            confidence = min(confidence, caps[root])
             if len(pins) < 2:
                 confidence = min(confidence, LONE_PIN_CONFIDENCE)
             seen = [name for name, _ in names[root].most_common()]

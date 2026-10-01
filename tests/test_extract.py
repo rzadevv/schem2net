@@ -382,3 +382,64 @@ def test_recoloured_label_text_is_read_where_its_outline_meets_a_wire():
 
     built = build_scene(page, KICAD)
     assert [(lb.text, lb.kind) for lb in built.labels] == [("in2", "global")]
+
+
+def test_no_connect_cross_is_not_a_bus():
+    navy = (0, 0, 132)
+    page = Page(1, 100, 100)
+    page.paths = [
+        Path(0, [[(9.39, 9.39), (10.61, 10.61)]], 0.15, navy, None),
+        Path(1, [[(10.61, 9.39), (9.39, 10.61)]], 0.15, navy, None),
+    ]
+    for seq, path in enumerate(page.paths):
+        path.seq = seq
+    built = build_scene(page, KICAD)
+    assert built.no_connects == [(10.0, 10.0)]
+    assert built.buses == []
+
+
+def test_checks_report_merged_power_and_unconnected_pins():
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.ground(10, 17.54)
+    b.shape((10, 7.46), (10, 6.19), (11.27, 6.19), (10, 4.92), (8.73, 6.19), (10, 6.19))
+    b.field("+3V3", 8.5, 3)
+    b.resistor(30, 10, "R2", "1k")
+    b.scene.no_connects.append((30, 7.46))
+
+    netlister = Netlister()
+    netlister.add_page(b.scene, symbols.find(b.scene, KICAD))
+    found = netlister.result()
+    kinds = [issue.kind for issue in found.issues]
+    assert "power_nets_merged" not in kinds
+    assert kinds.count("unconnected_pin") == 1  # R2 pin 2; pin 1 is flagged
+
+    b.scene.wires.append(((10, 7.46), (10, 17.54)))
+    netlister = Netlister()
+    netlister.add_page(b.scene, symbols.find(b.scene, KICAD))
+    found = netlister.result()
+    assert "power_nets_merged" in [issue.kind for issue in found.issues]
+    assert found.nets[0].confidence < 0.8
+
+
+def test_pin_shared_by_two_units_is_one_net():
+    """A dual part's supply pin, drawn in both units, is one pad."""
+    scene = Scene(page=1)
+    scene.wires += [((0, 0), (5, 0)), ((20, 0), (25, 0))]
+    scene.labels += [
+        Label("A", "local", (0, -1.5, 2, -0.3), 0.0),
+        Label("B", "local", (20, -1.5, 22, -0.3), 0.0),
+    ]
+    units = [
+        symbols.Symbol(
+            [0], (5, -1, 10, 1), [symbols.Pin(0, ((7, 0), (5, 0)), "8")], ref="U1", unit=u
+        )
+        for u in "AB"
+    ]
+    units[1].pins = [symbols.Pin(1, ((27, 0), (25, 0)), "8")]
+    netlister = Netlister()
+    netlister.add_page(scene, units)
+    nets = netlister.result().nets
+    assert len(nets) == 1
+    assert nets[0].pins == [("U1", "8")]
+    assert sorted(nets[0].names_seen) == ["A", "B"]

@@ -21,7 +21,7 @@ Early development.
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
 | A, KiCad | Dev | 57 | 25,608 | 0.88 | 0.94 |
-| A, KiCad | Test | 9 | 2,863 | 0.93 | 0.91 |
+| A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
 
@@ -55,7 +55,7 @@ schem2net serve-mcp board.pdf
 
 Serves one design over stdio with read-only tools: `list_components`,
 `get_net` (by name or by pin, such as `U3.14`), `pins_of`, `trace` (through
-series passives), `low_confidence` and `bom`.
+series passives), `low_confidence`, `issues` and `bom`.
 
 ## Benchmark
 
