@@ -42,7 +42,10 @@ class Result(NamedTuple):
 
 
 class Netlister:
-    def __init__(self):
+    def __init__(self, labels_span_pages: bool = False):
+        # Net labels with one name are one net on every page, unless sheets are nested.
+        self.labels_span_pages = labels_span_pages
+        self.nested = False
         self.uf = UnionFind()
         self.edges: list[tuple[tuple, tuple, str]] = []
         self.names: dict[tuple, str] = {}
@@ -153,6 +156,7 @@ class Netlister:
                         labelled.add(target[2])
 
         # A sheet pin on this page is the same net as the matching label on the child page.
+        self.nested |= bool(scene.sheets)
         for si, sheet in enumerate(scene.sheets if scene.path else []):
             child = scene.path + name_key(sheet.name) + "/"
             for k, pin in enumerate(sheet.pins):
@@ -257,6 +261,10 @@ class Netlister:
 
     def result(self) -> Result:
         self._join_bus_members()
+        if self.labels_span_pages and not self.nested:
+            for page, keys in self.local_names.items():
+                for key in keys:
+                    self.join(("local", page, key), ("label", key), "local_name")
         find = self.uf.find
         kinds: dict[tuple, Counter] = defaultdict(Counter)
         for a, _, kind in self.edges:
@@ -324,10 +332,18 @@ def _on(p: Point, seg: Segment) -> bool:
 
 
 def _label_tips(label: Label) -> list[Point]:
-    """Outline corners on the text's centre line: the connecting tip and the far end."""
+    """Outline corners on the text's centre line: the connecting tip and the far end.
+
+    A plain rectangle has no such corners; it connects at the middle of either end.
+    """
     cx, cy = geometry.center(label.bbox)
     vertical = round(label.angle) % 180 == 90
-    return [v for v in label.outline if abs((v[0] - cx) if vertical else (v[1] - cy)) < 0.3]
+    tips = [v for v in label.outline if abs((v[0] - cx) if vertical else (v[1] - cy)) < 0.3]
+    if tips:
+        return tips
+    box = geometry.bbox_of(label.outline)
+    mx, my = geometry.center(box)
+    return [(mx, box[1]), (mx, box[3])] if vertical else [(box[0], my), (box[2], my)]
 
 
 def _under_label(

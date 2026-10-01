@@ -18,6 +18,14 @@ and the benchmark read.
 
 Not handled yet: hidden power pins, and consistency checks in stage 8.
 
+## Pages that are not schematics
+
+PDFs often bundle board prints, assembly drawings and parts lists with the
+schematic. Schematic pages carry roughly one text object per one to three
+paths. Board prints draw their lettering as strokes and have almost no text,
+and tables are almost all text, so pages far outside that range are skipped
+and reported as `board_page` or `table_page`.
+
 ## Netlists carried in the PDF
 
 Altium's Smart PDF export can store the netlist in the bookmarks: every net
@@ -72,6 +80,14 @@ meets body graphics. Some libraries draw pins in the body colour; those are
 taken only where a wire meets them. When both ends look alike, drawing order
 decides: graphics separated from the pin by a designator belong to another
 symbol, such as a ground port placed over the pin's end.
+
+Small parts often hide their pin numbers. KiCad parts then count from the top
+and diodes from the cathode. Altium parts are placed horizontally with pin 1
+on the left and usually turned counter-clockwise, so upright parts count from
+the bottom, and most Altium diode libraries make the anode pin 1.
+
+A net label text inside a small outline is a port. Unless the design nests
+sheets, ports and net labels connect their name on every sheet.
 
 Power port names use the net label colour. Ground ports usually have no name
 and are recognised by their stacked bars or their triangle. Designers often

@@ -19,6 +19,7 @@ path_prefix = "Sheet:"  # in the title block of every page
 
 [power]
 not_nets = ["PWR_FLAG"]  # drawn like a power symbol, but joins nothing by name
+unnamed_ground = "GND"  # ground symbols whose name is hidden
 
 [order]
 fields_follow_symbol = true  # each symbol's text is drawn right after its graphics

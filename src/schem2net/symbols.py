@@ -13,6 +13,7 @@ from schem2net import fields, geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point
 from schem2net.profile import Profile
+from schem2net.refdes import is_common_ref
 from schem2net.scene import Scene, Shape
 
 TOUCH = 0.03  # mm, on top of half the stroke widths
@@ -51,8 +52,9 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
         index.add(shape.id, shape.bbox)
 
     pins = _find_pins(scene, index, profile)
-    symbols = _merge_halves(_group(scene, index, pins))
-    runs = Runs(symbols, scene) if profile.fields_follow_symbol else None
+    apart = sorted(t.seq for t in scene.fields) if profile.fields_follow_symbol else None
+    symbols = _merge_halves(_group(scene, index, pins, apart))
+    runs = Runs(symbols, scene, profile) if profile.fields_follow_symbol else None
     if runs:
         symbols = runs.join_pieces(symbols)
     fields.annotate(symbols, scene, profile, runs)
@@ -64,7 +66,7 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
     for k, seg in enumerate(scene.wires):
         wires.add(k, geometry.bbox_of(seg))
     # Reference designators end one symbol's drawing and start the next.
-    breaks = sorted(t.seq for t in scene.fields if fields.is_common_ref(t.text))
+    breaks = sorted(t.seq for t in scene.fields if is_common_ref(t.text))
 
     lines = [s for s in scene.shapes if _is_pin_like(s, profile, scene.wires, wires)]
     if profile.fields_follow_symbol:
@@ -150,7 +152,11 @@ def _chains(
                     continue
                 # Only where nothing else meets them, so a pin never runs through a body.
                 on_body, others = _contacts(end, {line.id, j}, scene, index)
-                if not on_body and not others:
+                inside = any(
+                    scene.shapes[k].closed and _inside(end, scene.shapes[k].bbox)
+                    for k in index.near(end, 0.0)
+                )
+                if not on_body and not others and not inside:
                     joined.union(line.id, j)
     return [[scene.shapes[i] for i in group] for group in joined.groups().values()]
 
@@ -230,14 +236,19 @@ def _on_wire(p: Point, wires: list[Segment], index: GridIndex) -> bool:
     return any(geometry.distance_to_segment(p, wires[k]) <= TOUCH for k in index.near(p, TOUCH))
 
 
-def _group(scene: Scene, index: GridIndex, pins: dict[int, Pin]) -> list[Symbol]:
+def _group(
+    scene: Scene, index: GridIndex, pins: dict[int, Pin], apart: list[int] | None = None
+) -> list[Symbol]:
+    """Join touching graphics into symbols. Graphics with field text drawn between them
+    belong to different symbols, though a pin may follow the texts of the pin before."""
     uf = UnionFind()
+    stubs: set[int] = set()
     for shape in scene.shapes:
         uf.find(shape.id)
         pin = pins.get(shape.id)
         for v in [pin.line[0]] if pin else shape.points:
             for j in index.near(v, 1.0):
-                if j == shape.id:
+                if j == shape.id or (pin and pins.get(j) is pin):
                     continue
                 other = scene.shapes[j]
                 tol = (shape.width + other.width) / 2 + TOUCH
@@ -245,6 +256,13 @@ def _group(scene: Scene, index: GridIndex, pins: dict[int, Pin]) -> list[Symbol]
                 if j in pins:
                     if geometry.distance(v, pins[j].line[0]) <= tol:
                         uf.union(shape.id, j)
+                    elif pin and geometry.distance(v, pins[j].at) <= tol:
+                        # A pin starting where another ends: the other is a stub of
+                        # the body, which pins of two parts meeting never look like.
+                        uf.union(shape.id, j)
+                        stubs.add(id(pins[j]))
+                    continue
+                if not pin and apart is not None and not _drawn_together(shape, other, apart):
                     continue
                 if any(
                     geometry.distance_to_segment(v, s) <= tol
@@ -254,10 +272,11 @@ def _group(scene: Scene, index: GridIndex, pins: dict[int, Pin]) -> list[Symbol]
 
     symbols = []
     for members in uf.groups().values():
-        body = [scene.shapes[m].bbox for m in members if m not in pins]
+        body = [scene.shapes[m].bbox for m in members if m not in pins or id(pins[m]) in stubs]
         body_box = _union(body) if body else None
         # A line that ends inside the body is drawing, not a pin.
         own = list({id(pins[m]): pins[m] for m in members if m in pins}.values())
+        own = [p for p in own if id(p) not in stubs]
         own = [p for p in own if not body_box or not _inside(p.at, body_box)]
         box = _union([scene.shapes[m].bbox for m in members])
         symbols.append(Symbol(sorted(members), box, own, body=body_box))
@@ -300,8 +319,9 @@ class Runs:
     order then ties texts to symbols, and rejoins symbols drawn in pieces.
     """
 
-    def __init__(self, symbols: list[Symbol], scene: Scene):
+    def __init__(self, symbols: list[Symbol], scene: Scene, profile: Profile):
         self.scene = scene
+        self.profile = profile
         spans = sorted(
             (min(seqs), max(seqs), id(s))
             for s in symbols
@@ -321,11 +341,15 @@ class Runs:
         end_seqs = [e for e, _ in ends]
         self.text_run: dict[int, int] = {}  # by text seq
         self.first: dict[int, int] = {}  # seq of the first text after each run
+        bodies = {id(s): s.body for s in symbols}
         for text in sorted(scene.fields, key=lambda t: t.seq):
             k = bisect.bisect_left(end_seqs, text.seq) - 1
             if k >= 0:
                 self.text_run[text.seq] = run = self.run[ends[k][1]]
-                self.first.setdefault(run, text.seq)
+                # The name of the last pin drawn comes before the fields; it sits inside.
+                body = bodies[ends[k][1]]
+                if not body or not _inside(geometry.center(text.bbox), body):
+                    self.first.setdefault(run, text.seq)
 
     def join_pieces(self, symbols: list[Symbol]) -> list[Symbol]:
         """Join nearby pieces drawn in one run, such as the bars of a ground symbol."""
@@ -339,11 +363,14 @@ class Runs:
             wires.add(k, geometry.bbox_of(seg))
         for parts in by_run.values():
             parts = [p for p in parts if p.pins or _size(p.bbox) <= PIECE_MAX_SIZE]
-            # A pinless piece on a wire is a power port, never part of a symbol with pins.
-            ports = {id(p) for p in parts if not p.pins and self._wired(p, wires)}
+            # A piece on a wire without real pins is a power port, never part of a symbol
+            # with pins. Its stem may pass for a pin drawn in the body colour.
+            ports = {id(p) for p in parts if not self._real_pins(p) and self._wired(p, wires)}
             for i, a in enumerate(parts):
                 for b in parts[i + 1 :]:
-                    if (id(a) in ports and b.pins) or (id(b) in ports and a.pins):
+                    if (id(a) in ports and id(b) not in ports and b.pins) or (
+                        id(b) in ports and id(a) not in ports and a.pins
+                    ):
                         continue
                     if geometry.bbox_gap(a.bbox, b.bbox) <= PIECE_GAP:
                         joined.union(id(a), id(b))
@@ -354,9 +381,20 @@ class Runs:
         out = []
         for parts in groups.values():
             whole = _combine(parts)
+            if len(parts) > 1:
+                # A piece's line that ends inside another piece's outline is drawing.
+                outlines = [
+                    self.scene.shapes[i].bbox for i in whole.shapes if self.scene.shapes[i].closed
+                ]
+                whole.pins = [p for p in whole.pins if not any(_inside(p.at, b) for b in outlines)]
             self.run[id(whole)] = self.run[id(parts[0])]
             out.append(whole)
         return out
+
+    def _real_pins(self, symbol: Symbol) -> list[Pin]:
+        if not self.profile.colors.get("pin"):
+            return symbol.pins
+        return [p for p in symbol.pins if self.profile.is_("pin", self.scene.shapes[p.shape].color)]
 
     def _wired(self, symbol: Symbol, wires: GridIndex) -> bool:
         shapes = [self.scene.shapes[i] for i in symbol.shapes]

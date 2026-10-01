@@ -56,7 +56,7 @@ def run(file: str | Path, embedded: bool = True) -> Extraction:
         return Extraction(design, pages)
 
     rules = profile.load(generator)
-    netlister = Netlister()
+    netlister = Netlister(labels_span_pages=rules.labels_span_pages)
     for result in pages:
         kind = ingest.page_kind(result.page)
         if kind != "vector":

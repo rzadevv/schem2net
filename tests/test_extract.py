@@ -55,7 +55,7 @@ class SceneBuilder:
 
 
 def netlist(*scenes: Scene, rules=KICAD):
-    netlister = Netlister()
+    netlister = Netlister(labels_span_pages=rules.labels_span_pages)
     for scene in scenes:
         netlister.add_page(scene, symbols.find(scene, rules))
     components, nets, *_ = netlister.result()
@@ -135,6 +135,26 @@ def test_split_label_text_is_rejoined():
         Text(4, "NEXT", (0, 5, 4, 6.4), 1.27, 0.0, (15, 15, 15), 4),
     ]
     assert [t.text for t in _join_runs(pieces)] == ["PCIeC5x4.RST", "NEXT"]
+
+
+def test_designator_is_not_joined_to_a_value_drawn_against_it():
+    teal = (0, 100, 100)
+    touching = [
+        Text(1, "J802", (0, 0, 4.7, 1.4), 1.27, 0.0, teal, 1),
+        Text(2, "Conn_01x22_Female", (4.4, 0, 23.9, 1.5), 1.27, 0.0, teal, 2),
+    ]
+    assert [t.text for t in _join_runs(touching)] == ["J802", "Conn_01x22_Female"]
+    spaced = [
+        Text(1, "R10", (0, 0, 3.1, 1.2), 1.27, 0.0, teal, 1),
+        Text(2, "470", (4.0, 0, 7.1, 1.2), 1.27, 0.0, teal, 2),
+    ]
+    assert [t.text for t in _join_runs(spaced)] == ["R10", "470"]
+    # Text written a character at a time still joins up.
+    one_by_one = [
+        Text(1, "C1", (0, 0, 1.8, 1.2), 1.78, 0.0, teal, 1),
+        Text(2, "0", (2.0, 0, 2.8, 1.2), 1.78, 0.0, teal, 2),
+    ]
+    assert [t.text for t in _join_runs(one_by_one)] == ["C10"]
 
 
 def test_bus_names():
@@ -224,8 +244,9 @@ def test_altium_conventions():
     b.scene.labels.append(Label("SENSE", "local", (13, 3.6, 17, 4.8), 0.0))
 
     _, nets = netlist(b.scene, rules=ALTIUM)
-    assert nets["GND"].pins == [("R1", "2")]
-    assert nets["SENSE"].pins == [("R1", "1")]
+    # Pin numbers are hidden: Altium parts turned upright have pin 1 at the bottom.
+    assert nets["GND"].pins == [("R1", "1")]
+    assert nets["SENSE"].pins == [("R1", "2")]
 
 
 def test_altium_ground_overlapping_a_pin_is_a_separate_part():
@@ -247,8 +268,8 @@ def test_altium_ground_overlapping_a_pin_is_a_separate_part():
 
     components, nets = netlist(b.scene, rules=ALTIUM)
     assert "C1" in components
-    assert nets["GND"].pins == [("C1", "2")]
-    assert nets["VIN"].pins == [("C1", "1")]
+    assert nets["GND"].pins == [("C1", "1")]
+    assert nets["VIN"].pins == [("C1", "2")]
 
 
 def test_wire_hop_does_not_join_the_crossed_wire():
@@ -285,7 +306,7 @@ def test_altium_triangle_ground():
     b.shape((11.5, 17), (10, 18.5), color=dark_red)
 
     _, nets = netlist(b.scene, rules=ALTIUM)
-    assert nets["GND"].pins == [("R1", "2")]
+    assert nets["GND"].pins == [("R1", "1")]
 
 
 def test_altium_pins_in_body_colour_where_wires_meet_them():
@@ -301,5 +322,63 @@ def test_altium_pins_in_body_colour_where_wires_meet_them():
     b.scene.labels.append(Label("OUT", "local", (13, 10.1, 17, 11.3), 0.0))
 
     _, nets = netlist(b.scene, rules=ALTIUM)
-    assert nets["VIN"].pins == [("C1", "1")]
-    assert nets["OUT"].pins == [("C1", "2")]
+    assert nets["VIN"].pins == [("C1", "2")]
+    assert nets["OUT"].pins == [("C1", "1")]
+
+
+def test_altium_net_labels_join_across_pages_but_kicad_ones_do_not():
+    pages = []
+    for page, ref in ((1, "R1"), (2, "R2")):
+        b = SceneBuilder()
+        b.scene.page = page
+        b.resistor(10, 10, ref, "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("SDA", "local", (13, 6.0, 16, 7.2), 0.0))
+        pages.append(b.scene)
+
+    _, nets = netlist(*pages, rules=ALTIUM)
+    assert nets["SDA"].pins == [("R1", "1"), ("R2", "1")]
+    _, nets = netlist(*pages, rules=KICAD)
+    assert nets["SDA"].pins in ([("R1", "1")], [("R2", "1")])
+
+
+def test_kicad_ground_with_hidden_name():
+    """KiCad's ground: stem and triangle in one polyline, base drawn in two halves."""
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.shape((10, 17.54), (10, 18.81), (11.27, 18.81), (10, 20.08), (8.73, 18.81), (10, 18.81))
+
+    _, nets = netlist(b.scene)
+    assert nets["GND"].pins == [("R1", "2")]
+
+
+def test_lone_triangle_ground_on_a_wire():
+    """Older KiCad grounds are a bare triangle; the wire meets the middle of its base."""
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.scene.wires.append(((10, 17.54), (10, 20)))
+    b.shape((8.73, 20), (10, 21.27), (11.27, 20), (8.73, 20))
+
+    _, nets = netlist(b.scene)
+    assert nets["GND"].pins == [("R1", "2")]
+
+
+def test_recoloured_label_text_is_read_where_its_outline_meets_a_wire():
+    dark_red, green, purple = (132, 0, 0), (0, 160, 0), (132, 0, 132)
+    page = Page(1, 100, 100)
+    flag = [(20, 10), (21, 9), (30, 9), (30, 11), (21, 11), (20, 10)]
+    box = [(50, 9), (55, 9), (55, 11), (50, 11), (50, 9)]
+    page.paths = [
+        Path(0, [[(10, 10), (20, 10)]], 0.15, (0, 150, 0), None),
+        Path(1, [flag], 0.15, dark_red, None),
+        Path(2, [box], 0.15, dark_red, None),
+    ]
+    page.texts = [
+        Text(0, "in2", (22, 9.4, 26, 10.6), 1.27, 0.0, green),
+        Text(1, "RA", (51, 9.4, 53, 10.6), 1.27, 0.0, purple),
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, KICAD)
+    assert [(lb.text, lb.kind) for lb in built.labels] == [("in2", "global")]

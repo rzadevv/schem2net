@@ -12,9 +12,13 @@ local_label = [[128, 0, 0]]  # net labels, and the names of power ports
 names_in_labels = true  # power port names use the net label colour
 unnamed_ground = "GND"  # ground ports usually show no name
 
+[labels]
+span_pages = true  # in a flat design a net label joins its name on every sheet
+
 [order]
 fields_follow_symbol = true  # each part's text is drawn right after its graphics
 designator_first = false  # the comment and parameters come before the designator
+designators_in_any_colour = true  # a designator's colour can be changed on its own
 
 [wires]
 thick_are_buses = true  # pages are scaled to fit, so thickness is relative
@@ -24,3 +28,7 @@ infer_colour = true  # designers often change the wire colour; learn it from wha
 max_width = 1.0   # mm; pins are told apart by colour
 min_length = 0.3  # mm
 numbers_above = true  # above horizontal pins, left of vertical ones
+# Where pin numbers are hidden: parts are placed horizontally with pin 1 on the
+# left and turned counter-clockwise, which puts pin 1 at the bottom.
+hidden_one_at_bottom = true
+diode_one_is_anode = true

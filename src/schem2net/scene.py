@@ -8,6 +8,7 @@ from schem2net import geometry
 from schem2net.geometry import GridIndex, Segment
 from schem2net.primitives import BBox, Color, Page, Path, Point, Text
 from schem2net.profile import Profile
+from schem2net.refdes import is_common_ref
 
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
 MIN_COLOUR_HITS = 5  # pin ends a colour must reach to be taken as a wire or body colour
@@ -110,9 +111,11 @@ def build(page: Page, profile: Profile) -> Scene:
         elif profile.is_("sheet_pin", path.stroke):
             pin_outlines.extend(path.subpaths)
 
-    label_texts = {"global": [], "hier": []}
+    label_texts = {"local": [], "global": [], "hier": []}
+    recoloured = []  # texts in a colour no role has, such as labels given their own
     sheet_files, bus_texts = [], []
     visible = [t for t in page.texts if t.visible]
+    known = set().union(*profile.colors.values())
     for text in _join_runs(_unique_texts(visible)):
         if profile.sheet_path_prefix and text.text.startswith(profile.sheet_path_prefix):
             scene.path = name_key(text.text.removeprefix(profile.sheet_path_prefix))
@@ -124,13 +127,21 @@ def build(page: Page, profile: Profile) -> Scene:
         elif profile.is_("pin_number", text.color):
             scene.pin_numbers.append(text)
         elif profile.is_("local_label", text.color):
-            scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
+            label_texts["local"].append(text)
         elif profile.is_("hier_label", text.color):
             label_texts["hier"].append(text)
         elif profile.is_("global_label", text.color):
             label_texts["global"].append(text)
         elif profile.is_("bus", text.color):
             bus_texts.append(text)
+        elif (
+            profile.designators_in_any_colour
+            and text.color not in known
+            and is_common_ref(text.text)
+        ):
+            scene.fields.append(text)  # a designator given a colour of its own
+        elif text.color not in known:
+            recoloured.append(text)
 
     # Global labels share the symbol colour, so their outlines are found among the shapes.
     outlines["global"] = [s.points for s in scene.shapes if s.closed]
@@ -142,6 +153,21 @@ def build(page: Page, profile: Profile) -> Scene:
     for text, outline in _outlined(label_texts["global"], outlines["global"]):
         scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
         used.add(id(outline))
+    # A net label text inside an outline is a port, which reaches other sheets. So is
+    # text given a colour of its own, when its outline meets a wire.
+    wire_index = GridIndex()
+    for k, wire in enumerate(scene.wires):
+        wire_index.add(k, geometry.bbox_of(wire))
+    wired = [o for o in outlines["global"] if _meets_wire(o, scene.wires, wire_index)]
+    ported = set()
+    pairs = [*_outlined(label_texts["local"], outlines["global"]), *_outlined(recoloured, wired)]
+    for text, outline in pairs:
+        scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
+        used.add(id(outline))
+        ported.add(id(text))
+    for text in label_texts["local"]:
+        if id(text) not in ported:
+            scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
     # Bus names are drawn in the bus colour, whether they are labels or hierarchical labels.
     flagged = set()
     for text, anchor in _flagged(label_texts["hier"] + bus_texts, outlines["hier"]):
@@ -316,10 +342,11 @@ def _find_sheets(
         box, outline = found[0]
         x0, y0, x1, y1 = box
         top = min(y0, fy0)
+        # Large names leave a wider gap when no letter reaches below the line.
         names = [
             t
             for t in scene.fields
-            if abs(t.bbox[0] - x0) < 1 and 0 <= top - t.bbox[3] < SHEET_TEXT_GAP
+            if abs(t.bbox[0] - x0) < 1 and 0 <= top - t.bbox[3] < max(SHEET_TEXT_GAP, 0.75 * t.size)
         ]
         if not names:
             continue
@@ -386,6 +413,21 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
             yield text, (box[0] if fx < tx else box[2], ty)
 
 
+def _meets_wire(outline: list[Point], wires: list[Segment], index: GridIndex) -> bool:
+    """True if a wire touches the outline, at a corner or partway along an edge."""
+    box = geometry.bbox_of(outline)
+    if min(box[2] - box[0], box[3] - box[1]) > LABEL_OUTLINE_MAX_HEIGHT:
+        return False
+    edges = list(geometry.segments(outline))
+    for k in index.within((box[0] - 0.05, box[1] - 0.05, box[2] + 0.05, box[3] + 0.05)):
+        wire = wires[k]
+        if any(geometry.distance_to_segment(v, wire) <= 0.05 for v in outline) or any(
+            geometry.distance_to_segment(end, e) <= 0.05 for end in wire for e in edges
+        ):
+            return True
+    return False
+
+
 def _outlined(texts: list[Text], outlines: list[list[Point]]):
     """Pair each text with the small closed outline drawn around it."""
     index = GridIndex()
@@ -430,6 +472,17 @@ def _continues(prev: Text, text: Text) -> bool:
         return False
     start, _ = _along(text.bbox, text.angle)
     _, end = _along(prev.bbox, prev.angle)
+    # A designator is a field of its own, even when the value is drawn next to it.
+    # Text written a letter or two at a time still joins up.
+    if is_common_ref(prev.text) and prev.text[-1].isdigit():
+        spaced = start - end > 0.25 * prev.size
+        glued = (
+            len(text.text) >= 3
+            and any(c.isalpha() for c in text.text)
+            and not is_common_ref(prev.text + text.text)
+        )
+        if spaced or glued:
+            return False
     lo_a, hi_a = _across(prev.bbox, prev.angle)
     lo_b, hi_b = _across(text.bbox, text.angle)
     # An underscore sits below the other letters, so allow a small vertical gap.

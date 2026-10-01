@@ -13,9 +13,10 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 from schem2net import geometry
-from schem2net.geometry import GridIndex, UnionFind
+from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point, Text
 from schem2net.profile import Profile
+from schem2net.refdes import COMMON_PREFIXES, REFDES, is_common_ref
 from schem2net.scene import Scene
 
 if TYPE_CHECKING:
@@ -29,19 +30,12 @@ OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
-LATER_FIELD_COST = 1.0  # where the designator is the first text drawn after its symbol
+LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 
-# Prefix, number, optional unit letter: "R12", "U5A", "SW_POWER0", "Bat+1".
 # A part value such as 100nF, 4.7uH, 10k or 0R, which is never a power net.
 PART_VALUE = re.compile(r"^\d+([.,]\d+)?\s*[pnuμµmkKMG]?\s*(F|H|R|Ω|ohms?)?$")
-REFDES = re.compile(r"^([A-Za-z][A-Za-z_+\-]*?)(\d+)([A-Z]?)$")
-COMMON_PREFIXES = {
-    "A", "BT", "C", "CN", "CON", "D", "DS", "F", "FB", "FD", "FID", "H", "IC", "J", "JP", "K",
-    "L", "LED", "LS", "M", "MH", "P", "Q", "R", "RN", "RV", "S", "SW", "T", "TH", "TP", "U",
-    "VR", "X", "Y", "Z",
-}  # fmt: skip
 
 
 def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs | None) -> None:
@@ -52,17 +46,12 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
     if profile.unnamed_ground:
         for symbol in filter(_could_be_power, symbols):
             # A part with a real pin is a component, such as a mounting hole.
-            if not _has_pin_in_colour(symbol, scene, profile) and _looks_like_ground(symbol, scene):
+            if not _has_real_pin(symbol, scene, profile) and _looks_like_ground(symbol, scene):
                 symbol.power = profile.unnamed_ground
                 symbol.anchors = _anchors(symbol, scene)
     _assign_refs(symbols, texts, runs, profile)
     _number_pins(symbols, scene, profile)
     _assign_values(symbols, texts, runs)
-
-
-def is_common_ref(text: str) -> bool:
-    match = REFDES.match(text)
-    return bool(match) and match.group(1) in COMMON_PREFIXES
 
 
 class _Texts:
@@ -134,19 +123,61 @@ def _is_power_name(text: str, profile: Profile) -> bool:
     )
 
 
-def _has_pin_in_colour(symbol: Symbol, scene: Scene, profile: Profile) -> bool:
+def _has_real_pin(symbol: Symbol, scene: Scene, profile: Profile) -> bool:
+    """A pin in the pin colour, or any pin where pins have no colour of their own."""
+    if not profile.colors.get("pin"):
+        return bool(symbol.pins)
     return any(profile.is_("pin", scene.shapes[p.shape].color) for p in symbol.pins)
 
 
 def _looks_like_ground(symbol: Symbol, scene: Scene) -> bool:
-    """The ground sign: shrinking parallel bars, or a triangle pointing away from the stem."""
-    return _has_bars(symbol, scene) or _has_triangle(symbol, scene)
+    """The ground sign: shrinking parallel bars, a triangle pointing away from the stem
+    or the wire, or a single bar across the stem with its name hidden."""
+    return (
+        _has_bars(symbol, scene)
+        or _has_triangle(symbol, scene)
+        or _is_tee(symbol, scene)
+        or _bare_triangle_base(symbol, scene) is not None
+    )
+
+
+def _bare_triangle_base(symbol: Symbol, scene: Scene) -> Point | None:
+    """The middle of the base of a symbol drawn as a lone triangle, base square to the page."""
+    if len(symbol.shapes) != 1:
+        return None
+    shape = scene.shapes[symbol.shapes[0]]
+    corners = list(dict.fromkeys((round(x, 2), round(y, 2)) for x, y in shape.points))
+    if not shape.closed or len(corners) != 3:
+        return None
+    for k in range(3):
+        a, b, apex = corners[k], corners[(k + 1) % 3], corners[(k + 2) % 3]
+        mid = geometry.center(geometry.bbox_of((a, b)))
+        along = geometry.unit(a, b)
+        dx, dy = apex[0] - mid[0], apex[1] - mid[1]
+        centred = abs(dx * along[0] + dy * along[1]) <= CORNER_GAP
+        if geometry.is_axis_aligned((a, b), 0.01) and centred:
+            return mid
+    return None
+
+
+def _is_tee(symbol: Symbol, scene: Scene) -> bool:
+    lines = [scene.shapes[i].points for i in symbol.shapes]
+    if len(lines) != 2 or any(len(ln) != 2 for ln in lines):
+        return False
+    for bar, stem in (lines, lines[::-1]):
+        mid = geometry.center(geometry.bbox_of(bar))
+        a, b = geometry.unit(*bar), geometry.unit(*stem)
+        square = abs(a[0] * b[0] + a[1] * b[1]) < 0.1
+        if square and min(geometry.distance(p, mid) for p in stem) <= CORNER_GAP:
+            return True
+    return False
 
 
 def _has_triangle(symbol: Symbol, scene: Scene) -> bool:
     """A stem meeting the middle of a base, with two sides closing at an apex beyond it."""
-    straight = [scene.shapes[i].points for i in symbol.shapes if len(scene.shapes[i].points) <= 4]
-    segs = [seg for points in straight for seg in geometry.segments(points)]
+    # Curves are drawn with many points; a triangle and its stem need few.
+    straight = [scene.shapes[i].points for i in symbol.shapes if len(scene.shapes[i].points) <= 8]
+    segs = _merge_collinear([seg for points in straight for seg in geometry.segments(points)])
     corners = [p for seg in segs for p in seg]
 
     def joined(a: Point, b: Point) -> bool:
@@ -175,6 +206,34 @@ def _has_triangle(symbol: Symbol, scene: Scene) -> bool:
     return False
 
 
+def _merge_collinear(segs: list[Segment]) -> list[Segment]:
+    """Join segments that continue each other, such as a base drawn in two halves."""
+    segs = list(segs)
+    merged = True
+    while merged:
+        merged = False
+        for i, a in enumerate(segs):
+            for j in range(i + 1, len(segs)):
+                b = segs[j]
+                for p, q in ((a[0], a[1]), (a[1], a[0])):
+                    for r, t in ((b[0], b[1]), (b[1], b[0])):
+                        if geometry.distance(p, r) > CORNER_GAP:
+                            continue
+                        u, v = geometry.unit(p, q), geometry.unit(r, t)
+                        if u[0] * v[0] + u[1] * v[1] < -0.999:  # straight on through p
+                            segs[i] = (q, t)
+                            del segs[j]
+                            merged = True
+                            break
+                    if merged:
+                        break
+                if merged:
+                    break
+            if merged:
+                break
+    return segs
+
+
 def _has_bars(symbol: Symbol, scene: Scene) -> bool:
     lines = [scene.shapes[i].points for i in symbol.shapes if len(scene.shapes[i].points) == 2]
     for horizontal in (True, False):
@@ -190,11 +249,14 @@ def _has_bars(symbol: Symbol, scene: Scene) -> bool:
 
 
 def _anchors(symbol: Symbol, scene: Scene) -> list[Point]:
-    """A power symbol connects at its pin, or else at a loose end of its drawing."""
+    """A power symbol connects at its pin, or else at a loose end of its drawing, or
+    at the middle of its base when it is a lone triangle."""
     if symbol.pins:
         return [p.at for p in symbol.pins]
     shapes = (scene.shapes[i] for i in symbol.shapes)
-    return [p for shape in shapes if not shape.closed for p in (shape.points[0], shape.points[-1])]
+    loose = [p for shape in shapes if not shape.closed for p in (shape.points[0], shape.points[-1])]
+    base = _bare_triangle_base(symbol, scene)
+    return loose or ([base] if base else [])
 
 
 def _in_line(symbol: Symbol, text: Text) -> bool:
@@ -210,9 +272,14 @@ def _in_line(symbol: Symbol, text: Text) -> bool:
 
 def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profile: Profile) -> None:
     parts = [s for s in symbols if s.pins and not s.power]
+    first_reach = profile.designator_first and runs
     candidates = []
     for si, symbol in enumerate(parts):
-        for gap, ti in texts.near(symbol.body or symbol.bbox, REF_SEARCH):
+        # Where the designator is drawn first, that text may sit further away.
+        reach = 3 * REF_SEARCH if first_reach else REF_SEARCH
+        for gap, ti in texts.near(symbol.body or symbol.bbox, reach):
+            if gap > REF_SEARCH and texts.texts[ti].seq != runs.first_text(symbol):
+                continue
             text = texts.texts[ti]
             match = REFDES.match(text.text)
             if not match or _is_pin_name(symbol, text):
@@ -301,8 +368,8 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
             named.add(i)
             used.add(t)
 
-    # Small parts often hide pin numbers. A diode's cathode is pin 1;
-    # otherwise number them top-left first.
+    # Small parts often hide pin numbers. Diodes are numbered from one end of
+    # the triangle, other parts from the top or bottom, then the left.
     by_ref: dict[str, list[Symbol]] = {}
     for s in symbols:
         if s.ref:
@@ -313,11 +380,15 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
             continue
         tips = [v for s in parts for v in _triangle_corners(s, scene)]
         if len(part_pins) == 2 and tips:
+            # The cathode meets the triangle's tip, the anode the middle of its base.
             order = sorted(
-                part_pins, key=lambda p: min(geometry.distance(p.line[0], v) for v in tips)
+                part_pins,
+                key=lambda p: min(geometry.distance(p.line[0], v) for v in tips),
+                reverse=profile.diode_pin_one_is_anode,
             )
         else:
-            order = sorted(part_pins, key=lambda p: (p.at[1], p.at[0]))
+            down = -1 if profile.hidden_pin_one_at_bottom else 1
+            order = sorted(part_pins, key=lambda p: (down * p.at[1], p.at[0]))
         for number, pin in enumerate(order, 1):
             pin.number = str(number)
 
@@ -392,7 +463,7 @@ def _is_net_name(text: str) -> bool:
 
 
 def _is_pin_name(symbol: Symbol, text: Text) -> bool:
-    """Pin names sit inside the body, next to the inner end of a pin."""
+    """Pin names sit inside the body, next to the inner end of a pin, written along it."""
     if len(symbol.pins) <= 2 or not symbol.body:
         return False
     c = geometry.center(text.bbox)
@@ -400,4 +471,9 @@ def _is_pin_name(symbol: Symbol, text: Text) -> bool:
     if not (x0 + 0.3 <= c[0] <= x1 - 0.3 and y0 + 0.3 <= c[1] <= y1 - 0.3):
         return False
     reach = PIN_NAME_GAP + max(text.bbox[2] - text.bbox[0], text.bbox[3] - text.bbox[1]) / 2
-    return any(geometry.distance(c, pin.line[0]) <= reach for pin in symbol.pins)
+    vertical_text = round(text.angle) % 180 == 90
+    return any(
+        geometry.distance(c, pin.line[0]) <= reach
+        and geometry.is_horizontal(pin.line) != vertical_text
+        for pin in symbol.pins
+    )
