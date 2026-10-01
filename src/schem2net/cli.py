@@ -18,6 +18,10 @@ from schem2net.ir import Design
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
 BenchDir = Annotated[Path, typer.Option(help="Directory holding the corpus manifests.")]
+RegionOption = Annotated[
+    str | None,
+    typer.Option(help='Read only part of a page: "PAGE:X0,Y0,X1,Y1" in mm from its top left.'),
+]
 CorpusName = Annotated[str, typer.Argument(help="Corpus name, e.g. a.")]
 
 
@@ -25,9 +29,10 @@ CorpusName = Annotated[str, typer.Argument(help="Corpus name, e.g. a.")]
 def extract(
     file: Path,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
+    region: RegionOption = None,
 ) -> None:
     """Extract a netlist from a schematic PDF and write it as JSON."""
-    design = pipeline.extract(file)
+    design = pipeline.extract(file, region=_region(region))
     output = output or file.with_suffix(".ir.json")
     design.save(output)
     typer.echo(
@@ -55,9 +60,10 @@ def export(
     file: Annotated[Path, typer.Argument(help="A schematic PDF, or JSON written by extract.")],
     to: Annotated[Format, typer.Option(help="Output format.")] = Format.kicad_net,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
+    region: RegionOption = None,
 ) -> None:
     """Write a KiCad netlist, a bill of materials or a SPICE netlist."""
-    design = _load(file)
+    design = _load(file, _region(region))
     text = WRITERS[to](design)
     output = output or file.with_name(file.name.split(".")[0] + SUFFIXES[to])
     output.write_text(text)
@@ -89,20 +95,25 @@ def diff_(
     typer.echo(revisions.render(revisions.diff(_load(old), _load(new))), nl=False)
 
 
-def _load(file: Path) -> Design:
+def _load(file: Path, region: pipeline.Region | None = None) -> Design:
     if file.suffix.lower() == ".pdf":
-        return pipeline.extract(file)
+        return pipeline.extract(file, region=region)
     return Design.load(file)
+
+
+def _region(text: str | None) -> pipeline.Region | None:
+    return pipeline.Region.parse(text) if text else None
 
 
 @app.command("report")
 def report_(
     file: Path,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
+    region: RegionOption = None,
 ) -> None:
     """Write an HTML page showing the extracted nets over the schematic."""
     output = output or file.with_suffix(".html")
-    output.write_text(report.render(pipeline.run(file)))
+    output.write_text(report.render(pipeline.run(file, region=_region(region))))
     typer.echo(output)
 
 

@@ -30,14 +30,42 @@ class Extraction:
     wire_nets: dict[tuple[int, int], str] = field(default_factory=dict)
 
 
-def extract(file: str | Path, embedded: bool = True) -> Design:
-    return run(file, embedded).design
+@dataclass(frozen=True)
+class Region:
+    """Part of one page, in millimetres from its top-left corner."""
+
+    page: int
+    box: tuple[float, float, float, float]
+
+    @classmethod
+    def parse(cls, text: str) -> "Region":
+        """From "PAGE:X0,Y0,X1,Y1", for example "2:10,20,150,100"."""
+        page, _, box = text.partition(":")
+        x0, y0, x1, y1 = (float(v) for v in box.split(","))
+        return cls(int(page), (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
+
+    def holds(self, box: tuple[float, float, float, float]) -> bool:
+        x0, y0, x1, y1 = self.box
+        return x0 <= box[0] and y0 <= box[1] and box[2] <= x1 and box[3] <= y1
 
 
-def run(file: str | Path, embedded: bool = True) -> Extraction:
-    """Extract a design. With `embedded`, a netlist carried in the file is used as is."""
+def extract(file: str | Path, embedded: bool = True, region: Region | None = None) -> Design:
+    return run(file, embedded, region).design
+
+
+def run(file: str | Path, embedded: bool = True, region: Region | None = None) -> Extraction:
+    """Extract a design. With `embedded`, a netlist carried in the file is used as is.
+
+    With a region, only what lies wholly inside it is read, from the drawing.
+    """
     file = Path(file)
     doc = pdf.read(file)
+    if region:
+        page = doc.pages[region.page - 1]
+        page.paths = [p for p in page.paths if region.holds(p.bbox)]
+        page.texts = [t for t in page.texts if region.holds(t.bbox)]
+        doc.pages = [page]
+        embedded = False
     generator = ingest.detect_generator(doc)
     design = Design(
         source=Source(
@@ -58,7 +86,7 @@ def run(file: str | Path, embedded: bool = True) -> Extraction:
     rules = profile.load(generator)
     netlister = Netlister(labels_span_pages=rules.labels_span_pages)
     for result in pages:
-        kind = ingest.page_kind(result.page)
+        kind = "vector" if region else ingest.page_kind(result.page)
         if kind != "vector":
             design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
             continue

@@ -41,6 +41,7 @@ schem2net export board.pdf --to spice          # SPICE netlist to start a simula
 schem2net report board.pdf                     # nets drawn over the schematic, board.html
 schem2net schematic board.pdf                  # editable KiCad project, board-kicad/
 schem2net diff old.pdf new.pdf                 # parts and connections that changed
+schem2net extract board.pdf --region 2:10,20,150,100   # only part of page 2, in mm
 ```
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports

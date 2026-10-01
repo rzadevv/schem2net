@@ -1,6 +1,6 @@
 import pytest
 
-from schem2net import ingest
+from schem2net import ingest, pipeline
 from schem2net.primitives import Document, Page, Path, Text
 
 
@@ -34,3 +34,10 @@ def test_board_prints_and_tables_are_not_schematics():
     assert ingest.page_kind(page_with(400, 200)) == "vector"
     assert ingest.page_kind(page_with(5000, 10)) == "board"
     assert ingest.page_kind(page_with(50, 1000)) == "table"
+
+
+def test_region():
+    region = pipeline.Region.parse("2:150,100,10,20")
+    assert region.page == 2 and region.box == (10, 20, 150, 100)
+    assert region.holds((15, 25, 40, 30))
+    assert not region.holds((5, 25, 40, 30))
