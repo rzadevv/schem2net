@@ -8,3 +8,4 @@ dist/
 
 bench/build/
 bench/cache/
+bench/out/

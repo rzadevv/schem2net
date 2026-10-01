@@ -38,13 +38,20 @@ schem2net extract board.pdf -o board.ir.json   # PDF to JSON netlist
 schem2net export board.pdf --to kicad-net      # KiCad netlist, board.net
 schem2net export board.pdf --to bom            # parts grouped by value, board.bom.csv
 schem2net report board.pdf                     # nets drawn over the schematic, board.html
+schem2net schematic board.pdf                  # editable KiCad project, board-kicad/
 ```
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports
 into the PCB editor; footprints are not in the PDF, so assign them in KiCad.
 
+`schematic` writes a KiCad project with one sheet per PDF page. Parts and wires
+sit where the PDF drew them; each part gets a symbol made from its own outline,
+and named nets are carried by labels. KiCad reads back the same netlist that
+was extracted.
+
 The report colours each net, circles pins of low-confidence nets in red and
-unnumbered pins in orange. Click a net in the list to highlight it.
+marks problems the checks found in orange. Click a net in the list to highlight
+it.
 
 ## MCP server
 
@@ -68,6 +75,7 @@ make corpus     # fetch and render corpus A (KiCad)
 make bench      # score the extractor on its dev split
 make corpus-b   # fetch corpus B (Altium PDFs and their boards)
 make bench-b    # score extraction from the drawing on its dev split
+make bench-schematic  # write corpus A as KiCad projects and check them with kicad-cli
 ```
 
 See [docs/benchmark.md](docs/benchmark.md) for the corpora and metrics, and

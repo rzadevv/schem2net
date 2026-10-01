@@ -72,13 +72,32 @@ the wrong way.
 Power nets are recognised by name: names starting with `+` or `-`, voltages
 such as `3V3`, `VCC`, `VDD`, `VSS`, `VBUS` and anything containing `GND`.
 
+## Schematic export
+
+`schem2net bench-schematic a --split all` writes every design as a KiCad
+project, has kicad-cli read its netlist back and run ERC, and scores that
+netlist against the extraction. A score of 1.0 means the schematic connects
+exactly as extracted.
+
+| Corpus | Designs | Read back exactly | No ERC errors |
+|---|---|---|---|
+| A, KiCad | 66 | 64 | 38 |
+| B, Altium | 43 | 41 | 6 |
+
+The designs not read back exactly have two parts with the same designator,
+which KiCad joins pin by pin. Most ERC errors are pins the extraction left
+unconnected (651 in corpus A), then wires that end at nothing (188). For
+comparison, ERC ran on 31 of the original corpus A projects and passed on 16.
+
 ## Known gaps in the ground truth
 
 Some connections exist in the design but are not visible in the PDF:
 
 - Hidden power pins that connect to a net by name.
 - Label scope set in project settings. For example, Altium's net identifier
-  scope decides whether same-named labels on different sheets connect.
+  scope decides whether same-named labels on different sheets connect; the
+  Altium profile assumes they do unless sheets are nested.
 - Parts that are not fitted in a variant.
+- Pin numbers that the library hides, and stacked pins that print one number.
 
-These are not handled yet.
+Apart from the Altium label scope, these are not handled.

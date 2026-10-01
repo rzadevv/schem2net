@@ -14,7 +14,7 @@ and the benchmark read.
 | 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad, Altium |
 | 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad, Altium |
 | 8 | Build nets, check them and score confidence | `nets.py` | done |
-| 9 | KiCad netlist, BOM, HTML report, MCP server | `export.py`, `report.py`, `mcp_server.py` | done |
+| 9 | KiCad netlist and schematic, BOM, HTML report, MCP server | `export.py`, `kicad_sch.py`, `report.py`, `mcp_server.py` | done |
 
 Not handled yet: hidden power pins and pin numbers, which the PDF does not show.
 

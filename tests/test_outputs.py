@@ -1,6 +1,6 @@
 """Export, queries and the HTML report, on a small made-up design."""
 
-from schem2net import bookmarks, export, kicad, report, symbols
+from schem2net import bookmarks, export, kicad, kicad_sch, report, sexpr, symbols
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 from schem2net.nets import Netlister
 from schem2net.pipeline import Extraction, PageResult
@@ -106,3 +106,38 @@ def test_netlist_from_altium_bookmarks():
         "NetC1_1": [("C1", "1"), ("J-1", "1")],
     }
     assert bookmarks.from_outline([(0, "Page 1")], Source(file="x.pdf")) is None
+
+
+def test_kicad_schematic_places_parts_where_they_were_drawn(tmp_path):
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "10k")
+    b.resistor(20, 10, "R2", "1k")
+    b.ground(10, 17.54)
+    b.scene.wires.append(((10, 7.46), (20, 7.46)))
+    found = symbols.find(b.scene, KICAD)
+    netlister = Netlister()
+    netlister.add_page(b.scene, found)
+    result = netlister.result()
+    design = Design(source=Source(file="board.pdf"), components=result.components, nets=result.nets)
+    page = Page(number=1, width=100, height=50)
+    extraction = Extraction(design, [PageResult(page, b.scene, found)], result.wire_nets)
+
+    root = kicad_sch.write(extraction, tmp_path, "board")
+
+    sheet = sexpr.parse((tmp_path / "board-page1.kicad_sch").read_text())
+    placed = {sexpr.value(p, "lib_id"): p for p in sexpr.children(sheet, "symbol")}
+    assert set(placed) == {"schem2net:R1", "schem2net:R2"}
+    # Pins keep their drawn positions: the symbol origin plus the pin's offset, y flipped.
+    lib = {s[1]: s for s in sexpr.children(sexpr.child(sheet, "lib_symbols"), "symbol")}
+    unit = sexpr.children(lib["schem2net:R1"], "symbol")[0]
+    _, x, y = sexpr.child(placed["schem2net:R1"], "at")[:3]
+    tips = sorted(
+        (round(float(x) + float(at[1]), 2), round(float(y) - float(at[2]), 2))
+        for at in (sexpr.child(pin, "at") for pin in sexpr.children(unit, "pin"))
+    )
+    assert tips == [(10, 7.46), (10, 17.54)]
+    # GND reaches R1 through a label on its pin, since no wire ends there.
+    assert [lb[1] for lb in sexpr.children(sheet, "global_label")] == ["GND"]
+    assert len(sexpr.children(sheet, "wire")) == 1
+    assert root.name == "board.kicad_sch"
+    assert (tmp_path / "board.kicad_sym").exists() and (tmp_path / "sym-lib-table").exists()

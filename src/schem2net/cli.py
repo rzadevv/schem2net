@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from enum import StrEnum
 from functools import partial
 from pathlib import Path
@@ -7,9 +8,9 @@ from typing import Annotated
 import typer
 
 from schem2net import export as exporters
-from schem2net import pdf, pipeline, report, svg
+from schem2net import kicad_sch, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
-from schem2net.bench import runner
+from schem2net.bench import roundtrip, runner
 from schem2net.bench.score import Counts
 from schem2net.ir import Design
 
@@ -54,6 +55,22 @@ def export(
     output = output or file.with_name(file.name.split(".")[0] + SUFFIXES[to])
     output.write_text(text)
     typer.echo(output)
+
+
+@app.command()
+def schematic(
+    file: Annotated[Path, typer.Argument(help="A schematic PDF.")],
+    output: Annotated[Path | None, typer.Option("-o", "--output", help="Project folder.")] = None,
+) -> None:
+    """Write an editable KiCad project, one sheet per PDF page.
+
+    Parts and wires go where the PDF drew them; the netlist carried in an Altium
+    PDF is not used, since it has no drawing to place.
+    """
+    extraction = pipeline.run(file, embedded=False)
+    output = output or file.with_name(file.stem + "-kicad")
+    root = kicad_sch.write(extraction, output, file.stem)
+    typer.echo(root)
 
 
 def _load(file: Path) -> Design:
@@ -147,6 +164,33 @@ def bench(
             "designs": {name: counts.metrics() for name, counts in results},
         }
         json_out.write_text(json.dumps(report, indent=2))
+
+
+@app.command("bench-schematic")
+def bench_schematic(
+    corpus: CorpusName = "a",
+    split: Annotated[str, typer.Option(help="dev, test or all.")] = "dev",
+    bench_dir: BenchDir = Path("bench"),
+    work: Annotated[Path, typer.Option(help="Where to write the projects.")] = Path("bench/out"),
+) -> None:
+    """Check the KiCad schematic export: same netlist read back, and ERC errors."""
+    loaded = corpora.load(corpus, bench_dir)
+    projects = [
+        p
+        for p in loaded.projects
+        if loaded.is_built(p) and (split == "all" or loaded.split(p) == split)
+    ]
+    exact, clean, errors = 0, 0, Counter()
+    for project in sorted(projects, key=lambda p: p.name):
+        pdf_file = loaded.build_dir(project) / "schematic.pdf"
+        result = roundtrip.check(pdf_file, work / corpus / project.name)
+        exact += result.pin_accuracy == 1.0
+        clean += not result.erc_errors
+        errors += result.erc_errors
+        found = ", ".join(f"{n} {k}" for k, n in result.erc_errors.most_common()) or "clean"
+        typer.echo(f"{project.name[:32]:32} {_fmt(result.pin_accuracy)}  {found}")
+    typer.echo(f"{len(projects)} designs: {exact} read back exactly, {clean} without ERC errors")
+    typer.echo(", ".join(f"{n} {k}" for k, n in errors.most_common()))
 
 
 def _fmt(value: float | None) -> str:
