@@ -20,6 +20,12 @@ TOUCH = 0.03  # mm, on top of half the stroke widths
 HALF_GAP = 6.0  # mm between the two halves of a capacitor-like symbol
 PIECE_GAP = 2.6  # mm between pieces of one drawn symbol
 PIECE_MAX_SIZE = 50.0  # mm; larger drawings without pins are frames and borders
+FRAME_HOLDS = 3  # a drawing holding this many symbols is a frame
+FRAME_MIN_SIZE = 100.0  # mm, both ways; a frame spans most of the page
+EDGE_PIN_LENGTH = 2.54  # mm; how far out a pin with no line is laid along its wire
+EDGE_PIN_GAP = 0.5  # mm from a drawn pin within which a wire end is that pin's
+DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
+DRAWN_TOGETHER_SEQ = 3  # drawing steps between a body and pins drawn with it
 
 
 @dataclass(slots=True)
@@ -55,8 +61,10 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     apart = sorted(t.seq for t in scene.fields) if profile.fields_follow_symbol else None
     symbols = _merge_halves(_group(scene, index, pins, apart))
     runs = Runs(symbols, scene, profile) if profile.fields_follow_symbol else None
-    if runs:
-        symbols = runs.join_pieces(symbols)
+    symbols = runs.join_pieces(symbols) if runs else _join_drawn_together(symbols, scene)
+    symbols = _without_frames(symbols)
+    if profile.pins_at_body_edge:
+        _add_edge_pins(symbols, scene)
     fields.annotate(symbols, scene, profile, runs)
     return [s for s in symbols if s.ref or s.power]
 
@@ -281,6 +289,90 @@ def _group(
         box = _union([scene.shapes[m].bbox for m in members])
         symbols.append(Symbol(sorted(members), box, own, body=body_box))
     return symbols
+
+
+def _join_drawn_together(symbols: list[Symbol], scene: Scene) -> list[Symbol]:
+    """Without text between symbols to tell them apart, join a body drawn with no pins
+    to the pieces with pins drawn along with it, nearby: a connector's box and its
+    pins, drawn apart."""
+    spans = {
+        id(s): (
+            min(scene.shapes[i].seq for i in s.shapes),
+            max(scene.shapes[i].seq for i in s.shapes),
+        )
+        for s in symbols
+        if s.shapes
+    }
+    boxes = [s for s in symbols if not s.pins and not s.power and id(s) in spans]
+    pieces = [s for s in symbols if s.pins and not s.power and id(s) in spans]
+    joined = UnionFind()
+    for s in symbols:
+        joined.find(id(s))
+    for box in boxes:
+        lo, hi = spans[id(box)]
+        for piece in pieces:
+            a, b = spans[id(piece)]
+            drawn_with = a <= hi + DRAWN_TOGETHER_SEQ and lo <= b + DRAWN_TOGETHER_SEQ
+            if drawn_with and geometry.bbox_gap(box.bbox, piece.bbox) <= DRAWN_TOGETHER_GAP:
+                joined.union(id(box), id(piece))
+    groups: dict[int, list[Symbol]] = {}
+    for s in symbols:
+        groups.setdefault(joined.find(id(s)), []).append(s)
+    return [_combine(parts) for parts in groups.values()]
+
+
+def _add_edge_pins(symbols: list[Symbol], scene: Scene) -> None:
+    """Pins drawn with no line: a wire that ends on a symbol's outline is a pin there.
+
+    The pin is laid along the wire, out to where its number is written.
+    """
+    index = GridIndex()
+    for k, symbol in enumerate(symbols):
+        if symbol.body and not symbol.power:
+            index.add(k, symbol.body)
+    next_id = -1
+    for a, b in scene.wires:
+        for end, other in ((a, b), (b, a)):
+            for k in index.near(end, TOUCH):
+                symbol = symbols[k]
+                if any(
+                    geometry.distance(end, p) <= EDGE_PIN_GAP
+                    for pin in symbol.pins
+                    for p in pin.line
+                ):
+                    continue
+                on_outline = any(
+                    geometry.distance_to_segment(end, seg) <= TOUCH + scene.shapes[i].width
+                    for i in symbol.shapes
+                    for seg in geometry.segments(scene.shapes[i].points)
+                )
+                if not on_outline or _inside(other, symbol.body):
+                    continue
+                out = geometry.unit(end, other)
+                length = min(EDGE_PIN_LENGTH, geometry.distance(end, other))
+                tip = (end[0] + out[0] * length, end[1] + out[1] * length)
+                symbol.pins.append(Pin(next_id, (end, tip)))
+                next_id -= 1
+
+
+def _without_frames(symbols: list[Symbol]) -> list[Symbol]:
+    """Drop the page frame and title block: drawings that hold whole symbols."""
+
+    def holds(outer: BBox, inner: BBox) -> bool:
+        return (
+            outer[0] <= inner[0]
+            and outer[1] <= inner[1]
+            and inner[2] <= outer[2]
+            and inner[3] <= outer[3]
+        )
+
+    def frame(s: Symbol) -> bool:
+        x0, y0, x1, y1 = s.bbox
+        big = min(x1 - x0, y1 - y0) > FRAME_MIN_SIZE
+        held = sum(holds(s.bbox, t.bbox) for t in symbols if t is not s)
+        return big and held >= max(FRAME_HOLDS, len(symbols) / 2)  # it holds most of the page
+
+    return [s for s in symbols if not frame(s)]
 
 
 def _merge_halves(symbols: list[Symbol]) -> list[Symbol]:

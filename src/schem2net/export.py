@@ -25,11 +25,20 @@ def kicad_netlist(design: Design) -> str:
             ]
         )
 
+    names = {(c.ref, p.num): p.name for c in design.components for p in c.pins if p.name}
     nets = ["nets"]
     for code, net in enumerate(design.nets, 1):
         ref, pin = net.pins[0]
         name = net.name or f"Net-({ref}-Pad{pin})"
-        nodes = [["node", ["ref", r], ["pin", p]] for r, p in net.pins]
+        nodes = [
+            [
+                "node",
+                ["ref", r],
+                ["pin", p],
+                *([["pinfunction", names[r, p]]] if (r, p) in names else []),
+            ]
+            for r, p in net.pins
+        ]
         nets.append(["net", ["code", str(code)], ["name", name], *nodes])
 
     design_node = [

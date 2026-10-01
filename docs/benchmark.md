@@ -6,6 +6,7 @@
 |---|---|---|
 | A | Open KiCad projects rendered with `kicad-cli` (KiCad 10) | Netlist exported by `kicad-cli` |
 | B | Altium schematic PDFs published in open hardware repositories | The netlist the PDF carries, checked against the board file |
+| C | SparkFun schematic PDFs drawn in Eagle | The Eagle `.sch` in the board's repository |
 
 Manifests (`bench/corpus_*.toml`) store references only: a repository URL and
 commit, or a demo that ships with KiCad.
@@ -29,10 +30,23 @@ Because the truth comes from the PDF, reading it back scores 1.0. Corpus B is
 meant for `--drawing-only`, which ignores the embedded netlist and measures
 extraction from the drawing.
 
+Corpus C pairs the schematic PDF on a SparkFun product page with the `.sch`
+in the board's repository, taken at the last commit before the PDF was made.
+`eagle.py` reads the netlist from the `.sch`, mapping each pin to the pads of
+its package, which is what the PDF numbers. Pin names are kept too, so a pin
+drawn with its name and no number still scores. Some PDFs were printed through
+a PDF printer that turned all text into outlines; those cannot be read yet.
+
+Eagle draws most text with its own stroke font. `schem2net build-font c` learns
+the shapes of its letters from the corpus C dev split: each stroked line of
+text is paired with the `.sch` text of the same length placed at that spot,
+and the table is written to `profiles/eagle_font.json`.
+
 ## Splits
 
 Each project is assigned to `dev` or `test` by a hash of its name, so the
-split cannot drift. Corpus A holds out 10%, corpus B a third. Tune on `dev`.
+split cannot drift. Corpus A holds out 10%, corpora B and C a third. Tune on
+`dev`.
 Report `test`.
 
 ```sh

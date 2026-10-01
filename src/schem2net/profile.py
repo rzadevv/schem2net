@@ -15,6 +15,8 @@ class Profile:
     pin_min_length: float
     pin_numbers_above: bool = False
     hidden_pin_one_at_bottom: bool = False
+    pins_at_body_edge: bool = False
+    pin_name_gap: float = 1.5  # mm between a pin's inner end and its name
     diode_pin_one_is_anode: bool = False
     fields_follow_symbol: bool = False
     designator_first: bool = False
@@ -22,7 +24,10 @@ class Profile:
     thick_wires_are_buses: bool = False
     infer_wire_colour: bool = False
     designators_in_any_colour: bool = False
+    designators_in_pin_colour: bool = False
     labels_span_pages: bool = False
+    labels_in_outlines: bool = False
+    stroke_font: str | None = None
     not_power_nets: frozenset[str] = frozenset()
     power_names_in_labels: bool = False
     unnamed_ground: str | None = None
@@ -36,8 +41,8 @@ class Profile:
 def load(name: str) -> Profile:
     text = resources.files("schem2net").joinpath("profiles", f"{name}.toml").read_text()
     data = tomllib.loads(text)
-    sections = ("pins", "order", "power", "sheets", "wires", "labels")
-    pins, order, power, sheets, wires, labels = (data.get(k, {}) for k in sections)
+    sections = ("pins", "order", "power", "sheets", "wires", "labels", "text")
+    pins, order, power, sheets, wires, labels, text = (data.get(k, {}) for k in sections)
     return Profile(
         name=name,
         colors={
@@ -47,6 +52,8 @@ def load(name: str) -> Profile:
         pin_min_length=pins["min_length"],
         pin_numbers_above=pins.get("numbers_above", False),
         hidden_pin_one_at_bottom=pins.get("hidden_one_at_bottom", False),
+        pins_at_body_edge=pins.get("at_body_edge", False),
+        pin_name_gap=pins.get("name_gap", 1.5),
         diode_pin_one_is_anode=pins.get("diode_one_is_anode", False),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
         designator_first=order.get("designator_first", False),
@@ -54,7 +61,10 @@ def load(name: str) -> Profile:
         thick_wires_are_buses=wires.get("thick_are_buses", False),
         infer_wire_colour=wires.get("infer_colour", False),
         designators_in_any_colour=order.get("designators_in_any_colour", False),
+        designators_in_pin_colour=order.get("designators_in_pin_colour", False),
         labels_span_pages=labels.get("span_pages", False),
+        labels_in_outlines=labels.get("in_outlines", False),
+        stroke_font=text.get("font"),
         not_power_nets=frozenset(power.get("not_nets", [])),
         power_names_in_labels=power.get("names_in_labels", False),
         unnamed_ground=power.get("unnamed_ground"),

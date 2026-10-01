@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
 from enum import StrEnum
 from functools import partial
 from pathlib import Path
@@ -11,7 +12,7 @@ from schem2net import diff as revisions
 from schem2net import export as exporters
 from schem2net import kicad_sch, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
-from schem2net.bench import roundtrip, runner
+from schem2net.bench import font, roundtrip, runner
 from schem2net.bench.score import Counts
 from schem2net.ir import Design
 
@@ -191,6 +192,45 @@ def bench(
             "designs": {name: counts.metrics() for name, counts in results},
         }
         json_out.write_text(json.dumps(report, indent=2))
+
+
+@app.command("build-font")
+def build_font(
+    corpus: CorpusName = "c",
+    bench_dir: BenchDir = Path("bench"),
+    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
+        "src/schem2net/profiles/eagle_font.json"
+    ),
+) -> None:
+    """Learn the stroke font's glyph shapes from a corpus of Eagle PDFs (dev split)."""
+    loaded = corpora.load(corpus, bench_dir)
+    dirs = [
+        loaded.build_dir(p)
+        for p in loaded.projects
+        if loaded.is_built(p) and loaded.split(p) == "dev"
+    ]
+    cache = bench_dir / "out" / f"font-samples-{corpus}.json"
+    if cache.exists():
+        found = [
+            (c, [tuple(map(tuple, seg)) for seg in s]) for c, s in json.loads(cache.read_text())
+        ]
+    else:
+        jobs = [(d / "schematic.sch", d / "schematic.pdf") for d in dirs]
+        with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
+            found = [s for got in pool.map(font.samples_of, jobs) for s in got]
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(found))
+    table = font.build(found)
+    # Then glyphs too rare to place by position, from lines missing only them.
+    shapes = [
+        (e["char"], [tuple(map(tuple, seg)) for seg in sh]) for e in table for sh in e["shapes"]
+    ]
+    jobs = [(d / "schematic.sch", d / "schematic.pdf", shapes) for d in dirs]
+    with ProcessPoolExecutor(max_workers=3) as pool:
+        found += [s for got in pool.map(font.gap_samples_of, jobs) for s in got]
+    table = font.build(found)
+    font.write(table, output)
+    typer.echo(f"{output}: {len(table)} characters from {len(found)} glyphs in {len(dirs)} designs")
 
 
 @app.command("bench-schematic")

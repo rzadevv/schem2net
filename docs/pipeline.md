@@ -9,9 +9,9 @@ and the benchmark read.
 | 1 | Detect the generator and page kind | `ingest.py` | done |
 | 2 | Read paths and text in millimetres, top-left origin | `pdf.py` | done |
 | 3 | Drop duplicates, rejoin split text | `scene.py` | done |
-| 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py` | KiCad, Altium |
+| 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py`, `strokes.py` | KiCad, Altium, Eagle |
 | 5 | Join wires at shared ends and junction dots | `nets.py` | done |
-| 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad, Altium |
+| 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad, Altium, Eagle |
 | 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad, Altium |
 | 8 | Build nets, check them and score confidence | `nets.py` | done |
 | 9 | KiCad netlist and schematic, BOM, HTML report, MCP server | `export.py`, `kicad_sch.py`, `report.py`, `mcp_server.py` | done |
@@ -97,6 +97,16 @@ without a connection may jump over each other with a small arc, which is read
 as a straight wire. Pages are scaled to fit, so buses are told from wires by
 relative thickness. Text drawn in invisible mode, such as the pin markers of a
 Smart PDF, is not part of the drawing and is ignored.
+
+Eagle writes most text with its vector font, as strokes, so `strokes.py` reads
+it back: strokes drawn one after another in one style are cut into lines and
+letters, and each letter is matched against a table of known shapes, in a frame
+set by its line's baseline and height. Names, values, pin names and pad numbers
+share one colour, so their roles come from where they sit. Net labels are the
+names inside an outline that meets a wire. Many Eagle symbols draw no pin
+lines: a wire ending on a part's outline is a pin there, numbered by the text
+beside it. A connector's box and its pins are often drawn apart, and are
+joined when drawn one right after the other, close together.
 
 ## Confidence
 

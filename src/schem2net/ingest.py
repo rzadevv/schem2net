@@ -26,11 +26,18 @@ def detect_generator(doc: Document) -> str:
     for name, needles in SIGNATURES.items():
         if any(needle in producer for needle in needles):
             return name
+    # Eagle schematics printed through a PDF printer keep only the file name.
+    if doc.metadata.get("Title", "").lower().endswith(".sch"):
+        return "eagle"
     return "unknown"
 
 
-def page_kind(page: Page) -> PageKind:
+def page_kind(page: Page, text_as_strokes: bool = False) -> PageKind:
+    """With text drawn as strokes, text counts say nothing, so only empty and scanned
+    pages are told apart."""
     texts = sum(t.visible for t in page.texts)
+    if len(page.paths) >= 20 and text_as_strokes:
+        return "vector"
     if len(page.paths) >= 20:
         ratio = texts / len(page.paths)
         if ratio < BOARD_TEXT_RATIO:

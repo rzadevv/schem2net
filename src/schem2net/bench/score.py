@@ -77,7 +77,10 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     true_nets = [set(n.pins) for n in scored]
     power = [bool(POWER_NET.match(_short_name(n.name))) for n in scored]
     nonempty = [n for n in predicted.nets if n.pins]
-    pred_nets = [set(n.pins) for n in nonempty]
+    # A pin drawn with its name and no number is known by that name, when the name
+    # is unique on its part.
+    aliases = _pin_aliases(truth)
+    pred_nets = [{aliases.get(p, p) for p in n.pins} for n in nonempty]
     confidence = [n.confidence for n in nonempty]
 
     # Pins of symmetric parts may be swapped, so they take no part in the first match.
@@ -128,6 +131,18 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
 
     c.perfect_designs = int(c.nets_exact == c.nets and c.wrong_nets == 0)
     return c
+
+
+def _pin_aliases(truth: Design) -> dict[PinRef, PinRef]:
+    known = {p for n in truth.nets for p in n.pins}
+    aliases = {}
+    for comp in truth.components:
+        names = Counter(p.name for p in comp.pins if p.name)
+        for pin in comp.pins:
+            alias = (comp.ref, pin.name)
+            if pin.name and names[pin.name] == 1 and alias not in known:
+                aliases[alias] = (comp.ref, pin.num)
+    return aliases
 
 
 def match_nets(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> dict[int, int]:

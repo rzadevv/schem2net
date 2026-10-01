@@ -27,14 +27,16 @@ POWER_NAME_GAP = 2.5  # mm between a power symbol and its name
 POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
 OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
-PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name
+PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name, unless the profile says
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
+PIECE_GAP = 2.6  # mm between pieces of one drawn symbol
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 
 # A part value such as 100nF, 4.7uH, 10k or 0R, which is never a power net.
+PAD_COUNT = re.compile(r"\*\d+$")  # Eagle writes a pin on several pads as "A6*2"
 PART_VALUE = re.compile(r"^\d+([.,]\d+)?\s*[pnuμµmkKMG]?\s*(F|H|R|Ω|ohms?)?$")
 
 
@@ -51,7 +53,7 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 symbol.anchors = _anchors(symbol, scene)
     _assign_refs(symbols, texts, runs, profile)
     _number_pins(symbols, scene, profile)
-    _assign_values(symbols, texts, runs)
+    _assign_values(symbols, texts, runs, profile.pin_name_gap)
 
 
 class _Texts:
@@ -282,10 +284,10 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
                 continue
             text = texts.texts[ti]
             match = REFDES.match(text.text)
-            if not match or _is_pin_name(symbol, text):
+            if not match or is_pin_name(symbol, text, profile.pin_name_gap):
                 continue
             cost = gap
-            if match.group(1) not in COMMON_PREFIXES:
+            if match.group(1).rstrip("$") not in COMMON_PREFIXES:
                 cost += UNKNOWN_PREFIX_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
@@ -296,18 +298,20 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
 
     # One text per symbol, minimising total cost. Then symbols drawn in pieces
     # (diode arrays, relay coils) share the text of the piece that got it.
-    taken, used = set(), set()
+    taken, used = set(), {}
     for si, ti in _best_pairs(candidates):
         _set_ref(parts[si], texts.texts[ti].text)
         taken.add(si)
-        used.add(ti)
-    for cost, si, ti in candidates:
+        used[ti] = si
+    for _, si, ti in candidates:
         if si in taken or ti not in used:
             continue
-        if runs.owns(parts[si], texts.texts[ti].seq) if runs else cost < REF_SEARCH:
+        # Without drawing order, only a piece right beside the one named can share it.
+        beside = geometry.bbox_gap(parts[si].bbox, parts[used[ti]].bbox) <= PIECE_GAP
+        if runs.owns(parts[si], texts.texts[ti].seq) if runs else beside:
             _set_ref(parts[si], texts.texts[ti].text)
             taken.add(si)
-    texts.used |= used
+    texts.used |= set(used)
 
 
 def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int]]:
@@ -364,7 +368,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
     named, used = set(), set()
     for _, t, i in sorted(options):
         if t not in used and i not in named:
-            pins[i].number = numbers[t].text
+            pins[i].number = PAD_COUNT.sub("", numbers[t].text)  # "A6*2": pin A6, two pads
             named.add(i)
             used.add(t)
 
@@ -391,6 +395,38 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
             order = sorted(part_pins, key=lambda p: (down * p.at[1], p.at[0]))
         for number, pin in enumerate(order, 1):
             pin.number = str(number)
+
+    _name_pins(symbols, scene, used, profile.pin_name_gap)
+
+
+def _name_pins(symbols: list[Symbol], scene: Scene, used: set[int], name_gap: float) -> None:
+    """A pin drawn with its name but no number is known by its name."""
+    texts = [t for i, t in enumerate(scene.pin_numbers) if i not in used] + scene.fields
+    options = []
+    for symbol in symbols:
+        unnamed = [p for p in symbol.pins if p.number is None]
+        if not symbol.ref or not unnamed:
+            continue
+        for t, text in enumerate(texts):
+            if not is_pin_name(symbol, text, name_gap):
+                continue
+            c = geometry.center(text.bbox)
+            for pin in unnamed:
+                inward = geometry.unit(pin.line[1], pin.line[0])
+                ahead = (c[0] - pin.line[0][0]) * inward[0] + (c[1] - pin.line[0][1]) * inward[1]
+                gap = geometry.distance(c, pin.line[0])
+                if ahead > 0 and gap <= name_gap + max(_size(text), 1.0):
+                    options.append((gap, t, id(pin), pin))
+    taken, named = set(), set()
+    for _, t, key, pin in sorted(options, key=lambda o: o[0]):
+        if t not in taken and key not in named:
+            pin.number = texts[t].text
+            taken.add(t)
+            named.add(key)
+
+
+def _size(text: Text) -> float:
+    return max(text.bbox[2] - text.bbox[0], text.bbox[3] - text.bbox[1])
 
 
 def _triangle_corners(symbol: Symbol, scene: Scene) -> list[Point]:
@@ -428,7 +464,9 @@ def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | No
     return gap if -0.3 <= gap <= PIN_NUMBER_GAP else None
 
 
-def _assign_values(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> None:
+def _assign_values(
+    symbols: list[Symbol], texts: _Texts, runs: Runs | None, name_gap: float
+) -> None:
     """The value is the next text drawn after the designator, or else the nearest one."""
     for symbol in symbols:
         if not symbol.ref:
@@ -436,7 +474,7 @@ def _assign_values(symbols: list[Symbol], texts: _Texts, runs: Runs | None) -> N
         options = [
             (text.seq if runs else gap, i)
             for gap, i in texts.near(symbol.bbox, REF_SEARCH / 2)
-            if not _is_pin_name(symbol, text := texts.texts[i])
+            if not is_pin_name(symbol, text := texts.texts[i], name_gap)
             and (not runs or runs.owns(symbol, text.seq))
         ]
         if options:
@@ -462,7 +500,7 @@ def _is_net_name(text: str) -> bool:
     return any(c.isalpha() for c in text)
 
 
-def _is_pin_name(symbol: Symbol, text: Text) -> bool:
+def is_pin_name(symbol: Symbol, text: Text, gap: float = PIN_NAME_GAP) -> bool:
     """Pin names sit inside the body, next to the inner end of a pin, written along it."""
     if len(symbol.pins) <= 2 or not symbol.body:
         return False
@@ -470,7 +508,7 @@ def _is_pin_name(symbol: Symbol, text: Text) -> bool:
     x0, y0, x1, y1 = symbol.body
     if not (x0 + 0.3 <= c[0] <= x1 - 0.3 and y0 + 0.3 <= c[1] <= y1 - 0.3):
         return False
-    reach = PIN_NAME_GAP + max(text.bbox[2] - text.bbox[0], text.bbox[3] - text.bbox[1]) / 2
+    reach = gap + max(text.bbox[2] - text.bbox[0], text.bbox[3] - text.bbox[1]) / 2
     vertical_text = round(text.angle) % 180 == 90
     return any(
         geometry.distance(c, pin.line[0]) <= reach

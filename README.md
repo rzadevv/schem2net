@@ -16,6 +16,8 @@ Early development.
 - Altium PDFs exported as Smart PDF carry their netlist in the bookmarks,
   which is read directly. Extraction from the Altium drawing itself works
   for most boards; hidden pin numbers are the main gap.
+- Eagle PDFs are read too, including text drawn with Eagle's stroke font.
+  This is early work.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
@@ -24,6 +26,8 @@ Early development.
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
+| C, Eagle | Dev | 118 | 8,969 | 0.27 | 0.24 |
+| C, Eagle | Test | 53 | 3,881 | 0.23 | 0.20 |
 
 ## Install
 
@@ -82,6 +86,8 @@ make bench      # score the extractor on its dev split
 make corpus-b   # fetch corpus B (Altium PDFs and their boards)
 make bench-b    # score extraction from the drawing on its dev split
 make bench-schematic  # write corpus A as KiCad projects and check them with kicad-cli
+make corpus-c   # fetch corpus C (SparkFun Eagle PDFs and their .sch)
+make bench-c    # score extraction on its dev split
 ```
 
 See [docs/benchmark.md](docs/benchmark.md) for the corpora and metrics, and

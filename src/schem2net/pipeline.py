@@ -11,7 +11,7 @@ from schem2net.primitives import Page
 from schem2net.scene import Scene
 from schem2net.symbols import Symbol
 
-PROFILES = {"kicad", "altium"}
+PROFILES = {"kicad", "altium", "eagle"}
 
 
 @dataclass
@@ -86,7 +86,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     rules = profile.load(generator)
     netlister = Netlister(labels_span_pages=rules.labels_span_pages)
     for result in pages:
-        kind = "vector" if region else ingest.page_kind(result.page)
+        # Text drawn as strokes leaves a page with almost no text objects, like a board.
+        kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.stroke_font))
         if kind != "vector":
             design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
             continue

@@ -34,12 +34,22 @@ def read_netlist(path: str | Path) -> Design:
         )
 
     nets = []
+    named: dict[tuple[str, str], str] = {}  # (ref, pin) -> the pin's function name
     for net in sexpr.children(sexpr.child(root, "nets") or [], "net"):
-        pins = [(sexpr.value(n, "ref"), sexpr.value(n, "pin")) for n in sexpr.children(net, "node")]
+        nodes = sexpr.children(net, "node")
+        pins = [(sexpr.value(n, "ref"), sexpr.value(n, "pin")) for n in nodes]
+        for n, pin in zip(nodes, pins, strict=True):
+            if sexpr.value(n, "pinfunction"):
+                named[pin] = sexpr.value(n, "pinfunction")
         nets.append(
             Net(id=f"n{sexpr.value(net, 'code')}", name=sexpr.value(net, "name"), pins=pins)
         )
 
+    for comp in components:
+        known = {p.num for p in comp.pins}
+        comp.pins += [Pin(num=num) for ref, num in named if ref == comp.ref and num not in known]
+        for pin in comp.pins:
+            pin.name = named.get((comp.ref, pin.num), pin.name)
     return Design(
         source=Source(file=path.name, generator="kicad"), components=components, nets=nets
     )

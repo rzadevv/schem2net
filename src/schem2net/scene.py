@@ -1,12 +1,12 @@
 """Stages 3-4: sort a page's primitives into wires, symbol graphics and texts."""
 
 import math
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
-from schem2net import geometry
-from schem2net.geometry import GridIndex, Segment
+from schem2net import geometry, strokes
+from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Color, Page, Path, Point, Text
 from schem2net.profile import Profile
 from schem2net.refdes import is_common_ref
@@ -88,6 +88,10 @@ def build(page: Page, profile: Profile) -> Scene:
     paths = _unique_paths(page.paths)
     crosses, scene.no_connects = _no_connect_crosses(paths)
     paths = [p for p in paths if p.seq not in crosses]
+    stroked: list[Text] = []
+    if profile.stroke_font:
+        stroked, used = strokes.read(paths, profile.stroke_font)
+        paths = [p for p in paths if p.seq not in used]
     if profile.infer_wire_colour:
         profile = _with_wire_colour(paths, profile)
         profile = _with_body_colours(paths, profile)
@@ -119,7 +123,7 @@ def build(page: Page, profile: Profile) -> Scene:
     label_texts = {"local": [], "global": [], "hier": []}
     recoloured = []  # texts in a colour no role has, such as labels given their own
     sheet_files, bus_texts = [], []
-    visible = [t for t in page.texts if t.visible]
+    visible = [t for t in page.texts if t.visible] + stroked
     known = set().union(*profile.colors.values())
     for text in _join_runs(_unique_texts(visible)):
         if profile.sheet_path_prefix and text.text.startswith(profile.sheet_path_prefix):
@@ -129,8 +133,12 @@ def build(page: Page, profile: Profile) -> Scene:
                 sheet_files.append(text)
         elif profile.is_("field", text.color):
             scene.fields.append(text)
+            if profile.is_("pin_number", text.color):  # one colour for both: let either use it
+                scene.pin_numbers.append(text)
         elif profile.is_("pin_number", text.color):
             scene.pin_numbers.append(text)
+            if profile.designators_in_pin_colour and is_common_ref(text.text):
+                scene.fields.append(text)  # a designator in the pin number colour
         elif profile.is_("local_label", text.color):
             label_texts["local"].append(text)
         elif profile.is_("hier_label", text.color):
@@ -153,8 +161,21 @@ def build(page: Page, profile: Profile) -> Scene:
     # Sheet borders can have any colour, so every closed outline is a candidate.
     outlines_any = [
         sub for p in paths if p.stroke and not p.fill for sub in p.subpaths if _closed(sub)
-    ]
+    ] + _outlines_from_lines(page.paths)  # before dropping copies: flags share sides
     used = _find_sheets(scene, sheet_files, pin_outlines, bus_texts, outlines_any)
+    if profile.labels_in_outlines:
+        # Labels share the field colour; they are the ones in an outline on a wire.
+        wire_index = GridIndex()
+        for k, wire in enumerate(scene.wires):
+            wire_index.add(k, geometry.bbox_of(wire))
+        on_wires = [o for o in outlines_any if _meets_wire(o, scene.wires, wire_index)]
+        boxed = list(_outlined(scene.fields, on_wires))
+        for text, outline in boxed:
+            scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
+            used.add(id(outline))
+        taken = {id(text) for text, _ in boxed}
+        scene.fields = [t for t in scene.fields if id(t) not in taken]
+        scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in taken]
     for text, outline in _outlined(label_texts["global"], outlines["global"]):
         scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
         used.add(id(outline))
@@ -391,6 +412,62 @@ def _find_sheets(
         scene.sheets.append(sheet)
         used.add(id(outline))
     return used
+
+
+def _outlines_from_lines(paths: list[Path]) -> list[list[Point]]:
+    """Closed outlines drawn one side at a time, such as Eagle's label flags: lines
+    drawn one after another in one style whose ends close a loop."""
+    out = []
+    run: list[Path] = []
+    for path in [*sorted(paths, key=lambda p: p.seq), None]:
+        if (
+            path is not None
+            and _is_line(path)
+            and run
+            and path.seq == run[-1].seq + 1
+            and path.stroke == run[-1].stroke
+            and abs(path.width - run[-1].width) < 1e-3  # text inside is drawn thinner
+        ):
+            run.append(path)
+            continue
+        if len(run) >= 3:
+            sides = {tuple(sorted(map(tuple, p.subpaths[0]))): p for p in run}  # drawn twice
+            out += _loops([tuple(p.subpaths[0]) for p in sides.values()])
+        run = [path] if path is not None and _is_line(path) else []
+    return out
+
+
+def _loops(lines: list[tuple[Point, Point]]) -> list[list[Point]]:
+    """The closed polygons among some lines: groups where every corner joins two."""
+
+    def key(p: Point) -> tuple[float, float]:
+        return round(p[0], 2), round(p[1], 2)
+
+    joined = UnionFind()
+    ends: dict[tuple[float, float], list[int]] = defaultdict(list)
+    for i, (a, b) in enumerate(lines):
+        joined.find(i)
+        for p in (a, b):
+            for j in ends[key(p)]:
+                joined.union(i, j)
+            ends[key(p)].append(i)
+    loops = []
+    for group in joined.groups().values():
+        corners = Counter(key(p) for i in group for p in lines[i])
+        if len(group) < 3 or any(n != 2 for n in corners.values()):
+            continue
+        # Walk round the loop from one corner.
+        left = set(group)
+        a, b = lines[group[0]]
+        left.discard(group[0])
+        points = [a, b]
+        while left:
+            i = next(i for i in left if key(points[-1]) in (key(lines[i][0]), key(lines[i][1])))
+            left.discard(i)
+            p, q = lines[i]
+            points.append(q if key(p) == key(points[-1]) else p)
+        loops.append(points)
+    return loops
 
 
 def _closed(points: list[Point]) -> bool:

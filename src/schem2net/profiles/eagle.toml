@@ -1,0 +1,29 @@
+# Eagle's schematic colours: the classic palette and the one of Eagle 9.
+# Names, values, pin names and pad numbers share one colour, so their roles
+# come from where they sit.
+
+[colors]
+wire = [[0, 128, 0], [13, 171, 118]]
+symbol = [[128, 0, 0], [201, 13, 12]]  # parts, pins and supply symbols
+field = [[128, 128, 128], [80, 80, 80]]  # names and values, pin names, labels
+pin_number = [[128, 128, 128], [80, 80, 80], [128, 0, 0], [201, 13, 12]]  # pads, on either layer
+
+[order]
+designators_in_pin_colour = true  # Eagle 9 writes designators in the symbol red
+
+[text]
+font = "eagle"  # most text is drawn with Eagle's vector font, as strokes
+
+[labels]
+span_pages = true  # nets with one name are one net on every sheet
+in_outlines = true  # a name in an outline that meets a wire is a net label
+
+[power]
+unnamed_ground = "GND"
+
+[pins]
+max_width = 0.6  # mm
+min_length = 0.5  # mm
+numbers_above = true  # pad numbers sit above horizontal pins
+at_body_edge = true  # many symbols draw no pin line; wires end on the outline
+name_gap = 2.6  # mm; pin names sit well inside the outline
