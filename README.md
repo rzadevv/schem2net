@@ -40,6 +40,7 @@ schem2net export board.pdf --to bom            # parts grouped by value, board.b
 schem2net export board.pdf --to spice          # SPICE netlist to start a simulation, board.cir
 schem2net report board.pdf                     # nets drawn over the schematic, board.html
 schem2net schematic board.pdf                  # editable KiCad project, board-kicad/
+schem2net diff old.pdf new.pdf                 # parts and connections that changed
 ```
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports
@@ -49,6 +50,9 @@ into the PCB editor; footprints are not in the PDF, so assign them in KiCad.
 sit where the PDF drew them; each part gets a symbol made from its own outline,
 and named nets are carried by labels. KiCad reads back the same netlist that
 was extracted.
+
+`diff` matches parts by designator and nets by the pins they share, so a
+renamed net is not reported, but a pin moving to another net is.
 
 The report colours each net, circles pins of low-confidence nets in red and
 marks problems the checks found in orange. Click a net in the list to highlight

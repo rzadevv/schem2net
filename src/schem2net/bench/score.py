@@ -82,9 +82,9 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
 
     # Pins of symmetric parts may be swapped, so they take no part in the first match.
     loose = {(c.ref, n) for c in truth.components if _is_symmetric(c) for n in ("1", "2")}
-    match = _match([n - loose for n in true_nets], [n - loose for n in pred_nets])
+    match = match_nets([n - loose for n in true_nets], [n - loose for n in pred_nets])
     pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, match, truth.components)
-    match = _match(true_nets, pred_nets)
+    match = match_nets(true_nets, pred_nets)
 
     true_owner = _owners(true_nets)
     pred_owner = _owners(pred_nets)
@@ -130,7 +130,7 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     return c
 
 
-def _match(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> dict[int, int]:
+def match_nets(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> dict[int, int]:
     """Pair true and predicted nets one-to-one, maximising total Jaccard overlap."""
     if not true_nets or not pred_nets:
         return {}

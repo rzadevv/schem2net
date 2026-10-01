@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from schem2net import diff as revisions
 from schem2net import export as exporters
 from schem2net import kicad_sch, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
@@ -77,6 +78,15 @@ def schematic(
     output = output or file.with_name(file.stem + "-kicad")
     root = kicad_sch.write(extraction, output, file.stem)
     typer.echo(root)
+
+
+@app.command("diff")
+def diff_(
+    old: Annotated[Path, typer.Argument(help="Earlier revision: a PDF or JSON from extract.")],
+    new: Annotated[Path, typer.Argument(help="Later revision.")],
+) -> None:
+    """List parts added, removed or changed in value, and pins that moved between nets."""
+    typer.echo(revisions.render(revisions.diff(_load(old), _load(new))), nl=False)
 
 
 def _load(file: Path) -> Design:

@@ -1,6 +1,6 @@
 """Export, queries and the HTML report, on a small made-up design."""
 
-from schem2net import bookmarks, export, kicad, kicad_sch, report, sexpr, symbols
+from schem2net import bookmarks, diff, export, kicad, kicad_sch, report, sexpr, symbols
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 from schem2net.nets import Netlister
 from schem2net.pipeline import Extraction, PageResult
@@ -163,3 +163,22 @@ def test_spice_values():
         "0",
         "22p",
     ]
+
+
+def test_diff_reports_changed_parts_and_moved_pins():
+    new = DESIGN.model_copy(deep=True)
+    new.components = [c for c in new.components if c.ref != "R2"] + [part("R3", "1k", "1", "2")]
+    new.components[0].value = "4k7"  # R10
+    gnd, unnamed, led, vin = new.nets
+    gnd.name = "AGND"  # renamed only
+    unnamed.pins = [("R10", "2")]
+    vin.pins = [*vin.pins, ("U1", "1")]
+
+    change = diff.diff(DESIGN, new)
+
+    assert change.added == ["R3"] and change.removed == ["R2"]
+    assert change.revalued == [("R10", "10k", "4k7")]
+    moved = {net.name: (net.joined, net.left) for net in change.nets}
+    assert moved["VIN"] == ([("U1", "1")], [])
+    assert "AGND" not in moved
+    assert diff.diff(DESIGN, DESIGN).empty
