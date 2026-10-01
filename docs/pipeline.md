@@ -9,7 +9,7 @@ and the benchmark read.
 | 1 | Detect the generator and page kind | `ingest.py` | done |
 | 2 | Read paths and text in millimetres, top-left origin | `pdf.py` | done |
 | 3 | Drop duplicates, rejoin split text | `scene.py` | done |
-| 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py`, `strokes.py` | KiCad, Altium, Eagle |
+| 4 | Sort primitives into wires, symbol graphics, labels and fields | `scene.py`, `strokes.py`, `fills.py`, `grid.py` | KiCad, Altium, Eagle |
 | 5 | Join wires at shared ends and junction dots | `nets.py` | done |
 | 6 | Find pins, group symbols, attach designators and pin numbers | `symbols.py`, `fields.py` | KiCad, Altium, Eagle |
 | 7 | Attach labels and power symbols, follow sheets and buses | `nets.py`, `buses.py` | KiCad, Altium |
@@ -101,7 +101,19 @@ Smart PDF, is not part of the drawing and is ignored.
 Eagle writes most text with its vector font, as strokes, so `strokes.py` reads
 it back: strokes drawn one after another in one style are cut into lines and
 letters, and each letter is matched against a table of known shapes, in a frame
-set by its line's baseline and height. Names, values, pin names and pad numbers
+set by its line's baseline and height. A curve drawn as one polyline stays in
+one letter. Eagle 9 has a second vector font with rounder letters; the table
+holds both. Text in a proportional font, and all text from some PDF printers,
+arrives as filled outlines instead, one path per string; `fills.py` splits each
+into letters by where the outlines overlap and compares a coarse raster of each
+letter, with its width and height against the baseline, to a second table.
+
+Eagle snaps wires to a 2.54 mm grid. A sheet printed to fit the paper keeps that
+pattern at another spacing, so `grid.py` finds the spacing all wire ends agree
+on and scales the page back to the size it was drawn at before reading it; the
+sizes the rest of the pipeline expects, pin lengths and text gaps, then hold.
+
+Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit. Net labels are the
 names inside an outline that meets a wire. Many Eagle symbols draw no pin
 lines: a wire ending on a part's outline is a pin there, numbered by the text

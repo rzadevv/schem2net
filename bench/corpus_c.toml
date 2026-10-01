@@ -1,5 +1,8 @@
 # Corpus C: SparkFun schematic PDFs drawn in Eagle, paired with the .sch in the
 # board's repository, which gives the true netlist. Only references are stored here.
+# A product page sometimes links the schematic of a related board; such pairs were
+# dropped (the .sch wires do not land on the PDF's, or the PDF belongs to another
+# project in this list).
 
 test_share = 0.33
 
@@ -28,27 +31,11 @@ pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/ADXL335_Br
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-adxl337_breakout"
-repo = "https://github.com/sparkfun/ADXL337_Breakout"
-commit = "33483f20d2949f4ce7cfe4f7bacc6ba97d760380"
-eagle = "hardware/ADXL337 Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/9/b/0/1/5/SparkFun_Qwiic_ADXL313.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-adxl362_breakout"
 repo = "https://github.com/sparkfun/ADXL362_Breakout"
 commit = "a86b4ee533ffbfb155e21086a12cb769c809b64d"
 eagle = "Hardware/ADXL362_BOB.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/ADXL362%20BOB%20v01.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-adxl377_breakout"
-repo = "https://github.com/sparkfun/ADXL377_Breakout"
-commit = "bbee1e5230de224a8172eb295fbedf3f7183dad0"
-eagle = "hardware/ADXL377 Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/f/0/9/c/1/Qwiic_KX13X-Schematic.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -73,14 +60,6 @@ repo = "https://github.com/sparkfun/Ardumoto-Motor_Driver_Shield"
 commit = "d3d378dbd3cb1878b0a692185f2dee1c71ec5f50"
 eagle = "Hardware/SparkFun_Ardumoto.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Robotics/SparkFun_Ardumoto_v20.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-audio-sound_breakout-wtv020sd"
-repo = "https://github.com/sparkfun/Audio-Sound_Breakout-WTV020SD"
-commit = "49c82a621b14d175038679c5e619bc6068ba8e11"
-eagle = "hardware/Audio-Sound_Breakout-v10.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/d/a/b/6/5/SparkFun_Little_Soundie_Audio_Player.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -116,22 +95,6 @@ pdf_url = "https://cdn.sparkfun.com/assets/2/3/c/8/7/ACS723_Low_Current_Sensor.p
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-esp32_motion_shield"
-repo = "https://github.com/sparkfun/ESP32_Motion_Shield"
-commit = "86c0a7dfbb4e5433fb3c3ab9f232f6d79eba62fc"
-eagle = "Hardware/ESP32_GPS_Motion_Shield.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/5/0/7/esp32-thing-schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-esp32_power_control_shield"
-repo = "https://github.com/sparkfun/ESP32_Power_Control_Shield"
-commit = "71b236032759b46502d88ae6c81a1bbaaead8bd2"
-eagle = "Hardware/SparkFun_ESP32_Power_Control_Shield.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/5/0/7/esp32-thing-schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-esp8266_wifi_shield"
 repo = "https://github.com/sparkfun/ESP8266_WiFi_Shield"
 commit = "c551bd3124e6f7ccdc8770694a7301cf8de55559"
@@ -153,14 +116,6 @@ repo = "https://github.com/sparkfun/FT232RL_USB_Breakout"
 commit = "4369f532c0bd06f8b7366bb23263989d4752bffe"
 eagle = "Hardware/FT232R-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/FT232R-Breakout_v37.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-ftdi_basic_breakout-3.3v"
-repo = "https://github.com/sparkfun/FTDI_Basic_Breakout-3.3V"
-commit = "559923073987c7d6491d778c2d651a084f007f90"
-eagle = "Hardware/FTDI Basic-3.3V.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/f/0/c/d/7/FTDI_Basic-v24-5V.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -188,43 +143,11 @@ pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Magneto/HMC6343%20Breakou
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-htu21d_breakout"
-repo = "https://github.com/sparkfun/HTU21D_Breakout"
-commit = "1ef6be92c153d287ce00103b5626581cf2453120"
-eagle = "hardware/SparkFun_HTU21D_Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Weather/SparkFun_Si7021_Breakout.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-hall-effect_current_sensor_breakout-acs712"
-repo = "https://github.com/sparkfun/Hall-Effect_Current_Sensor_Breakout-ACS712"
-commit = "45ecc335494038eda988a18f86e1d269c104b73d"
-eagle = "Hardware/SparkFun_ACS712_Breakout_v11.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/c/f/4/a/1/SparkFun_ACS723_Current_Sensor_Breakout.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-i2s_audio_breakout"
-repo = "https://github.com/sparkfun/I2S_Audio_Breakout"
-commit = "2aaacbc40572ad36f5545b8f2e1d9428e2b6c87b"
-eagle = "Hardware/SparkFun_I2S_Audio_Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Wireless/WiFi/SparkFun_ESP8266_Thing.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-isl29125_breakout"
 repo = "https://github.com/sparkfun/ISL29125_Breakout"
 commit = "62c8eba3ab9c588d4bfba5dfd08126b9aae0c5fd"
 eagle = "Hardware/SparkFun_ISL29125_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/LightImaging/ISL29125%20Breakout-v10.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-led_ringcoder_breakout"
-repo = "https://github.com/sparkfun/LED_RingCoder_Breakout"
-commit = "1f3fa7bb33dfd16cfc5ee14d1cc13e215499fe83"
-eagle = "Hardware/LED-RingCoder.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/e/1/a/4/7/MD-15141-_Rotary_Encoder_-_Illuminated__RGB_.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -244,14 +167,6 @@ pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/LP55231_breakout.p
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-lsm6ds3_breakout"
-repo = "https://github.com/sparkfun/LSM6DS3_Breakout"
-commit = "0192c51341cb6fb4de6494be41f39fb937d00208"
-eagle = "Hardware/LSM6DS3_Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/3/1/6/b/c/SparkFun_Qwiic_6DoF_LSM6DSO_Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-lsm9ds1_breakout"
 repo = "https://github.com/sparkfun/LSM9DS1_Breakout"
 commit = "f6f446785e7b84c9c0337efa93dc794b745047b9"
@@ -265,14 +180,6 @@ repo = "https://github.com/sparkfun/LTE_Cat_M1_Shield"
 commit = "c8f7a2d402df13d1b446599c275bb8ee2efd46da"
 eagle = "Hardware/lte_cat_m1_shield_sara-r4.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/7/b/c/3/lte_cat_m1_shield_schematic_v11.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-low_current_sensor_breakout-acs712"
-repo = "https://github.com/sparkfun/Low_Current_Sensor_Breakout-ACS712"
-commit = "e3eb53142b669611a43727dfc4fdd3435dd53f3d"
-eagle = "Hardware/SparkFun_ACS712LowCurrentSensorBoard.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/2/3/c/8/7/ACS723_Low_Current_Sensor.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -329,22 +236,6 @@ repo = "https://github.com/sparkfun/MPU-6050_Breakout"
 commit = "b44970f5f1c3fa00e20a8ec7de29b02b293b55dc"
 eagle = "Hardware/Triple_Axis_Accelerometer_-_Gyro_Breakout_-_MPU-6050.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/IMU/Triple_Axis_Accelerometer-Gyro_Breakout_-_MPU-6050_v12.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-mpu-9150_breakout"
-repo = "https://github.com/sparkfun/MPU-9150_Breakout"
-commit = "ec74536b7178e422a0e76cd3beac0497361280f1"
-eagle = "hardware/mpu-9150_breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/c/7/8/f/8/15335_9DoF_Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-mpu-9250_breakout"
-repo = "https://github.com/sparkfun/MPU-9250_Breakout"
-commit = "158f711d91e509d07f4d088a74b452be4a0498a4"
-eagle = "Hardware/SparkFun_MPU-9250_Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/sparkfun-samd21-mini-breakout-v10.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -444,27 +335,11 @@ pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Infrared/PhotoInterrupter
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-photon_battery_shield"
-repo = "https://github.com/sparkfun/Photon_Battery_Shield"
-commit = "e05122a9daf00855778d367c3ee5e02a48e9866a"
-eagle = "Hardware/Photon Battery Shield.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Wireless/WiFi/SparkFun_ESP8266_Thing.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-photon_imu_shield"
 repo = "https://github.com/sparkfun/Photon_IMU_Shield"
 commit = "ab938eed62efcc0a5827469e087cf8922ef0d5bb"
 eagle = "Hardware/Photon-IMU-Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/IoT/Photon-IMU-Shield-v10.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-photon_oled_shield"
-repo = "https://github.com/sparkfun/Photon_OLED_Shield"
-commit = "212da855ad4a4102880535e37ac74228ce51ea57"
-eagle = "Hardware/Photon_Micro_OLED_Shield.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Wireless/WiFi/SparkFun_ESP8266_Thing.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -480,14 +355,6 @@ name = "sparkfun-qwiicbus_endpoint"
 repo = "https://github.com/sparkfun/QwiicBus_EndPoint"
 commit = "8fc4ecef143374cbf4f067815523c82b772396ce"
 eagle = "Hardware/SparkFun_QwiicBus_Endpoint.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/b/8/9/5/a/SparkFun_QwiicBus_Endpoint-Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-qwiicbus_midpoint"
-repo = "https://github.com/sparkfun/QwiicBus_MidPoint"
-commit = "9c70be768c1fad4b398189a8754eada608b81969"
-eagle = "Hardware/SparkFun_QwiicBus-Midpoint.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/b/8/9/5/a/SparkFun_QwiicBus_Endpoint-Schematic.pdf"
 license = "CC-BY-SA-4.0"
 
@@ -521,14 +388,6 @@ repo = "https://github.com/sparkfun/Qwiic_Alphanumeric_Display_Breakout"
 commit = "2bd85e46282ff49d0aa283dd6bf2537445b0c9c4"
 eagle = "Hardware/Qwiic_Alphanumeric_Display.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/7/2/8/a/Qwiic_Alphanumeric_Display.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-qwiic_atmospheric_sensor_breakout_bme280"
-repo = "https://github.com/sparkfun/Qwiic_Atmospheric_Sensor_Breakout_BME280"
-commit = "4d0272afefd409215c3d6ae85742fada386b4d3f"
-eagle = "Hardware/Qwiic_Atmospheric_Sensor.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Weather/SparkFun_BME280_Breakout_v10.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -628,14 +487,6 @@ pdf_url = "https://cdn.sparkfun.com/assets/7/f/2/5/3/SparkFun_Qwiic_Haptic_Motor
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-qwiic_hat_for_raspberry_pi"
-repo = "https://github.com/sparkfun/Qwiic_Hat_for_Raspberry_Pi"
-commit = "398c9a96426808707a5230f6aac4adc2eb47b9eb"
-eagle = "Hardware/Qwiic Shield for RaspberryPi.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/a/4/b/9/1/Qwiic_pHat_for_Raspberry_Pi.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-qwiic_human_presence_sensor_breakout_ak9753"
 repo = "https://github.com/sparkfun/Qwiic_Human_Presence_Sensor_Breakout_AK9753"
 commit = "0640c2d5ef47fa5c3a4e75f9ebf3833a15a43a04"
@@ -724,27 +575,11 @@ pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/OpenLog_v15.pd
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-qwiic_pir"
-repo = "https://github.com/sparkfun/Qwiic_PIR"
-commit = "8132e1f2ec74cea78ec4cd35bb0d9fb76c95fd5c"
-eagle = "Hardware/Qwiic_PIR.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/a/b/3/8/7/SparkFun_PIR_Breakout-Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-qwiic_pi_shim"
 repo = "https://github.com/sparkfun/Qwiic_Pi_SHIM"
 commit = "095c0e48cb4c9248ca8158f78ce8b28fcf513069"
 eagle = "Hardware/Qwiic Pi SHIM.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/8/b/0/f/0/Qwiic_Pi_SHIM_Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-qwiic_proximity_sensor"
-repo = "https://github.com/sparkfun/Qwiic_Proximity_Sensor"
-commit = "91ffb48310cdd66f5dddbaa3abc744a3a54b33ff"
-eagle = "Hardware/Qwiic Proximity Sensor - VCNL4040.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/0/8/a/7/a/SparkFun_Pressure_Sensor_BMP581_Qwiic-Schematic.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -756,27 +591,11 @@ pdf_url = "https://cdn.sparkfun.com/assets/5/4/9/f/6/Qwiic_Quad_Relay_Schematic-
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-qwiic_quad_solid_state_relay"
-repo = "https://github.com/sparkfun/Qwiic_Quad_Solid_State_Relay"
-commit = "59d3c32c11b5c6d17c4e521ee3f2ee5d9f8946aa"
-eagle = "Hardware/Qwiic Solid State Relay.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/6/8/4/0/a/Qwiic_Dual_Solid_State_Relay_Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-qwiic_rtc_module"
 repo = "https://github.com/sparkfun/Qwiic_RTC_Module"
 commit = "5405a6007d2e7da4f44f99ac6ce445181ad8dbbc"
 eagle = "Hardware/RTC-Module.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/5/7/0/4/6/SparkFun-Qwiic-RTC-Module.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-qwiic_relay"
-repo = "https://github.com/sparkfun/Qwiic_Relay"
-commit = "36e5b5aafdb939b2cc74af057ffbf6de28a2a05f"
-eagle = "Hardware/Qwiic_Relay.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/5/e/e/d/f/3V_Relay_Datasheet_en-g5le.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -876,35 +695,11 @@ pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/RS485_Breakout_v10
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-rotary_encoder_breakout-illuminated"
-repo = "https://github.com/sparkfun/Rotary_Encoder_Breakout-Illuminated"
-commit = "69eb25b6b3d355e09e15be48e5cc76ed686bef70"
-eagle = "Hardware/SparkFun_Rotary_Encoder-Illuminated.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/e/1/a/4/7/MD-15141-_Rotary_Encoder_-_Illuminated__RGB_.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-rotary_switch_breakout"
 repo = "https://github.com/sparkfun/Rotary_Switch_Breakout"
 commit = "93597d85a1a09a20ca7acc237a5db2e4701f1980"
 eagle = "Hardware/Rotary_Switch_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/Rotary_Switch_Breakout.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-samd21_dev_breakout"
-repo = "https://github.com/sparkfun/SAMD21_Dev_Breakout"
-commit = "9c4b619b4b6146528eab549a3de53a3f256623e8"
-eagle = "Hardware/sparkfun-samd21-pro-breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/sparkfun-samd21-mini-breakout-v10.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-samd21_mini_breakout"
-repo = "https://github.com/sparkfun/SAMD21_Mini_Breakout"
-commit = "0ab627c88b03218041f27305f78b2eead01c10cd"
-eagle = "Hardware/sparkfun-samd21-mini-breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/Arduino-Pro-Mini-v14.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -964,14 +759,6 @@ pdf_url = "https://cdn.sparkfun.com/assets/7/7/7/2/0/SparkFun_Qwiic_FS3000_1X1.p
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-sparkfun_analog_mems_microphone_breakout_sph8878lr5"
-repo = "https://github.com/sparkfun/SparkFun_Analog_MEMS_Microphone_Breakout_SPH8878LR5H-1"
-commit = "6fdde02f80773b89b7e22c833be2f66062808a6e"
-eagle = "Hardware/SparkFun_Analog_MEMS_Microphone_Breakout_SPH8878LR5H-1.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/Spectrum_Shield_v16.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-sparkfun_audio_codec_breakout_wm8960"
 repo = "https://github.com/sparkfun/SparkFun_Audio_Codec_Breakout_WM8960"
 commit = "1657fe53b7154518bdd9ad54b5810272ddb1a50f"
@@ -993,14 +780,6 @@ repo = "https://github.com/sparkfun/SparkFun_Cryptographic_Co-Processor_Breakout
 commit = "15daf16f88f406587da28e356ad43c16106a45a0"
 eagle = "Hardware/SparkFun_Cryptographic_Co-processor_ATECC508A.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/3/1/d/4/SparkFun_Qwiic_Cryptographic__ATECC508A_Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-sparkfun_differential_i2c_breakout_pca9615_qwiic"
-repo = "https://github.com/sparkfun/SparkFun_Differential_I2C_Breakout_PCA9615_Qwiic"
-commit = "dcc926f29d086032d0bbfad0241684e0e6c932e4"
-eagle = "Hardware/SparkFun_Differential_I2C_Breakout_PCA9615_Qwiic.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/b/8/9/5/a/SparkFun_QwiicBus_Endpoint-Schematic.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1196,30 +975,6 @@ pdf_url = "https://cdn.sparkfun.com/assets/c/a/a/7/b/Qwiic_RFID_Tag.pdf"
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-sparkfun_qwiic_speaker_amp"
-repo = "https://github.com/sparkfun/SparkFun_Qwiic_Speaker_Amp"
-commit = "970841701bcaed594718527d4c8701a41c875c81"
-eagle = "Hardware/SparkFun_Qwiic_Speaker_Amp.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/7/2/4/6/4/SparkFun_Noisy_Cricket.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-sparkfun_qwiic_tof_imager_vl53l5cx"
-repo = "https://github.com/sparkfun/SparkFun_Qwiic_ToF_Imager_VL53L5CX"
-commit = "1e03ff7a52851caac4ca806b8c251e23f04458d1"
-eagle = "Hardware/SparkFun Qwiic ToF Imager - VL53L5CX.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/3/5/c/e/2/Qwiic_Distance_Sensor_-_VL53L1X.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-sparkfun_qwiic_tof_imager_vl53l5cx-mini"
-repo = "https://github.com/sparkfun/SparkFun_Qwiic_ToF_Imager_VL53L5CX-Mini"
-commit = "1ae1bdeba1f19a4e01caacbd90e18480dd7df72d"
-eagle = "Hardware/SparkFun Qwiic ToF Imager - VL53L5CX - Mini.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/3/5/c/e/2/Qwiic_Distance_Sensor_-_VL53L1X.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-sparkfun_qwiic_dtof_imager-tmf882x"
 repo = "https://github.com/sparkfun/SparkFun_Qwiic_dToF_Imager-TMF882X"
 commit = "9a61a9a3802b5b55334b010f91acde8422aa801d"
@@ -1244,14 +999,6 @@ pdf_url = "https://cdn.sparkfun.com/assets/f/d/8/2/1/SparkFun_Tsunami_Qwiic_SCHE
 license = "CC-BY-SA-4.0"
 
 [[project]]
-name = "sparkfun-sparkfun_usb-c_vertical_breakout"
-repo = "https://github.com/sparkfun/SparkFun_USB-C_Vertical_Breakout"
-commit = "716752535e44619b63dedbd6dc8e722fb9107638"
-eagle = "Hardware/USB C Vertical Breakout-PTH.sch"
-pdf_url = "https://cdn.sparkfun.com/assets/6/1/7/9/8/USB-C-Breakout_Schematic.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
 name = "sparkfun-sparkfun_ultrasonic_distance_sensor-qwiic"
 repo = "https://github.com/sparkfun/SparkFun_Ultrasonic_Distance_Sensor-Qwiic"
 commit = "cc095946ec6af1ab446bc70706e2b697bbc701c2"
@@ -1272,14 +1019,6 @@ name = "sparkfun-that_1206_breakout"
 repo = "https://github.com/sparkfun/THAT_1206_Breakout"
 commit = "893444584e87029ffe3cbcda66454c870ab8d048"
 eagle = "Hardware/THAT_1206_Breakout.sch"
-pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/THAT_1206_Breakout_Board.pdf"
-license = "CC-BY-SA-4.0"
-
-[[project]]
-name = "sparkfun-that_1646_breakout"
-repo = "https://github.com/sparkfun/THAT_1646_Breakout"
-commit = "e2cfcdaf1dcda7ae9d8f163449030f277c5d98a2"
-eagle = "Hardware/THAT_1646_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/THAT_1206_Breakout_Board.pdf"
 license = "CC-BY-SA-4.0"
 

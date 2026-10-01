@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
-from schem2net import geometry, strokes
+from schem2net import fills, geometry, strokes
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Color, Page, Path, Point, Text
 from schem2net.profile import Profile
@@ -88,10 +88,13 @@ def build(page: Page, profile: Profile) -> Scene:
     paths = _unique_paths(page.paths)
     crosses, scene.no_connects = _no_connect_crosses(paths)
     paths = [p for p in paths if p.seq not in crosses]
-    stroked: list[Text] = []
-    if profile.stroke_font:
-        stroked, used = strokes.read(paths, profile.stroke_font)
+    drawn: list[Text] = []  # text drawn as strokes or as filled outlines
+    if profile.text_font:
+        drawn, used = strokes.read(paths, profile.text_font)
         paths = [p for p in paths if p.seq not in used]
+        filled, used = fills.read(paths, profile.text_font)
+        paths = [p for p in paths if p.seq not in used]
+        drawn += filled
     if profile.infer_wire_colour:
         profile = _with_wire_colour(paths, profile)
         profile = _with_body_colours(paths, profile)
@@ -123,7 +126,7 @@ def build(page: Page, profile: Profile) -> Scene:
     label_texts = {"local": [], "global": [], "hier": []}
     recoloured = []  # texts in a colour no role has, such as labels given their own
     sheet_files, bus_texts = [], []
-    visible = [t for t in page.texts if t.visible] + stroked
+    visible = [t for t in page.texts if t.visible] + drawn
     known = set().union(*profile.colors.values())
     for text in _join_runs(_unique_texts(visible)):
         if profile.sheet_path_prefix and text.text.startswith(profile.sheet_path_prefix):

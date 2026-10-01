@@ -4,7 +4,7 @@ import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from schem2net import bookmarks, ingest, pdf, profile, scene, symbols
+from schem2net import bookmarks, grid, ingest, pdf, profile, scene, symbols
 from schem2net.ir import Design, Issue, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Page
@@ -87,10 +87,13 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     netlister = Netlister(labels_span_pages=rules.labels_span_pages)
     for result in pages:
         # Text drawn as strokes leaves a page with almost no text objects, like a board.
-        kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.stroke_font))
+        kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
         if kind != "vector":
             design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
             continue
+        factor = grid.scale(result.page, rules)
+        if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
+            result.page = grid.rescale(result.page, 1 / factor)
         result.scene = scene.build(result.page, rules)
         result.symbols = symbols.find(result.scene, rules)
         netlister.add_page(result.scene, result.symbols)

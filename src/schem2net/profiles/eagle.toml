@@ -11,8 +11,11 @@ pin_number = [[128, 128, 128], [80, 80, 80], [128, 0, 0], [201, 13, 12]]  # pads
 [order]
 designators_in_pin_colour = true  # Eagle 9 writes designators in the symbol red
 
+[wires]
+grid = 2.54  # mm; pages printed to fit the paper are scaled back by it
+
 [text]
-font = "eagle"  # most text is drawn with Eagle's vector font, as strokes
+font = "eagle"  # text drawn as strokes in Eagle's vector font, or as filled outlines
 
 [labels]
 span_pages = true  # nets with one name are one net on every sheet

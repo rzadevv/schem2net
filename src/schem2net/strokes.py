@@ -140,7 +140,11 @@ def _runs(strokes: list[Path]) -> list[list[Path]]:
         runs[-1].append(s)
     out = []
     for run in runs:
-        lengths = sorted(geometry.distance(*s.subpaths[0]) for s in run)
+        # Measured by pen stroke: a curve cut into many short pieces is still one.
+        drawn: dict[int, float] = {}
+        for s in run:
+            drawn[s.id] = drawn.get(s.id, 0.0) + geometry.distance(*s.subpaths[0])
+        lengths = sorted(drawn.values())
         step = JUMP * max(lengths[len(lengths) // 2], 0.2)
         piece = [run[0]]
         for prev, s in zip(run, run[1:], strict=False):
@@ -161,16 +165,24 @@ def _lines(run: list[Path]) -> list[Line]:
     horizontal = not (abs(last[1] - first[1]) > abs(last[0] - first[0]) and y1 - y0 > x1 - x0)
     k, sign = (0, 1) if horizontal else (1, -1)  # turned text reads up: y decreases
 
+    # A polyline is one pen stroke: its pieces stay in one glyph.
+    pieces: list[list[Path]] = []
+    for s in run:
+        if pieces and pieces[-1][-1].id == s.id:
+            pieces[-1].append(s)
+        else:
+            pieces.append([s])
+
     glyphs: list[list[Path]] = []
     lo = hi = 0.0
-    for s in run:
-        a, b = s.subpaths[0]
-        start, end = sorted((sign * a[k], sign * b[k]))
+    for piece in pieces:
+        ends = [sign * p[k] for s in piece for p in s.subpaths[0]]
+        start, end = min(ends), max(ends)
         if glyphs and lo - 0.02 <= end and start <= hi + 0.02:
-            glyphs[-1].append(s)
+            glyphs[-1] += piece
             lo, hi = min(lo, start), max(hi, end)
         else:
-            glyphs.append([s])
+            glyphs.append(piece)
             lo, hi = start, end
 
     lines: list[list[Glyph]] = []

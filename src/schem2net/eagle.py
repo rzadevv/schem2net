@@ -1,8 +1,10 @@
 """Read the netlist of an Eagle schematic (.sch, XML).
 
 Used as ground truth for Eagle PDFs. Nets join pins by name in the schematic;
-each pin is mapped to the pads of its package, which are what the PDF numbers.
-Parts without pads, such as frames, supply symbols and logos, are not components.
+each pin is mapped to the pad of its package, which is what the PDF numbers. A pin
+on several pads is drawn with the first of them and a count ("1*56"), so it is
+that one pad here. Parts without pads, such as frames, supply symbols and logos,
+are not components.
 """
 
 import xml.etree.ElementTree as ET
@@ -18,8 +20,8 @@ def read(path: str | Path) -> Design:
     if schematic is None:
         raise ValueError(f"{path}: not an Eagle schematic")
 
-    # (library, deviceset, device) -> {(gate, pin name): [pads]}
-    pads: dict[tuple[str, str, str], dict[tuple[str, str], list[str]]] = {}
+    # (library, deviceset, device) -> {(gate, pin name): pad}
+    pads: dict[tuple[str, str, str], dict[tuple[str, str], str]] = {}
     for library in schematic.iterfind("libraries/library"):
         lib = _library_key(library.get("name", ""), library.get("urn"))
         for deviceset in library.iterfind("devicesets/deviceset"):
@@ -28,8 +30,9 @@ def read(path: str | Path) -> Design:
                     continue
                 key = (lib, deviceset.get("name", ""), device.get("name", ""))
                 pads[key] = {
-                    (c.get("gate", ""), c.get("pin", "")): c.get("pad", "").split()
+                    (c.get("gate", ""), c.get("pin", "")): c.get("pad", "").split()[0]
                     for c in device.iterfind("connects/connect")
+                    if c.get("pad", "").strip()
                 }
 
     parts: dict[str, tuple[str, str, str]] = {}
@@ -42,7 +45,7 @@ def read(path: str | Path) -> Design:
         name = part.get("name", "")
         parts[name] = key
         # Pins sharing a name are told apart by "@2" and so on, which is never drawn.
-        named = {pad: pin.split("@")[0] for (_, pin), pins in pads[key].items() for pad in pins}
+        named = {pad: pin.split("@")[0] for (_, pin), pad in pads[key].items()}
         pins = [Pin(num=pad, name=named[pad]) for pad in sorted(named)]
         components.append(Component(ref=name, value=part.get("value"), pins=pins))
 
@@ -53,7 +56,8 @@ def read(path: str | Path) -> Design:
                 part = ref.get("part", "")
                 if part not in parts:
                     continue
-                for pad in pads[parts[part]].get((ref.get("gate", ""), ref.get("pin", "")), []):
+                pad = pads[parts[part]].get((ref.get("gate", ""), ref.get("pin", "")))
+                if pad:
                     members[net.get("name", "")].add((part, pad))
 
     nets = [

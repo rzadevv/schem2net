@@ -50,23 +50,31 @@ def test_eagle_netlist_uses_pads(tmp_path):
     assert [c.ref for c in design.components] == ["R1", "U1"]  # the frame has no pads
     nets = {n.name: n.pins for n in design.nets}
     assert nets["VOUT"] == [("R1", "1"), ("U1", "3")]
-    assert nets["GND"] == [("R1", "2"), ("U1", "2"), ("U1", "4")]  # one pin, two pads
+    # A pin on two pads is drawn as its first pad, "2*2".
+    assert nets["GND"] == [("R1", "2"), ("U1", "2")]
     u1 = next(c for c in design.components if c.ref == "U1")
-    assert {p.num: p.name for p in u1.pins} == {"1": "IN", "2": "GND", "3": "OUT", "4": "GND"}
+    assert {p.num: p.name for p in u1.pins} == {"1": "IN", "2": "GND", "3": "OUT"}
 
 
-def _drawn(text: str, x: float, y: float, height: float, seq: int) -> list[Path]:
-    """Draw a word with the font's own glyph shapes, the way a PDF would."""
+def _drawn(
+    text: str, x: float, y: float, height: float, seq: int, joined: bool = False, shape: int = 0
+) -> list[Path]:
+    """Draw a word with the font's own glyph shapes, the way a PDF would: a path per
+    line, or with `joined`, a polyline wherever lines meet end to end."""
     table = json.loads(
         resources.files("schem2net").joinpath("profiles", "eagle_font.json").read_text()
     )
-    shapes = {e["char"]: e["shapes"][0] for e in table}
+    shapes = {e["char"]: e["shapes"][min(shape, len(e["shapes"]) - 1)] for e in table}
     paths = []
     for i, char in enumerate(text):
         left = x + i * 0.9 * height
         for (a, b), (c, d) in shapes[char]:
-            points = [(left + a * height, y - b * height), (left + c * height, y - d * height)]
-            paths.append(Path(seq, [points], 0.15, (80, 80, 80), None, seq=seq))
+            start, end = (left + a * height, y - b * height), (left + c * height, y - d * height)
+            last = paths[-1].subpaths[0] if paths else None
+            if joined and last and last[-1] == start and paths[-1].seq == seq - 1:
+                last.append(end)
+                continue
+            paths.append(Path(seq, [[start, end]], 0.15, (80, 80, 80), None, seq=seq))
             seq += 1
     return paths
 
@@ -76,3 +84,11 @@ def test_stroke_text_is_read():
     texts, used = strokes.read(paths, "eagle")
     assert sorted(t.text for t in texts) == ["10k", "R12"]
     assert len(used) == len(paths)
+
+
+def test_stroke_text_drawn_as_polylines_is_read():
+    # Eagle 9 draws a curve as one polyline of many short pieces.
+    paths = _drawn("DOG", 10, 20, 1.8, 0, joined=True, shape=1)
+    assert any(len(p.subpaths[0]) > 2 for p in paths)
+    texts, _ = strokes.read(paths, "eagle")
+    assert [t.text for t in texts] == ["DOG"]

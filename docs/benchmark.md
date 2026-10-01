@@ -32,15 +32,24 @@ extraction from the drawing.
 
 Corpus C pairs the schematic PDF on a SparkFun product page with the `.sch`
 in the board's repository, taken at the last commit before the PDF was made.
-`eagle.py` reads the netlist from the `.sch`, mapping each pin to the pads of
-its package, which is what the PDF numbers. Pin names are kept too, so a pin
-drawn with its name and no number still scores. Some PDFs were printed through
-a PDF printer that turned all text into outlines; those cannot be read yet.
+`eagle.py` reads the netlist from the `.sch`, mapping each pin to the pad of
+its package, which is what the PDF numbers. A pin on several pads is printed
+with its first pad and a count, as in `1*56`, so the truth holds it as that
+one pad. Pin names are kept too, so a pin drawn with its name and no number
+still scores. A product page sometimes links
+the schematic of a related board, so each pair was checked: the `.sch` wires
+must land on the PDF's when the sheet is laid over the page, and a PDF linked
+from several projects stays only with the board it was made from. 138 pairs
+remain.
 
-Eagle draws most text with its own stroke font. `schem2net build-font c` learns
-the shapes of its letters from the corpus C dev split: each stroked line of
-text is paired with the `.sch` text of the same length placed at that spot,
-and the table is written to `profiles/eagle_font.json`.
+Eagle draws most text with its own stroke font, and some PDFs carry text as
+filled outlines. `schem2net build-font c` learns the shapes of both kinds of
+letters from the corpus C dev split: the `.sch` sheet is laid over the page by
+the wires both share, each line of text is paired with the `.sch` text of the
+same length placed at that spot (net labels, names and values, symbol text,
+pin names and pad numbers), and the tables are written to
+`profiles/eagle_font.json` and `profiles/eagle_fills.json`. Test boards are
+never used.
 
 ## Splits
 

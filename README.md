@@ -16,8 +16,9 @@ Early development.
 - Altium PDFs exported as Smart PDF carry their netlist in the bookmarks,
   which is read directly. Extraction from the Altium drawing itself works
   for most boards; hidden pin numbers are the main gap.
-- Eagle PDFs are read too, including text drawn with Eagle's stroke font.
-  This is early work.
+- Eagle PDFs are read too: text drawn with Eagle's stroke fonts or printed as
+  filled outlines, and sheets printed to fit the paper. Accuracy is lower
+  than for KiCad and Altium.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
@@ -26,8 +27,8 @@ Early development.
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
-| C, Eagle | Dev | 118 | 8,969 | 0.27 | 0.24 |
-| C, Eagle | Test | 53 | 3,881 | 0.23 | 0.20 |
+| C, Eagle | Dev | 96 | 7,038 | 0.56 | 0.50 |
+| C, Eagle | Test | 42 | 2,903 | 0.47 | 0.44 |
 
 ## Install
 

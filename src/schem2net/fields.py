@@ -32,7 +32,7 @@ UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a val
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
-PIECE_GAP = 2.6  # mm between pieces of one drawn symbol
+PIECE_GAP = 1.27  # mm between pieces of one drawn symbol; parts sit a grid step apart
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 
 # A part value such as 100nF, 4.7uH, 10k or 0R, which is never a power net.

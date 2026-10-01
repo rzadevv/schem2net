@@ -10,7 +10,7 @@ import typer
 
 from schem2net import diff as revisions
 from schem2net import export as exporters
-from schem2net import kicad_sch, pdf, pipeline, report, svg
+from schem2net import fills, kicad_sch, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
 from schem2net.bench import font, roundtrip, runner
 from schem2net.bench.score import Counts
@@ -198,11 +198,9 @@ def bench(
 def build_font(
     corpus: CorpusName = "c",
     bench_dir: BenchDir = Path("bench"),
-    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
-        "src/schem2net/profiles/eagle_font.json"
-    ),
+    out_dir: Annotated[Path, typer.Option("-o", "--out-dir")] = Path("src/schem2net/profiles"),
 ) -> None:
-    """Learn the stroke font's glyph shapes from a corpus of Eagle PDFs (dev split)."""
+    """Learn Eagle's glyph shapes, stroked and outlined, from a corpus (dev split)."""
     loaded = corpora.load(corpus, bench_dir)
     dirs = [
         loaded.build_dir(p)
@@ -211,15 +209,18 @@ def build_font(
     ]
     cache = bench_dir / "out" / f"font-samples-{corpus}.json"
     if cache.exists():
-        found = [
-            (c, [tuple(map(tuple, seg)) for seg in s]) for c, s in json.loads(cache.read_text())
-        ]
+        saved = json.loads(cache.read_text())
+        found = [(c, [tuple(map(tuple, seg)) for seg in s]) for c, s in saved["strokes"]]
+        filled = [(c, fills.from_json(s)) for c, s in saved["fills"]]
     else:
         jobs = [(d / "schematic.sch", d / "schematic.pdf") for d in dirs]
         with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
-            found = [s for got in pool.map(font.samples_of, jobs) for s in got]
+            got = list(pool.map(font.samples_of, jobs))
+        found = [s for stroked, _ in got for s in stroked]
+        filled = [s for _, outlined in got for s in outlined]
         cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text(json.dumps(found))
+        saved = {"strokes": found, "fills": [(c, fills.to_json(s)) for c, s in filled]}
+        cache.write_text(json.dumps(saved))
     table = font.build(found)
     # Then glyphs too rare to place by position, from lines missing only them.
     shapes = [
@@ -229,8 +230,13 @@ def build_font(
     with ProcessPoolExecutor(max_workers=3) as pool:
         found += [s for got in pool.map(font.gap_samples_of, jobs) for s in got]
     table = font.build(found)
-    font.write(table, output)
-    typer.echo(f"{output}: {len(table)} characters from {len(found)} glyphs in {len(dirs)} designs")
+    font.write(table, out_dir / "eagle_font.json")
+    filled_table = font.build_fills(filled)
+    font.write(filled_table, out_dir / "eagle_fills.json")
+    typer.echo(
+        f"{len(table)} stroked characters from {len(found)} glyphs, "
+        f"{len(filled_table)} outlined from {len(filled)}, in {len(dirs)} designs"
+    )
 
 
 @app.command("bench-schematic")
