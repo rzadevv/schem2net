@@ -131,6 +131,18 @@ and its pins are often drawn apart, and are joined when drawn one right after
 the other, close together, or when the pins run in across the box's edge. The
 sheet frame is set aside first, so nothing joins it.
 
+## Pages printed without colour
+
+The profiles read roles from colour, so a page printed in black or grey (every
+ink a grey) is first given colours back. `roles.py` predicts the role of each
+path, wire, bus, pin, symbol graphics and so on, from its shape, how its ends
+meet other paths and the paths drawn just before and after it; then the role of
+each text, label, field or pin number, from what it says and which predicted
+wires, outlines and symbol ends it sits on. Each path and text takes its role's
+colour and the page is read as usual. The models are gradient-boosted trees,
+one pair per generator, learned from colour pages (see the benchmark notes) and
+stored as node arrays in `profiles/roles.npz`; reading them needs only numpy.
+
 ## Confidence
 
 Every join is recorded with its kind. A net's confidence is the weight of its

@@ -19,6 +19,8 @@ Early development.
 - Eagle PDFs are read too: text drawn with Eagle's stroke fonts or printed as
   filled outlines, and sheets printed to fit the paper. Accuracy is lower
   than for KiCad and Altium.
+- Pages printed in black or grey are read too, with roles learned from colour
+  pages; they keep most, not all, of the accuracy of colour pages.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |

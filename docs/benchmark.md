@@ -51,6 +51,19 @@ pin names and pad numbers), and the tables are written to
 `profiles/eagle_font.json` and `profiles/eagle_fills.json`. Test boards are
 never used.
 
+## Roles for pages printed in black
+
+`schem2net build-roles` learns what each path and text is from the colour pages
+of every corpus's dev split. The colours are the labels: a path in the wire
+colour is a wire, a text in the label colour a label. No truth netlist is used,
+and test boards are never read. It needs scikit-learn, one of the dev
+dependencies; the trees are written to `profiles/roles.npz`.
+
+To see how pages printed in black fare, recolour a dev PDF's ink to black and
+read it again. With models learned without the board in question, dev pages
+keep this share of their colour pin accuracy: Eagle 93%, KiCad 71%, Altium
+42%. Before, a black page read as nothing.
+
 ## Splits
 
 Each project is assigned to `dev` or `test` by a hash of its name, so the

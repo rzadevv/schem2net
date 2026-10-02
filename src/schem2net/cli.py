@@ -6,6 +6,7 @@ from functools import partial
 from pathlib import Path
 from typing import Annotated
 
+import numpy as np
 import typer
 
 from schem2net import diff as revisions
@@ -13,6 +14,7 @@ from schem2net import export as exporters
 from schem2net import fills, kicad_sch, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
 from schem2net.bench import font, roundtrip, runner
+from schem2net.bench import roles as role_examples
 from schem2net.bench.score import Counts
 from schem2net.ir import Design
 
@@ -237,6 +239,37 @@ def build_font(
         f"{len(table)} stroked characters from {len(found)} glyphs, "
         f"{len(filled_table)} outlined from {len(filled)}, in {len(dirs)} designs"
     )
+
+
+@app.command("build-roles")
+def build_roles(
+    bench_dir: BenchDir = Path("bench"),
+    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
+        "src/schem2net/profiles/roles.npz"
+    ),
+) -> None:
+    """Learn path and text roles from the colour pages of each corpus's dev split, for
+    reading pages printed in black. Needs scikit-learn (the dev dependencies)."""
+    generators = {"a": "kicad", "b": "altium", "c": "eagle"}
+    jobs = []
+    for name, generator in generators.items():
+        try:
+            loaded = corpora.load(name, bench_dir)
+        except FileNotFoundError:
+            continue
+        jobs += [
+            (generator, loaded.build_dir(p) / "schematic.pdf")
+            for p in loaded.projects
+            if loaded.is_built(p) and loaded.split(p) == "dev"
+        ]
+    examples: dict[str, list] = {}
+    with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
+        for (generator, _), pages in zip(jobs, pool.map(role_examples.rows, jobs), strict=True):
+            examples.setdefault(generator, []).extend(pages)
+    with output.open("wb") as f:
+        np.savez_compressed(f, **role_examples.train(examples))
+    counts = ", ".join(f"{g} {sum(len(e[1]) for e in pages)}" for g, pages in examples.items())
+    typer.echo(f"{output}: learned from paths of {counts}")
 
 
 @app.command("bench-schematic")

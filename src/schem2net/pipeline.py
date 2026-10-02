@@ -4,7 +4,7 @@ import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from schem2net import bookmarks, grid, ingest, pdf, profile, scene, symbols
+from schem2net import bookmarks, grid, ingest, pdf, profile, roles, scene, symbols
 from schem2net.ir import Design, Issue, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Page
@@ -91,6 +91,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         if kind != "vector":
             design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
             continue
+        if roles.colourless(result.page):  # printed in black: roles from shapes
+            result.page = roles.recolour(result.page, rules)
         factor = grid.scale(result.page, rules)
         if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
             result.page = grid.rescale(result.page, 1 / factor)

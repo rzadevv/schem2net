@@ -100,7 +100,7 @@ def build(page: Page, profile: Profile) -> Scene:
     outlines: dict[str, list[list[Point]]] = {"global": [], "hier": []}
     pin_outlines: list[list[Point]] = []
 
-    paths = _unique_paths(page.paths)
+    paths = unique_paths(page.paths)
     crosses, scene.no_connects = _no_connect_crosses(paths)
     paths = [p for p in paths if p.seq not in crosses]
     drawn: list[Text] = []  # text drawn as strokes or as filled outlines
@@ -623,7 +623,7 @@ def _across(box: BBox, angle: float) -> tuple[float, float]:
     return box[1], box[3]
 
 
-def _unique_paths(paths: list[Path]) -> list[Path]:
+def unique_paths(paths: list[Path]) -> list[Path]:
     seen, out = set(), []
     for path in paths:
         key = (

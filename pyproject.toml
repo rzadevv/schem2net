@@ -26,6 +26,7 @@ dev = [
     "hypothesis>=6.100",
     "pytest>=8",
     "ruff>=0.5",
+    "scikit-learn>=1.9.1",
 ]
 
 [build-system]
