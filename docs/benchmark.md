@@ -61,8 +61,9 @@ dependencies; the trees are written to `profiles/roles.npz`.
 
 To see how pages printed in black fare, recolour a dev PDF's ink to black and
 read it again. With models learned without the board in question, dev pages
-keep this share of their colour pin accuracy: Eagle 93%, KiCad 71%, Altium
-42%. Before, a black page read as nothing.
+keep this share of their colour pin accuracy: Eagle 98%, KiCad 78%, Altium
+50%. Before, a black page read as nothing. Altium loses most on text: net labels
+and pin names look much alike without their colours.
 
 ## Splits
 

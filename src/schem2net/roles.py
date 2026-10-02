@@ -27,6 +27,7 @@ TOUCH = 0.05  # mm between ends that meet
 DOT = 1.5  # mm; filled shapes smaller than this may be junction dots
 CONTEXT = 5  # paths drawn before and after that a path is compared with
 NEAR = 3.0  # mm around a text searched for what it sits on
+ALONG_GAP = 1.0  # mm between a net label and the wire it sits on
 GREY_SPREAD = 8  # an ink whose red, green and blue differ by no more than this is grey
 
 
@@ -55,13 +56,38 @@ def drawing(page: Page, profile: Profile) -> list[Path]:
     return sorted(paths, key=lambda p: p.seq)
 
 
-def path_features(paths: list[Path], texts: list[Text]) -> np.ndarray:
-    """One row per path, in drawing order: its shape, its contacts, its neighbours."""
-    n = len(paths)
+def contacts(paths: list[Path]) -> list[tuple[list[int], list[int]]]:
+    """For each path and each of its two ends, the paths ending there and the paths
+    passing through it: (meeting, crossing) per end, so four lists per path."""
     ends = [(p.subpaths[0][0], p.subpaths[0][-1]) for p in paths]
     index = geometry.GridIndex(cell=2.0)
     for k, p in enumerate(paths):
         index.add(k, p.bbox)
+    out = []
+    for k in range(len(paths)):
+        per_end = []
+        for e in ends[k]:
+            meet, land = [], []
+            for j in index.near(e, 2 * TOUCH):
+                if j == k:
+                    continue
+                if any(geometry.distance(e, f) < TOUCH for f in ends[j]):
+                    meet.append(j)
+                elif any(
+                    geometry.distance_to_segment(e, s) < TOUCH
+                    for s in geometry.segments(paths[j].subpaths[0])
+                ):
+                    land.append(j)
+            per_end.append((meet, land))
+        out.append(tuple(per_end))
+    return out
+
+
+def path_features(paths: list[Path], texts: list[Text], touching=None) -> np.ndarray:
+    """One row per path, in drawing order: its shape, its contacts, its neighbours."""
+    n = len(paths)
+    touching = touching if touching is not None else contacts(paths)
+    ends = [(p.subpaths[0][0], p.subpaths[0][-1]) for p in paths]
     widths = [round(p.width, 3) for p in paths]
     lines = [len(p.subpaths) == 1 and len(p.subpaths[0]) == 2 and not p.fill for p in paths]
     line_widths = [w for w, line in zip(widths, lines, strict=True) if line]
@@ -79,21 +105,8 @@ def path_features(paths: list[Path], texts: list[Text]) -> np.ndarray:
         a, b = ends[k]
         length = sum(geometry.distance(u, v) for u, v in zip(sub, sub[1:], strict=False))
         axis = lines[k] and (abs(a[0] - b[0]) < 1e-3 or abs(a[1] - b[1]) < 1e-3)
-        meets, lands = [], []  # per end: paths ending there, paths passing through it
-        for e in (a, b):
-            m = t = 0
-            for j in index.near(e, 2 * TOUCH):
-                if j == k:
-                    continue
-                if any(geometry.distance(e, f) < TOUCH for f in ends[j]):
-                    m += 1
-                elif any(
-                    geometry.distance_to_segment(e, s) < TOUCH
-                    for s in geometry.segments(paths[j].subpaths[0])
-                ):
-                    t += 1
-            meets.append(m)
-            lands.append(t)
+        meets = [len(meet) for meet, _ in touching[k]]
+        lands = [len(land) for _, land in touching[k]]
         on_dot = lines[k] and any(dots.near(e, 0.3) for e in (a, b))
         near = text_index.within((x0 - NEAR, y0 - NEAR, x1 + NEAR, y1 + NEAR))
         text_gap = min((geometry.bbox_gap(p.bbox, texts[j].bbox) for j in near), default=NEAR)
@@ -136,6 +149,23 @@ def path_features(paths: list[Path], texts: list[Text]) -> np.ndarray:
     return _matrix(rows)
 
 
+def context_features(scores: np.ndarray, touching, n: int) -> np.ndarray:
+    """One row per path from first guesses at every path's role, as scores per role:
+    its own, the lowest and highest over its two ends of what meets it there, and the
+    mean over the paths drawn around it. A line is a wire if wires carry on from it."""
+    width = scores.shape[1]
+    rows = []
+    for k in range(n):
+        per_end = []
+        for meet, land in touching[k]:
+            near = meet + land
+            per_end.append(scores[near].mean(axis=0) if near else np.zeros(width))
+        around = [j for j in range(max(0, k - CONTEXT), min(n, k + CONTEXT + 1)) if j != k]
+        drawn = scores[around].mean(axis=0) if around else np.zeros(width)
+        rows.append(np.concatenate([scores[k], np.minimum(*per_end), np.maximum(*per_end), drawn]))
+    return np.asarray(rows) if rows else np.zeros((0, 4 * width))
+
+
 def text_features(texts: list[Text], paths: list[Path], roles: list[int]) -> np.ndarray:
     """One row per text: what it says, and the paths of each role it sits on or near."""
     wire, symbol = PATH_ROLES.index("wire"), PATH_ROLES.index("symbol")
@@ -153,6 +183,8 @@ def text_features(texts: list[Text], paths: list[Path], roles: list[int]) -> np.
         for p in paths
         if len(p.subpaths[0]) > 3 and geometry.distance(p.subpaths[0][0], p.subpaths[0][-1]) < 1e-3
     ]
+    bodies = [p.bbox for p, r in zip(paths, roles, strict=True) if r == symbol and p in closed]
+    body_index = _index(bodies)
     closed_index = _index([p.bbox for p in closed])
     text_index = _index([t.bbox for t in texts])
 
@@ -172,6 +204,8 @@ def text_features(texts: list[Text], paths: list[Path], roles: list[int]) -> np.
         ]
         holder = min(holders, key=lambda p: _size(p.bbox), default=None)
         others = [j for j in text_index.within(grown) if j != k]
+        along = _along(t.bbox, [wires[j] for j in wire_index.within(grown)])
+        inside = any(_contains(bodies[j], t.bbox) for j in body_index.within(t.bbox))
         rows.append(
             [
                 len(s),
@@ -188,23 +222,47 @@ def text_features(texts: list[Text], paths: list[Path], roles: list[int]) -> np.
                 holder is not None,
                 _size(holder.bbox) if holder else 0.0,
                 len(others),
+                along,
+                inside,
             ]
         )
     return _matrix(rows)
+
+
+def _along(box, segments) -> float:
+    """The share of a text's length that a wire runs along, just past its long side, as
+    under a net label."""
+    x0, y0, x1, y1 = box
+    best = 0.0
+    for (ax, ay), (bx, by) in segments:
+        across = abs(ay - by) < 1e-3 and x1 > x0  # by the top or bottom of the text
+        upward = abs(ax - bx) < 1e-3 and y1 > y0  # by either side of turned text
+        if across and min(abs(ay - y0), abs(ay - y1)) <= ALONG_GAP:
+            shared = min(x1, max(ax, bx)) - max(x0, min(ax, bx))
+            best = max(best, shared / (x1 - x0))
+        elif upward and min(abs(ax - x0), abs(ax - x1)) <= ALONG_GAP:
+            shared = min(y1, max(ay, by)) - max(y0, min(ay, by))
+            best = max(best, shared / (y1 - y0))
+    return best
 
 
 def recolour(page: Page, profile: Profile, models=None) -> Page:
     """The page with each path and text given the profile's colour for its predicted role.
     Text drawn as strokes, and anything whose role the profile has no colour for, keeps
     its ink."""
-    paths_model, texts_model = models or _models(profile.name)
+    first, second, texts_model = models or _models(profile.name)
     paths = drawing(page, profile)
     texts = [t for t in page.texts if t.visible]
     if not paths:
         return page
-    path_roles = [int(r) for r in paths_model(path_features(paths, texts))]
+    touching = contacts(paths)
+    base = path_features(paths, texts, touching)
+    guesses = context_features(first.scores(base), touching, len(paths))
+    path_roles = [int(r) for r in second.predict(np.hstack([base, guesses]))]
     text_roles = (
-        [int(r) for r in texts_model(text_features(texts, paths, path_roles))] if texts else []
+        [int(r) for r in texts_model.predict(text_features(texts, paths, path_roles))]
+        if texts
+        else []
     )
     # Copies of one path, which the page may hold, take the role found for the first.
     role_of = {_shape_key(p): r for p, r in zip(paths, path_roles, strict=True)}
@@ -243,11 +301,26 @@ class Forest:
     def predict(self, rows: np.ndarray) -> np.ndarray:
         if len(self.classes) == 1:
             return np.full(len(rows), self.classes[0])
+        return self.classes[self._raw(rows).argmax(axis=1)]
+
+    def scores(self, rows: np.ndarray) -> np.ndarray:
+        """How likely each row is to have each role, one column per role of PATH_ROLES
+        and one for none."""
+        out = np.zeros((len(rows), len(PATH_ROLES) + 1))
+        if len(self.classes) == 1:
+            out[:, self.classes[0]] = 1.0
+            return out
+        raw = self._raw(rows)
+        odds = np.exp(raw - raw.max(axis=1, keepdims=True))
+        out[:, self.classes] = odds / odds.sum(axis=1, keepdims=True)
+        return out
+
+    def _raw(self, rows: np.ndarray) -> np.ndarray:
         scores = np.tile(self.baseline, (len(rows), 1))
         per_round = len(self.baseline)
         for t, (start, depth) in enumerate(zip(self.starts, self.depths, strict=True)):
             scores[:, t % per_round] += self._run(int(start), int(depth), rows)
-        return self.classes[scores.argmax(axis=1)]
+        return scores
 
     def _run(self, start: int, depth: int, rows: np.ndarray) -> np.ndarray:
         node = np.full(len(rows), start)
@@ -264,8 +337,7 @@ class Forest:
 def _models(generator: str):
     with resources.files("schem2net").joinpath("profiles", "roles.npz").open("rb") as f:
         arrays = dict(np.load(f))
-    paths, texts = Forest(arrays, f"{generator}.paths"), Forest(arrays, f"{generator}.texts")
-    return paths.predict, texts.predict
+    return tuple(Forest(arrays, f"{generator}.{kind}") for kind in ("paths", "paths2", "texts"))
 
 
 def _role(colour, profile: Profile, roles: tuple[str, ...]) -> int:

@@ -136,11 +136,14 @@ sheet frame is set aside first, so nothing joins it.
 The profiles read roles from colour, so a page printed in black or grey (every
 ink a grey) is first given colours back. `roles.py` predicts the role of each
 path, wire, bus, pin, symbol graphics and so on, from its shape, how its ends
-meet other paths and the paths drawn just before and after it; then the role of
-each text, label, field or pin number, from what it says and which predicted
-wires, outlines and symbol ends it sits on. Each path and text takes its role's
+meet other paths and the paths drawn just before and after it. A second pass
+looks again with the first guesses at the roles of what each path touches: a
+short line is a wire if wires carry on from it, a pin if it ends on a body. Then
+the role of each text, label, field or pin number, is predicted from what it says
+and what it sits on: a wire running along it, a symbol body around it, an
+outline, the end of a pin. Each path and text takes its role's
 colour and the page is read as usual. The models are gradient-boosted trees,
-one pair per generator, learned from colour pages (see the benchmark notes) and
+three per generator, learned from colour pages (see the benchmark notes) and
 stored as node arrays in `profiles/roles.npz`; reading them needs only numpy.
 
 ## Confidence

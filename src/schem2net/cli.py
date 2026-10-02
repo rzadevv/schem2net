@@ -265,10 +265,12 @@ def build_roles(
     examples: dict[str, list] = {}
     with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
         for (generator, _), pages in zip(jobs, pool.map(role_examples.rows, jobs), strict=True):
-            examples.setdefault(generator, []).extend(pages)
+            examples.setdefault(generator, []).append(pages)
     with output.open("wb") as f:
         np.savez_compressed(f, **role_examples.train(examples))
-    counts = ", ".join(f"{g} {sum(len(e[1]) for e in pages)}" for g, pages in examples.items())
+    counts = ", ".join(
+        f"{g} {sum(len(e[1]) for d in designs for e in d)}" for g, designs in examples.items()
+    )
     typer.echo(f"{output}: learned from paths of {counts}")
 
 

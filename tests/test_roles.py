@@ -41,15 +41,29 @@ def test_forest_sums_tree_scores_per_class():
     assert forest.predict(np.array([[2.0], [8.0]])).tolist() == [7, 9]
 
 
+class _Stub:
+    """A model that gives every row the role a rule picks for it."""
+
+    def __init__(self, rule):
+        self.rule = rule
+
+    def predict(self, rows):
+        return np.array([self.rule(r) for r in rows])
+
+    def scores(self, rows):
+        out = np.zeros((len(rows), len(roles.PATH_ROLES) + 1))
+        out[np.arange(len(rows)), self.predict(rows)] = 1.0
+        return out
+
+
 def test_recolour_gives_each_role_its_colour():
     eagle = profile.load("eagle")
     wire, symbol = roles.PATH_ROLES.index("wire"), roles.PATH_ROLES.index("symbol")
     field = roles.TEXT_ROLES.index("field")
+    lines = _Stub(lambda row: wire if row[6] else symbol)  # lines are wires, the rest symbol
+    models = (lines, lines, _Stub(lambda row: field))
 
-    def paths(rows):  # lines are wires, anything else symbol graphics
-        return np.where(rows[:, 6] > 0, wire, symbol)
-
-    page = roles.recolour(_page((0, 0, 0)), eagle, (paths, lambda rows: np.full(len(rows), field)))
+    page = roles.recolour(_page((0, 0, 0)), eagle, models)
     assert eagle.is_("wire", page.paths[0].stroke)
     assert eagle.is_("symbol", page.paths[1].stroke)
     assert eagle.is_("field", page.texts[0].color)
