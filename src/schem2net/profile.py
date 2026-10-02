@@ -28,6 +28,7 @@ class Profile:
     designators_in_pin_colour: bool = False
     labels_span_pages: bool = False
     labels_in_outlines: bool = False
+    labels_show_sheet: bool = False  # "NAME/2": the sheet the net goes on to
     text_font: str | None = None
     not_power_nets: frozenset[str] = frozenset()
     power_names_in_labels: bool = False
@@ -66,6 +67,7 @@ def load(name: str) -> Profile:
         designators_in_pin_colour=order.get("designators_in_pin_colour", False),
         labels_span_pages=labels.get("span_pages", False),
         labels_in_outlines=labels.get("in_outlines", False),
+        labels_show_sheet=labels.get("sheet_reference", False),
         text_font=text.get("font"),
         not_power_nets=frozenset(power.get("not_nets", [])),
         power_names_in_labels=power.get("names_in_labels", False),

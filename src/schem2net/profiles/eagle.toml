@@ -5,8 +5,9 @@
 [colors]
 wire = [[0, 128, 0], [13, 171, 118]]
 symbol = [[128, 0, 0], [201, 13, 12]]  # parts, pins and supply symbols
-field = [[128, 128, 128], [80, 80, 80]]  # names and values, pin names, labels
-pin_number = [[128, 128, 128], [80, 80, 80], [128, 0, 0], [201, 13, 12]]  # pads, on either layer
+# Names and values, pin names, labels; some boards give text layers black.
+field = [[128, 128, 128], [80, 80, 80], [0, 0, 0]]
+pin_number = [[128, 128, 128], [80, 80, 80], [0, 0, 0], [128, 0, 0], [201, 13, 12]]  # pads
 
 [order]
 designators_in_pin_colour = true  # Eagle 9 writes designators in the symbol red
@@ -20,6 +21,7 @@ font = "eagle"  # text drawn as strokes in Eagle's vector font, or as filled out
 [labels]
 span_pages = true  # nets with one name are one net on every sheet
 in_outlines = true  # a name in an outline that meets a wire is a net label
+sheet_reference = true  # cross-reference labels add the sheet the net goes on to, "/2.3B"
 
 [power]
 unnamed_ground = "GND"

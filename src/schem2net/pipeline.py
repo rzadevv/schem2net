@@ -95,6 +95,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
             result.page = grid.rescale(result.page, 1 / factor)
         result.scene = scene.build(result.page, rules)
+        if rules.labels_show_sheet:
+            scene.drop_sheet_references(result.scene, len(doc.pages))
         result.symbols = symbols.find(result.scene, rules)
         netlister.add_page(result.scene, result.symbols)
 

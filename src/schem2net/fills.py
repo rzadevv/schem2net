@@ -9,13 +9,13 @@ table of known letters.
 """
 
 import json
-import re
 from dataclasses import dataclass
 from functools import cache
 from importlib import resources
 
 import numpy as np
 
+from schem2net import strokes
 from schem2net.primitives import BBox, Path, Text
 
 MAX_HEIGHT = 5.0  # mm; filled shapes taller than this across the line are not text
@@ -24,6 +24,9 @@ JOIN = 0.5  # share of the narrower extent two outlines overlap by in one letter
 MAX_MATCH = 0.25  # distance still taken as a match
 SPACE = 0.35  # a gap this many line heights wide between letters is a space
 SCALES = (1.0, 1.15, 0.87, 1.3, 0.77)  # the line height is an estimate; tried in turn
+# Capital I and small l are one bar in most sans fonts, as well as the letters whose
+# capital is only bigger.
+BY_SIZE = {**strokes.BY_SIZE, "l": "I"}
 SCALE_COST = 0.5  # per unit of log scale: a capital is not its small letter scaled down
 
 
@@ -251,19 +254,9 @@ def _text(line: Line, chars: list[str | None]) -> Text:
         if i and glyph.box[0] - line.glyphs[i - 1].box[2] > SPACE * line.height:
             out += " "
         out += char or "?"
+    text = strokes.by_word(out, BY_SIZE)
     angle = 0.0 if line.upright else 90.0
-    return Text(-1, _i_or_l(out), box(line), line.height, angle, line.path.fill, line.path.seq)
-
-
-def _i_or_l(text: str) -> str:
-    """Capital I and small l are one bar in most sans fonts: the rest of the word says
-    which it is."""
-    words = []
-    for word in text.split(" "):
-        letters = [c for c in word if c.isalpha() and c not in "Il"]
-        small = sum(c.islower() for c in letters) > sum(c.isupper() for c in letters)
-        words.append(re.sub("[Il]", "l" if small else "I", word))
-    return " ".join(words)
+    return Text(-1, text, box(line), line.height, angle, line.path.fill, line.path.seq)
 
 
 @cache

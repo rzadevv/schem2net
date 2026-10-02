@@ -5,7 +5,7 @@ import math
 from schem2net import buses, fields, geometry, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
-from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs
+from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs, drop_sheet_references
 from schem2net.scene import build as build_scene
 
 KICAD = profile.load("kicad")
@@ -468,3 +468,27 @@ def test_eagle_connector_box_joins_the_pins_that_cross_into_it():
 def test_part_values_are_never_pad_numbers():
     assert fields._is_value("10k") and fields._is_value("0.1uF") and fields._is_value("4.7")
     assert not fields._is_value("12") and not fields._is_value("A6")
+
+
+def test_sheet_references_leave_label_names():
+    page = Scene(page=1)
+    for text in ("MCLK/2", "LRCK /3.4B", "TX/1", "D/9"):
+        page.labels.append(Label(text, "global", (0, 0, 5, 1), 0.0))
+    drop_sheet_references(page, sheets=3)
+    # Sheet 1 is this one and there is no sheet 9: those are parts of names.
+    assert [label.text for label in page.labels] == ["MCLK", "LRCK", "TX/1", "D/9"]
+
+
+def test_supply_name_anchored_at_one_end_overhangs_its_arrow():
+    """Eagle anchors a supply's name at its left end, so a long name overhangs the arrow."""
+    red, grey = (128, 0, 0), (80, 80, 80)
+    b = SceneBuilder()
+    b.shape((10, 15), (10, 12.5), width=0.15, color=red)  # stem, met by the wire below
+    b.shape((9.2, 13.5), (10, 12.5), (10.8, 13.5), width=0.3, color=red)  # arrow head
+    b.seq += 1
+    name = Text(b.seq, "3.3V", (9.6, 10.4, 14.4, 12.0), 1.6, 0.0, grey, b.seq)
+    b.scene.fields.append(name)
+    b.scene.wires.append(((10, 15), (10, 25)))
+
+    found = symbols.find(b.scene, profile.load("eagle"))
+    assert [s.power for s in found] == ["3.3V"]

@@ -1,6 +1,7 @@
 """Stages 3-4: sort a page's primitives into wires, symbol graphics and texts."""
 
 import math
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
 from typing import Literal
@@ -78,6 +79,20 @@ def name_key(text: str) -> str:
     some fonts map the minus sign to a control character.
     """
     return "".join(text.replace("\x02", "-").split())
+
+
+SHEET_REFERENCE = re.compile(r"\s*/\s*(\d+)(\.\d+[A-Z])?$")  # "/2" or "/2.3B" after a name
+
+
+def drop_sheet_references(scene: Scene, sheets: int) -> None:
+    """Cross-reference labels show, after the net name, the sheet the net goes on to and
+    where on it. That is not part of the name; it is told by naming another sheet of
+    the document, as a name like TX/1 does not."""
+    for label in scene.labels:
+        found = SHEET_REFERENCE.search(label.text)
+        other = found and int(found.group(1)) != scene.page and 1 <= int(found.group(1)) <= sheets
+        if other and found.start() > 0:
+            label.text = label.text[: found.start()]
 
 
 def build(page: Page, profile: Profile) -> Scene:

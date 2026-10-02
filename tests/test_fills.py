@@ -2,7 +2,7 @@
 
 from unittest import mock
 
-from schem2net import fills
+from schem2net import fills, strokes
 from schem2net.primitives import Path
 
 # Two letters as outlines one unit high: an O with its hole, and an L.
@@ -46,5 +46,7 @@ def test_filled_and_stroked_shapes_are_drawing():
     assert texts == [] and used == set()
 
 
-def test_i_or_l_follows_the_word():
-    assert fills._i_or_l("ReIeased PCIe I2C AIike") == "Released PCIe I2C Alike"
+def test_letters_told_apart_by_size_follow_the_word():
+    by_word = strokes.by_word
+    assert by_word("ReIeased PCIe I2C AIike", fills.BY_SIZE) == "Released PCIe I2C Alike"
+    assert by_word("I2C_sCK MoUT NREsET Sensor", strokes.BY_SIZE) == "I2C_SCK MOUT NRESET Sensor"

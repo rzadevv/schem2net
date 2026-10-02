@@ -113,6 +113,14 @@ pattern at another spacing, so `grid.py` finds the spacing all wire ends agree
 on and scales the page back to the size it was drawn at before reading it; the
 sizes the rest of the pipeline expects, pin lengths and text gaps, then hold.
 
+Letters that only size tells from their capitals (c, o, s, v, w, x, z, and
+in sans fonts I and l) take the case of the rest of their word, so one net name
+is not read two ways. Cross-reference labels print the sheet a net goes on to
+after its name, as in `MCLK/2`; that suffix is dropped when it names another
+sheet of the document. A supply's name is anchored at one end and may overhang
+its arrow; a name in line with the symbol is preferred, then one that runs
+across the pin, past the end away from the wire.
+
 Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit. Net labels are the
 names inside an outline that meets a wire. Many Eagle symbols draw no pin

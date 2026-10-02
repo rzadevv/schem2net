@@ -24,6 +24,7 @@ JUMP = 6  # a jump this many times the usual stroke length starts another text
 MAX_MATCH = 0.12  # glyph distance, in text heights, still taken as a match
 SPACE = 0.5  # a gap this many text heights wide between glyphs is a space
 SCALES = (1.0, 1.15, 0.87, 1.3, 0.77)  # tried in this order
+BY_SIZE = {c: c.upper() for c in "cosvwxz"}  # small letters drawn as their capitals, smaller
 MAX_ASPECT_GAP = 0.35  # radians between a glyph's shape and a candidate's
 
 Segment = tuple[Point, Point]
@@ -274,7 +275,24 @@ def _text(line: Line, chars: list[str | None], run: list[Path]) -> Text:
     box = geometry.bbox_of([p for g in line.glyphs for s in g.strokes for p in s.subpaths[0]])
     seq = min(s.seq for g in line.glyphs for s in g.strokes)
     angle = 0.0 if line.horizontal else 90.0
-    return Text(-1, out, box, line.height, angle, run[0].stroke, seq)
+    return Text(-1, by_word(out, BY_SIZE), box, line.height, angle, run[0].stroke, seq)
+
+
+def by_word(text: str, pairs: dict[str, str]) -> str:
+    """Letters that only size tells from another, given as small: capital pairs, take
+    the case of the rest of their word. A word may start with a capital, so its first
+    letter is never made small."""
+    capitals = {v: k for k, v in pairs.items()}
+    words = []
+    for word in text.split(" "):
+        others = [c for c in word if c.isalpha() and c not in pairs and c not in capitals]
+        small = sum(c.islower() for c in others) > sum(c.isupper() for c in others)
+        if others:
+            word = "".join(
+                (capitals.get(c, c) if small and k else pairs.get(c, c)) for k, c in enumerate(word)
+            )
+        words.append(word)
+    return " ".join(words)
 
 
 @cache

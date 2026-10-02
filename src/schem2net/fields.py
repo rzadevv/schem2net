@@ -80,17 +80,19 @@ def _name_power_symbols(
     symbols: list[Symbol], texts: _Texts, scene: Scene, profile: Profile, runs: Runs | None
 ) -> None:
     """Power symbols are small, have at most one pin and a net name next to them."""
-    for symbol in filter(_could_be_power, symbols):
-        for _, i in texts.near(symbol.bbox, POWER_NAME_GAP):
-            text = texts.texts[i]
-            if not _is_power_name(text.text, profile):
-                continue
-            # The name is the first text drawn after the symbol, or else sits in line with it.
-            if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text):
-                symbol.power = text.text
-                symbol.anchors = _anchors(symbol, scene)
-                texts.used.add(i)
-                break
+    # A name in line with the symbol first; only then one that overhangs it.
+    for loose in (False, True):
+        for symbol in filter(_could_be_power, symbols):
+            for _, i in texts.near(symbol.bbox, POWER_NAME_GAP):
+                text = texts.texts[i]
+                if not _is_power_name(text.text, profile):
+                    continue
+                # The first text drawn after the symbol, or else one in line with it.
+                if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text, loose):
+                    symbol.power = text.text
+                    symbol.anchors = _anchors(symbol, scene)
+                    texts.used.add(i)
+                    break
 
 
 def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
@@ -261,15 +263,32 @@ def _anchors(symbol: Symbol, scene: Scene) -> list[Point]:
     return loose or ([base] if base else [])
 
 
-def _in_line(symbol: Symbol, text: Text) -> bool:
-    """True if the text sits beyond the symbol along its pin axis, not beside it."""
+def _in_line(symbol: Symbol, text: Text, loose: bool = False) -> bool:
+    """True if the text sits beyond the symbol along its pin axis, not beside it. Loosely,
+    a name anchored at one end may overhang the symbol: it need only cross the pin's axis."""
     x0, y0, x1, y1 = symbol.bbox
     cx, cy = geometry.center(text.bbox)
     above_or_below = x0 - 0.5 <= cx <= x1 + 0.5 and not y0 < cy < y1
     left_or_right = y0 - 0.5 <= cy <= y1 + 0.5 and not x0 < cx < x1
     if not symbol.pins:
         return above_or_below or left_or_right
-    return left_or_right if geometry.is_horizontal(symbol.pins[0].line) else above_or_below
+    (ax, ay), tx0, ty0, tx1, ty1 = symbol.pins[0].at, *text.bbox
+
+    upright = round(text.angle) % 180 == 0
+
+    def overhangs(lo: float, hi: float, axis: float, a: float, b: float) -> bool:
+        """Runs across the axis, as a name turned with its symbol does, with one end over
+        the symbol, which spans a to b."""
+        across = upright != geometry.is_horizontal(symbol.pins[0].line)
+        ends = (a - 0.5 <= lo <= b + 0.5) or (a - 0.5 <= hi <= b + 0.5)
+        return loose and across and lo - 0.5 <= axis <= hi + 0.5 and ends
+
+    # The name sits past the end away from where the wire meets the pin.
+    if geometry.is_horizontal(symbol.pins[0].line):
+        far = cx < x0 if ax > (x0 + x1) / 2 else cx > x1
+        return left_or_right or (overhangs(ty0, ty1, ay, y0, y1) and far)
+    far = cy < y0 if ay > (y0 + y1) / 2 else cy > y1
+    return above_or_below or (overhangs(tx0, tx1, ax, x0, x1) and far)
 
 
 def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profile: Profile) -> None:
