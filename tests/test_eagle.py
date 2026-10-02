@@ -5,7 +5,7 @@ from dataclasses import replace
 from importlib import resources
 
 from schem2net import eagle, strokes
-from schem2net.primitives import Path
+from schem2net.primitives import Page, Path, Text
 
 SCHEMATIC = """<?xml version="1.0" encoding="utf-8"?>
 <eagle version="9.6.2"><drawing><schematic>
@@ -100,3 +100,18 @@ def test_stroke_text_with_a_fill_is_read():
     paths = [replace(p, fill=p.stroke) for p in _drawn("C7", 10, 20, 1.8, 0)]
     texts, _ = strokes.read(paths, "eagle")
     assert [t.text for t in texts] == ["C7"]
+
+
+def test_text_traced_with_an_invisible_copy_is_read_from_the_copy():
+    """KiCad 7 draws letters as strokes and lays an invisible copy over them."""
+    teal, black = (0, 100, 100), (0, 0, 0)
+    letters = [
+        Path(k, [[(10 + k * 0.5, 20), (10 + k * 0.5, 21.3)]], 0.15, teal, None, seq=k)
+        for k in range(4)
+    ]
+    pin = Path(9, [[(30, 20), (35, 20)]], 0.15, black, None, seq=9)
+    copy = Text(10, "R12", (9.9, 19.9, 11.6, 21.2), 1.3, 0.0, teal, 10, visible=False)
+    marker = Text(11, "1", (31, 19.8, 31.6, 20.4), 0.6, 0.0, teal, 11, visible=False)
+    page = strokes.traced(Page(1, 50, 50, paths=[*letters, pin], texts=[copy, marker]))
+    assert [t.text for t in page.texts if t.visible] == ["R12"]  # the marker has no ink of its own
+    assert page.paths == [pin]

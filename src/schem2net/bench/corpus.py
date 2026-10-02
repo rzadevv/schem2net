@@ -89,6 +89,13 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
                 _build_from_eagle(project, corpus.root / "cache" / "repos", out)
                 log(f"built {project.name}")
                 continue
+            if project.repo and project.pdf:  # a published PDF; the schematic gives the truth
+                src = _checkout(project, corpus.root / "cache" / project.name)
+                shutil.copyfile(src / project.pdf, out / "schematic.pdf")
+                mounts = ["-v", f"{src.resolve()}:/src", "-v", f"{out.resolve()}:/out"]
+                _docker(image, mounts, [*EXPORT_NETLIST, f"/src/{project.schematic}"])
+                log(f"built {project.name}")
+                continue
             if project.repo:
                 src = _checkout(project, corpus.root / "cache" / project.name)
                 mounts = ["-v", f"{src.resolve()}:/src"]
@@ -126,9 +133,12 @@ def _build_from_eagle(project: Project, cache: Path, out: Path) -> None:
     files = repo.with_name(repo.name + "-files") / project.commit
     sch = _show(repo, project.commit, project.eagle, files)
     shutil.copyfile(sch, out / "schematic.sch")
-    request = urllib.request.Request(project.pdf_url, headers={"User-Agent": "schem2net"})
-    with urllib.request.urlopen(request, timeout=120) as response:
-        (out / "schematic.pdf").write_bytes(response.read())
+    if project.pdf:  # exported next to the schematic, in the same commit
+        shutil.copyfile(_show(repo, project.commit, project.pdf, files), out / "schematic.pdf")
+    else:
+        request = urllib.request.Request(project.pdf_url, headers={"User-Agent": "schem2net"})
+        with urllib.request.urlopen(request, timeout=120) as response:
+            (out / "schematic.pdf").write_bytes(response.read())
     (out / "truth.net").write_text(export.kicad_netlist(eagle.read(sch)))
 
 
@@ -163,7 +173,8 @@ def _show(repo: Path, commit: str, path: str, dest: Path) -> Path:
 def _checkout(project: Project, dest: Path) -> Path:
     if not dest.exists():
         _run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout", project.repo, str(dest)])
-        _run(["git", "-C", str(dest), "sparse-checkout", "set", "--no-cone", *SPARSE_PATTERNS])
+        patterns = SPARSE_PATTERNS + ([project.pdf] if project.pdf else [])
+        _run(["git", "-C", str(dest), "sparse-checkout", "set", "--no-cone", *patterns])
     _run(["git", "-C", str(dest), "checkout", "--quiet", project.commit])
     return dest
 

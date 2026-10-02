@@ -9,15 +9,18 @@ baseline and height.
 
 import json
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cache
 from importlib import resources
 
 import numpy as np
 
 from schem2net import geometry
-from schem2net.primitives import BBox, Path, Point, Text
+from schem2net.primitives import BBox, Page, Path, Point, Text
 
+TRACE_SLACK = 0.4  # text heights a traced letter may reach past its copy's box
+LETTER = 1.2  # text heights; a longer stroke is not part of a letter
+TRACE_SPREAD = 0.6  # share of a text's length its letters' ink spans
 MAX_STROKE = 3.0  # mm; longer lines are not parts of letters
 MIN_WIDTH = 0.05  # mm; hairlines are fills and artwork
 JUMP = 6  # a jump this many times the usual stroke length starts another text
@@ -60,6 +63,69 @@ def read(paths: list[Path], font: str) -> tuple[list[Text], set[int]]:
             texts.append(_text(line, chars, run))
             used |= {s.seq for g in line.glyphs for s in g.strokes}
     return texts, used
+
+
+def traced(page: Page) -> Page:
+    """Text drawn as strokes, with an invisible copy laid over it for search, as KiCad 7
+    and 8 write it: the copy is the text, and the strokes under it are its letters.
+
+    An invisible text counts only if ink of its own colour lies within its box, so
+    hidden markers laid over other drawing, such as a Smart PDF's, stay hidden.
+    """
+    hidden = [t for t in page.texts if not t.visible and t.text.strip()]
+    if not hidden:
+        return page
+    index = geometry.GridIndex(cell=3.0)
+    for k, p in enumerate(page.paths):
+        index.add(k, p.bbox)
+    letters: set[int] = set()
+    shown = set()
+    for t in hidden:
+        # The copy's font is not the drawn one: its box can miss the letters' edges.
+        slack = TRACE_SLACK * max(t.size, 0.5)
+        x0, y0, x1, y1 = t.bbox
+        box = (x0 - slack, y0 - slack, x1 + slack, y1 + slack)
+        under = [
+            k
+            for k in index.within(box)
+            if (page.paths[k].stroke or page.paths[k].fill) == t.color
+            and _inside(page.paths[k].bbox, box)
+            and _longest(page.paths[k].bbox) <= LETTER * max(t.size, 0.5)
+        ]
+        if _spells(t, [page.paths[k].bbox for k in under]):
+            letters.update(under)
+            shown.add(id(t))
+    if not shown:
+        return page
+    return replace(
+        page,
+        paths=[p for k, p in enumerate(page.paths) if k not in letters],
+        texts=[replace(t, visible=True) if id(t) in shown else t for t in page.texts],
+    )
+
+
+def _spells(text: Text, boxes: list[BBox]) -> bool:
+    """Ink that could draw the text: a stroke or more for each letter, spread along it.
+    A pin line under a hidden pin marker is not."""
+    letters = sum(not c.isspace() for c in text.text)
+    if not boxes or len(boxes) < letters:
+        return False
+    k = 0 if round(text.angle) % 180 == 0 else 1  # along the reading direction
+    ink = max(b[k + 2] for b in boxes) - min(b[k] for b in boxes)
+    return ink >= TRACE_SPREAD * (text.bbox[k + 2] - text.bbox[k])
+
+
+def _longest(box: BBox) -> float:
+    return max(box[2] - box[0], box[3] - box[1])
+
+
+def _inside(inner: BBox, outer: BBox) -> bool:
+    return (
+        outer[0] <= inner[0]
+        and outer[1] <= inner[1]
+        and inner[2] <= outer[2]
+        and inner[3] <= outer[3]
+    )
 
 
 def runs_and_lines(paths: list[Path]) -> list[Line]:

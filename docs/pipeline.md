@@ -96,7 +96,11 @@ that end on pin ends. Junctions may be drawn as rings, and wires crossing
 without a connection may jump over each other with a small arc, which is read
 as a straight wire. Pages are scaled to fit, so buses are told from wires by
 relative thickness. Text drawn in invisible mode, such as the pin markers of a
-Smart PDF, is not part of the drawing and is ignored.
+Smart PDF, is not part of the drawing and is ignored, with one exception: KiCad
+7 and 8 draw each letter as strokes and lay an invisible copy of the text over
+them for search. An invisible text with ink of its own colour under it, a
+stroke or more per letter spread along it, is that copy: it is read as the
+text, and the strokes under it are dropped as its letters.
 
 Eagle writes most text with its vector font, as strokes, so `strokes.py` reads
 it back: strokes drawn one after another in one style are cut into lines and

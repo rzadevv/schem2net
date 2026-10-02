@@ -1,0 +1,390 @@
+# Corpus D: Olimex boards, held out from development. Each published schematic PDF
+# sits in the board's repository beside the schematic it was printed from, KiCad
+# or Eagle, which gives the true netlist. One revision of each board. Boards kept in
+# KiCad's old .sch format are left out: today's kicad-cli cannot read them.
+
+test_share = 0.5
+
+[[project]]
+name = "olimex-agonlight2-hvio-hardware_agonlight2_hvio_rev_a1_agonlight2_hvio_rev_a1"
+repo = "https://github.com/OLIMEX/AgonLight2-HvIO"
+commit = "42d4c541f873b38df1ba1f53b2cf5026bc1f1484"
+schematic = "HARDWARE/AgonLight2-HvIO_Rev_A1/AgonLight2-HvIO_Rev_A1.kicad_sch"
+pdf = "HARDWARE/AgonLight2-HvIO_Rev_A1/AgonLight2-HvIO_Rev_A1.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-agonlight2-proto-hardware_agonlight2_proto_rev_a_agonlight2_proto_rev_a"
+repo = "https://github.com/OLIMEX/AgonLight2-Proto"
+commit = "031fbbf17cc460e2ba59c15dbed6f616ed48a838"
+schematic = "HARDWARE/AgonLight2-PROTO_Rev_A/AgonLight2-PROTO_Rev_A.kicad_sch"
+pdf = "HARDWARE/AgonLight2-PROTO_Rev_A/AgonLight2-PROTO_Rev_A.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-esp32-c3-devkit-lipo-rdware_esp32_c3_devkit_lipo_rev_d_esp32_c3_devkit_lipo_rev_d"
+repo = "https://github.com/OLIMEX/ESP32-C3-DevKit-Lipo"
+commit = "5d93e79d46cf3b05782d9fe0f95a8a2e1ca6abbe"
+schematic = "HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.kicad_sch"
+pdf = "HARDWARE/ESP32-C3-DevKit-Lipo_Rev_D/ESP32-C3-DevKit-Lipo_Rev_D.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-esp32-c5-devkit-lipo-rdware_esp32_c5_devkit_lipo_rev_a_esp32_c5_devkit_lipo_rev_a"
+repo = "https://github.com/OLIMEX/ESP32-C5-DevKit-Lipo"
+commit = "9fd815855823020bce469280bbbdc2b070bc808a"
+schematic = "HARDWARE/ESP32-C5-DevKit-Lipo-Rev.A/ESP32-C5-DevKit-Lipo_Rev_A.kicad_sch"
+pdf = "HARDWARE/ESP32-C5-DevKit-Lipo-Rev.A/ESP32-C5-DevKit-Lipo_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-esp32-c5-evb-hardware_esp32_c5_evb_rev_a_esp32_c5_evb_rev_a"
+repo = "https://github.com/OLIMEX/ESP32-C5-EVB"
+commit = "60432de9b1d850da9bc7362a1e400b46761e897d"
+schematic = "HARDWARE/ESP32-C5-EVB-Rev.A/ESP32-C5-EVB_Rev_A.kicad_sch"
+pdf = "HARDWARE/ESP32-C5-EVB-Rev.A/ESP32-C5-EVB_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-esp32-c6-devkit-lipo-rdware_esp32_c6_devkit_lipo_rev_a_esp32_c6_devkit_lipo_rev_a"
+repo = "https://github.com/OLIMEX/ESP32-C6-DevKit-Lipo"
+commit = "a63be9d25e3fc40b53d28c002a0380c48b8e2d14"
+schematic = "HARDWARE/ESP32-C6-DevKit-Lipo.Rev.A/ESP32-C6-DevKit-Lipo_Rev_A.kicad_sch"
+pdf = "HARDWARE/ESP32-C6-DevKit-Lipo.Rev.A/ESP32-C6-DevKit-Lipo_Rev_A.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-esp32-evb-hardware_rev_l_esp32_evb_rev_l"
+repo = "https://github.com/OLIMEX/ESP32-EVB"
+commit = "a3ec2f448109cb8f35ce7cb21a027bb7c837ab61"
+schematic = "HARDWARE/REV-L/ESP32-EVB_Rev_L.kicad_sch"
+pdf = "HARDWARE/REV-L/ESP32-EVB_Rev_L.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-esp32-h2-devkit-lipo-rdware_esp32_h2_devkit_lipo_rev_a_esp32_h2_devkit_lipo_rev_a"
+repo = "https://github.com/OLIMEX/ESP32-H2-DevKit-Lipo"
+commit = "ae20af9e8300acc85063bb902e91a34b20a95e2a"
+schematic = "HARDWARE/ESP32-H2-DevKit-Lipo-Rev.A/ESP32-H2-DevKit-LiPo_Rev_A.kicad_sch"
+pdf = "HARDWARE/ESP32-H2-DevKit-Lipo-Rev.A/ESP32-H2-DevKit-LiPo_Rev_A.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-esp32-p4-devkit-hardware_esp32_p4_devkit_rev_d1_esp32_p4_devkit_rev_d1"
+repo = "https://github.com/OLIMEX/ESP32-P4-DevKit"
+commit = "26705d36407a07324348927dfd30fbf4ffc1d94c"
+schematic = "HARDWARE/ESP32-P4-DevKit-Rev.D1/ESP32-P4-DevKit_Rev_D1.kicad_sch"
+pdf = "HARDWARE/ESP32-P4-DevKit-Rev.D1/ESP32-P4-DevKit_Rev_D1.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-esp32-p4-pc-hardware_esp32_p4_pc_rev_c_esp32_p4_pc_rev_c"
+repo = "https://github.com/OLIMEX/ESP32-P4-PC"
+commit = "04032d68e5c727870f9d40beb9e37b7ab3a66916"
+schematic = "HARDWARE/ESP32-P4-PC-Rev.C/ESP32-P4-PC_Rev_C.kicad_sch"
+pdf = "HARDWARE/ESP32-P4-PC-Rev.C/ESP32-P4-PC_Rev_C.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-esp32-poe-hardware_esp32_poe_hardware_revision_m2_esp32_poe_rev_m2"
+repo = "https://github.com/OLIMEX/ESP32-POE"
+commit = "deb38a377d50eadb04ddc7118a17a5ae58b1ee53"
+schematic = "HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.kicad_sch"
+pdf = "HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-esp32-poe-iso-hardware_esp32_poe_iso_rev_o_esp32_poe_iso_rev_o"
+repo = "https://github.com/OLIMEX/ESP32-POE-ISO"
+commit = "6717b292c36480a5406bec33404f86564caa254a"
+schematic = "HARDWARE/ESP32-PoE-ISO-Rev.O/ESP32-PoE-ISO_Rev_O.kicad_sch"
+pdf = "HARDWARE/ESP32-PoE-ISO-Rev.O/ESP32-PoE-ISO_Rev_O.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-esp32-poe2-hardware_esp32_poe2_rev_b_esp32_poe2_rev_b"
+repo = "https://github.com/OLIMEX/ESP32-POE2"
+commit = "2298e609769a2bdc516b0e3894ee2901db9fcbaa"
+schematic = "HARDWARE/ESP32-PoE2_Rev_B/ESP32-PoE2_Rev_B.kicad_sch"
+pdf = "HARDWARE/ESP32-PoE2_Rev_B/ESP32-PoE2_Rev_B.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-esp8266-i_esp8266_mod_wifi_esp8266_revision_a_mod_wifi_esp8266_rev_a"
+repo = "https://github.com/OLIMEX/ESP8266"
+commit = "02d9c1ef525b9dc7b952d500dbc367b56137ce0e"
+eagle = "HARDWARE/MOD-WIFI-ESP8266/MOD-WIFI-ESP8266 revision A/MOD-WiFi-ESP8266_Rev_A.sch"
+pdf = "HARDWARE/MOD-WIFI-ESP8266/MOD-WIFI-ESP8266 revision A/MOD-WIFI-ESP8266_schematic.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-esp8266-v_mod_wifi_esp8266_dev_revision_a_mod_wifi_esp8266_dev_rev_a"
+repo = "https://github.com/OLIMEX/ESP8266"
+commit = "02d9c1ef525b9dc7b952d500dbc367b56137ce0e"
+eagle = "HARDWARE/MOD-WIFI-ESP8266-DEV/MOD-WiFi-ESP8266-DEV revision A/MOD-WiFi-ESP8266-DEV_Rev_A.sch"
+pdf = "HARDWARE/MOD-WIFI-ESP8266-DEV/MOD-WiFi-ESP8266-DEV revision A/MOD-WIFI-ESP8266-DEV_Rev_A.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-gatematea1-evb-hardware_gatematea1_evb_rev_c_gatematea1_evb_rev_c"
+repo = "https://github.com/OLIMEX/GateMateA1-EVB"
+commit = "a2b3e4132a7db64adb5faff1b7263e4c48e14bc7"
+schematic = "HARDWARE/GateMateA1-EVB-Rev.C/GateMateA1-EVB_Rev_C.kicad_sch"
+pdf = "HARDWARE/GateMateA1-EVB-Rev.C/GateMateA1-EVB_Rev_C.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-mipi-hdmi-hardware_mipi_hdmi_rev_b_mipi_hdmi_rev_b"
+repo = "https://github.com/OLIMEX/MIPI-HDMI"
+commit = "cb1ceb0e5e27e2891e31b2f6afd2a93225a65a84"
+schematic = "HARDWARE/MIPI-HDMI-Rev.B/MIPI-HDMI_Rev_B.kicad_sch"
+pdf = "HARDWARE/MIPI-HDMI-Rev.B/MIPI-HDMI_Rev_B.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-mod-esp32-c5-hardware_mod_esp32_c5_rev_a_mod_esp32_c5_rev_a"
+repo = "https://github.com/OLIMEX/MOD-ESP32-C5"
+commit = "4faf40d3d84c8e0fd1fb6df88d7dcc142f270445"
+schematic = "HARDWARE/MOD-ESP32-C5.Rev.A/MOD-ESP32-C5_Rev_A.kicad_sch"
+pdf = "HARDWARE/MOD-ESP32-C5.Rev.A/MOD-ESP32-C5_Rev_A.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-mod-lcd2.8rtp-hardware_schematics_hardware_revision_d_mod_lcd2_8rtp_rev_d"
+repo = "https://github.com/OLIMEX/MOD-LCD2.8RTP"
+commit = "fc0f4fef674d5dedef82f0480e5199f7c1e549d4"
+schematic = "HARDWARE/SCHEMATICS/Hardware-revision-D/MOD-LCD2.8RTP_Rev_D.kicad_sch"
+pdf = "HARDWARE/SCHEMATICS/Hardware-revision-D/MOD-LCD2.8RTP_Rev_D.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-neo6502kbd-hardware_neo6502kbd_rev_a_neo6502kbd_rev_a"
+repo = "https://github.com/OLIMEX/Neo6502kbd"
+commit = "9beb9861eab3543a1962f41e82d8c35c8571509f"
+schematic = "HARDWARE/Neo6502kbd-Rev.A/Neo6502kbd_Rev_A.kicad_sch"
+pdf = "HARDWARE/Neo6502kbd-Rev.A/Neo6502kbd_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-neo6502pc-hardware_neo6502pc_cpu_rev_b_neo6502pc_cpu_rev_b"
+repo = "https://github.com/OLIMEX/Neo6502pc"
+commit = "dff6447ad9366c2dadde288a5e55fc80a9e74fc5"
+schematic = "HARDWARE/Neo6502pc-CPU-rev.B/Neo6502PC-CPU_Rev_B.kicad_sch"
+pdf = "HARDWARE/Neo6502pc-CPU-rev.B/Neo6502PC-CPU_Rev_B.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-neo6502pc-hardware_neo6502pc_pwr_rev_b_neo6502pc_pwr_rev_b"
+repo = "https://github.com/OLIMEX/Neo6502pc"
+commit = "dff6447ad9366c2dadde288a5e55fc80a9e74fc5"
+schematic = "HARDWARE/Neo6502pc-PWR-rev.B/Neo6502PC-PWR_Rev_B.kicad_sch"
+pdf = "HARDWARE/Neo6502pc-PWR-rev.B/Neo6502PC-PWR_Rev_B.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-olimexino-85-hardware_fosdem_85_fosdem_85_rev_a"
+repo = "https://github.com/OLIMEX/OLIMEXINO-85"
+commit = "2084d909d726dab2a898943bce7477428c1d5725"
+eagle = "HARDWARE/FOSDEM-85/FOSDEM-85_Rev_A.sch"
+pdf = "HARDWARE/FOSDEM-85/FOSDEM-85_schematic.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-olimexino-85-hardware_olimexino_85bc_olimexino_85bc_rev_a"
+repo = "https://github.com/OLIMEX/OLIMEXINO-85"
+commit = "2084d909d726dab2a898943bce7477428c1d5725"
+eagle = "HARDWARE/OLIMEXINO-85BC/OLIMEXINO-85BC_Rev_A.sch"
+pdf = "HARDWARE/OLIMEXINO-85BC/OLIMEXINO-85BC_schematic.pdf"
+license = "Apache-2.0"
+
+[[project]]
+name = "olimex-olimexino-stm32f3-ardware_olimexino_stm32f3_revision_d_olimexino_stm32f3_rev_d"
+repo = "https://github.com/OLIMEX/OLIMEXINO-STM32F3"
+commit = "0284b217ba395e54405febc39ebc37b7aefb7881"
+schematic = "HARDWARE/OLIMEXINO-STM32F3-revision-D/OLIMEXINO-STM32F3_Rev_D.kicad_sch"
+pdf = "HARDWARE/OLIMEXINO-STM32F3-revision-D/OLIMEXINO-STM32F3_Rev_D.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-olinuxino-_micro_hardware_revision_d_a10_a20_olinuxino_micro_4gb_rev_d"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision D/A10-A20-OLINUXINO-MICRO-4GB_Rev_D.sch"
+pdf = "HARDWARE/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision D/A10-A20-OLINUXINO-MICRO-4GB_Rev_D.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-cd_olinuxino_7ts_hardware_revision_a_lcd_olinuxino_7ts_rev_a"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/LCDs/LCD-OLinuXino-7TS/Hardware revision A/LCD-OLINUXINO-7TS_Rev_A.sch"
+pdf = "HARDWARE/LCDs/LCD-OLinuXino-7TS/Hardware revision A/LCD-OLINUXINO-7TS_Rev_A.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-hardware_am3352_olinuxino_am3352_olinuxino_rev_a_14122012"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/AM3352-OLinuXino/AM3352-OLINUXINO_Rev_A-14122012.sch"
+pdf = "HARDWARE/AM3352-OLinuXino/AM3352-OLINUXINO_Rev_A-14122012.sch.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-hardware_lcds_a13_lcd10ts_a13_lcd10ts_rev_a"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/LCDs/A13-LCD10TS/A13-LCD10TS_Rev_A.sch"
+pdf = "HARDWARE/LCDs/A13-LCD10TS/A13-LCD10TS_sch.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-ino_micro_hardware_revision_e_a20_olinuxino_micro_4gb_rev_e2"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision E/A20-OLINUXINO-MICRO_4GB_REV_E2.sch"
+pdf = "HARDWARE/A10-OLinuXino-MICRO/A10-OLinuXino-MICRO hardware revision E/A20-OLINUXINO-MICRO_4GB_REV_E2.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-inuxino_maxi_hardware_revision_d_imx233_olinuxino_maxi_rev_d"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/iMX233-OLinuXino-Maxi/2. Older hardware revisions/iMX233-OLinuXino-MAXI hardware revision D/iMX233-OLINUXINO-MAXI_Rev_D.sch"
+pdf = "HARDWARE/iMX233-OLinuXino-Maxi/2. Older hardware revisions/iMX233-OLinuXino-MAXI hardware revision D/iMX233-OLINUXINO-MAXI_Rev_D.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-linuxino_4_3ts_hardware_revision_a_lcd_olinuxino_4_3ts_rev_a"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/LCDs/LCD-OLinuXino-4.3TS/Hardware revision A/LCD-OLINUXINO-4.3TS_Rev_A.sch"
+pdf = "HARDWARE/LCDs/LCD-OLinuXino-4.3TS/Hardware revision A/LCD-OLINUXINO-4.3TS_Rev_A.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-olinuxino-uxino_micro_hardware_revision_d_imx233_olinuxino_micro_rev_d"
+repo = "https://github.com/OLIMEX/OLINUXINO"
+commit = "a8672538a650d3a1eb23c11fe9ef594229333232"
+eagle = "HARDWARE/iMX233-OLinuXino-Micro/2. Older hardware revisions/iMX233-OLinuXino-MICRO hardware revision D/iMX233-OLinuXino-Micro_Rev_D.sch"
+pdf = "HARDWARE/iMX233-OLinuXino-Micro/2. Older hardware revisions/iMX233-OLinuXino-MICRO hardware revision D/iMX233-OLinuXino-Micro_Rev_D.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-pico-evb-hardware_pico_evb_rev_a_pico_evb_rev_a"
+repo = "https://github.com/OLIMEX/PICO-EVB"
+commit = "5a4360986a678dc177df4ea6674fc5769e91e64d"
+schematic = "HARDWARE/PICO-EVB_Rev_A/PICO-EVB_Rev_A.kicad_sch"
+pdf = "HARDWARE/PICO-EVB_Rev_A/PICO-EVB_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-poev3-hardware_poev3_hardware_revision_a_poev3_rev_a"
+repo = "https://github.com/OLIMEX/POEv3"
+commit = "54c9b1e8d783bf90ac4a07f71099d583c9c92fcc"
+schematic = "Hardware/POEv3 hardware revision A/POEv3_Rev_A.kicad_sch"
+pdf = "Hardware/POEv3 hardware revision A/POEv3_Rev_A.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-rp2040pc-hardware_rp2040pc_rev_b_rp2040pc_rev_b"
+repo = "https://github.com/OLIMEX/RP2040pc"
+commit = "3d81895af984d1bc2bd8709f7901a7cf84ba2084"
+schematic = "HARDWARE/RP2040pc-REV.B/RP2040pc_Rev_B.kicad_sch"
+pdf = "HARDWARE/RP2040pc-REV.B/RP2040pc_Rev_B.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-rp2350-pico2-bb48-hardware_rp2350_pico2_bb48_rev_a_pico2_bb48_rev_a"
+repo = "https://github.com/OLIMEX/RP2350-PICO2-BB48"
+commit = "74b030363ca03eea5bfa6dac59cbcd9e4277e910"
+schematic = "HARDWARE/RP2350-PICO2-BB48.REV.A/PICO2-BB48_Rev_A.kicad_sch"
+pdf = "HARDWARE/RP2350-PICO2-BB48.REV.A/PICO2-BB48_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-rp2350-pico2-xxl-hardware_rp2350_pico2_xxl_rev_c_rp2350_pico2_xxl_rev_c"
+repo = "https://github.com/OLIMEX/RP2350-PICO2-XXL"
+commit = "a73c9253e8142eadf8e10bc8a2f13d502ec3fa4a"
+schematic = "HARDWARE/RP2350-PICO2-XXL-Rev.C/RP2350-PICO2-XXL_Rev_C.kicad_sch"
+pdf = "HARDWARE/RP2350-PICO2-XXL-Rev.C/RP2350-PICO2-XXL_Rev_C.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-rp2350pc-hardware_rp2350pc_rev_a_rp2350pc_rev_a"
+repo = "https://github.com/OLIMEX/RP2350pc"
+commit = "1eecb3a6cedeba72fec29e0b494ec0455854e866"
+schematic = "HARDWARE/RP2350pc-Rev.A/RP2350pc_Rev_A.kicad_sch"
+pdf = "HARDWARE/RP2350pc-Rev.A/RP2350pc_Rev_A.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-rvpc-hardware_rvpc_rev_b_rvpc_rev_b"
+repo = "https://github.com/OLIMEX/RVPC"
+commit = "2b9675ba39c29370eafcc6df597609a9d5ea3297"
+schematic = "HARDWARE/RVPC_Rev.B/RVPC_Rev_B.kicad_sch"
+pdf = "HARDWARE/RVPC_Rev.B/RVPC_Rev_B.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-som-a20_a20_som_evb_a20_som_evb_rev_c"
+repo = "https://github.com/OLIMEX/SOM"
+commit = "6a2798c6f8c015fb360993eb86d6c965d028b0c1"
+eagle = "A20/A20-SOM-EVB/A20-SOM-EVB_Rev_C.sch"
+pdf = "A20/A20-SOM-EVB/A20-SOM-EVB_Rev_C.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-stmp15x-shield-inuxino_micro_extension_rev_a_stmp15x_shield_gpio1_extension"
+repo = "https://github.com/OLIMEX/STMP15X-SHIELD"
+commit = "584b609e158f36955ddab94a411c4e137d2825c1"
+eagle = "HARDWARE/STMP15x-SHIELD_Rev_A/Extensions/A10-A20-OLINUXINO-MICRO_Extension_Rev_A_STMP15x-SHIELD_GPIO1_EXTENSION.sch"
+pdf = "HARDWARE/STMP15x-SHIELD_Rev_A/Extensions/A10-A20-OLINUXINO-MICRO_Extension_Rev_A_STMP15x-SHIELD_GPIO1_EXTENSION.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-uext-3to5v-hardware_uext_3to5v_rev_a_uext_3to5v_rev_a"
+repo = "https://github.com/OLIMEX/UEXT-3TO5V"
+commit = "a10fee1703466b9883cc3a483760177ee6be21aa"
+schematic = "HARDWARE/UEXT-3TO5V-Rev.A/UEXT-3TO5V_Rev_A.kicad_sch"
+pdf = "HARDWARE/UEXT-3TO5V-Rev.A/UEXT-3TO5V_Rev_A.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-uext-modules-mod_lcd3310_hardware_mod_lcd3310"
+repo = "https://github.com/OLIMEX/UEXT-MODULES"
+commit = "8730ede82a3820b29b65e40f6b49b7691d973bde"
+eagle = "MOD-LCD3310/Hardware/MOD-LCD3310.sch"
+pdf = "MOD-LCD3310/Hardware/MOD-LCD3310-schematic.pdf"
+license = "see repository"
+
+[[project]]
+name = "olimex-usb-gigabit-hardware_usb_gigabit_rev_e_usb_gigabit_rev_e"
+repo = "https://github.com/OLIMEX/USB-GIGABIT"
+commit = "e30a671f84527391f9f351bd8a0563ab36cceb6f"
+schematic = "HARDWARE/USB-GIGABIT-Rev.E/USB-GIGABIT_Rev_E.kicad_sch"
+pdf = "HARDWARE/USB-GIGABIT-Rev.E/USB-GIGABIT_Rev_E.pdf"
+license = "NOASSERTION"
+
+[[project]]
+name = "olimex-usb-neohub-hardware_usb_neohub_rev_a_usb_neohub_rev_a"
+repo = "https://github.com/OLIMEX/USB-NeoHub"
+commit = "0ba0795c7a7a3d12dfdc820f447b3b1ae47fad55"
+schematic = "HARDWARE/USB-NeoHub-Rev.A/USB-NeoHUB_Rev_A.kicad_sch"
+pdf = "HARDWARE/USB-NeoHub-Rev.A/USB-NeoHUB_Rev_A.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-usb-serial-l-hardware_usb_serial_l_rev_b_usb_serial_l_rev_b"
+repo = "https://github.com/OLIMEX/USB-SERIAL-L"
+commit = "482e2238fc9b07ddbcb5eb87b36a876e59df53db"
+schematic = "HARDWARE/USB-SERIAL-L_Rev_B/USB-SERIAL-L_Rev_B.kicad_sch"
+pdf = "HARDWARE/USB-SERIAL-L_Rev_B/USB-SERIAL-L_Rev_B.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "olimex-vga2hdmi-hardware_vga2hdmi_rev_c_vga2hdmi_rev_c"
+repo = "https://github.com/OLIMEX/VGA2HDMI"
+commit = "ec9b53a3b0db642798f2ba8afde9397bdaf3da73"
+schematic = "HARDWARE/VGA2HDMI-REV.C/VGA2HDMI_Rev_C.kicad_sch"
+pdf = "HARDWARE/VGA2HDMI-REV.C/VGA2HDMI_Rev_C.pdf"
+license = "GPL-3.0"

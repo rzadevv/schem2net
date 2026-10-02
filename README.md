@@ -31,6 +31,8 @@ Early development.
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
 | C, Eagle | Dev | 96 | 7,038 | 0.64 | 0.61 |
 | C, Eagle | Test | 42 | 2,903 | 0.52 | 0.46 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.56 | 0.49 |
+| D, Olimex, held out | Test | 24 | 9,286 | 0.55 | 0.48 |
 
 ## Install
 
@@ -91,6 +93,8 @@ make bench-b    # score extraction from the drawing on its dev split
 make bench-schematic  # write corpus A as KiCad projects and check them with kicad-cli
 make corpus-c   # fetch corpus C (SparkFun Eagle PDFs and their .sch)
 make bench-c    # score extraction on its dev split
+make corpus-d   # fetch corpus D (Olimex PDFs and their schematics, held out)
+make bench-d    # score it
 ```
 
 See [docs/benchmark.md](docs/benchmark.md) for the corpora and metrics, and

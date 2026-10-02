@@ -1,6 +1,6 @@
 IMAGE := schem2net-kicad:10.0.6
 
-.PHONY: install test lint format image corpus bench corpus-b bench-b bench-schematic corpus-c bench-c font roles
+.PHONY: install test lint format image corpus bench corpus-b bench-b bench-schematic corpus-c bench-c corpus-d bench-d font roles
 
 install:
 	uv sync
@@ -39,6 +39,12 @@ corpus-c:
 
 bench-c: corpus-c
 	uv run schem2net bench c --split dev
+
+corpus-d:
+	uv run schem2net build-corpus d
+
+bench-d: corpus-d
+	uv run schem2net bench d --split dev
 
 font: corpus-c
 	uv run schem2net build-font c

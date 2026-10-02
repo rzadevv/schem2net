@@ -7,6 +7,7 @@
 | A | Open KiCad projects rendered with `kicad-cli` (KiCad 10) | Netlist exported by `kicad-cli` |
 | B | Altium schematic PDFs published in open hardware repositories | The netlist the PDF carries, checked against the board file |
 | C | SparkFun schematic PDFs drawn in Eagle | The Eagle `.sch` in the board's repository |
+| D | Olimex schematic PDFs, KiCad and Eagle, held out | The schematic the PDF sits beside |
 
 Manifests (`bench/corpus_*.toml`) store references only: a repository URL and
 commit, or a demo that ships with KiCad.
@@ -41,6 +42,14 @@ the schematic of a related board, so each pair was checked: the `.sch` wires
 must land on the PDF's when the sheet is laid over the page, and a PDF linked
 from several projects stays only with the board it was made from. 138 pairs
 remain.
+
+Corpus D is held out: nothing was tuned on it, and it only measures how
+results carry over to another maker's boards. Olimex keeps each board's
+published schematic PDF in its repository, beside the schematic it was printed
+from, KiCad or Eagle; one revision of each board is used. Boards in KiCad's old
+`.sch` format are left out, since current kicad-cli cannot read them for the
+truth. Its first run found that KiCad 7 and 8 PDFs, which draw text as strokes,
+were taken for board prints and skipped; they are read now.
 
 Eagle draws most text with its own stroke font, and some PDFs carry text as
 filled outlines. `schem2net build-font c` learns the shapes of both kinds of
