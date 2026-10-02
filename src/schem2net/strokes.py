@@ -116,11 +116,11 @@ def _strokes(paths: list[Path]) -> list[Path]:
     of the path it came from."""
     out = []
     for path in paths:
-        if path.fill is not None or not path.stroke or path.width < MIN_WIDTH:
-            continue
-        if len(path.subpaths) != 1:
+        if not path.stroke or path.width < MIN_WIDTH or len(path.subpaths) != 1:
             continue
         points = path.subpaths[0]
+        if path.fill is not None and len(points) > 2:  # a filled shape; a line has no inside
+            continue
         pairs = list(zip(points, points[1:], strict=False))
         if not pairs or not all(0 < geometry.distance(a, b) < MAX_STROKE for a, b in pairs):
             continue

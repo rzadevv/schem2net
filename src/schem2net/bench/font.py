@@ -292,7 +292,7 @@ def _offset(root: ET.Element, index: int, page) -> tuple[float, float] | None:
     drawn = {
         (round(x, 1), round(y, 1))
         for p in page.paths
-        if p.fill is None and len(p.subpaths) == 1 and len(p.subpaths[0]) == 2 and p.width > 0.1
+        if len(p.subpaths) == 1 and len(p.subpaths[0]) == 2 and p.width > 0.1  # filled or not
         for x, y in p.subpaths[0]
     }
     votes = Counter((round(X - x, 1), round(Y + y, 1)) for x, y in ends[:150] for X, Y in drawn)

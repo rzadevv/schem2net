@@ -28,9 +28,9 @@ def scale(page: Page, profile: Profile) -> float:
     ends = [
         point
         for path in page.paths
-        if path.fill is None and profile.is_("wire", path.stroke)
+        if profile.is_("wire", path.stroke)
         for sub in path.subpaths
-        if len(sub) == 2
+        if len(sub) == 2  # lines only; some PDFs give them a fill, which they cannot show
         for point in sub
     ]
     xs = np.unique(np.round([x for x, _ in ends], 2))

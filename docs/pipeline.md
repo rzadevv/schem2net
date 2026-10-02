@@ -117,8 +117,11 @@ Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit. Net labels are the
 names inside an outline that meets a wire. Many Eagle symbols draw no pin
 lines: a wire ending on a part's outline is a pin there, numbered by the text
-beside it. A connector's box and its pins are often drawn apart, and are
-joined when drawn one right after the other, close together.
+beside it. Eagle hides the pad numbers of small parts, so a designator or a
+value such as 10k beside a pin is never taken for its number. A connector's box
+and its pins are often drawn apart, and are joined when drawn one right after
+the other, close together, or when the pins run in across the box's edge. The
+sheet frame is set aside first, so nothing joins it.
 
 ## Confidence
 

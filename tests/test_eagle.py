@@ -1,6 +1,7 @@
 """Eagle schematics as ground truth, and text drawn with a stroke font."""
 
 import json
+from dataclasses import replace
 from importlib import resources
 
 from schem2net import eagle, strokes
@@ -92,3 +93,10 @@ def test_stroke_text_drawn_as_polylines_is_read():
     assert any(len(p.subpaths[0]) > 2 for p in paths)
     texts, _ = strokes.read(paths, "eagle")
     assert [t.text for t in texts] == ["DOG"]
+
+
+def test_stroke_text_with_a_fill_is_read():
+    # Older Qt exports give every line a fill as well; a line has no inside to fill.
+    paths = [replace(p, fill=p.stroke) for p in _drawn("C7", 10, 20, 1.8, 0)]
+    texts, _ = strokes.read(paths, "eagle")
+    assert [t.text for t in texts] == ["C7"]

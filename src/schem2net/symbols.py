@@ -24,6 +24,8 @@ FRAME_HOLDS = 3  # a drawing holding this many symbols is a frame
 FRAME_MIN_SIZE = 100.0  # mm, both ways; a frame spans most of the page
 EDGE_PIN_LENGTH = 2.54  # mm; how far out a pin with no line is laid along its wire
 EDGE_PIN_GAP = 0.5  # mm from a drawn pin within which a wire end is that pin's
+MIN_BOX = 1.0  # mm; narrower pinless pieces are lines, not boxes
+ENTER_DEPTH = 2.54  # mm a pin crossing into a box ends inside its edge
 DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
 DRAWN_TOGETHER_SEQ = 3  # drawing steps between a body and pins drawn with it
 
@@ -61,8 +63,10 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     apart = sorted(t.seq for t in scene.fields) if profile.fields_follow_symbol else None
     symbols = _merge_halves(_group(scene, index, pins, apart))
     runs = Runs(symbols, scene, profile) if profile.fields_follow_symbol else None
-    symbols = runs.join_pieces(symbols) if runs else _join_drawn_together(symbols, scene)
-    symbols = _without_frames(symbols)
+    if runs:
+        symbols = _without_frames(runs.join_pieces(symbols))
+    else:  # a frame spans all the drawing: gone first, so no piece joins it
+        symbols = _join_drawn_together(_without_frames(symbols), scene)
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene)
     fields.annotate(symbols, scene, profile, runs)
@@ -303,7 +307,12 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene) -> list[Symbol]:
         for s in symbols
         if s.shapes
     }
-    boxes = [s for s in symbols if not s.pins and not s.power and id(s) in spans]
+    # A box has area; a bare line drawn with no pin found on it is an unwired pin.
+    boxes = [
+        s
+        for s in symbols
+        if not s.pins and not s.power and id(s) in spans and min(_sides(s.bbox)) > MIN_BOX
+    ]
     pieces = [s for s in symbols if s.pins and not s.power and id(s) in spans]
     joined = UnionFind()
     for s in symbols:
@@ -313,12 +322,24 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene) -> list[Symbol]:
         for piece in pieces:
             a, b = spans[id(piece)]
             drawn_with = a <= hi + DRAWN_TOGETHER_SEQ and lo <= b + DRAWN_TOGETHER_SEQ
-            if drawn_with and geometry.bbox_gap(box.bbox, piece.bbox) <= DRAWN_TOGETHER_GAP:
+            near = geometry.bbox_gap(box.bbox, piece.bbox) <= DRAWN_TOGETHER_GAP
+            if (drawn_with and near) or _enters(piece, box):
                 joined.union(id(box), id(piece))
     groups: dict[int, list[Symbol]] = {}
     for s in symbols:
         groups.setdefault(joined.find(id(s)), []).append(s)
     return [_combine(parts) for parts in groups.values()]
+
+
+def _enters(piece: Symbol, box: Symbol) -> bool:
+    """Every pin of the piece crosses the box's edge, ending just inside it."""
+    x0, y0, x1, y1 = box.bbox
+    for pin in piece.pins:
+        (x, y), outer = pin.line[0], pin.at
+        depth = min(x - x0, x1 - x, y - y0, y1 - y)
+        if not _inside((x, y), box.bbox) or depth > ENTER_DEPTH or _inside(outer, box.bbox):
+            return False
+    return True
 
 
 def _add_edge_pins(symbols: list[Symbol], scene: Scene) -> None:
@@ -520,7 +541,11 @@ def _union(boxes: list[BBox]) -> BBox:
 
 
 def _size(box: BBox) -> float:
-    return max(box[2] - box[0], box[3] - box[1])
+    return max(_sides(box))
+
+
+def _sides(box: BBox) -> tuple[float, float]:
+    return box[2] - box[0], box[3] - box[1]
 
 
 def _inside(p: Point, box: BBox) -> bool:

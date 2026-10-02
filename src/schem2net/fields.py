@@ -52,7 +52,7 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 symbol.power = profile.unnamed_ground
                 symbol.anchors = _anchors(symbol, scene)
     _assign_refs(symbols, texts, runs, profile)
-    _number_pins(symbols, scene, profile)
+    _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
     _assign_values(symbols, texts, runs, profile.pin_name_gap)
 
 
@@ -344,8 +344,10 @@ def _set_ref(symbol: Symbol, text: str) -> None:
     symbol.unit = unit or None
 
 
-def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
-    numbers = scene.pin_numbers
+def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: set[int]) -> None:
+    """Pin numbers from the texts beside pins, leaving out texts already taken as
+    designators or net names (`taken` holds their ids)."""
+    numbers = [t for t in scene.pin_numbers if id(t) not in taken and not _is_value(t.text)]
     owned = [(p, s) for s in symbols if s.ref for p in s.pins]
     pins = [p for p, _ in owned]
     index = GridIndex()
@@ -396,12 +398,12 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
         for number, pin in enumerate(order, 1):
             pin.number = str(number)
 
-    _name_pins(symbols, scene, used, profile.pin_name_gap)
+    unused = [t for k, t in enumerate(numbers) if k not in used]
+    _name_pins(symbols, unused + scene.fields, profile.pin_name_gap)
 
 
-def _name_pins(symbols: list[Symbol], scene: Scene, used: set[int], name_gap: float) -> None:
+def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> None:
     """A pin drawn with its name but no number is known by its name."""
-    texts = [t for i, t in enumerate(scene.pin_numbers) if i not in used] + scene.fields
     options = []
     for symbol in symbols:
         unnamed = [p for p in symbol.pins if p.number is None]
@@ -494,6 +496,11 @@ def _inside_body(symbol: Symbol, text: Text) -> bool:
         y0, y1 = symbol.body[1], symbol.body[3]
     cx, cy = geometry.center(text.bbox)
     return x0 + 0.3 <= cx <= x1 - 0.3 and y0 + 0.3 <= cy <= y1 - 0.3
+
+
+def _is_value(text: str) -> bool:
+    """A part value with a unit or a decimal point, such as 10k or 0.1uF: never a pad."""
+    return bool(PART_VALUE.match(text)) and not text.isdigit()
 
 
 def _is_net_name(text: str) -> bool:

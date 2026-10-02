@@ -2,7 +2,7 @@
 
 import math
 
-from schem2net import buses, geometry, profile, symbols
+from schem2net import buses, fields, geometry, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
 from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs
@@ -443,3 +443,28 @@ def test_pin_shared_by_two_units_is_one_net():
     assert len(nets) == 1
     assert nets[0].pins == [("U1", "8")]
     assert sorted(nets[0].names_seen) == ["A", "B"]
+
+
+def test_eagle_connector_box_joins_the_pins_that_cross_into_it():
+    """A connector's box drawn well before its pins: each pin runs in across its edge."""
+    red = (128, 0, 0)
+    b = SceneBuilder()
+    b.shape((20, 10), (26, 10), (26, 20), (20, 20), (20, 10), width=0.4, color=red)
+    b.seq += 20  # other drawing in between
+    for k, y in enumerate((12.54, 15.08, 17.62)):
+        b.shape((16, y), (21.27, y), width=0.15, color=red)
+        number = Text(b.seq, str(k + 1), (17, y - 1.6, 17.8, y - 0.3), 1.27, 0.0, red, b.seq)
+        b.scene.fields.append(number)
+        b.scene.pin_numbers.append(number)
+        b.scene.wires.append(((8, y), (16, y)))
+        b.scene.labels.append(Label(f"N{k}", "global", (8, y - 1.5, 11, y - 0.2), 0.0))
+    b.field("J1", 20, 21)
+
+    parts, nets = netlist(b.scene, rules=profile.load("eagle"))
+    assert sorted(p.num for p in parts["J1"].pins) == ["1", "2", "3"]
+    assert nets["N1"].pins == [("J1", "2")]
+
+
+def test_part_values_are_never_pad_numbers():
+    assert fields._is_value("10k") and fields._is_value("0.1uF") and fields._is_value("4.7")
+    assert not fields._is_value("12") and not fields._is_value("A6")

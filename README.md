@@ -27,8 +27,8 @@ Early development.
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
-| C, Eagle | Dev | 96 | 7,038 | 0.56 | 0.50 |
-| C, Eagle | Test | 42 | 2,903 | 0.47 | 0.44 |
+| C, Eagle | Dev | 96 | 7,038 | 0.64 | 0.61 |
+| C, Eagle | Test | 42 | 2,903 | 0.52 | 0.46 |
 
 ## Install
 
