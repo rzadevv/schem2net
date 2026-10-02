@@ -19,6 +19,7 @@ from schem2net import geometry
 from schem2net.primitives import BBox, Page, Path, Point, Text
 
 TRACE_SLACK = 0.4  # text heights a traced letter may reach past its copy's box
+TRACE_RUN = 1.0  # the same, past either end of the line
 LETTER = 1.2  # text heights; a longer stroke is not part of a letter
 TRACE_SPREAD = 0.6  # share of a text's length its letters' ink spans
 MAX_STROKE = 3.0  # mm; longer lines are not parts of letters
@@ -81,10 +82,13 @@ def traced(page: Page) -> Page:
     letters: set[int] = set()
     shown = set()
     for t in hidden:
-        # The copy's font is not the drawn one: its box can miss the letters' edges.
-        slack = TRACE_SLACK * max(t.size, 0.5)
+        # The copy's font is not the drawn one: its box can miss the letters' edges, and
+        # over a long string their ends, as the two fonts' letters differ in width.
+        size = max(t.size, 0.5)
+        across, along = TRACE_SLACK * size, TRACE_RUN * size
+        sx, sy = (along, across) if round(t.angle) % 180 == 0 else (across, along)
         x0, y0, x1, y1 = t.bbox
-        box = (x0 - slack, y0 - slack, x1 + slack, y1 + slack)
+        box = (x0 - sx, y0 - sy, x1 + sx, y1 + sy)
         under = [
             k
             for k in index.within(box)
