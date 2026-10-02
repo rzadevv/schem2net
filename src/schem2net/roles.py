@@ -283,6 +283,46 @@ def recolour(page: Page, profile: Profile, models=None) -> Page:
     )
 
 
+def name_unknown_texts(page: Page, profile: Profile, models=None) -> Page:
+    """The page with each visible text in a colour the profile gives no role, such as a
+    label in a theme of the designer's own, given the colour of the role predicted for
+    it. Everything in a known colour keeps it."""
+    known = set().union(*profile.colors.values())
+    unknown = [t for t in page.texts if t.visible and t.color not in known]
+    if not unknown:
+        return page
+    texts_model = (models or _models(profile.name))[2]
+    paths = drawing(page, profile)
+    path_roles = [path_role(p, profile) for p in paths]
+    # A string the PDF splits into pieces is one text, with one role.
+    groups = _runs([t for t in page.texts if t.visible])
+    whole = [joined for joined, _ in groups]
+    found = texts_model.predict(text_features(whole, paths, path_roles))
+    colour = {
+        id(piece): _colour(profile, TEXT_ROLES, int(r))
+        for (joined, pieces), r in zip(groups, found, strict=True)
+        if joined.color not in known
+        for piece in pieces
+    }
+    return replace(page, texts=[replace(t, color=colour.get(id(t)) or t.color) for t in page.texts])
+
+
+def _runs(texts: list[Text]) -> list[tuple[Text, list[Text]]]:
+    """Texts joined as the scene joins them, each with the pieces it is made of."""
+    out: list[tuple[Text, list[Text]]] = []
+    for text in sorted(texts, key=lambda t: t.seq):
+        if out and scene.continues(out[-1][0], text):
+            joined, pieces = out[-1]
+            box = geometry.union_bbox(joined.bbox, text.bbox)
+            out[-1] = (
+                replace(joined, text=joined.text + text.text, bbox=box, seq=text.seq),
+                [*pieces, text],
+            )
+        else:
+            out.append((text, [text]))
+    return out
+
+
 class Forest:
     """Gradient-boosted trees: one tree per class in each round, their leaf values summed
     into a score per class. Node arrays of all trees are stored end to end."""

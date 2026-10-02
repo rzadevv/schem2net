@@ -94,6 +94,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
             continue
         if roles.colourless(result.page):  # printed in black: roles from shapes
             result.page = roles.recolour(result.page, rules)
+        else:  # texts in colours of the designer's own: roles from what they sit on
+            result.page = roles.name_unknown_texts(result.page, rules)
         factor = grid.scale(result.page, rules)
         if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
             result.page = grid.rescale(result.page, 1 / factor)

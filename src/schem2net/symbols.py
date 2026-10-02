@@ -160,7 +160,7 @@ def _chains(
                 other = scene.shapes[j]
                 if j <= line.id or j not in ids or not _drawn_together(line, other, breaks):
                     continue
-                if not _continues(line, other, end):
+                if not continues(line, other, end):
                     continue
                 # Only where nothing else meets them, so a pin never runs through a body.
                 on_body, others = _contacts(end, {line.id, j}, scene, index)
@@ -173,7 +173,7 @@ def _chains(
     return [[scene.shapes[i] for i in group] for group in joined.groups().values()]
 
 
-def _continues(a: Shape, b: Shape, end: Point) -> bool:
+def continues(a: Shape, b: Shape, end: Point) -> bool:
     """True if b starts where a ends and carries on in the same direction."""
     far_a = a.points[1] if geometry.distance(a.points[0], end) <= TOUCH else a.points[0]
     near_b, far_b = b.points if geometry.distance(b.points[0], end) <= TOUCH else b.points[::-1]

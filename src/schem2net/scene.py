@@ -569,7 +569,7 @@ def _join_runs(texts: list[Text]) -> list[Text]:
     out: list[Text] = []
     for text in sorted(texts, key=lambda t: t.seq):
         prev = out[-1] if out else None
-        if prev and _continues(prev, text):
+        if prev and continues(prev, text):
             gap = _along(text.bbox, text.angle)[0] - _along(prev.bbox, prev.angle)[1]
             joiner = " " if gap > 0.25 * prev.size else ""
             out[-1] = Text(
@@ -586,7 +586,7 @@ def _join_runs(texts: list[Text]) -> list[Text]:
     return out
 
 
-def _continues(prev: Text, text: Text) -> bool:
+def continues(prev: Text, text: Text) -> bool:
     """True if text is drawn right after prev and carries on along the same line."""
     if text.seq != prev.seq + 1 or text.color != prev.color or text.angle != prev.angle:
         return False

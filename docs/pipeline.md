@@ -150,6 +150,11 @@ colour and the page is read as usual. The models are gradient-boosted trees,
 three per generator, learned from colour pages (see the benchmark notes) and
 stored as node arrays in `profiles/roles.npz`; reading them needs only numpy.
 
+Designers can change the colour theme, so a label may come in a colour the
+profile does not know. Such texts get their role from the same text model, with
+everything in a known colour kept as it is: a string the PDF splits into pieces
+is judged whole, and every piece takes its role.
+
 ## Confidence
 
 Every join is recorded with its kind. A net's confidence is the weight of its

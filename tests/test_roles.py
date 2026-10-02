@@ -67,3 +67,18 @@ def test_recolour_gives_each_role_its_colour():
     assert eagle.is_("wire", page.paths[0].stroke)
     assert eagle.is_("symbol", page.paths[1].stroke)
     assert eagle.is_("field", page.texts[0].color)
+
+
+def test_texts_in_unknown_colours_take_a_predicted_role():
+    """A theme of the designer's own: a label in a colour the profile does not know."""
+    kicad = profile.load("kicad")
+    local = roles.TEXT_ROLES.index("local_label")
+    page = _page((0, 150, 0))  # a wire in KiCad's own colour
+    page.texts = [
+        Text(3, "SD", (11, -4, 12, -2.5), 1.3, 0.0, (194, 0, 0), 3),  # split in two
+        Text(4, "A", (12, -4, 13, -2.5), 1.3, 0.0, (194, 0, 0), 4),
+        Text(5, "R1", (20, -4, 22, -2.5), 1.3, 0.0, (0, 100, 100), 5),  # a known field
+    ]
+    models = (None, None, _Stub(lambda row: local))
+    named = roles.name_unknown_texts(page, kicad, models)
+    assert [kicad.is_("local_label", t.color) for t in named.texts] == [True, True, False]
