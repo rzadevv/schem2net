@@ -24,6 +24,7 @@ FRAME_HOLDS = 3  # a drawing holding this many symbols is a frame
 FRAME_MIN_SIZE = 100.0  # mm, both ways; a frame spans most of the page
 EDGE_PIN_LENGTH = 2.54  # mm; how far out a pin with no line is laid along its wire
 EDGE_PIN_GAP = 0.5  # mm from a drawn pin within which a wire end is that pin's
+FLAG_SIZE = 10.0  # mm; a closed outline smaller than this may be a port flag
 BODY_OVER_FLAG = 3.0  # a body is this many times the size of a flag on a pin's tip
 BIT_SIZE = 4.0  # mm; pinless pieces smaller than this may be bits of a neighbour
 BIT_GAP = 0.8  # mm between such a bit and the piece drawn next to it
@@ -64,7 +65,7 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
 
     pins = _find_pins(scene, index, profile)
     apart = sorted(t.seq for t in scene.fields) if profile.fields_follow_symbol else None
-    symbols = _merge_halves(_group(scene, index, pins, apart))
+    symbols = _merge_halves(_group(scene, index, pins, apart, profile.flags_on_pins))
     runs = Runs(symbols, scene, profile) if profile.fields_follow_symbol else None
     if runs:
         symbols = _without_frames(runs.join_pieces(symbols))
@@ -212,6 +213,11 @@ def _is_pin_like(
     return geometry.distance(a, b) >= profile.pin_min_length and geometry.is_axis_aligned((a, b))
 
 
+def _flag(shape) -> bool:
+    """A small closed outline, as a port flag is."""
+    return shape.closed and _size(shape.bbox) < FLAG_SIZE
+
+
 def _flag_on_tip(chain, a: Point, b: Point, scene: Scene, index: GridIndex) -> bool | None:
     """Both ends on symbol graphics and neither on a wire: a port or label flag set on
     the pin's tip is small beside the body the pin starts from."""
@@ -281,7 +287,11 @@ def _on_wire(p: Point, wires: list[Segment], index: GridIndex) -> bool:
 
 
 def _group(
-    scene: Scene, index: GridIndex, pins: dict[int, Pin], apart: list[int] | None = None
+    scene: Scene,
+    index: GridIndex,
+    pins: dict[int, Pin],
+    apart: list[int] | None = None,
+    flags_apart: bool = False,
 ) -> list[Symbol]:
     """Join touching graphics into symbols. Graphics with field text drawn between them
     belong to different symbols, though a pin may follow the texts of the pin before."""
@@ -308,6 +318,8 @@ def _group(
                     continue
                 if not pin and apart is not None and not _drawn_together(shape, other, apart):
                     continue
+                if flags_apart and _flag(shape) and _flag(other):
+                    continue  # port flags stacked edge to edge name nets of their own
                 if any(
                     geometry.distance_to_segment(v, s) <= tol
                     for s in geometry.segments(other.points)

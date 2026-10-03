@@ -34,8 +34,8 @@ Early development.
 | C, Eagle | Test | 42 | 2,903 | 0.56 | 0.49 |
 | D, Olimex, held out | Dev | 24 | 11,745 | 0.67 | 0.66 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.64 | 0.59 |
-| E, EasyEDA | Dev | 4 | 651 | 0.40 | 0.07 |
-| E, EasyEDA | Test | 6 | 648 | 0.52 | 0.34 |
+| E, EasyEDA | Dev | 4 | 651 | 0.45 | 0.18 |
+| E, EasyEDA | Test | 6 | 648 | 0.57 | 0.38 |
 
 ## Install
 

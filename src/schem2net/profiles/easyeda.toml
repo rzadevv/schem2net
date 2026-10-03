@@ -4,7 +4,7 @@
 
 [colors]
 wire = [[0, 135, 0], [204, 0, 0]]  # wires, and the junction dots on them
-symbol = [[135, 0, 0], [161, 0, 0], [140, 36, 36], [0, 0, 0], [0, 0, 255]]  # parts; power,
+symbol = [[135, 0, 0], [128, 0, 0], [161, 0, 0], [140, 36, 36], [0, 0, 0], [0, 0, 255]]  # parts; power,
 # ground and port flags (a named net, like a power symbol) in black and blue
 field = [[0, 0, 128], [0, 0, 255], [0, 0, 0], [136, 0, 0], [255, 0, 0]]
 designator = [[0, 0, 128]]  # designators and values are always navy

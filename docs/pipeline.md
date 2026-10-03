@@ -148,8 +148,8 @@ pages are read at that fixed scale. Designators and values are navy; pin texts
 take their part's colours, so their roles come from position, as in Eagle. A net
 port flag set beside its name works like a power symbol: a small shape on a wire
 that names the net, joined at the corner its wire ends on, or set straight on a
-pin's tip. A ground sign is a stem and separate bars drawn in turn, joined into
-one symbol.
+pin's tip; flags stacked edge to edge stay apart, each naming its own net. A
+ground sign is a stem and separate bars drawn in turn, joined into one symbol.
 
 ## Pages printed without colour
 
