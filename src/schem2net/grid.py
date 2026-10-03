@@ -27,6 +27,8 @@ SAME = 0.005  # scales this close to 1 are taken as 1
 
 def scale(page: Page, profile: Profile) -> float:
     """The page's scale against the source drawing, 1.0 when unsure."""
+    if profile.page_scale:
+        return profile.page_scale
     if not profile.wire_grids:
         return 1.0
     ends = [

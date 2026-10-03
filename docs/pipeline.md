@@ -143,6 +143,14 @@ and its pins are often drawn apart, and are joined when drawn one right after
 the other, close together, or when the pins run in across the box's edge. The
 sheet frame is set aside first, so nothing joins it.
 
+EasyEDA exports through jsPDF, one unit of 10 mil to one PDF point, so its
+pages are read at that fixed scale. Designators and values are navy; pin texts
+take their part's colours, so their roles come from position, as in Eagle. A net
+port flag set beside its name works like a power symbol: a small shape on a wire
+that names the net, joined at the corner its wire ends on, or set straight on a
+pin's tip. A ground sign is a stem and separate bars drawn in turn, joined into
+one symbol.
+
 ## Pages printed without colour
 
 The profiles read roles from colour, so a page printed in black or grey (every

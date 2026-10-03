@@ -21,6 +21,7 @@ Early development.
   than for KiCad and Altium.
 - Pages printed in black or grey are read too, with roles learned from colour
   pages; they keep most, not all, of the accuracy of colour pages.
+- EasyEDA (Std) PDFs are read too. This is early work, from a small corpus.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
@@ -33,6 +34,8 @@ Early development.
 | C, Eagle | Test | 42 | 2,903 | 0.56 | 0.49 |
 | D, Olimex, held out | Dev | 24 | 11,745 | 0.67 | 0.66 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.64 | 0.59 |
+| E, EasyEDA | Dev | 4 | 651 | 0.40 | 0.07 |
+| E, EasyEDA | Test | 6 | 648 | 0.52 | 0.34 |
 
 ## Install
 
@@ -95,6 +98,8 @@ make corpus-c   # fetch corpus C (SparkFun Eagle PDFs and their .sch)
 make bench-c    # score extraction on its dev split
 make corpus-d   # fetch corpus D (Olimex PDFs and their schematics, held out)
 make bench-d    # score it
+make corpus-e   # fetch corpus E (EasyEDA PDFs and their sources)
+make bench-e    # score it
 ```
 
 See [docs/benchmark.md](docs/benchmark.md) for the corpora and metrics, and

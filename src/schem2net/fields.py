@@ -253,13 +253,18 @@ def _has_bars(symbol: Symbol, scene: Scene) -> bool:
 
 def _anchors(symbol: Symbol, scene: Scene) -> list[Point]:
     """A power symbol connects at its pin, or else at a loose end of its drawing, or
-    at the middle of its base when it is a lone triangle."""
+    at the middle of its base when it is a lone triangle; a port flag, a closed outline,
+    at the corner its wire ends on."""
     if symbol.pins:
         return [p.at for p in symbol.pins]
-    shapes = (scene.shapes[i] for i in symbol.shapes)
+    shapes = [scene.shapes[i] for i in symbol.shapes]
     loose = [p for shape in shapes if not shape.closed for p in (shape.points[0], shape.points[-1])]
     base = _bare_triangle_base(symbol, scene)
-    return loose or ([base] if base else [])
+    if loose or base:
+        return loose or [base]
+    corners = {p for shape in shapes for p in shape.points}
+    ends = [e for wire in scene.wires for e in wire]
+    return [c for c in corners if any(geometry.distance(c, e) <= CORNER_GAP for e in ends)]
 
 
 def _in_line(symbol: Symbol, text: Text, loose: bool = False) -> bool:
@@ -301,6 +306,8 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
             if gap > REF_SEARCH and texts.texts[ti].seq != runs.first_text(symbol):
                 continue
             text = texts.texts[ti]
+            if profile.colors.get("designator") and not profile.is_("designator", text.color):
+                continue  # where designators have a colour of their own, only that
             match = REFDES.match(text.text)
             if not match or is_pin_name(symbol, text, profile.pin_name_gap):
                 continue

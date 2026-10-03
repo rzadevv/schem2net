@@ -24,6 +24,9 @@ FRAME_HOLDS = 3  # a drawing holding this many symbols is a frame
 FRAME_MIN_SIZE = 100.0  # mm, both ways; a frame spans most of the page
 EDGE_PIN_LENGTH = 2.54  # mm; how far out a pin with no line is laid along its wire
 EDGE_PIN_GAP = 0.5  # mm from a drawn pin within which a wire end is that pin's
+BODY_OVER_FLAG = 3.0  # a body is this many times the size of a flag on a pin's tip
+BIT_SIZE = 4.0  # mm; pinless pieces smaller than this may be bits of a neighbour
+BIT_GAP = 0.8  # mm between such a bit and the piece drawn next to it
 MIN_BOX = 1.0  # mm; narrower pinless pieces are lines, not boxes
 ENTER_DEPTH = 2.54  # mm a pin crossing into a box ends inside its edge
 DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
@@ -66,7 +69,7 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     if runs:
         symbols = _without_frames(runs.join_pieces(symbols))
     else:  # a frame spans all the drawing: gone first, so no piece joins it
-        symbols = _join_drawn_together(_without_frames(symbols), scene)
+        symbols = _join_drawn_together(_without_frames(symbols), scene, profile)
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene)
     fields.annotate(symbols, scene, profile, runs)
@@ -96,9 +99,12 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
             a_inner = _inner_end(chain, a, b, scene, index, profile, breaks, breaks)
         if a_inner is None:
             wired_a, wired_b = (_on_wire(p, scene.wires, wires) for p in (a, b))
-            if wired_a == wired_b:
+            if wired_a != wired_b:
+                a_inner = wired_b
+            elif profile.flags_on_pins:
+                a_inner = _flag_on_tip(chain, a, b, scene, index)
+            if a_inner is None:
                 continue
-            a_inner = wired_b
         pin = Pin(chain[0].id, (a, b) if a_inner else (b, a))
         for shape in chain:
             pins[shape.id] = pin
@@ -206,6 +212,32 @@ def _is_pin_like(
     return geometry.distance(a, b) >= profile.pin_min_length and geometry.is_axis_aligned((a, b))
 
 
+def _flag_on_tip(chain, a: Point, b: Point, scene: Scene, index: GridIndex) -> bool | None:
+    """Both ends on symbol graphics and neither on a wire: a port or label flag set on
+    the pin's tip is small beside the body the pin starts from."""
+    ids = {s.id for s in chain}
+    size_a, size_b = (_body_size(e, ids, scene, index) for e in (a, b))
+    if max(size_a, size_b) >= BODY_OVER_FLAG * max(min(size_a, size_b), 1e-6):
+        return size_a > size_b
+    return None
+
+
+def _body_size(end: Point, own: set[int], scene: Scene, index: GridIndex) -> float:
+    """The size of the largest closed outline this end lands on, 0 if none."""
+    width = max(scene.shapes[i].width for i in own)
+    best = 0.0
+    for j in index.near(end, 1.0):
+        other = scene.shapes[j]
+        if j in own or not other.closed:
+            continue
+        tol = (width + other.width) / 2 + TOUCH
+        if any(
+            geometry.distance_to_segment(end, seg) <= tol for seg in geometry.segments(other.points)
+        ):
+            best = max(best, _size(other.bbox))
+    return best
+
+
 def _contacts(
     end: Point, own: set[int], scene: Scene, index: GridIndex, apart: list[int] | None = None
 ) -> tuple[bool, list[int]]:
@@ -295,7 +327,7 @@ def _group(
     return symbols
 
 
-def _join_drawn_together(symbols: list[Symbol], scene: Scene) -> list[Symbol]:
+def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) -> list[Symbol]:
     """Without text between symbols to tell them apart, join a body drawn with no pins
     to the pieces with pins drawn along with it, nearby: a connector's box and its
     pins, drawn apart."""
@@ -325,6 +357,19 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene) -> list[Symbol]:
             near = geometry.bbox_gap(box.bbox, piece.bbox) <= DRAWN_TOGETHER_GAP
             if (drawn_with and near) or _enters(piece, box):
                 joined.union(id(box), id(piece))
+    # Small pinless bits drawn right after or before a neighbour and almost touching it
+    # are more of it: the separate bars of a ground sign under its stem.
+    small = [s for s in symbols if not s.pins and id(s) in spans and _size(s.bbox) < BIT_SIZE]
+    bits = small if profile.symbols_in_pieces else []
+    others = [s for s in symbols if id(s) in spans]
+    for bit in bits:
+        lo, hi = spans[id(bit)]
+        for other in others:
+            a, b = spans[id(other)]
+            if other is bit or not (a <= hi + 1 and lo <= b + 1):
+                continue
+            if geometry.bbox_gap(bit.bbox, other.bbox) <= BIT_GAP:
+                joined.union(id(bit), id(other))
     groups: dict[int, list[Symbol]] = {}
     for s in symbols:
         groups.setdefault(joined.find(id(s)), []).append(s)

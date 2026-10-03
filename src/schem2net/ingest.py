@@ -10,6 +10,7 @@ SIGNATURES = {
     "altium": ("altium", "llpdflib"),  # llPDFLib is the PDF engine inside Altium
     "orcad": ("orcad", "capture cis", "cadence"),
     "eagle": ("eagle",),
+    "easyeda": ("jspdf",),  # EasyEDA exports its schematics through jsPDF
 }
 
 PageKind = Literal["vector", "raster", "empty", "board", "table"]

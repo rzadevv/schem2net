@@ -16,6 +16,8 @@ class Profile:
     pin_numbers_above: bool = False
     hidden_pin_one_at_bottom: bool = False
     pins_at_body_edge: bool = False
+    flags_on_pins: bool = False  # port flags may sit straight on a pin's tip
+    symbols_in_pieces: bool = False  # symbols drawn as separate lines, as ground bars
     pin_name_gap: float = 1.5  # mm between a pin's inner end and its name
     diode_pin_one_is_anode: bool = False
     fields_follow_symbol: bool = False
@@ -23,6 +25,7 @@ class Profile:
     wires_drawn_together: bool = False
     thick_wires_are_buses: bool = False
     wire_grids: tuple[float, ...] = ()  # mm; usual grids of wire ends, standard first
+    page_scale: float | None = None  # the exporter's fixed scale, where it has one
     infer_wire_colour: bool = False
     designators_in_any_colour: bool = False
     designators_in_pin_colour: bool = False
@@ -57,6 +60,8 @@ def load(name: str) -> Profile:
         pin_numbers_above=pins.get("numbers_above", False),
         hidden_pin_one_at_bottom=pins.get("hidden_one_at_bottom", False),
         pins_at_body_edge=pins.get("at_body_edge", False),
+        flags_on_pins=pins.get("flags_on_tips", False),
+        symbols_in_pieces=order.get("symbols_in_pieces", False),
         pin_name_gap=pins.get("name_gap", 1.5),
         diode_pin_one_is_anode=pins.get("diode_one_is_anode", False),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
@@ -65,6 +70,7 @@ def load(name: str) -> Profile:
         thick_wires_are_buses=wires.get("thick_are_buses", False),
         infer_wire_colour=wires.get("infer_colour", False),
         wire_grids=tuple(_listed(wires.get("grid", []))),
+        page_scale=data.get("page", {}).get("scale"),
         designators_in_any_colour=order.get("designators_in_any_colour", False),
         designators_in_pin_colour=order.get("designators_in_pin_colour", False),
         designators_outside=order.get("designators_outside", False),

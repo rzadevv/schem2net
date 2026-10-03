@@ -636,7 +636,10 @@ def continues(prev: Text, text: Text) -> bool:
     lo_b, hi_b = _across(text.bbox, text.angle)
     # An underscore sits below the other letters, so allow a small vertical gap.
     beside = min(hi_a, hi_b) > max(lo_a, lo_b) - 0.3 * prev.size
-    return -0.5 <= start - end <= 0.8 * prev.size and beside
+    # Words split at a space sit closer than a pin's name and number on either side of
+    # a body edge; text written a letter at a time may leave a wider gap.
+    reach = 0.8 if min(len(prev.text.strip()), len(text.text.strip())) <= 1 else 0.5
+    return -0.5 <= start - end <= reach * prev.size and beside
 
 
 def _along(box: BBox, angle: float) -> tuple[float, float]:

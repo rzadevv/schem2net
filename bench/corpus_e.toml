@@ -1,0 +1,85 @@
+# Corpus E: EasyEDA (Std) schematic PDFs and the .json each was exported from,
+# kept in the same repository. A pair is kept when at least 90% of the source's
+# designators are in the PDF's text.
+
+test_share = 0.5
+
+[[project]]
+name = "sesboardv1-schematic-sesboard"
+repo = "https://github.com/JKUATSES/sesBoardv1"
+commit = "2a5a303b43a3f52abc5a27085d3de65bc499e607"
+easyeda = "Design/SESBOARD.json"
+pdf = "Design/Schematic_SESBOARD.pdf"
+license = "MIT"
+
+[[project]]
+name = "easyeda-schematic-pdf"
+repo = "https://github.com/levonkarapetyann/EasyEDA"
+commit = "7410c93aa1258e1c19cdecee321560e62cd9f068"
+easyeda = "Scheme ESP32/Schematic/Schematic.json"
+pdf = "Scheme ESP32/Schematic/Schematic_pdf.pdf"
+license = "see repository"
+
+[[project]]
+name = "flight-control-computer-schematic-flight-control-computer"
+repo = "https://github.com/nakujaproject/flight-control-computer"
+commit = "2c5ba108e959205ced8050ae0c5170bd03544aa3"
+easyeda = "Flight control computer.json"
+pdf = "Schematic_Flight control computer.pdf"
+license = "see repository"
+
+[[project]]
+name = "pcb-design-easyeda-schematic-circular-led-2022-01-28"
+repo = "https://github.com/ferhat1309/PCB_DESIGN_EASYEDA"
+commit = "e52258a642cab79145693158298218febce8d047"
+easyeda = "CIRCULAR_LED_PCB/SCH_circular-led_2022-01-28.json"
+pdf = "CIRCULAR_LED_PCB/Schematic_circular-led_2022-01-28.pdf"
+license = "see repository"
+
+[[project]]
+name = "pcb-design-easyeda-schematic-flip-flop-smdtest-2022-01-28"
+repo = "https://github.com/ferhat1309/PCB_DESIGN_EASYEDA"
+commit = "e52258a642cab79145693158298218febce8d047"
+easyeda = "FLIP_FLOP_PCB/SCH_flip-flop-smdtest_2022-01-28.json"
+pdf = "FLIP_FLOP_PCB/Schematic_flip-flop-smdtest_2022-01-28.pdf"
+license = "see repository"
+
+[[project]]
+name = "w5500-ethernet-module-schematic-w5500-ethernet"
+repo = "https://github.com/aissambkh/w5500-ethernet-module"
+commit = "1c02a735be4ad9a12a92ba25f9947f4db6e3f238"
+easyeda = "w5500-ethernet-module/schematic/SCH_w5500-ethernet.json"
+pdf = "w5500-ethernet-module/schematic/Schematic_w5500-ethernet.pdf"
+license = "see repository"
+
+[[project]]
+name = "line-follower-robot-pcb-v1-0-8ch-ir-bluetooth-schematic-newlfronly-202"
+repo = "https://github.com/Rahber-Saeed/Line-Follower-Robot-PCB-V1.0-8CH-IR-Bluetooth"
+commit = "bf4e7a75160b5c05072bd40f98b46691a4cd457e"
+easyeda = "SCH_newLFRonly_2026-05-03.json"
+pdf = "Schematic_newLFRonly_2026-05-03.pdf"
+license = "see repository"
+
+[[project]]
+name = "esp32-iot-board-using-easyeda-schematic-esp32-module-2020-08-31-08-59-"
+repo = "https://github.com/RidhaBouyahi/ESP32-iot-board-using-EasyEDA"
+commit = "5d01c384d933dbbcd2f37095f9982b3c3cedf0e5"
+easyeda = "esp32 module.json"
+pdf = "Schematic_esp32 module_2020-08-31_08-59-37.pdf"
+license = "see repository"
+
+[[project]]
+name = "skitm-g-iot-summer-2025-schematic-20250710-034436-2025-08-11"
+repo = "https://github.com/biswajitkgp/SKITM-G_IoT_Summer_2025"
+commit = "46a1522d4499477f91972ece3f4cc21c9473e4d2"
+easyeda = "4_Hardware_Design_EasyEDA/project_files/SCH_20250710_034436_2025-08-11.json"
+pdf = "4_Hardware_Design_EasyEDA/project_files/Schematic_20250710_034436_2025-08-11.pdf"
+license = "MIT"
+
+[[project]]
+name = "dinki-blinki-schematic-dinki-blinki-2026-09-26"
+repo = "https://github.com/Sidharth8882/DINKI-BLINKI"
+commit = "9049dbe01033a4b1d2db58f1c929a7df08f7226d"
+easyeda = "SCH_DINKI-BLINKI_2026-09-26.json"
+pdf = "Schematic_DINKI-BLINKI_2026-09-26.pdf"
+license = "see repository"

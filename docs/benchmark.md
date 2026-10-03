@@ -8,6 +8,7 @@
 | B | Altium schematic PDFs published in open hardware repositories | The netlist the PDF carries, checked against the board file |
 | C | SparkFun schematic PDFs drawn in Eagle | The Eagle `.sch` in the board's repository |
 | D | Olimex schematic PDFs, KiCad and Eagle, held out | The schematic the PDF sits beside |
+| E | EasyEDA (Std) schematic PDFs | The EasyEDA source the PDF sits beside |
 
 Manifests (`bench/corpus_*.toml`) store references only: a repository URL and
 commit, or a demo that ships with KiCad.
@@ -50,6 +51,13 @@ from, KiCad or Eagle; one revision of each board is used. Boards in KiCad's old
 `.sch` format are left out, since current kicad-cli cannot read them for the
 truth. Its first run found that KiCad 7 and 8 PDFs, which draw text as strokes,
 were taken for board prints and skipped; they are read now.
+
+Corpus E pairs EasyEDA (Std) schematic PDFs, as EasyEDA names its exports
+(`Schematic_<project>.pdf`), with the `.json` source kept beside them on GitHub.
+A pair is kept when at least 90% of the source's designators are in the PDF's
+text. `easyeda.py` reads the netlist: the source stores drawing, not nets, so
+wires, pins, net flags and labels that share a point are joined, as EasyEDA does,
+on the file's exact coordinates. It is small, ten designs.
 
 Eagle draws most text with its own stroke font, and some PDFs carry text as
 filled outlines. `schem2net build-font c` learns the shapes of both kinds of

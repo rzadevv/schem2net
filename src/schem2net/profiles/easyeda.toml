@@ -1,0 +1,28 @@
+# EasyEDA (Std) schematics, exported to PDF through jsPDF, in its default theme.
+# Pin names and numbers take the colour their part's library gave them, and port
+# and power names their own, so these roles come from where texts sit.
+
+[colors]
+wire = [[0, 135, 0], [204, 0, 0]]  # wires, and the junction dots on them
+symbol = [[135, 0, 0], [161, 0, 0], [140, 36, 36], [0, 0, 0], [0, 0, 255]]  # parts; power,
+# ground and port flags (a named net, like a power symbol) in black and blue
+field = [[0, 0, 128], [0, 0, 255], [0, 0, 0], [136, 0, 0], [255, 0, 0]]
+designator = [[0, 0, 128]]  # designators and values are always navy
+pin_number = [[0, 0, 255], [0, 0, 0], [136, 0, 0], [255, 0, 0]]
+
+[order]
+symbols_in_pieces = true  # a ground sign is a stem and separate bars, drawn in turn
+
+[labels]
+span_pages = true  # net flags and labels join nets of one name on every sheet
+in_outlines = true  # a name in a port outline that meets a wire is a net label
+on_wires = true  # so is a net label laid along a wire
+
+[pins]
+max_width = 0.4  # mm
+min_length = 0.5  # mm
+numbers_above = true  # above horizontal pins, left of vertical ones
+flags_on_tips = true  # net port flags may sit straight on a pin's tip, with no wire
+
+[page]
+scale = 1.3889  # the export writes one EasyEDA unit, 10 mil, as one PDF point
