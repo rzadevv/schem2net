@@ -31,13 +31,13 @@ Early development.
 | A, KiCad | Dev | 57 | 25,608 | 0.88 | 0.94 |
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
-| B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
-| C, Eagle | Dev | 96 | 7,038 | 0.67 | 0.63 |
-| C, Eagle | Test | 42 | 2,903 | 0.56 | 0.49 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.64 | 0.59 |
-| D, Olimex, held out | Test | 24 | 9,286 | 0.64 | 0.59 |
-| E, EasyEDA | Dev | 18 | 2,487 | 0.43 | 0.26 |
-| E, EasyEDA | Test | 12 | 1,669 | 0.37 | 0.06 |
+| B, Altium, drawing only | Test | 13 | 3,819 | 0.87 | 0.85 |
+| C, Eagle | Dev | 96 | 7,038 | 0.67 | 0.64 |
+| C, Eagle | Test | 42 | 2,903 | 0.57 | 0.51 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.70 | 0.63 |
+| D, Olimex, held out | Test | 24 | 9,286 | 0.69 | 0.60 |
+| E, EasyEDA | Dev | 18 | 2,487 | 0.46 | 0.28 |
+| E, EasyEDA | Test | 12 | 1,669 | 0.39 | 0.06 |
 
 ## Install
 
