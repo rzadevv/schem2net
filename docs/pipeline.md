@@ -47,7 +47,10 @@ A pin is a straight line with one end on its symbol's body and the other end
 free. The free end is the connection point. An end is on the body if it lands
 on the middle of a line, on a corner of a polyline or on a closed outline.
 Meeting another line tip to tip is not enough, because that is also how a
-power symbol sits on a pin.
+power symbol sits on a pin. A line whose free end is inside the body's box is
+drawing, except that a closed outline the line starts on counts by its shape: an
+amplifier's supply pins leave the slanted sides of its triangle and end within
+its box. The two strokes of a "+" mark cross at their middles; neither is a pin.
 
 Symbols are groups of graphics that touch, except through a pin's free end.
 Two one-pin pieces facing each other on one axis are joined, which covers

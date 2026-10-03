@@ -530,3 +530,26 @@ def test_eagle_designator_outside_the_box_beats_a_pin_name_inside():
 
     found = symbols.find(b.scene, profile.load("eagle"))
     assert [s.ref for s in found if s.pins] == ["U3"]
+
+
+def test_pins_leave_the_slanted_sides_of_a_triangle_past_a_polarity_mark():
+    """An amplifier's supply pin starts on a slanted side and ends within the triangle's
+    box; a "+" drawn against an input is a mark, not a pin."""
+    red, blue = (135, 0, 0), (0, 0, 255)
+    b = SceneBuilder()
+    b.shape((0, 0), (0, 20), (20, 10), (0, 0), width=0.25, color=red)
+    b.shape((-5, 5), (0, 5), width=0.25, color=red)
+    b.shape((12, 6), (12, 1), width=0.25, color=red)  # the side is at y = 6 here
+    b.shape((-2.5, 4.9), (-2.5, 3.9), width=0.25, color=red)  # the "+"
+    b.shape((-3, 4.4), (-2, 4.4), width=0.25, color=red)
+    for text, box, angle in (("2", (-4.8, 3.4, -4.0, 4.7), 0.0), ("1", (10, 2, 11.3, 2.8), 90.0)):
+        b.seq += 1
+        number = Text(b.seq, text, box, 1.27, angle, blue, b.seq)
+        b.scene.fields.append(number)
+        b.scene.pin_numbers.append(number)
+    b.scene.wires += [((-10, 5), (-5, 5)), ((12, 1), (12, -4))]
+    b.seq += 1
+    b.scene.fields.append(Text(b.seq, "U1", (22, 2, 24, 3.3), 1.27, 0.0, (0, 0, 128), b.seq))
+
+    (u1,) = symbols.find(b.scene, profile.load("easyeda"))
+    assert sorted((p.number, p.at) for p in u1.pins) == [("1", (12, 1)), ("2", (-5, 5))]

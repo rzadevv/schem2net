@@ -28,6 +28,8 @@ FLAG_SIZE = 10.0  # mm; a closed outline smaller than this may be a port flag
 BODY_OVER_FLAG = 3.0  # a body is this many times the size of a flag on a pin's tip
 BIT_SIZE = 4.0  # mm; pinless pieces smaller than this may be bits of a neighbour
 BIT_GAP = 0.8  # mm between such a bit and the piece drawn next to it
+CROSS_LENGTHS = 1.5  # the strokes of a cross mark are about as long as each other
+CROSS_MIDDLE = 0.2  # and meet within this share of their length of both middles
 MIN_BOX = 1.0  # mm; narrower pinless pieces are lines, not boxes
 ENTER_DEPTH = 2.54  # mm a pin crossing into a box ends inside its edge
 DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
@@ -84,7 +86,11 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
     # Reference designators end one symbol's drawing and start the next.
     breaks = sorted(t.seq for t in scene.fields if is_common_ref(t.text))
 
-    lines = [s for s in scene.shapes if _is_pin_like(s, profile, scene.wires, wires)]
+    lines = [
+        s
+        for s in scene.shapes
+        if _is_pin_like(s, profile, scene.wires, wires) and not _in_cross(s, scene, index)
+    ]
     if profile.fields_follow_symbol:
         # Pieces of one pin are drawn with no text at all between them.
         chains = _chains(lines, scene, index, sorted(t.seq for t in scene.fields))
@@ -213,6 +219,33 @@ def _is_pin_like(
     return geometry.distance(a, b) >= profile.pin_min_length and geometry.is_axis_aligned((a, b))
 
 
+def _in_cross(shape: Shape, scene: Scene, index: GridIndex) -> bool:
+    """Whether the line is one stroke of a cross, as a "+" polarity mark is: another
+    line of about its length crosses it, the two meeting at both their middles."""
+    a, b = shape.points
+    length = geometry.distance(a, b)
+    mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+    for j in index.near(mid, CROSS_MIDDLE * length):
+        other = scene.shapes[j]
+        if j == shape.id or len(other.points) != 2:
+            continue
+        c, d = other.points
+        other_mid = ((c[0] + d[0]) / 2, (c[1] + d[1]) / 2)
+        ratio = geometry.distance(c, d) / length
+        if (
+            1 / CROSS_LENGTHS <= ratio <= CROSS_LENGTHS
+            and geometry.distance(mid, other_mid) <= CROSS_MIDDLE * length
+            and abs(_cosine((a, b), (c, d))) < 0.5
+        ):
+            return True
+    return False
+
+
+def _cosine(s: Segment, t: Segment) -> float:
+    u, v = geometry.unit(*s), geometry.unit(*t)
+    return u[0] * v[0] + u[1] * v[1]
+
+
 def _flag(shape) -> bool:
     """A small closed outline, as a port flag is."""
     return shape.closed and _size(shape.bbox) < FLAG_SIZE
@@ -328,12 +361,12 @@ def _group(
 
     symbols = []
     for members in uf.groups().values():
-        body = [scene.shapes[m].bbox for m in members if m not in pins or id(pins[m]) in stubs]
-        body_box = _union(body) if body else None
+        body = [scene.shapes[m] for m in members if m not in pins or id(pins[m]) in stubs]
+        body_box = _union([s.bbox for s in body]) if body else None
         # A line that ends inside the body is drawing, not a pin.
         own = list({id(pins[m]): pins[m] for m in members if m in pins}.values())
         own = [p for p in own if id(p) not in stubs]
-        own = [p for p in own if not body_box or not _inside(p.at, body_box)]
+        own = [p for p in own if not _in_body(p, body)]
         box = _union([scene.shapes[m].bbox for m in members])
         symbols.append(Symbol(sorted(members), box, own, body=body_box))
     return symbols
@@ -603,6 +636,33 @@ def _size(box: BBox) -> float:
 
 def _sides(box: BBox) -> tuple[float, float]:
     return box[2] - box[0], box[3] - box[1]
+
+
+def _in_body(pin: Pin, body: list[Shape]) -> bool:
+    """Whether the pin ends inside the body, as a line of drawing does. A closed
+    outline the pin starts on counts by its shape, the rest of the body by its box:
+    a pin leaving the slanted side of a triangle ends within the triangle's box."""
+    starts_on = [
+        s
+        for s in body
+        if s.closed
+        and any(
+            geometry.distance_to_segment(pin.line[0], seg) <= s.width + TOUCH
+            for seg in geometry.segments(s.points)
+        )
+    ]
+    if any(_in_polygon(pin.at, s.points) for s in starts_on):
+        return True
+    rest = [s.bbox for s in body if s.id not in {t.id for t in starts_on}]
+    return bool(rest) and _inside(pin.at, _union(rest))
+
+
+def _in_polygon(p: Point, points: list[Point]) -> bool:
+    inside = False
+    for (ax, ay), (bx, by) in geometry.segments(points + points[:1]):
+        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
+            inside = not inside
+    return inside
 
 
 def _inside(p: Point, box: BBox) -> bool:
