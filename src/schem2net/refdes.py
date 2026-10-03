@@ -16,3 +16,7 @@ def is_common_ref(text: str) -> bool:
     match = REFDES.match(text)
     # Eagle names parts it was given no prefix for "U$1", "C$2" and so on.
     return bool(match) and match.group(1).rstrip("$") in COMMON_PREFIXES
+
+
+# A part value such as 100nF, 4.7uH, 10k or 0R, which is never a net name.
+PART_VALUE = re.compile(r"^\d+([.,]\d+)?\s*[pnuμµmkKMG]?\s*(F|H|R|Ω|ohms?)?$")

@@ -10,9 +10,11 @@ from schem2net import fills, geometry, strokes
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Color, Page, Path, Point, Text
 from schem2net.profile import Profile
-from schem2net.refdes import is_common_ref
+from schem2net.refdes import PART_VALUE, is_common_ref
 
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
+LABEL_RISE = 0.6  # text heights between a label laid on a wire and the wire
+LABEL_UNDER = 0.9  # share of the label's length the wire runs under
 MIN_COLOUR_HITS = 5  # pin ends a colour must reach to be taken as a wire or body colour
 BUS_WIDTH_RATIO = 1.8  # a wire-coloured line this much thicker than usual is a bus
 SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
@@ -192,6 +194,14 @@ def build(page: Page, profile: Profile) -> Scene:
             scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
             used.add(id(outline))
         taken = {id(text) for text, _ in boxed}
+        if profile.labels_on_wires:
+            # The others name the wire they sit on, as a label laid along it.
+            for text in scene.fields:
+                if id(text) in taken or PART_VALUE.match(text.text) or is_common_ref(text.text):
+                    continue  # a value or designator drawn over a passing wire
+                if _on_wire(text, scene.wires, wire_index):
+                    scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
+                    taken.add(id(text))
         scene.fields = [t for t in scene.fields if id(t) not in taken]
         scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in taken]
     for text, outline in _outlined(label_texts["global"], outlines["global"]):
@@ -531,6 +541,25 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
             yield text, (fx, box[1] if fy < ty else box[3])
         else:
             yield text, (box[0] if fx < tx else box[2], ty)
+
+
+def _on_wire(text: Text, wires: list[Segment], index: GridIndex) -> bool:
+    """True if a wire runs under nearly all of the text, just below its baseline."""
+    x0, y0, x1, y1 = text.bbox
+    vertical = round(text.angle) % 180 == 90
+    rise = LABEL_RISE * text.size
+    for k in index.within((x0 - rise, y0 - rise, x1 + rise, y1 + rise)):
+        (ax, ay), (bx, by) = wires[k]
+        if vertical and abs(ax - bx) < 1e-3:  # turned text: its baseline is its right side
+            gap, lo, hi, a, b = ax - x1, y0, y1, ay, by
+        elif not vertical and abs(ay - by) < 1e-3:
+            gap, lo, hi, a, b = ay - y1, x0, x1, ax, bx
+        else:
+            continue
+        under = min(hi, max(a, b)) - max(lo, min(a, b))
+        if 0 <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
+            return True
+    return False
 
 
 def _meets_wire(outline: list[Point], wires: list[Segment], index: GridIndex) -> bool:

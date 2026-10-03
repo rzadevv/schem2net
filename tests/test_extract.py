@@ -492,3 +492,23 @@ def test_supply_name_anchored_at_one_end_overhangs_its_arrow():
 
     found = symbols.find(b.scene, profile.load("eagle"))
     assert [s.power for s in found] == ["3.3V"]
+
+
+def test_eagle_label_laid_on_a_wire():
+    """Classic Eagle labels: a name just above its wire, in the colour of names and values."""
+    green, grey = (0, 128, 0), (128, 128, 128)
+    page = Page(1, 100, 100)
+    page.paths = [
+        Path(0, [[(10, 20), (40, 20)]], 0.15, green, None),
+        Path(1, [[(10, 30), (40, 30)]], 0.15, green, None),
+    ]
+    page.texts = [
+        Text(0, "ETXD0", (14, 18, 22, 19.5), 1.5, 0.0, grey),  # on the first wire
+        Text(1, "220nF", (14, 28, 20, 29.5), 1.5, 0.0, grey),  # a value over a wire
+        Text(2, "SDA", (60, 18, 64, 19.5), 1.5, 0.0, grey),  # near no wire
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, profile.load("eagle"))
+    assert [(lb.text, lb.kind) for lb in built.labels] == [("ETXD0", "local")]

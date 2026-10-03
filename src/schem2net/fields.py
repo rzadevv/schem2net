@@ -16,7 +16,7 @@ from schem2net import geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point, Text
 from schem2net.profile import Profile
-from schem2net.refdes import COMMON_PREFIXES, REFDES, is_common_ref
+from schem2net.refdes import COMMON_PREFIXES, PART_VALUE, REFDES, is_common_ref
 from schem2net.scene import Scene
 
 if TYPE_CHECKING:
@@ -35,9 +35,7 @@ UNPAIRED_COST = 3 * REF_SEARCH + 1
 PIECE_GAP = 1.27  # mm between pieces of one drawn symbol; parts sit a grid step apart
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 
-# A part value such as 100nF, 4.7uH, 10k or 0R, which is never a power net.
 PAD_COUNT = re.compile(r"\*\d+$")  # Eagle writes a pin on several pads as "A6*2"
-PART_VALUE = re.compile(r"^\d+([.,]\d+)?\s*[pnuμµmkKMG]?\s*(F|H|R|Ω|ohms?)?$")
 
 
 def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs | None) -> None:
