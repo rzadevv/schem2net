@@ -307,9 +307,8 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
             cost = gap
             if match.group(1).rstrip("$") not in COMMON_PREFIXES:
                 cost += UNKNOWN_PREFIX_COST
-            inside = len(symbol.pins) > 2 and _within_outline(symbol, text)
-            if profile.designators_outside and inside:
-                cost += INSIDE_BODY_COST  # the texts inside are pin names
+            if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile):
+                cost += INSIDE_BODY_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
             elif runs and profile.designator_first and runs.first_text(symbol) != text.seq:
@@ -469,6 +468,21 @@ def _within_outline(symbol: Symbol, text: Text) -> bool:
     x0, y0, x1, y1 = symbol.body
     cx, cy = geometry.center(text.bbox)
     return x0 < cx < x1 and y0 < cy < y1
+
+
+def _belongs_to_a_pin(symbol: Symbol, text: Text, profile: Profile) -> bool:
+    """Where designators sit outside the box: a text inside it is a pin name, one by a
+    pin outside it a pad number. Two-pin parts are left out, as their designator can
+    come near the pin ends."""
+    if len(symbol.pins) <= 2:
+        return False
+    return _within_outline(symbol, text) or _numbers_a_pin(symbol, text, profile)
+
+
+def _numbers_a_pin(symbol: Symbol, text: Text, profile: Profile) -> bool:
+    """True if the text sits where a pin of the part has its number."""
+    above = profile.pin_numbers_above
+    return any(_number_gap(text.bbox, pin.line, above) is not None for pin in symbol.pins)
 
 
 def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | None:
