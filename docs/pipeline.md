@@ -189,7 +189,10 @@ stored as node arrays in `profiles/roles.npz`; reading them needs only numpy.
 Designers can change the colour theme, so a label may come in a colour the
 profile does not know. Such texts get their role from the same text model, with
 everything in a known colour kept as it is: a string the PDF splits into pieces
-is judged whole, and every piece takes its role.
+is judged whole, and every piece takes its role. A net label has no drawing of
+its own, so a text with lines of its colour right by it, other than the wire it
+lies along, is not taken for one: the net class name on a differential pair
+directive sits beside the directive's mark, just above the wire.
 
 ## Confidence
 

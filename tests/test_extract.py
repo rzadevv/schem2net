@@ -578,7 +578,7 @@ def test_easyeda_ground_with_hidden_name_does_not_take_a_designator():
 
 
 def test_value_shaped_like_an_inductor_does_not_name_a_part_of_many_pins():
-    """"L298" under a driver's box is its value: an inductor has two pins, not six."""
+    """A value such as L298 under a driver's box: an inductor has two pins, not six."""
     b = SceneBuilder()
     b.shape((10, 10), (20, 10), (20, 20), (10, 20), (10, 10))
     for y in (12.54, 15.08, 17.62):

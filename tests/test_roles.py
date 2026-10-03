@@ -82,3 +82,20 @@ def test_texts_in_unknown_colours_take_a_predicted_role():
     models = (None, None, _Stub(lambda row: local))
     named = roles.name_unknown_texts(page, kicad, models)
     assert [kicad.is_("local_label", t.color) for t in named.texts] == [True, True, False]
+
+
+def test_a_name_drawn_with_a_mark_of_its_colour_is_not_a_net_label():
+    """A net label has no drawing of its own; a directive's name sits by its mark."""
+    red = (255, 0, 0)
+    name = Text(1, "USB", (10, 9, 13, 10), 1.0, 0.0, red, 1)
+    wire = Path(2, [[(0, 10.3), (20, 10.3)]], 0.15, red, None, seq=2)  # laid along
+    mark = Path(3, [[(7, 9.5), (8, 9.0), (9, 9.5)]], 0.15, red, None, seq=3)
+
+    def drawn_with(paths):
+        index = roles.geometry.GridIndex(cell=2.0)
+        for k, p in enumerate(paths):
+            index.add(k, p.bbox)
+        return roles._drawn_with(name, paths, index)
+
+    assert not drawn_with([wire])
+    assert drawn_with([wire, mark])

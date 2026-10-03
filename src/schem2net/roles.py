@@ -22,12 +22,14 @@ from schem2net.profile import Profile
 # goes to the first.
 PATH_ROLES = ("wire", "bus", "pin", "symbol", "hier_label", "sheet_pin", "note")
 TEXT_ROLES = ("local_label", "global_label", "hier_label", "pin_number", "field", "bus", "note")
+LOCAL_LABEL = TEXT_ROLES.index("local_label")
 
 TOUCH = 0.05  # mm between ends that meet
 DOT = 1.5  # mm; filled shapes smaller than this may be junction dots
 CONTEXT = 5  # paths drawn before and after that a path is compared with
 NEAR = 3.0  # mm around a text searched for what it sits on
 ALONG_GAP = 1.0  # mm between a net label and the wire it sits on
+OWN_DRAWING = 1.0  # mm from a text to drawing in its own colour that goes with it
 GREY_SPREAD = 8  # an ink whose red, green and blue differ by no more than this is grey
 
 
@@ -304,13 +306,38 @@ def name_unknown_texts(page: Page, profile: Profile, models=None) -> Page:
     groups = _runs([t for t in page.texts if t.visible])
     whole = [joined for joined, _ in groups]
     found = texts_model.predict(text_features(whole, paths, path_roles))
+    index = geometry.GridIndex(cell=2.0)
+    for k, p in enumerate(paths):
+        index.add(k, p.bbox)
     colour = {
         id(piece): _colour(profile, TEXT_ROLES, int(r))
         for (joined, pieces), r in zip(groups, found, strict=True)
         if joined.color not in known
+        and not (int(r) == LOCAL_LABEL and _drawn_with(joined, paths, index))
         for piece in pieces
     }
     return replace(page, texts=[replace(t, color=colour.get(id(t)) or t.color) for t in page.texts])
+
+
+def _drawn_with(text: Text, paths: list[Path], index: geometry.GridIndex) -> bool:
+    """Whether drawing in the text's own colour sits right by it, other than a line it
+    lies along or a junction dot. A net label has none; the name on a directive or a
+    flag is drawn with its mark."""
+    horizontal = round(text.angle) % 180 == 0
+    x0, y0, x1, y1 = text.bbox
+    for k in index.within((x0 - OWN_DRAWING, y0 - OWN_DRAWING, x1 + OWN_DRAWING, y1 + OWN_DRAWING)):
+        p = paths[k]
+        if (p.stroke or p.fill) != text.color:
+            continue
+        if geometry.bbox_gap(p.bbox, text.bbox) > OWN_DRAWING:
+            continue
+        segments = _segments(p)
+        if len(segments) == 1 and geometry.is_horizontal(segments[0]) == horizontal:
+            continue  # the wire it is laid along
+        if p.fill and not p.stroke and max(p.bbox[2] - p.bbox[0], p.bbox[3] - p.bbox[1]) < DOT:
+            continue
+        return True
+    return False
 
 
 def _runs(texts: list[Text]) -> list[tuple[Text, list[Text]]]:
