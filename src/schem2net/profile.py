@@ -22,7 +22,7 @@ class Profile:
     designator_first: bool = False
     wires_drawn_together: bool = False
     thick_wires_are_buses: bool = False
-    wire_grid: float | None = None  # mm; wire ends sit on this grid in the source
+    wire_grids: tuple[float, ...] = ()  # mm; usual grids of wire ends, standard first
     infer_wire_colour: bool = False
     designators_in_any_colour: bool = False
     designators_in_pin_colour: bool = False
@@ -62,7 +62,7 @@ def load(name: str) -> Profile:
         wires_drawn_together=order.get("wires_drawn_together", False),
         thick_wires_are_buses=wires.get("thick_are_buses", False),
         infer_wire_colour=wires.get("infer_colour", False),
-        wire_grid=wires.get("grid"),
+        wire_grids=tuple(_listed(wires.get("grid", []))),
         designators_in_any_colour=order.get("designators_in_any_colour", False),
         designators_in_pin_colour=order.get("designators_in_pin_colour", False),
         labels_span_pages=labels.get("span_pages", False),
@@ -75,3 +75,7 @@ def load(name: str) -> Profile:
         sheet_file_prefix=sheets.get("file_prefix"),
         sheet_path_prefix=sheets.get("path_prefix"),
     )
+
+
+def _listed(value) -> list:
+    return value if isinstance(value, list) else [value]

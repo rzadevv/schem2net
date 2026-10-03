@@ -38,3 +38,22 @@ def test_rescale():
     page = grid.rescale(_page(0.5), 2.0)
     assert page.width == pytest.approx(558.8)
     assert page.paths[0].width == pytest.approx(0.15)
+
+
+def _recoloured(page: Page, colour) -> Page:
+    for path in page.paths:
+        path.stroke = colour
+    return page
+
+
+def test_a_coarser_grid_is_not_read_as_a_smaller_scale():
+    """Ends on 2.54 mm fit KiCad's 1.27 mm grid at 0.4 as well as at 1: it is 1:1."""
+    kicad = profile.load("kicad")
+    page = _recoloured(_page(1.0), min(kicad.colors["wire"]))
+    assert grid.scale(page, kicad) == 1.0
+
+
+def test_a_sheet_printed_to_fit_smaller_paper():
+    kicad = profile.load("kicad")
+    page = _recoloured(_page(0.7071, steps=0.5), min(kicad.colors["wire"]))  # 1.27 mm ends
+    assert grid.scale(page, kicad) == pytest.approx(0.7071, abs=0.002)

@@ -112,10 +112,13 @@ arrives as filled outlines instead, one path per string; `fills.py` splits each
 into letters by where the outlines overlap and compares a coarse raster of each
 letter, with its width and height against the baseline, to a second table.
 
-Eagle snaps wires to a 2.54 mm grid. A sheet printed to fit the paper keeps that
-pattern at another spacing, so `grid.py` finds the spacing all wire ends agree
-on and scales the page back to the size it was drawn at before reading it; the
-sizes the rest of the pipeline expects, pin lengths and text gaps, then hold.
+Editors snap wires to a grid: Eagle to 2.54 mm, KiCad to 1.27 or 0.635 mm. A
+sheet printed to fit the paper keeps that pattern at another spacing, so
+`grid.py` finds the spacing all wire ends agree on and scales the page back to
+the size it was drawn at before reading it; the sizes the rest of the pipeline
+expects, pin lengths and text gaps, then hold. A grid also fits at every
+spacing that divides it, so a page whose ends fit one of the usual grids as
+printed is taken as 1:1; otherwise the fit nearest 1:1 is taken.
 
 Letters that only size tells from their capitals (c, o, s, v, w, x, z, and
 in sans fonts I and l) take the case of the rest of their word, so one net name

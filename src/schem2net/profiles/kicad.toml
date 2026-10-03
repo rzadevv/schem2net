@@ -30,3 +30,6 @@ wires_drawn_together = true  # all wires in one run, whatever their net class co
 max_width = 0.2   # mm; thicker lines are body graphics
 min_length = 0.5  # mm
 numbers_above = true  # above horizontal pins, left of vertical ones
+
+[wires]
+grid = [1.27, 0.635]  # mm, standard first; pages printed to fit are scaled back by it
