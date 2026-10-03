@@ -56,6 +56,10 @@ Symbols are groups of graphics that touch, except through a pin's free end.
 Two one-pin pieces facing each other on one axis are joined, which covers
 capacitor plates.
 
+Designators are paired with symbols one to one, nearest first overall. A value
+can look like a designator: "L298" by a driver's box. Resistors, capacitors,
+inductors and fuses have few pins, so their prefixes cost more by a part of many.
+
 ## Sheets and buses
 
 Each page's hierarchical path comes from its title block. A sheet box on a
@@ -95,7 +99,11 @@ A net label text inside a small outline is a port. Unless the design nests
 sheets, ports and net labels connect their name on every sheet.
 
 Power port names use the net label colour. Ground ports usually have no name
-and are recognised by their stacked bars or their triangle. Designers often
+and are recognised by their stacked bars, centred one above another, or their
+triangle. In Eagle and EasyEDA, whose pins and bodies share a colour, the stem
+of the GND sign reads as a pin, and the shape still decides; in KiCad the same
+sign is Earth, so there a pin keeps it a part. A ground drawn in pieces takes the
+name another piece beside it took. Designers often
 change the wire colour, so each page's wire colour is learned from the lines
 that end on pin ends. Junctions may be drawn as rings, and wires crossing
 without a connection may jump over each other with a small arc, which is read

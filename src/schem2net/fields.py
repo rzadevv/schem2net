@@ -16,7 +16,13 @@ from schem2net import geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point, Text
 from schem2net.profile import Profile
-from schem2net.refdes import COMMON_PREFIXES, PART_VALUE, REFDES, is_common_ref
+from schem2net.refdes import (
+    COMMON_PREFIXES,
+    PART_VALUE,
+    REFDES,
+    TWO_TERMINAL_PREFIXES,
+    is_common_ref,
+)
 from schem2net.scene import Scene
 
 if TYPE_CHECKING:
@@ -30,11 +36,14 @@ OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name, unless the profile says
 INSIDE_BODY_COST = REF_SEARCH  # a designator inside a part's outline, where profiles say
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
+MANY_PINS_COST = REF_SEARCH  # "L298" by a part of many pins is its value, not an inductor
+MANY_PINS = 4  # more pins than a resistor, capacitor or inductor has
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 PIECE_GAP = 1.27  # mm between pieces of one drawn symbol; parts sit a grid step apart
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
+MIN_GROUND_BASE = 0.5  # mm; a ground triangle's base is a grid step or so wide
 
 PAD_COUNT = re.compile(r"\*\d+$")  # Eagle writes a pin on several pads as "A6*2"
 
@@ -45,10 +54,13 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
     if profile.power_names_in_labels:
         _name_power_from_labels(symbols, scene, profile)
     if profile.unnamed_ground:
+        named = [s for s in symbols if s.power]
         for symbol in filter(_could_be_power, symbols):
             # A part with a real pin is a component, such as a mounting hole.
             if not _has_real_pin(symbol, scene, profile) and _looks_like_ground(symbol, scene):
-                symbol.power = profile.unnamed_ground
+                # A piece drawn beside it may have taken its name.
+                piece = [s for s in named if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
+                symbol.power = piece[0].power if piece else profile.unnamed_ground
                 symbol.anchors = _anchors(symbol, scene)
     _assign_refs(symbols, texts, runs, profile)
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
@@ -127,9 +139,10 @@ def _is_power_name(text: str, profile: Profile) -> bool:
 
 
 def _has_real_pin(symbol: Symbol, scene: Scene, profile: Profile) -> bool:
-    """A pin in the pin colour, or any pin where pins have no colour of their own."""
+    """A pin in the pin colour, or any pin where pins have no colour of their own,
+    unless the generator's ground sign has a stem that reads as one."""
     if not profile.colors.get("pin"):
-        return bool(symbol.pins)
+        return bool(symbol.pins) and not profile.ground_stems
     return any(profile.is_("pin", scene.shapes[p.shape].color) for p in symbol.pins)
 
 
@@ -191,6 +204,8 @@ def _has_triangle(symbol: Symbol, scene: Scene) -> bool:
         )
 
     for base in segs:
+        if geometry.distance(*base) < MIN_GROUND_BASE:
+            continue  # within the corner gap of everything near it
         mid = geometry.center(geometry.bbox_of(base))
         along = geometry.unit(*base)
         for stem in segs:
@@ -246,7 +261,12 @@ def _has_bars(symbol: Symbol, scene: Scene) -> bool:
         lengths = [geometry.distance(*ln) for ln in by_offset]
         shrinking = lengths in (sorted(lengths), sorted(lengths, reverse=True))
         distinct = len({round(v, 2) for v in lengths}) == len(lengths)
-        if len(lengths) >= 3 and shrinking and distinct:
+        # One above another, centred on the stem's axis.
+        offsets = [ln[0][across] for ln in by_offset]
+        apart = all(b - a > CORNER_GAP for a, b in zip(offsets, offsets[1:], strict=False))
+        centres = [(ln[0][1 - across] + ln[1][1 - across]) / 2 for ln in by_offset]
+        centred = max(centres, default=0) - min(centres, default=0) <= CORNER_GAP
+        if len(lengths) >= 3 and shrinking and distinct and apart and centred:
             return True
     return False
 
@@ -312,8 +332,11 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
             if not match or is_pin_name(symbol, text, profile.pin_name_gap):
                 continue
             cost = gap
-            if match.group(1).rstrip("$") not in COMMON_PREFIXES:
+            prefix = match.group(1).rstrip("$")
+            if prefix not in COMMON_PREFIXES:
                 cost += UNKNOWN_PREFIX_COST
+            elif prefix in TWO_TERMINAL_PREFIXES and len(symbol.pins) > MANY_PINS:
+                cost += MANY_PINS_COST
             if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile):
                 cost += INSIDE_BODY_COST
             if runs and not runs.owns(symbol, text.seq):

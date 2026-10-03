@@ -553,3 +553,39 @@ def test_pins_leave_the_slanted_sides_of_a_triangle_past_a_polarity_mark():
 
     (u1,) = symbols.find(b.scene, profile.load("easyeda"))
     assert sorted((p.number, p.at) for p in u1.pins) == [("1", (12, 1)), ("2", (-5, 5))]
+
+
+def test_easyeda_ground_with_hidden_name_does_not_take_a_designator():
+    """EasyEDA's ground is a stem and three bars drawn apart, its name hidden. The
+    stem reads as a pin, since pins and bodies share a colour."""
+    red, navy = (135, 0, 0), (0, 0, 128)
+    b = SceneBuilder()
+    b.shape((9, 10), (11, 10), (11, 15), (9, 15), (9, 10), width=0.25, color=red)
+    b.shape((10, 10), (10, 7.46), width=0.25, color=red)
+    b.shape((10, 15), (10, 17.54), width=0.25, color=red)
+    b.seq += 1
+    b.scene.fields.append(Text(b.seq, "R1", (12, 11, 14, 12.3), 1.27, 0.0, navy, b.seq))
+    b.shape((10, 20.08), (10, 22), width=0.25, color=red)  # the ground, on a wire
+    for half, y in ((2, 22), (1.3, 22.8), (0.6, 23.6)):
+        b.shape((10 - half, y), (10 + half, y), width=0.25, color=red)
+    b.scene.wires += [((10, 17.54), (10, 20.08)), ((10, 7.46), (20, 7.46))]
+    b.scene.labels.append(Label("VIN", "local", (13, 5.7, 16, 6.9), 0.0))
+
+    parts, nets = netlist(b.scene, rules=profile.load("easyeda"))
+    assert list(parts) == ["R1"]
+    assert nets["GND"].pins == [("R1", "2")]
+    assert nets["VIN"].pins == [("R1", "1")]
+
+
+def test_value_shaped_like_an_inductor_does_not_name_a_part_of_many_pins():
+    """"L298" under a driver's box is its value: an inductor has two pins, not six."""
+    b = SceneBuilder()
+    b.shape((10, 10), (20, 10), (20, 20), (10, 20), (10, 10))
+    for y in (12.54, 15.08, 17.62):
+        b.shape((10, y), (7.46, y))
+        b.shape((20, y), (22.54, y))
+    b.field("U2", 11, 8.2)
+    b.field("L298", 11, 20.5)
+
+    parts, _ = netlist(b.scene)
+    assert list(parts) == ["U2"] and parts["U2"].value == "L298"

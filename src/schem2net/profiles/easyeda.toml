@@ -18,6 +18,10 @@ span_pages = true  # net flags and labels join nets of one name on every sheet
 in_outlines = true  # a name in a port outline that meets a wire is a net label
 on_wires = true  # so is a net label laid along a wire
 
+[power]
+unnamed_ground = "GND"  # ground flags whose name is hidden
+ground_stems = true  # its stem, ending on the wire, reads as a pin
+
 [pins]
 max_width = 1.0  # mm; pins and bodies are drawn alike, and printing may thicken lines
 min_length = 0.5  # mm

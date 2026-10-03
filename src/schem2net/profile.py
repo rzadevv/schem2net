@@ -38,6 +38,7 @@ class Profile:
     not_power_nets: frozenset[str] = frozenset()
     power_names_in_labels: bool = False
     unnamed_ground: str | None = None
+    ground_stems: bool = False  # the unnamed ground's sign has a stem that reads as a pin
     sheet_file_prefix: str | None = None
     sheet_path_prefix: str | None = None
 
@@ -82,6 +83,7 @@ def load(name: str) -> Profile:
         not_power_nets=frozenset(power.get("not_nets", [])),
         power_names_in_labels=power.get("names_in_labels", False),
         unnamed_ground=power.get("unnamed_ground"),
+        ground_stems=power.get("ground_stems", False),
         sheet_file_prefix=sheets.get("file_prefix"),
         sheet_path_prefix=sheets.get("path_prefix"),
     )

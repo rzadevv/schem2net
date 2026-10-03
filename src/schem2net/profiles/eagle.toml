@@ -26,7 +26,8 @@ on_wires = true  # so is one laid along a wire, just above it
 sheet_reference = true  # cross-reference labels add the sheet the net goes on to, "/2.3B"
 
 [power]
-unnamed_ground = "GND"
+unnamed_ground = "GND"  # supply symbols whose name is hidden
+ground_stems = true  # GND's stem, ending on the wire, reads as a pin
 
 [pins]
 max_width = 0.6  # mm

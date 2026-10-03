@@ -10,6 +10,7 @@ COMMON_PREFIXES = {
     "L", "LCD", "LED", "LS", "M", "MH", "P", "Q", "R", "RN", "RV", "S", "SW", "T", "TH", "TP",
     "U", "VR", "X", "Y", "Z",
 }  # fmt: skip
+TWO_TERMINAL_PREFIXES = {"C", "F", "FB", "L", "R"}  # at most a few pins, as a choke has
 
 
 def is_common_ref(text: str) -> bool:
