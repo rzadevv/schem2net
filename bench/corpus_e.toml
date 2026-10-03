@@ -1,16 +1,8 @@
-# Corpus E: EasyEDA (Std) schematic PDFs and the .json each was exported from,
-# kept in the same repository. A pair is kept when at least 90% of the source's
-# designators are in the PDF's text.
+# Corpus E: EasyEDA schematic PDFs and the source each was exported from, kept in
+# the same repository: a Std .json or a Pro .epro. A pair is kept when at least 90%
+# of the source's designators are in the PDF's text; copies of one PDF count once.
 
 test_share = 0.5
-
-[[project]]
-name = "sesboardv1-schematic-sesboard"
-repo = "https://github.com/JKUATSES/sesBoardv1"
-commit = "2a5a303b43a3f52abc5a27085d3de65bc499e607"
-easyeda = "Design/SESBOARD.json"
-pdf = "Design/Schematic_SESBOARD.pdf"
-license = "MIT"
 
 [[project]]
 name = "easyeda-schematic-pdf"
@@ -19,6 +11,70 @@ commit = "7410c93aa1258e1c19cdecee321560e62cd9f068"
 easyeda = "Scheme ESP32/Schematic/Schematic.json"
 pdf = "Scheme ESP32/Schematic/Schematic_pdf.pdf"
 license = "see repository"
+
+[[project]]
+name = "cyborg-sch-cyborg"
+repo = "https://github.com/cyrusbuilt/CyBorg"
+commit = "87171d3d475857366682d703e928e690b82f4833"
+easyeda = "schematics/SCH_CyBorg.json"
+pdf = "schematics/SCH_CyBorg.pdf"
+license = "GPL-3.0"
+
+[[project]]
+name = "rpitx-coax-pcb-schematic-rpitx-coax-pcb-2021-03-01"
+repo = "https://github.com/IgrikXD/rpitx-coax-pcb"
+commit = "40582c0b6ff2594afade1b990690f4fa77cd2864"
+easyeda = "EasyEDA/1-Schematic_rpitx-coax-pcb.json"
+pdf = "Schematics/Schematic_rpitx-coax-pcb_2021-03-01.pdf"
+license = "MIT"
+
+[[project]]
+name = "easy-sdr-schematic-balun-smd-enclosure-2026-03-13"
+repo = "https://github.com/IgrikXD/Easy-SDR"
+commit = "d4c7fbef2343fdd067bec22806192f44cf650b4a"
+easyeda = "Balun/SMD/EasyEDA/SCH_Balun-(SMD,-ENCLOSURE)_2026-03-13.json"
+pdf = "Balun/SMD/Schematics/Schematic_Balun-(SMD,-ENCLOSURE)_2026-03-13.pdf"
+license = "MIT"
+
+[[project]]
+name = "easy-sdr-schematic-coax-power-supply-fixed-voltage-smd-enclosure-2020-"
+repo = "https://github.com/IgrikXD/Easy-SDR"
+commit = "d4c7fbef2343fdd067bec22806192f44cf650b4a"
+easyeda = "Coax power supply/Fixed voltage/SMD/EasyEDA/1-Schematic_Coax power supply, fixed voltage (SMD, ENCLOSURE).json"
+pdf = "Coax power supply/Fixed voltage/SMD/Schematics/Schematic_Coax power supply, fixed voltage (SMD, ENCLOSURE)_2020-09-29_10-58-02.pdf"
+license = "MIT"
+
+[[project]]
+name = "easy-sdr-schematic-lna-bias-tee-powered-filtering-smd-enclosure-2020-0"
+repo = "https://github.com/IgrikXD/Easy-SDR"
+commit = "d4c7fbef2343fdd067bec22806192f44cf650b4a"
+easyeda = "LNA/Bias Tee powered + filtering/SMD/EasyEDA/1-Schematic_LNA, Bias Tee powered + filtering (SMD, ENCLOSURE).json"
+pdf = "LNA/Bias Tee powered + filtering/SMD/Schematics/Schematic_LNA, Bias Tee powered + filtering (SMD, ENCLOSURE)_2020-09-29_11-26-13.pdf"
+license = "MIT"
+
+[[project]]
+name = "easy-sdr-schematic-lna-bias-tee-powered-smd-enclosure-2020-09-29-10-55"
+repo = "https://github.com/IgrikXD/Easy-SDR"
+commit = "d4c7fbef2343fdd067bec22806192f44cf650b4a"
+easyeda = "LNA/Bias Tee powered/SMD/EasyEDA/1-Schematic_LNA, Bias Tee powered (SMD, ENCLOSURE).json"
+pdf = "LNA/Bias Tee powered/SMD/Schematics/Schematic_LNA, Bias Tee powered (SMD, ENCLOSURE)_2020-09-29_10-55-08.pdf"
+license = "MIT"
+
+[[project]]
+name = "easy-sdr-schematic-pi-attenuator-smd-2020-09-29-10-51-23"
+repo = "https://github.com/IgrikXD/Easy-SDR"
+commit = "d4c7fbef2343fdd067bec22806192f44cf650b4a"
+easyeda = "PI Attenuator/SMD/EasyEDA/1-Schematic_PI Attenuator (SMD).json"
+pdf = "PI Attenuator/SMD/Schematics/Schematic_PI Attenuator (SMD)_2020-09-29_10-51-23.pdf"
+license = "MIT"
+
+[[project]]
+name = "easy-sdr-schematic-rf-power-limiter-2026-03-13"
+repo = "https://github.com/IgrikXD/Easy-SDR"
+commit = "d4c7fbef2343fdd067bec22806192f44cf650b4a"
+easyeda = "RF power limiter/SMD/EasyEDA/SCH_RF-power-limiter_2026-03-13.json"
+pdf = "RF power limiter/SMD/Schematics/Schematic_RF-power-limiter_2026-03-13.pdf"
+license = "MIT"
 
 [[project]]
 name = "flight-control-computer-schematic-flight-control-computer"
@@ -53,12 +109,84 @@ pdf = "w5500-ethernet-module/schematic/Schematic_w5500-ethernet.pdf"
 license = "see repository"
 
 [[project]]
+name = "stm32f103-minimal-system-pcb-sch-schematic1-1-2025-12-13"
+repo = "https://github.com/Kurisu-g/STM32F103-Minimal-System-PCB-"
+commit = "a70700ad2be9c5f96b5c2774294fa48912a5d35d"
+easyeda = "Hardware/ProPrj_stm32_2025-12-13.epro"
+pdf = "Fabrication/SCH_Schematic1_1_2025-12-13.pdf"
+license = "MIT"
+
+[[project]]
+name = "paralelahardware-schematic-nolman-2x2-rusefi-2023-03-16"
+repo = "https://github.com/ElDominio/ParalelaHardware"
+commit = "3b6628941cfaceeb858cd9305d7a57e3bad7b49a"
+easyeda = "V2/1-Schematic_Nolman (4x4 rusEFI).json"
+pdf = "V1/Schematic_Nolman (2x2 rusEFI)_2023-03-16.pdf"
+license = "see repository"
+
+[[project]]
+name = "flarm-usb-updater-schematic-rev-a"
+repo = "https://github.com/rikvdb229/FLARM-USB-Updater"
+commit = "fcbcd0db0150b79774959ecd628b164857b8fb43"
+easyeda = "EDA/ProPrj_USB_FLARM_UPDATER_2026-05-29.epro"
+pdf = "Archive/REV_A/schematic_REV_A.pdf"
+license = "CERN-OHL-S-2.0"
+
+[[project]]
 name = "line-follower-robot-pcb-v1-0-8ch-ir-bluetooth-schematic-newlfronly-202"
 repo = "https://github.com/Rahber-Saeed/Line-Follower-Robot-PCB-V1.0-8CH-IR-Bluetooth"
 commit = "bf4e7a75160b5c05072bd40f98b46691a4cd457e"
 easyeda = "SCH_newLFRonly_2026-05-03.json"
 pdf = "Schematic_newLFRonly_2026-05-03.pdf"
 license = "see repository"
+
+[[project]]
+name = "bluetooth-controlled-toy-car-pcb-schematic-bluetooth-controlled-toy-ca"
+repo = "https://github.com/riyassadiq11/Bluetooth_Controlled_Toy_Car_PCB"
+commit = "958db69228cbd3e5af8f9f41e3170d87e5a60f81"
+easyeda = "EasyEDA_Project_File/1-Schematic_bluetooth controlled toy car.json"
+pdf = "Schematic (Img_Pdf)/Schematic_bluetooth-controlled-toy-car.pdf"
+license = "MIT"
+
+[[project]]
+name = "oshwlab-star-schematic-simplefoc-bldc-mosquito-v20-2022-11-24"
+repo = "https://github.com/abetusk/oshwlab_star"
+commit = "583c6f80204690ee6ab59808f0358a6439d38752"
+easyeda = "cost.co/20220126_bldc_mosquito_copy/SCH_SIMPLEFOC_BLDC_MOSQUITO_V20_2022-11-24.json"
+pdf = "cost.co/20220126_bldc_mosquito_copy/img/Schematic_SIMPLEFOC_BLDC_MOSQUITO_V20_2022-11-24.pdf"
+license = "see repository"
+
+[[project]]
+name = "model-rocket-telemetry-lora-e32-sch-echo"
+repo = "https://github.com/sujaldavda/Model_Rocket_telemetry_LORA_E32"
+commit = "a30b88d38d5a8cf5973195c8340dbc4698accaae"
+easyeda = "ECHO_RECEIVER.epro"
+pdf = "SCH_ECHO.pdf"
+license = "see repository"
+
+[[project]]
+name = "model-rocket-telemetry-lora-e32-sch-sonic"
+repo = "https://github.com/sujaldavda/Model_Rocket_telemetry_LORA_E32"
+commit = "a30b88d38d5a8cf5973195c8340dbc4698accaae"
+easyeda = "SONIC_TRANSMITTER.epro"
+pdf = "SCH_SONIC.pdf"
+license = "see repository"
+
+[[project]]
+name = "my-easyeda-projects-schematic-schematic-smart-agriculture-monitoring-s"
+repo = "https://github.com/AashooSharmaTech/my-EasyEDA-projects"
+commit = "f105d15e6a67c23d420c7a760f9fc887e8a01194"
+easyeda = "Smart Agriculture Monitoring System/EasyEDA file/SCH_Schematic_Smart-agriculture-monitoring-system_2025-07-10.json"
+pdf = "Smart Agriculture Monitoring System/Schematic/Schematic_Schematic_Smart-agriculture-monitoring-system_2025-07-10.pdf"
+license = "MIT"
+
+[[project]]
+name = "sesboardv1-schematic-sesboard"
+repo = "https://github.com/JKUATSES/sesBoardv1"
+commit = "2a5a303b43a3f52abc5a27085d3de65bc499e607"
+easyeda = "Design/SESBOARD.json"
+pdf = "Design/Schematic_SESBOARD.pdf"
+license = "MIT"
 
 [[project]]
 name = "esp32-iot-board-using-easyeda-schematic-esp32-module-2020-08-31-08-59-"
@@ -77,9 +205,41 @@ pdf = "4_Hardware_Design_EasyEDA/project_files/Schematic_20250710_034436_2025-08
 license = "MIT"
 
 [[project]]
+name = "system-for-automatic-watering-based-on-arduino-nano-sch-schematic1-202"
+repo = "https://github.com/gkoosoda/System-for-automatic-watering-based-on-Arduino-Nano"
+commit = "bf1a2ab1f14f5c59a4eb7b7f47c75b6a4bd2fea4"
+easyeda = "Scheme_of_auto_Watering.epro"
+pdf = "SCH_Schematic1_2026-05-25.pdf"
+license = "see repository"
+
+[[project]]
 name = "dinki-blinki-schematic-dinki-blinki-2026-09-26"
 repo = "https://github.com/Sidharth8882/DINKI-BLINKI"
 commit = "9049dbe01033a4b1d2db58f1c929a7df08f7226d"
 easyeda = "SCH_DINKI-BLINKI_2026-09-26.json"
 pdf = "Schematic_DINKI-BLINKI_2026-09-26.pdf"
+license = "see repository"
+
+[[project]]
+name = "oscilator2-0-simple-5v-transistor-lc-oscillator-pcb-schematic-oscilato"
+repo = "https://github.com/Rahber-Saeed/Oscilator2.0-Simple-5V-Transistor-LC-Oscillator-PCB"
+commit = "8793676bb7d1d9df69f4a274aa6cb43dd2063ef2"
+easyeda = "SCH_Oscilator2.0_2026-05-03.json"
+pdf = "Schematic_Oscilator2.0_2026-05-03.pdf"
+license = "see repository"
+
+[[project]]
+name = "esp32-airco-ntc-spoofer-schematic-esp32-airco-ntc-spoofer"
+repo = "https://github.com/S1146468/ESP32-Airco-NTC-Spoofer"
+commit = "f79bcf8b8a40ef03960a7417437c040f891e627a"
+easyeda = "hardware/easyeda/SCH_ESP32-Airco-NTC-Spoofer-Schematic.json"
+pdf = "hardware/docs/Schematic_ESP32-Airco-NTC-Spoofer.pdf"
+license = "NOASSERTION"
+
+[[project]]
+name = "stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19"
+repo = "https://github.com/WesterbergEbbe/STM32F722-Flight-controller-PCB"
+commit = "dddc78218354aff721b2250910a01fbfa91e4c58"
+easyeda = "ProPrj_STM32_FLIGHTCONTROLLER_V1_2026-08-19.epro"
+pdf = "SCH_Schematic1_2026-08-19.pdf"
 license = "see repository"

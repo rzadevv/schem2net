@@ -1,14 +1,20 @@
-"""Read the netlist of an EasyEDA Std schematic (.json).
+"""Read the netlist of an EasyEDA schematic: Std (.json) or Pro (.epro).
 
-Used as ground truth for EasyEDA PDFs. The file stores drawing, not nets: each
+Used as ground truth for EasyEDA PDFs. A Std file stores drawing, not nets: each
 sheet is a list of shapes in EasyEDA's "~"-separated records. Wires, part pins,
 net flags and net labels that share a point are one net, as are wire corners and
 points where a wire end meets another wire; flags and labels of one name join
 their nets across sheets. Coordinates in the file are exact, so points are
 matched as they are written.
+
+A Pro project is a zip of JSON-lines files: sheets of parts and wires, each wire
+carrying the name of its net, and symbols whose pins are placed with their part.
 """
 
+import io
 import json
+import math
+import zipfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -19,6 +25,8 @@ Point = tuple[float, float]
 
 
 def read(path: str | Path) -> Design:
+    if zipfile.is_zipfile(path):
+        return _read_pro(Path(path))
     data = json.loads(Path(path).read_text())
     sheets = data.get("schematics") or [{"dataStr": data}]  # a project, or one sheet
     nets = UnionFind()
@@ -31,6 +39,11 @@ def read(path: str | Path) -> Design:
             body = json.loads(body)
         shapes = body.get("shape", [])
         _sheet(k, shapes, nets, names, pins, parts)
+    return _design(Path(path), len(sheets), nets, names, pins, parts)
+
+
+def _design(path: Path, pages: int, nets, names, pins, parts) -> Design:
+    """The nets of the joined points, with every node of one name joined."""
     for nodes in names.values():
         for node in nodes[1:]:
             nets.union(nodes[0], node)
@@ -45,8 +58,96 @@ def read(path: str | Path) -> Design:
         out.append(
             Net(id=f"n{i}", name=name, names_seen=[name] if name else [], pins=sorted(members_))
         )
-    source = Source(file=Path(path).name, generator="easyeda", pages=len(sheets))
+    source = Source(file=path.name, generator="easyeda", pages=pages)
     return Design(source=source, components=sorted(parts.values(), key=lambda c: c.ref), nets=out)
+
+
+def _read_pro(path: Path) -> Design:
+    archive = zipfile.ZipFile(io.BytesIO(path.read_bytes()))
+    symbols = {
+        Path(n).stem: _records(archive, n) for n in archive.namelist() if n.endswith(".esym")
+    }
+    sheets = sorted(n for n in archive.namelist() if n.endswith(".esch"))
+    nets = UnionFind()
+    names: dict[str, list] = defaultdict(list)
+    pins: list[tuple[str, str, str, object]] = []
+    parts: dict[str, Component] = {}
+    for k, sheet in enumerate(sheets):
+        _pro_sheet(k, _records(archive, sheet), symbols, nets, names, pins, parts)
+    return _design(path, len(sheets), nets, names, pins, parts)
+
+
+def _pro_sheet(k, records, symbols, nets, names, pins, parts) -> None:
+    def node(p: Point):
+        return ("p", k, round(p[0], 2), round(p[1], 2))
+
+    attrs: dict[str, dict[str, object]] = defaultdict(dict)
+    for r in records:
+        if r[0] == "ATTR":
+            attrs[r[2]][r[3]] = r[4]
+    segments: list[tuple[Point, Point]] = []
+    ends: list[Point] = []
+    for r in records:
+        if r[0] != "WIRE":
+            continue
+        for line in r[2] if r[2] and isinstance(r[2][0], list) else [r[2]]:
+            points = list(zip(line[0::2], line[1::2], strict=False))
+            for a, b in zip(points, points[1:], strict=False):
+                nets.union(node(a), node(b))
+                segments.append((a, b))
+            ends += [points[0], points[-1]]
+            name = attrs[r[1]].get("NET")
+            if name:
+                names[str(name)].append(node(points[0]))
+    for r in records:
+        if r[0] != "COMPONENT" or not isinstance(r[5], (int, float)):
+            continue
+        own = attrs[r[1]]
+        symbol = symbols.get(str(own.get("Symbol")), [])
+        pin_attrs: dict[str, dict[str, object]] = defaultdict(dict)
+        for s in symbol:
+            if s[0] == "ATTR":
+                pin_attrs[s[2]][s[3]] = s[4]
+        ref = str(own.get("Designator") or "").split(".")[0]
+        net = own.get("Global Net Name")
+        for s in symbol:
+            if s[0] != "PIN":
+                continue
+            at = _placed((s[4], s[5]), (r[3], r[4]), r[5], bool(r[6]))
+            ends.append(at)
+            if net:  # a power or net port symbol
+                names[str(net)].append(node(at))
+                continue
+            number = str(pin_attrs[s[1]].get("NUMBER") or "")
+            if not ref or ref.startswith("#") or not number:
+                continue
+            part = parts.setdefault(ref, Component(ref=ref, value=_value(own), pins=[]))
+            name = str(pin_attrs[s[1]].get("NAME") or "") or None
+            part.pins.append(Pin(num=number, name=name))
+            pins.append((ref, number, name or "", node(at)))
+    for p in ends:
+        for a, b in segments:
+            if p not in (a, b) and _on_segment(p, a, b):
+                nets.union(node(p), node(a))
+
+
+def _placed(p: Point, origin: Point, angle: float, mirror: bool) -> Point:
+    """A symbol point on the sheet: mirrored, then turned counterclockwise, then moved."""
+    x, y = (-p[0] if mirror else p[0]), p[1]
+    a = math.radians(angle)
+    return origin[0] + x * math.cos(a) - y * math.sin(a), origin[1] + x * math.sin(
+        a
+    ) + y * math.cos(a)
+
+
+def _value(attrs: dict) -> str | None:
+    value = attrs.get("Value") or attrs.get("Name")
+    return str(value) if value else None
+
+
+def _records(archive: zipfile.ZipFile, name: str) -> list[list]:
+    lines = archive.read(name).decode("utf-8", "replace").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
 
 
 def _sheet(k, shapes, nets, names, pins, parts) -> None:

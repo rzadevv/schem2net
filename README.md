@@ -21,7 +21,7 @@ Early development.
   than for KiCad and Altium.
 - Pages printed in black or grey are read too, with roles learned from colour
   pages; they keep most, not all, of the accuracy of colour pages.
-- EasyEDA (Std) PDFs are read too. This is early work, from a small corpus.
+- EasyEDA PDFs, from Std or Pro, are read too. This is early work.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
@@ -34,8 +34,8 @@ Early development.
 | C, Eagle | Test | 42 | 2,903 | 0.56 | 0.49 |
 | D, Olimex, held out | Dev | 24 | 11,745 | 0.67 | 0.66 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.64 | 0.59 |
-| E, EasyEDA | Dev | 4 | 651 | 0.45 | 0.18 |
-| E, EasyEDA | Test | 6 | 648 | 0.57 | 0.38 |
+| E, EasyEDA | Dev | 18 | 2,487 | 0.35 | 0.17 |
+| E, EasyEDA | Test | 12 | 1,669 | 0.37 | 0.06 |
 
 ## Install
 

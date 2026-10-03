@@ -250,7 +250,10 @@ def recolour(page: Page, profile: Profile, models=None) -> Page:
     """The page with each path and text given the profile's colour for its predicted role.
     Text drawn as strokes, and anything whose role the profile has no colour for, keeps
     its ink."""
-    first, second, texts_model = models or _models(profile.name)
+    models = models or _models(profile.name)
+    if models is None:
+        return page
+    first, second, texts_model = models
     paths = drawing(page, profile)
     texts = [t for t in page.texts if t.visible]
     if not paths:
@@ -291,7 +294,10 @@ def name_unknown_texts(page: Page, profile: Profile, models=None) -> Page:
     unknown = [t for t in page.texts if t.visible and t.color not in known]
     if not unknown:
         return page
-    texts_model = (models or _models(profile.name))[2]
+    models = models or _models(profile.name)
+    if models is None:
+        return page
+    texts_model = models[2]
     paths = drawing(page, profile)
     path_roles = [path_role(p, profile) for p in paths]
     # A string the PDF splits into pieces is one text, with one role.
@@ -375,8 +381,11 @@ class Forest:
 
 @cache
 def _models(generator: str):
+    """The learned models of a generator, or None where none were learned."""
     with resources.files("schem2net").joinpath("profiles", "roles.npz").open("rb") as f:
         arrays = dict(np.load(f))
+    if f"{generator}.paths.classes" not in arrays:
+        return None
     return tuple(Forest(arrays, f"{generator}.{kind}") for kind in ("paths", "paths2", "texts"))
 
 
