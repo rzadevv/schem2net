@@ -512,3 +512,21 @@ def test_eagle_label_laid_on_a_wire():
 
     built = build_scene(page, profile.load("eagle"))
     assert [(lb.text, lb.kind) for lb in built.labels] == [("ETXD0", "local")]
+
+
+def test_eagle_designator_outside_the_box_beats_a_pin_name_inside():
+    """A chip whose pins are named like designators (A0, A1), a little in from the pins,
+    beyond where pin names are looked for: its name sits above the box."""
+    red, grey = (128, 0, 0), (128, 128, 128)
+    b = SceneBuilder()
+    b.shape((20, 10), (40, 10), (40, 30), (20, 30), (20, 10), width=0.4, color=red)
+    for k, y in enumerate((12.54, 15.08, 17.62)):
+        b.shape((15, y), (20, y), width=0.15, color=red)
+        b.scene.fields.append(
+            Text(b.seq, f"A{k}", (24.1, y - 0.7, 25.9, y + 0.7), 1.3, 0.0, grey, b.seq)
+        )
+        b.scene.wires.append(((5, y), (15, y)))
+    b.scene.fields.append(Text(b.seq + 1, "U3", (20, 6.2, 22, 7.6), 1.3, 0.0, grey, b.seq + 1))
+
+    found = symbols.find(b.scene, profile.load("eagle"))
+    assert [s.ref for s in found if s.pins] == ["U3"]

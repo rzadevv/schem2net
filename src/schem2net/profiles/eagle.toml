@@ -11,6 +11,7 @@ pin_number = [[128, 128, 128], [80, 80, 80], [0, 0, 0], [128, 0, 0], [201, 13, 1
 
 [order]
 designators_in_pin_colour = true  # Eagle 9 writes designators in the symbol red
+designators_outside = true  # >NAME sits outside the box; texts inside are pin names
 
 [wires]
 grid = 2.54  # mm; pages printed to fit the paper are scaled back by it

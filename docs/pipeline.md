@@ -128,6 +128,9 @@ sheet of the document. A supply's name is anchored at one end and may overhang
 its arrow; a name in line with the symbol is preferred, then one that runs
 across the pin, past the end away from the wire.
 
+Eagle's libraries place a part's name outside its box, so a text inside the box,
+however much it looks like a designator (A0, U3), is taken as a pin name first.
+
 Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit. Net labels are the
 names inside an outline that meets a wire, or, in older designs, names laid

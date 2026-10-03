@@ -26,6 +26,7 @@ class Profile:
     infer_wire_colour: bool = False
     designators_in_any_colour: bool = False
     designators_in_pin_colour: bool = False
+    designators_outside: bool = False  # the libraries place designators outside the body
     labels_span_pages: bool = False
     labels_in_outlines: bool = False
     labels_on_wires: bool = False  # a field-coloured name laid along a wire is its label
@@ -66,6 +67,7 @@ def load(name: str) -> Profile:
         wire_grids=tuple(_listed(wires.get("grid", []))),
         designators_in_any_colour=order.get("designators_in_any_colour", False),
         designators_in_pin_colour=order.get("designators_in_pin_colour", False),
+        designators_outside=order.get("designators_outside", False),
         labels_span_pages=labels.get("span_pages", False),
         labels_in_outlines=labels.get("in_outlines", False),
         labels_on_wires=labels.get("on_wires", False),

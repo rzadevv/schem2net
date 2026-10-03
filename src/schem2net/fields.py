@@ -28,6 +28,7 @@ POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
 OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name, unless the profile says
+INSIDE_BODY_COST = REF_SEARCH  # a designator inside a part's outline, where profiles say
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
@@ -306,6 +307,9 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
             cost = gap
             if match.group(1).rstrip("$") not in COMMON_PREFIXES:
                 cost += UNKNOWN_PREFIX_COST
+            inside = len(symbol.pins) > 2 and _within_outline(symbol, text)
+            if profile.designators_outside and inside:
+                cost += INSIDE_BODY_COST  # the texts inside are pin names
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
             elif runs and profile.designator_first and runs.first_text(symbol) != text.seq:
@@ -457,6 +461,14 @@ def _triangle_corners(symbol: Symbol, scene: Scene) -> list[Point]:
         if shape.closed and len(unique) == 3:
             corners += list(unique)
     return corners
+
+
+def _within_outline(symbol: Symbol, text: Text) -> bool:
+    if not symbol.body:
+        return False
+    x0, y0, x1, y1 = symbol.body
+    cx, cy = geometry.center(text.bbox)
+    return x0 < cx < x1 and y0 < cy < y1
 
 
 def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | None:
