@@ -41,3 +41,21 @@ def test_region():
     assert region.page == 2 and region.box == (10, 20, 150, 100)
     assert region.holds((15, 25, 40, 30))
     assert not region.holds((5, 25, 40, 30))
+
+
+def test_a_printed_page_is_known_by_its_colours():
+    """A schematic printed from a browser says nothing of who drew it; its inks do."""
+    from schem2net import ingest, profile
+    from schem2net.primitives import Document, Page, Path
+
+    shifted = [(0, 136, 0)] * 12 + [(136, 0, 0)] * 20 + [(1, 1, 1)] * 5  # off by a step
+    page = Page(1, 210, 297)
+    page.paths = [Path(k, [[(k, 0), (k, 5)]], 0.2, c, None, seq=k) for k, c in enumerate(shifted)]
+    doc = Document([page], {"Producer": "Skia/PDF m152"})
+    profiles = {name: profile.load(name) for name in ("kicad", "altium", "eagle", "easyeda")}
+    assert ingest.detect_generator(doc) == "unknown"
+    assert ingest.guess_by_colour(doc, profiles) == "easyeda"
+
+    snapped = ingest.snap_colours(page, profiles["easyeda"])
+    assert profiles["easyeda"].is_("wire", snapped.paths[0].stroke)
+    assert profiles["easyeda"].is_("symbol", snapped.paths[12].stroke)

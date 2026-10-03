@@ -17,7 +17,7 @@ import numpy as np
 from schem2net.primitives import Page
 from schem2net.profile import Profile
 
-SCALES = np.arange(0.4, 1.6, 0.0005)  # scales tried
+SCALES = np.arange(0.2, 1.6, 0.0005)  # scales tried: printing to fit may shrink a sheet a lot
 MIN_ENDS = 8  # distinct wire-end coordinates per axis, on average, for an estimate
 MIN_AGREEMENT = 0.5  # how well the phases must agree at the chosen spacing
 COARSER_AGREEMENT = 0.35  # the same, for a coarser grid nearer 1:1
@@ -25,9 +25,11 @@ PEAK = 0.005  # a peak is searched for this far either side of a scale
 SAME = 0.005  # scales this close to 1 are taken as 1
 
 
-def scale(page: Page, profile: Profile) -> float:
-    """The page's scale against the source drawing, 1.0 when unsure."""
-    if profile.page_scale:
+def scale(page: Page, profile: Profile, exported: bool = True) -> float:
+    """The page's scale against the source drawing, 1.0 when unsure. A page from the
+    generator's own exporter is at its fixed scale, where it has one; a printed one
+    is found from its grid."""
+    if profile.page_scale and exported:
         return profile.page_scale
     if not profile.wire_grids:
         return 1.0

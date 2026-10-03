@@ -67,6 +67,11 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         doc.pages = [page]
         embedded = False
     generator = ingest.detect_generator(doc)
+    printed = False  # through a browser or a PDF printer, which do not say who drew it
+    if generator not in PROFILES and generator != "orcad":
+        guessed = ingest.guess_by_colour(doc, {name: profile.load(name) for name in PROFILES})
+        if guessed:
+            generator, printed = guessed, True
     design = Design(
         source=Source(
             file=file.name,
@@ -86,6 +91,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     rules = profile.load(generator)
     netlister = Netlister(labels_span_pages=rules.labels_span_pages)
     for result in pages:
+        if printed:
+            result.page = ingest.snap_colours(result.page, rules)
         result.page = strokes.traced(result.page)
         # Text drawn as strokes leaves a page with almost no text objects, like a board.
         kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
@@ -96,7 +103,7 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
             result.page = roles.recolour(result.page, rules)
         else:  # texts in colours of the designer's own: roles from what they sit on
             result.page = roles.name_unknown_texts(result.page, rules)
-        factor = grid.scale(result.page, rules)
+        factor = grid.scale(result.page, rules, exported=not printed)
         if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
             result.page = grid.rescale(result.page, 1 / factor)
         result.scene = scene.build(result.page, rules)

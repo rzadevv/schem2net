@@ -22,6 +22,8 @@ Early development.
 - Pages printed in black or grey are read too, with roles learned from colour
   pages; they keep most, not all, of the accuracy of colour pages.
 - EasyEDA PDFs, from Std or Pro, are read too. This is early work.
+- PDFs printed from a browser or a PDF printer, which do not say what drew them,
+  are recognised by their colours.
 - Other generators are not supported yet.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
@@ -32,9 +34,9 @@ Early development.
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.86 | 0.84 |
 | C, Eagle | Dev | 96 | 7,038 | 0.67 | 0.63 |
 | C, Eagle | Test | 42 | 2,903 | 0.56 | 0.49 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.67 | 0.66 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.64 | 0.59 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.64 | 0.59 |
-| E, EasyEDA | Dev | 18 | 2,487 | 0.35 | 0.17 |
+| E, EasyEDA | Dev | 18 | 2,487 | 0.38 | 0.19 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.37 | 0.06 |
 
 ## Install

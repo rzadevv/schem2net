@@ -14,7 +14,7 @@ designators_in_pin_colour = true  # Eagle 9 writes designators in the symbol red
 designators_outside = true  # >NAME sits outside the box; texts inside are pin names
 
 [wires]
-grid = 2.54  # mm; pages printed to fit the paper are scaled back by it
+grid = [2.54, 1.27, 0.635]  # mm, standard first; pages printed to fit are scaled back by it
 
 [text]
 font = "eagle"  # text drawn as strokes in Eagle's vector font, or as filled outlines

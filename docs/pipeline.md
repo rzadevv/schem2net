@@ -151,6 +151,13 @@ that names the net, joined at the corner its wire ends on, or set straight on a
 pin's tip; flags stacked edge to edge stay apart, each naming its own net. A
 ground sign is a stem and separate bars drawn in turn, joined into one symbol.
 
+A PDF printed from a browser or through a PDF printer does not say which tool drew
+it. The drawing still does: the profile whose wire colour is there and whose
+colours cover most of the ink is taken, and inks the printer shifted a step or two
+are set back to the profile's own, lines to drawn roles' colours and text to text
+roles'. Such a page has lost its exporter's scale, so its scale comes from its
+wire grid.
+
 ## Pages printed without colour
 
 The profiles read roles from colour, so a page printed in black or grey (every
