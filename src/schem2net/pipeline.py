@@ -96,6 +96,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         result.page = strokes.traced(result.page)
         # Text drawn as strokes leaves a page with almost no text objects, like a board.
         kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
+        if kind == "board" and ingest.has_wires(result.page, rules):
+            kind = "vector"  # a dense schematic, with few texts for its drawing
         if kind != "vector":
             design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
             continue

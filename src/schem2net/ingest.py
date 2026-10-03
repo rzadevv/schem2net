@@ -22,6 +22,8 @@ TEXT_ROLES = (
 )  # fmt: skip
 GUESS_SHARE = 0.6  # share of the ink a profile's colours must cover to be taken
 GUESS_WIRES = 10  # paths in the wire colour needed besides
+MIN_WIRES = 30  # wire-coloured lines that make a sparse page a schematic
+MIN_TEXTS = 50  # with this many texts
 
 PageKind = Literal["vector", "raster", "empty", "board", "table"]
 
@@ -89,6 +91,17 @@ def _near(colour, colours) -> bool:
 
 def _distance(a, b) -> int:
     return max(abs(x - y) for x, y in zip(a, b, strict=True))
+
+
+def has_wires(page: Page, rules) -> bool:
+    """True if the page has wires in the generator's colour and text besides: a schematic,
+    however dense its drawing. Board prints have neither."""
+    wires = sum(
+        1
+        for p in page.paths
+        if rules.is_("wire", p.stroke) and not p.fill and len(p.subpaths[0]) == 2
+    )
+    return wires >= MIN_WIRES and sum(t.visible for t in page.texts) >= MIN_TEXTS
 
 
 def page_kind(page: Page, text_as_strokes: bool = False) -> PageKind:

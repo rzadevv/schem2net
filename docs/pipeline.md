@@ -24,7 +24,9 @@ PDFs often bundle board prints, assembly drawings and parts lists with the
 schematic. Schematic pages carry roughly one text object per one to three
 paths. Board prints draw their lettering as strokes and have almost no text,
 and tables are almost all text, so pages far outside that range are skipped
-and reported as `board_page` or `table_page`.
+and reported as `board_page` or `table_page`. A page that looks like a board but
+has wires in the generator's colour and text besides is a dense schematic, and
+is read.
 
 ## Netlists carried in the PDF
 

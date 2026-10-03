@@ -59,3 +59,20 @@ def test_a_printed_page_is_known_by_its_colours():
     snapped = ingest.snap_colours(page, profiles["easyeda"])
     assert profiles["easyeda"].is_("wire", snapped.paths[0].stroke)
     assert profiles["easyeda"].is_("symbol", snapped.paths[12].stroke)
+
+
+def test_a_dense_schematic_is_not_a_board():
+    """Few texts for many paths looks like a board print, unless the page has wires."""
+    from schem2net import ingest, profile
+    from schem2net.primitives import Page, Path, Text
+
+    kicad = profile.load("kicad")
+    page = Page(1, 420, 297)
+    page.paths = [Path(k, [[(k, 0), (k, 1)]], 0.15, (132, 0, 0), None, seq=k) for k in range(900)]
+    page.texts = [Text(k, f"R{k}", (k, 5, k + 1, 6), 1.27, 0.0, (0, 100, 100)) for k in range(60)]
+    assert ingest.page_kind(page) == "board"
+    assert not ingest.has_wires(page, kicad)
+    page.paths += [
+        Path(k, [[(k, 20), (k + 5, 20)]], 0.15, (0, 150, 0), None, seq=k) for k in range(40)
+    ]
+    assert ingest.has_wires(page, kicad)
