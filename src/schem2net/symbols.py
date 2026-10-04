@@ -25,6 +25,7 @@ FRAME_MIN_SIZE = 100.0  # mm, both ways; a frame spans most of the page
 EDGE_PIN_LENGTH = 2.54  # mm; how far out a pin with no line is laid along its wire
 EDGE_PIN_GAP = 0.5  # mm from a drawn pin within which a wire end is that pin's
 FLAG_SIZE = 10.0  # mm; a closed outline smaller than this may be a port flag
+PAD_SIZE = 5.0  # mm; a filled outline smaller than this may be a pad a pin leaves
 BODY_OVER_FLAG = 3.0  # a body is this many times the size of a flag on a pin's tip
 BIT_SIZE = 4.0  # mm; pinless pieces smaller than this may be bits of a neighbour
 BIT_GAP = 0.8  # mm between such a bit and the piece drawn next to it
@@ -246,6 +247,11 @@ def _cosine(s: Segment, t: Segment) -> float:
     return u[0] * v[0] + u[1] * v[1]
 
 
+def _pad(shape: Shape) -> bool:
+    """A small filled outline, as a pad drawn in a symbol is."""
+    return shape.filled and shape.closed and _size(shape.bbox) < PAD_SIZE
+
+
 def _flag(shape) -> bool:
     """A small closed outline, as a port flag is."""
     return shape.closed and _size(shape.bbox) < FLAG_SIZE
@@ -353,10 +359,11 @@ def _group(
                     continue
                 if flags_apart and _flag(shape) and _flag(other):
                     continue  # port flags stacked edge to edge name nets of their own
+                # A pin may also end inside a filled pad it leaves.
                 if any(
                     geometry.distance_to_segment(v, s) <= tol
                     for s in geometry.segments(other.points)
-                ):
+                ) or (pin and _pad(other) and geometry.in_polygon(v, other.points)):
                     uf.union(shape.id, j)
 
     symbols = []

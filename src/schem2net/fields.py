@@ -524,16 +524,46 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
     unused = [t for k, t in enumerate(numbers) if k not in used]
     _name_pins(symbols, unused + scene.fields, profile.pin_name_gap)
 
-    # Last, a transistor with neither numbers nor names shown: its pins by role.
+    # Last, a transistor with neither numbers nor names shown: its pins by role. A
+    # potentiometer or a three-way jumper has two ends facing apart and a wiper or
+    # common pad square to them, which is pin 2; its ends count as two-pin parts do.
+    down = -1 if profile.hidden_pin_one_at_bottom else 1
     for parts in by_ref.values():
-        if not any(p.number for s in parts for p in s.pins):
-            for pin, role in _transistor_roles(parts, scene):
-                pin.number = role
+        part_pins = [p for s in parts for p in s.pins]
+        if any(p.number for p in part_pins):
+            continue
+        roles = _transistor_roles(parts, scene)
+        middle = _middle_pin(part_pins) if not roles else None
+        own = {p.shape for p in part_pins}
+        body = [scene.shapes[i] for s in parts for i in s.shapes if i not in own]
+        lines = [s for s in body if len(s.points) == 2]
+        pads = [s for s in body if s.filled and s.closed]
+        if middle and not _leads_to_bar(middle, lines, pads):  # a transistor's is its control
+            ends = sorted(
+                (p for p in part_pins if p is not middle), key=lambda p: (down * p.at[1], p.at[0])
+            )
+            roles = [(ends[0], "1"), (middle, "2"), (ends[1], "3")]
+        for pin, role in roles:
+            pin.number = role
+
+
+def _middle_pin(pins: list[Pin]) -> Pin | None:
+    """Of three pins, the one square to the other two, which face apart on one axis."""
+    if len(pins) != 3:
+        return None
+    for k, middle in enumerate(pins):
+        a, b = (p for j, p in enumerate(pins) if j != k)
+        u, v, w = (geometry.unit(*p.line) for p in (middle, a, b))
+        apart = v[0] * w[0] + v[1] * w[1] < -0.99
+        on_axis = abs(v[0] * (b.at[1] - a.at[1]) - v[1] * (b.at[0] - a.at[0])) < 0.1
+        if apart and on_axis and abs(u[0] * v[0] + u[1] * v[1]) < 0.1:
+            return middle
+    return None
 
 
 def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]]:
     """Names for the pins of a transistor drawn without numbers. The base or gate is
-    the pin square to the other two, leading to the middle of a bar; the emitter or
+    the pin square to the other two, leading to a bar; the emitter or
     source is the one nearer the arrowhead along the drawing, and a body diode, which
     joins both, is not taken for it. A bipolar transistor leaves its bar on slants."""
     pins = [p for s in parts for p in s.pins]
@@ -547,11 +577,7 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
         u, v, w = (geometry.unit(*p.line) for p in (control, a, b))
         if abs(v[0] * w[0] + v[1] * w[1]) < 0.99 or abs(u[0] * v[0] + u[1] * v[1]) > 0.1:
             continue
-        # Carried on inwards, perhaps along a lead, the pin meets the bar's middle.
-        (x, y), (dx, dy) = control.line[0], geometry.unit(control.line[1], control.line[0])
-        ahead = [(x + dx * t / 10, y + dy * t / 10) for t in range(int(BAR_REACH * 10) + 1)]
-        bars = [s for s in lines if abs(_cos(s.points, control.line)) < 0.1]
-        if not any(geometry.is_interior(q, tuple(s.points), 0.1) for q in ahead for s in bars):
+        if not _leads_to_bar(control, lines, [s for s in body if s.filled and s.closed]):
             continue
         arrows = [s for s in body if s.closed and len(_corners(s)) in (3, 4)]
         arrows = [s for s in arrows if max(_box_sides(s.bbox)) < ARROW_SIZE]
@@ -568,6 +594,22 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
         names = ("B", "E", "C") if slants else ("G", "S", "D")
         return list(zip((control, emitter, other), names, strict=True))
     return []
+
+
+def _leads_to_bar(pin: Pin, lines: list[Shape], pads: list[Shape]) -> bool:
+    """Carried on inwards, perhaps along a lead, the pin meets a bar square to it, as a
+    transistor's base or gate does, in its middle or at its end."""
+    (x, y), (dx, dy) = pin.line[0], geometry.unit(pin.line[1], pin.line[0])
+    ahead = [(x + dx * t / 10, y + dy * t / 10) for t in range(int(BAR_REACH * 10) + 1)]
+    bars = [tuple(s.points) for s in lines if abs(_cos(s.points, pin.line)) < 0.1]
+    # The edge of a filled pad, drawn over its outline, is no bar.
+    edges = [seg for s in pads for seg in geometry.segments(s.points)]
+    bars = [b for b in bars if not all(_on_any(p, edges) for p in b)]
+    return any(geometry.distance_to_segment(q, bar) <= 0.1 for q in ahead for bar in bars)
+
+
+def _on_any(p: Point, segs: list[Segment]) -> bool:
+    return any(geometry.distance_to_segment(p, seg) <= MEET for seg in segs)
 
 
 def _cos(points: list[Point], line: Segment) -> float:

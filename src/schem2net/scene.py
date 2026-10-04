@@ -29,6 +29,7 @@ class Shape:
     bbox: BBox
     seq: int = 0
     color: Color | None = None
+    filled: bool = False
 
     @property
     def closed(self) -> bool:
@@ -134,6 +135,7 @@ def build(page: Page, profile: Profile) -> Scene:
                 box = geometry.bbox_of(sub)
                 if box[2] - box[0] > 1e-3 or box[3] - box[1] > 1e-3:  # skip zero-length dots
                     shape = Shape(len(scene.shapes), sub, path.width, box, path.seq, color)
+                    shape.filled = path.fill is not None
                     scene.shapes.append(shape)
         elif profile.is_("hier_label", path.stroke):
             outlines["hier"].extend(path.subpaths)

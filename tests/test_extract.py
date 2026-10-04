@@ -845,3 +845,68 @@ def test_eagle_value_drawn_among_values_does_not_name_the_part():
 
     (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if len(s.pins) == 8]
     assert part.ref == "U1"
+
+
+def test_solder_jumper_pins_end_inside_filled_pads():
+    """A three-way solder jumper: its pins end inside the pads, and its hidden numbers
+    count from the top, then the left."""
+    red = (128, 0, 0)
+    b = SceneBuilder()
+    for y0, y1 in ((20.4, 21.7), (22.5, 23.8), (24.5, 25.8)):  # top, middle, bottom pads
+        b.shape((20.4, y0), (23.0, y0), (23.0, y1), (20.4, y1), (20.4, y0), width=0, color=red)
+        b.scene.shapes[-1].filled = True
+    b.shape((21.7, 25.7), (21.7, 28.2), width=0.15, color=red)
+    b.shape((21.7, 18.0), (21.7, 20.6), width=0.15, color=red)
+    b.shape((22.8, 23.1), (26.8, 23.1), width=0.15, color=red)
+    b.scene.wires += [
+        ((21.7, 28.2), (21.7, 33)),
+        ((21.7, 18.0), (21.7, 13)),
+        ((26.8, 23.1), (31, 23.1)),
+    ]
+    b.field("SJ1", 24, 18)
+
+    found = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref == "SJ1"]
+    numbers = {p.number: p.at for s in found for p in s.pins}
+    assert numbers == {"1": (21.7, 18.0), "2": (26.8, 23.1), "3": (21.7, 28.2)}
+
+
+def test_potentiometer_wiper_is_pin_two():
+    """Hidden numbers: the wiper, square to the two ends facing apart, is pin 2."""
+    b = SceneBuilder()
+    b.shape((10, 20), (20, 20), (20, 23), (10, 23), (10, 20))
+    b.shape((10, 21.5), (7.46, 21.5))
+    b.shape((20, 21.5), (22.54, 21.5))
+    b.shape((15, 23), (14.5, 24), (15.5, 24), (15, 23))  # the wiper's arrowhead
+    b.shape((15, 24), (15, 26.54))
+    b.field("VR1", 11, 17)
+    b.scene.wires += [
+        ((7.46, 21.5), (3, 21.5)),
+        ((22.54, 21.5), (27, 21.5)),
+        ((15, 26.54), (15, 30)),
+    ]
+
+    (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref]
+    assert {p.number: p.at for p in part.pins} == {
+        "1": (7.46, 21.5),
+        "2": (15, 26.54),
+        "3": (22.54, 21.5),
+    }
+
+
+def test_mosfet_with_its_gate_at_the_end_of_its_bar_is_not_a_potentiometer():
+    """Its pins face like a potentiometer's, but the gate meets a bar: no numbers are
+    made up for it when its arrow cannot be told."""
+    b = SceneBuilder()
+    b.shape((29.1, 50.68), (29.1, 54.58))  # gate bar
+    b.shape((29.69, 50.2), (29.69, 55.07))  # channel
+    b.shape((31.05, 50.68), (29.69, 50.68))
+    b.shape((31.05, 54.58), (29.69, 54.58))
+    b.shape((29.1, 54.58), (27.15, 54.58))  # gate pin
+    b.shape((31.05, 54.58), (31.05, 56.53))
+    b.shape((31.05, 50.68), (31.05, 48.73))
+    b.field("Q2", 32, 52)
+    b.scene.wires += [((27.15, 54.58), (24, 54.58)), ((31.05, 56.53), (31.05, 60))]
+    b.scene.wires.append(((31.05, 48.73), (31.05, 45)))
+
+    found = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref == "Q2"]
+    assert found and all(p.number is None for s in found for p in s.pins)

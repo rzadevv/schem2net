@@ -70,7 +70,10 @@ Transistors often hide their numbers, and their pins are then known by role: the
 base or gate is the pin square to the other two, leading to the middle of a bar;
 the emitter or source is the one nearer the arrowhead along the drawing, where a
 body diode, which joins both, is not taken for the arrow; a bipolar transistor
-leaves its bar on slants.
+leaves its bar on slants. A potentiometer or a three-way jumper with hidden numbers
+has two ends facing apart and a wiper or common pad square to them: that is pin 2,
+and the ends count as a two-pin part's do. A pin may end inside a small filled pad,
+as a solder jumper draws them, and belongs to it.
 
 ## Sheets and buses
 
