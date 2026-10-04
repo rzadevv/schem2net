@@ -134,15 +134,28 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
 
 
 def _pin_aliases(truth: Design) -> dict[PinRef, PinRef]:
+    """A pin drawn with its name and no number is known by that name, when the name is
+    unique on its part. KiCad netlists may write a pin's function as its name and
+    number, as in D_1 for pin 1 named D; the name alone counts too."""
     known = {p for n in truth.nets for p in n.pins}
     aliases = {}
     for comp in truth.components:
-        names = Counter(p.name for p in comp.pins if p.name)
+        names = Counter(n for p in comp.pins for n in _names(p))
         for pin in comp.pins:
-            alias = (comp.ref, pin.name)
-            if pin.name and names[pin.name] == 1 and alias not in known:
-                aliases[alias] = (comp.ref, pin.num)
+            for name in _names(pin):
+                alias = (comp.ref, name)
+                if names[name] == 1 and alias not in known:
+                    aliases[alias] = (comp.ref, pin.num)
     return aliases
+
+
+def _names(pin) -> set[str]:
+    if not pin.name:
+        return set()
+    suffix = f"_{pin.num}"
+    if pin.name.endswith(suffix) and len(pin.name) > len(suffix):
+        return {pin.name, pin.name[: -len(suffix)]}
+    return {pin.name}
 
 
 def match_nets(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> dict[int, int]:

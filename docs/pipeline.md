@@ -54,11 +54,23 @@ its box. The two strokes of a "+" mark cross at their middles; neither is a pin.
 
 Symbols are groups of graphics that touch, except through a pin's free end.
 Two one-pin pieces facing each other on one axis are joined, which covers
-capacitor plates.
+capacitor plates. Where parts are drawn one at a time, as in EasyEDA, pieces drawn
+interleaved and close together are one part: a MOSFET's gate stands apart from its
+channel. Eagle draws by layer, so there neighbours' drawings interleave.
 
 Designators are paired with symbols one to one, nearest first overall. A value
 can look like a designator: "L298" by a driver's box. Resistors, capacitors,
 inductors and fuses have few pins, so their prefixes cost more by a part of many.
+
+A pin number usually sits beside its pin; some libraries centre it on the pin's
+line instead. Card sockets and headers may mark only the first pin of each row,
+past its end or as pin 1 beside it, or the first and last: an evenly spaced row of
+unnumbered pins is then numbered from its marks, counting up from a single one.
+Transistors often hide their numbers, and their pins are then known by role: the
+base or gate is the pin square to the other two, leading to the middle of a bar;
+the emitter or source is the one nearer the arrowhead along the drawing, where a
+body diode, which joins both, is not taken for the arrow; a bipolar transistor
+leaves its bar on slants.
 
 ## Sheets and buses
 
@@ -103,7 +115,9 @@ and are recognised by their stacked bars, centred one above another, or their
 triangle. In Eagle and EasyEDA, whose pins and bodies share a colour, the stem
 of the GND sign reads as a pin, and the shape still decides; in KiCad the same
 sign is Earth, so there a pin keeps it a part. A ground drawn in pieces takes the
-name another piece beside it took. Designers often
+name another piece beside it took. A power symbol's name sits past its end away
+from the wire, never beside its stem, where the number of the pin it sits on may
+be. Designers often
 change the wire colour, so each page's wire colour is learned from the lines
 that end on pin ends. Junctions may be drawn as rings, and wires crossing
 without a connection may jump over each other with a small arc, which is read
@@ -132,6 +146,11 @@ the size it was drawn at before reading it; the sizes the rest of the pipeline
 expects, pin lengths and text gaps, then hold. A grid also fits at every
 spacing that divides it, so a page whose ends fit one of the usual grids as
 printed is taken as 1:1; otherwise the fit nearest 1:1 is taken.
+
+A PDF may split one string into pieces, at spaces, subscripts or overbars. Pieces
+drawn in turn in one colour, side by side on one line, are joined; words of one
+size on one line share their tops or their baseline. A pin's name centred on the
+pin and its number set above it are drawn in turn too, but on two lines.
 
 Letters that only size tells from their capitals (c, o, s, v, w, x, z, and
 in sans fonts I and l) take the case of the rest of their word, so one net name
@@ -162,7 +181,17 @@ take their part's colours, so their roles come from position, as in Eagle. A net
 port flag set beside its name works like a power symbol: a small shape on a wire
 that names the net, joined at the corner its wire ends on, or set straight on a
 pin's tip; flags stacked edge to edge stay apart, each naming its own net. A
-ground sign is a stem and separate bars drawn in turn, joined into one symbol.
+flag's name may look like a designator, such as A15, but designators are navy and
+the name is not. A ground sign is a stem and separate bars drawn in turn, joined
+into one symbol.
+
+EasyEDA draws each part whole: its value, then its designator, then its drawing,
+with each pin's name, number and line in turn; EasyEDA Pro writes the designator
+after the drawing. So of two navy texts drawn back to back the first is the value,
+however much it looks like a designator ("Z80" over "U1"), and a pin whose ends both
+meet other lines tip to tip belongs to the part drawn with it. A part's units are
+numbered after a dot, as in U3.1. A section frame drawn right after the last part
+inside it is not a connector box: the part is well inside it, not by its edge.
 
 A PDF printed from a browser or through a PDF printer does not say which tool drew
 it. The drawing still does: the profile whose wire colour is there and whose

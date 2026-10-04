@@ -93,6 +93,14 @@ def test_swapped_pins_on_parts_named_by_value():
     assert score(predicted, truth).metrics()["pin_accuracy"] == pytest.approx(0.5)
 
 
+def test_pins_known_by_name_as_kicad_writes_it():
+    """kicad-cli writes pin 1 named D as D_1; a pin read by its drawn name D is pin 1."""
+    q = Component(ref="Q1", pins=[Pin(num="1", name="D_1"), Pin(num="2", name="G_2")])
+    truth = design({"A": [("Q1", "1"), ("R1", "1")], "B": [("Q1", "2"), ("R2", "1")]}, [q])
+    predicted = design({"A": [("Q1", "D"), ("R1", "1")], "B": [("Q1", "G_2"), ("R2", "1")]})
+    assert score(predicted, truth).metrics()["pin_accuracy"] == 1
+
+
 def test_many_swapped_decoupling_capacitors_are_not_errors():
     caps = [part(f"C{i}", "Device:C") for i in range(1, 6)]
     truth = design(

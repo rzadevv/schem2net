@@ -2,9 +2,9 @@
 
 import re
 
-# Prefix, number, optional unit: "R12", "U5A", "SW_POWER0", "Bat+1", "U$4", and Eagle's
-# gates, as in "U2G1".
-REFDES = re.compile(r"^([A-Za-z][A-Za-z_+\-$]*?)(\d+)([A-Z]|G\$?\d+)?$")
+# Prefix, number, optional unit: "R12", "U5A", "SW_POWER0", "Bat+1", "U$4", Eagle's
+# gates, as in "U2G1", and EasyEDA's numbered units, as in "U3.1".
+REFDES = re.compile(r"^([A-Za-z][A-Za-z_+\-$]*?)(\d+)([A-Z]|G\$?\d+|\.[1-9])?$")
 COMMON_PREFIXES = {
     "A", "BT", "C", "CN", "CON", "D", "DS", "F", "FB", "FD", "FID", "H", "IC", "J", "JP", "K",
     "L", "LCD", "LED", "LS", "M", "MH", "P", "Q", "R", "RN", "RV", "S", "SW", "T", "TH", "TP",

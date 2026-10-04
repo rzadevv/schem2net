@@ -12,6 +12,8 @@ pin_number = [[0, 0, 255], [0, 0, 0], [136, 0, 0], [255, 0, 0]]
 
 [order]
 symbols_in_pieces = true  # a ground sign is a stem and separate bars, drawn in turn
+by_part = true  # each part is drawn whole, its designator before or after it
+value_before_designator = true  # a part's value, then its designator, then its drawing
 
 [labels]
 span_pages = true  # net flags and labels join nets of one name on every sheet

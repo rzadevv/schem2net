@@ -21,7 +21,9 @@ class Profile:
     pin_name_gap: float = 1.5  # mm between a pin's inner end and its name
     diode_pin_one_is_anode: bool = False
     fields_follow_symbol: bool = False
+    drawn_by_part: bool = False  # each part drawn whole, with designators between parts
     designator_first: bool = False
+    value_before_designator: bool = False  # each part's value is drawn right before its designator
     wires_drawn_together: bool = False
     thick_wires_are_buses: bool = False
     wire_grids: tuple[float, ...] = ()  # mm; usual grids of wire ends, standard first
@@ -66,7 +68,9 @@ def load(name: str) -> Profile:
         pin_name_gap=pins.get("name_gap", 1.5),
         diode_pin_one_is_anode=pins.get("diode_one_is_anode", False),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
+        drawn_by_part=order.get("by_part", False) or order.get("fields_follow_symbol", False),
         designator_first=order.get("designator_first", False),
+        value_before_designator=order.get("value_before_designator", False),
         wires_drawn_together=order.get("wires_drawn_together", False),
         thick_wires_are_buses=wires.get("thick_are_buses", False),
         infer_wire_colour=wires.get("infer_colour", False),

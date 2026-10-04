@@ -5,6 +5,7 @@ import math
 from schem2net import buses, fields, geometry, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
+from schem2net.refdes import REFDES, is_common_ref
 from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs, drop_sheet_references
 from schem2net.scene import build as build_scene
 
@@ -589,3 +590,235 @@ def test_value_shaped_like_an_inductor_does_not_name_a_part_of_many_pins():
 
     parts, _ = netlist(b.scene)
     assert list(parts) == ["U2"] and parts["U2"].value == "L298"
+
+
+def test_easyeda_value_is_drawn_right_before_the_designator():
+    """EasyEDA writes a part's value, then its designator, then its drawing. A value
+    such as Z80 looks like a designator and may sit nearer the box."""
+    red, navy = (135, 0, 0), (0, 0, 128)
+    b = SceneBuilder()
+    b.seq += 1
+    b.scene.fields.append(Text(b.seq, "Z80", (11, 8.6, 14, 9.6), 1.27, 0.0, navy, b.seq))
+    b.seq += 1
+    b.scene.fields.append(Text(b.seq, "U1", (11, 6.0, 13, 7.0), 1.27, 0.0, navy, b.seq))
+    b.shape((10, 10), (20, 10), (20, 20), (10, 20), (10, 10), width=0.25, color=red)
+    for y in (12.54, 15.08, 17.62):
+        b.shape((10, y), (7.46, y), width=0.25, color=red)
+        b.shape((20, y), (22.54, y), width=0.25, color=red)
+
+    parts, _ = netlist(b.scene, rules=profile.load("easyeda"))
+    assert list(parts) == ["U1"]
+
+
+def test_section_frame_drawn_after_a_part_does_not_take_its_pins():
+    """A box drawn round a section of the sheet, right after the last part in it."""
+    red = (128, 0, 0)
+    b = SceneBuilder()
+    b.shape((50, 50), (55, 50), (55, 53), (50, 53), (50, 50), width=0.25, color=red)
+    b.shape((50, 51.5), (47.46, 51.5), width=0.25, color=red)
+    b.shape((55, 51.5), (57.54, 51.5), width=0.25, color=red)
+    b.shape((10, 10), (110, 10), (110, 110), (10, 110), (10, 10), width=0.25, color=red)
+    b.field("R1", 51, 47)
+
+    (part,) = symbols.find(b.scene, profile.load("eagle"))
+    assert part.ref == "R1" and part.bbox == (47.46, 50, 57.54, 53)
+
+
+def test_pin_number_written_over_its_pin():
+    """Some libraries centre the number on the pin line rather than above it."""
+    number = (18.6, 112.5, 19.2, 114.5)
+    over = fields._number_gap(number, ((17.8, 113.5), (20.3, 113.5)), True)
+    below = fields._number_gap(number, ((17.8, 116.1), (20.3, 116.1)), True)
+    assert over is not None and over < below
+
+
+def test_pin_name_and_number_drawn_in_turn_are_not_joined():
+    """A pin's name, centred on the pin, and its number above it, on other baselines."""
+    blue = (0, 0, 255)
+    pieces = [
+        Text(1, "SDA", (84.4, 182.6, 89.0, 184.3), 2.3, 0.0, blue, 1),
+        Text(2, "5", (90.4, 181.5, 91.6, 183.1), 2.3, 0.0, blue, 2),
+    ]
+    assert [t.text for t in _join_runs(pieces)] == ["SDA", "5"]
+    # A dash alone shares neither the tops nor the baseline of the words beside it.
+    note = [
+        Text(1, "a 1.65", (0, 0, 9, 2.2), 2.3, 0.0, blue, 1),
+        Text(2, "-", (9.1, 0.9, 9.8, 1.2), 2.3, 0.0, blue, 2),
+        Text(3, "3.3V", (9.9, 0, 15, 1.7), 2.3, 0.0, blue, 3),
+    ]
+    assert [t.text for t in _join_runs(note)] == ["a 1.65-3.3V"]
+
+
+def test_switch_lever_ending_on_a_contact_ring_is_not_a_pin():
+    """A line from a bar to a small ring has no closed outline at its other end to
+    compare the ring with, so it is drawing, not a pin with a flag on its tip."""
+    b = SceneBuilder()
+    b.shape((0, 0), (4, 0))
+    b.shape((2, 0), (2, 1.3))
+    ring = [
+        (2 + 0.2 * math.sin(k * math.pi / 6), 1.5 - 0.2 * math.cos(k * math.pi / 6))
+        for k in range(13)
+    ]
+    b.shape(*ring)
+    index = geometry.GridIndex()
+    for shape in b.scene.shapes:
+        index.add(shape.id, shape.bbox)
+    lever = b.scene.shapes[1]
+    assert symbols._flag_on_tip([lever], *lever.points, b.scene, index) is None
+
+
+def test_easyeda_parts_whose_pins_meet_tip_to_tip_stay_apart():
+    """Two capacitors stacked pin on pin. Neither pin's end lands on a body, so drawing
+    order tells which end is whose: EasyEDA draws each part whole."""
+    red, navy = (161, 0, 0), (0, 0, 128)
+    b = SceneBuilder()
+
+    def capacitor(ref, y):  # plates at y, pins out to y - 3.2 and y + 4.5
+        b.seq += 1
+        b.scene.fields.append(Text(b.seq, ref, (12, y, 14, y + 1.2), 1.27, 0.0, navy, b.seq))
+        b.shape((10, y - 1.3), (10, y - 3.2), width=0.18, color=red)
+        b.shape((10, y - 1.3), (10, y - 0.03), width=0.18, color=red)
+        b.shape(
+            (8.6, y), (11.4, y), (11.4, y + 0.3), (8.6, y + 0.3), (8.6, y), width=0.18, color=red
+        )
+        b.shape(
+            (8.6, y + 0.9),
+            (11.4, y + 0.9),
+            (11.4, y + 1.2),
+            (8.6, y + 1.2),
+            (8.6, y + 0.9),
+            width=0.18,
+            color=red,
+        )
+        b.shape((10, y + 1.2), (10, y + 2.6), width=0.18, color=red)
+        b.shape((10, y + 2.6), (10, y + 4.5), width=0.18, color=red)
+
+    capacitor("C2", 10)
+    capacitor("C1", 17.7)
+    b.scene.wires += [((10, 6.8), (20, 6.8)), ((10, 22.2), (20, 22.2))]
+    b.scene.labels += [Label("TOP", "local", (15, 5.5, 18, 6.6), 0.0)]
+    b.scene.labels += [Label("BOTTOM", "local", (15, 20.9, 18, 22), 0.0)]
+
+    parts, nets = netlist(b.scene, rules=profile.load("easyeda"))
+    assert sorted(parts) == ["C1", "C2"]
+    assert all(len(p.pins) == 2 for p in parts.values())
+
+
+def test_rows_numbered_from_marks_at_their_ends():
+    """A card socket marks only the first pin of each row, or the first and last."""
+    b = SceneBuilder()
+    b.shape((10, 10), (16, 10), (16, 22), (10, 22), (10, 10))
+    for k in range(4):
+        y = 12.54 + 2.54 * k
+        b.shape((16, y), (18.54, y))
+        b.shape((10, y), (7.46, y))
+    # "1" beside its pin, "5" and "8" past the ends of their row.
+    for text, x, y in (("1", 17, 10.8), ("5", 8, 8.7), ("8", 8, 22.8)):
+        number = Text(b.seq + 1, text, (x, y, x + 0.8, y + 1.2), 1.27, 0.0, (0, 0, 0), b.seq + 1)
+        b.seq += 1
+        b.scene.pin_numbers.append(number)
+    b.scene.fields.append(Text(99, "J1", (10, 7, 12, 8.2), 1.27, 0.0, (0, 0, 128), 99))
+
+    (part,) = symbols.find(b.scene, profile.load("easyeda"))
+    numbers = {p.number: (p.at[0], round(p.at[1], 2)) for p in part.pins}
+    assert numbers["1"] == (18.54, 12.54) and numbers["4"] == (18.54, 20.16)
+    assert numbers["5"] == (7.46, 12.54) and numbers["8"] == (7.46, 20.16)
+
+
+def test_net_name_shaped_like_a_designator_in_another_colour():
+    """EasyEDA designators are navy, so a blue A15 beside a port flag is a net name."""
+    easyeda = profile.load("easyeda")
+    blue, navy = (0, 0, 255), (0, 0, 128)
+    assert fields._is_power_name(Text(1, "A15", (0, 0, 2, 1), 1.0, 0.0, blue, 1), easyeda)
+    assert not fields._is_power_name(Text(1, "A15", (0, 0, 2, 1), 1.0, 0.0, navy, 1), easyeda)
+    assert not fields._is_power_name(Text(1, "A15", (0, 0, 2, 1), 1.0, 0.0, blue, 1), KICAD)
+
+
+def test_power_name_sits_away_from_the_wire():
+    """A ground set on a pin, its stem pointing left: the pin number beside the stem
+    is not its name; the name is past the bars."""
+    ground = symbols.Symbol([], (10, 9, 13, 11), [symbols.Pin(0, ((12, 10), (10, 10)))])
+    left = Text(1, "A1", (8, 9.4, 9.6, 10.6), 1.0, 0.0, (0, 0, 0), 1)
+    right = Text(2, "GND", (13.5, 9.4, 16.5, 10.6), 1.0, 0.0, (0, 0, 255), 2)
+    assert not fields._in_line(ground, left) and fields._in_line(ground, right)
+
+
+def test_easyeda_numbered_units():
+    match = REFDES.match("U3.1")
+    assert match and match.groups() == ("U", "3", ".1") and is_common_ref("U10.2")
+    assert not REFDES.match("OLED0.66")  # a value
+
+
+def _mosfet(b, x, y):
+    """EasyEDA's N-channel MOSFET with a body diode, gate on the left, drawn in its
+    order: the gate stands apart from the channel, and the two are drawn interleaved."""
+    red, navy = (135, 0, 0), (0, 0, 128)
+    b.seq += 1
+    b.scene.fields.append(
+        Text(b.seq, "Q3", (x + 26, y + 13, x + 30, y + 15), 1.27, 0.0, navy, b.seq)
+    )
+    lines = [
+        [(7.8, 15.15), (12.87, 15.15)],  # gate pin
+        [(10.33, 15.15), (14.4, 15.15)],  # its lead, to the gate bar
+        [(15.41, 19.72), (15.41, 17.69)],
+        [(15.41, 16.16), (15.41, 14.13)],
+        [(15.41, 10.58), (15.41, 12.61)],
+        [(14.4, 10.58), (14.4, 19.72)],  # gate bar
+        [(20.49, 18.7), (15.41, 18.7)],
+        [(15.41, 15.15), (20.49, 15.15), (20.49, 20.23), (25.57, 20.23), (25.57, 16.67)],
+        [(15.41, 11.59), (20.49, 11.59), (20.49, 10.07), (25.57, 10.07), (25.57, 14.13)],
+        [(25.57, 14.13), (24.04, 16.67), (27.09, 16.67), (25.57, 14.13)],  # diode
+        [(27.6, 14.13), (23.54, 14.13)],
+        [(15.41, 15.15), (18.46, 16.16), (18.46, 14.13), (15.41, 15.15)],  # arrow
+        [(20.49, 20.23), (20.49, 25.3)],  # source pin
+        [(20.49, 10.07), (20.49, 4.99)],  # drain pin
+    ]
+    for points in lines:
+        b.shape(*[(x + px, y + py) for px, py in points], width=0.25, color=red)
+    b.scene.wires += [
+        ((x + 2, y + 15.15), (x + 7.8, y + 15.15)),
+        ((x + 20.49, y + 25.3), (x + 20.49, y + 30)),
+        ((x + 20.49, y + 4.99), (x + 20.49, y)),
+    ]
+
+
+def test_easyeda_mosfet_drawn_in_pieces_is_one_part_with_named_pins():
+    """Its numbers are hidden, so its pins are known by role: the gate leads to the
+    bar, the source is nearer the arrow along the drawing than the drain."""
+    b = SceneBuilder()
+    _mosfet(b, 0, 0)
+
+    (part,) = symbols.find(b.scene, profile.load("easyeda"))
+    assert part.ref == "Q3"
+    assert {p.number: p.at for p in part.pins} == {
+        "G": (7.8, 15.15),
+        "S": (20.49, 25.3),
+        "D": (20.49, 4.99),
+    }
+
+
+def test_pnp_transistor_with_its_arrow_over_the_emitter_slant():
+    """The emitter's slant ends under the arrowhead at the bar, not on its outline."""
+    red, navy = (135, 0, 0), (0, 0, 128)
+    b = SceneBuilder()
+    b.seq += 1
+    b.scene.fields.append(Text(b.seq, "Q1", (25, 128, 27, 129.2), 1.27, 0.0, navy, b.seq))
+    for points in (
+        [(16.51, 131.24), (16.51, 133.78)],
+        [(19.05, 128.7), (24.13, 128.7)],
+        [(16.51, 126.16), (16.51, 123.62)],
+        [(19.05, 127.94), (17.53, 127.68), (18.29, 126.67), (19.05, 127.94)],
+        [(19.05, 130.99), (19.05, 126.41)],
+        [(16.51, 131.24), (19.05, 129.46)],
+        [(18.29, 127.43), (16.51, 126.16)],
+    ):
+        b.shape(*points, width=0.25, color=red)
+    b.scene.wires += [((16.51, 123.62), (16.51, 120)), ((16.51, 133.78), (16.51, 137))]
+    b.scene.wires.append(((24.13, 128.7), (28, 128.7)))
+
+    (part,) = symbols.find(b.scene, profile.load("easyeda"))
+    assert {p.number: p.at for p in part.pins} == {
+        "B": (24.13, 128.7),
+        "E": (16.51, 123.62),
+        "C": (16.51, 133.78),
+    }

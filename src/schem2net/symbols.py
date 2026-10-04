@@ -101,7 +101,7 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
     for chain in chains:
         a, b = _chain_ends(chain)
         a_inner = _inner_end(chain, a, b, scene, index, profile, breaks, None)
-        if a_inner is None and profile.fields_follow_symbol:
+        if a_inner is None and profile.drawn_by_part:
             # Graphics drawn apart from the pin belong to another symbol.
             a_inner = _inner_end(chain, a, b, scene, index, profile, breaks, breaks)
         if a_inner is None:
@@ -145,10 +145,10 @@ def _inner_by_neighbours(
     """When neither end sits on a body, tell which end belongs to the symbol, if possible.
 
     With pins in their own colour, the inner end meets body graphics tip to tip.
-    Otherwise, with symbols drawn one at a time, it meets graphics drawn with it.
+    Otherwise, with parts drawn one at a time, it meets graphics drawn with it.
     """
     pin_colour = bool(profile.colors.get("pin"))
-    if not pin_colour and not profile.fields_follow_symbol:
+    if not pin_colour and not profile.drawn_by_part:
         return None
 
     def own(tips: list[int]) -> bool:
@@ -252,11 +252,11 @@ def _flag(shape) -> bool:
 
 
 def _flag_on_tip(chain, a: Point, b: Point, scene: Scene, index: GridIndex) -> bool | None:
-    """Both ends on symbol graphics and neither on a wire: a port or label flag set on
+    """Both ends on closed outlines and neither on a wire: a port or label flag set on
     the pin's tip is small beside the body the pin starts from."""
     ids = {s.id for s in chain}
     size_a, size_b = (_body_size(e, ids, scene, index) for e in (a, b))
-    if max(size_a, size_b) >= BODY_OVER_FLAG * max(min(size_a, size_b), 1e-6):
+    if min(size_a, size_b) > 0 and max(size_a, size_b) >= BODY_OVER_FLAG * min(size_a, size_b):
         return size_a > size_b
     return None
 
@@ -399,9 +399,25 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
         for piece in pieces:
             a, b = spans[id(piece)]
             drawn_with = a <= hi + DRAWN_TOGETHER_SEQ and lo <= b + DRAWN_TOGETHER_SEQ
+            # Near the box's edge: a part drawn well inside a section frame is not its pin.
             near = geometry.bbox_gap(box.bbox, piece.bbox) <= DRAWN_TOGETHER_GAP
+            near = near and not _well_inside(piece.bbox, box.bbox)
             if (drawn_with and near) or _enters(piece, box):
                 joined.union(id(box), id(piece))
+    # Where parts are drawn one at a time, close pieces drawn interleaved are one part
+    # drawn in pieces: a MOSFET's gate stands apart from its channel. Eagle draws by
+    # layer, so there the drawing of neighbours interleaves. A bare line with no pin
+    # found on it is an unwired pin, not a piece of body.
+    if profile.drawn_by_part:
+        drawn = [s for s in symbols if id(s) in spans and (s.pins or min(_sides(s.bbox)) > MIN_BOX)]
+        for i, a in enumerate(drawn):
+            seqs = sorted(scene.shapes[k].seq for k in a.shapes)
+            for b in drawn[i + 1 :]:
+                lo, hi = spans[id(b)]
+                k = bisect.bisect_left(seqs, lo)
+                interleaved = k < len(seqs) and seqs[k] < hi
+                if interleaved and geometry.bbox_gap(a.bbox, b.bbox) <= PIECE_GAP:
+                    joined.union(id(a), id(b))
     # Small pinless bits drawn right after or before a neighbour and almost touching it
     # are more of it: the separate bars of a ground sign under its stem.
     small = [s for s in symbols if not s.pins and id(s) in spans and _size(s.bbox) < BIT_SIZE]
@@ -419,6 +435,13 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
     for s in symbols:
         groups.setdefault(joined.find(id(s)), []).append(s)
     return [_combine(parts) for parts in groups.values()]
+
+
+def _well_inside(inner: BBox, outer: BBox) -> bool:
+    """Inside the outer box and clear of its edges by more than a pin's reach."""
+    g = DRAWN_TOGETHER_GAP
+    x0, y0, x1, y1 = outer
+    return x0 + g < inner[0] and inner[2] < x1 - g and y0 + g < inner[1] and inner[3] < y1 - g
 
 
 def _enters(piece: Symbol, box: Symbol) -> bool:
@@ -651,18 +674,10 @@ def _in_body(pin: Pin, body: list[Shape]) -> bool:
             for seg in geometry.segments(s.points)
         )
     ]
-    if any(_in_polygon(pin.at, s.points) for s in starts_on):
+    if any(geometry.in_polygon(pin.at, s.points) for s in starts_on):
         return True
     rest = [s.bbox for s in body if s.id not in {t.id for t in starts_on}]
     return bool(rest) and _inside(pin.at, _union(rest))
-
-
-def _in_polygon(p: Point, points: list[Point]) -> bool:
-    inside = False
-    for (ax, ay), (bx, by) in geometry.segments(points + points[:1]):
-        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
-            inside = not inside
-    return inside
 
 
 def _inside(p: Point, box: BBox) -> bool:

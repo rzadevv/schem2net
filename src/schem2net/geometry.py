@@ -32,6 +32,14 @@ def is_interior(p: Point, seg: Segment, tol: float) -> bool:
     )
 
 
+def in_polygon(p: Point, points: list[Point]) -> bool:
+    inside = False
+    for (ax, ay), (bx, by) in segments(points + points[:1]):
+        if (ay > p[1]) != (by > p[1]) and p[0] < ax + (p[1] - ay) * (bx - ax) / (by - ay):
+            inside = not inside
+    return inside
+
+
 def unit(a: Point, b: Point) -> Point:
     length = distance(a, b)
     if length == 0:

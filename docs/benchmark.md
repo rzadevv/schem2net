@@ -116,6 +116,10 @@ single pin in the ground truth are not scored.
 
 Corpus totals are summed over pins, not averaged over designs.
 
+A pin read by its name, because its number is hidden, counts as the pin of that
+name when the name is unique on its part. kicad-cli writes a pin's function as its
+name and number, as in `D_1` for pin 1 named D, so the name alone counts as well.
+
 Swapping the two pins of a resistor, non-polarised capacitor, inductor,
 ferrite bead, fuse or crystal is not counted as an error. These parts are
 recognised by their KiCad symbol, or by designator (R, C, L, FB, F) when the

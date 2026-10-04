@@ -6,6 +6,8 @@ value, and pins get their numbers.
 
 from __future__ import annotations
 
+import heapq
+import itertools
 import re
 from typing import TYPE_CHECKING
 
@@ -23,10 +25,10 @@ from schem2net.refdes import (
     TWO_TERMINAL_PREFIXES,
     is_common_ref,
 )
-from schem2net.scene import Scene
+from schem2net.scene import Scene, Shape
 
 if TYPE_CHECKING:
-    from schem2net.symbols import Runs, Symbol
+    from schem2net.symbols import Pin, Runs, Symbol
 
 REF_SEARCH = 10.0  # mm around a symbol body
 POWER_NAME_GAP = 2.5  # mm between a power symbol and its name
@@ -40,10 +42,16 @@ MANY_PINS_COST = REF_SEARCH  # "L298" by a part of many pins is its value, not a
 MANY_PINS = 4  # more pins than a resistor, capacitor or inductor has
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
+VALUE_FIRST_COST = REF_SEARCH  # "Z80" drawn right before "U1" is the value
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 PIECE_GAP = 1.27  # mm between pieces of one drawn symbol; parts sit a grid step apart
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 MIN_GROUND_BASE = 0.5  # mm; a ground triangle's base is a grid step or so wide
+ROW_HEAD_REACH = 2.0  # pitches past a row's end pin within which its first number sits
+MIN_ROW = 3  # pins in a row numbered from its head
+ARROW_SIZE = 4.0  # mm; a transistor's arrowhead is smaller than this
+BAR_REACH = 3.0  # mm from a transistor's base or gate pin to its bar
+MEET = 0.15  # mm between lines that meet in a symbol's drawing
 
 PAD_COUNT = re.compile(r"\*\d+$")  # Eagle writes a pin on several pads as "A6*2"
 
@@ -62,7 +70,7 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 piece = [s for s in named if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
                 symbol.power = piece[0].power if piece else profile.unnamed_ground
                 symbol.anchors = _anchors(symbol, scene)
-    _assign_refs(symbols, texts, runs, profile)
+    _assign_refs(symbols, texts, runs, profile, _values_by_order(scene, profile))
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
     _assign_values(symbols, texts, runs, profile.pin_name_gap)
 
@@ -96,7 +104,7 @@ def _name_power_symbols(
         for symbol in filter(_could_be_power, symbols):
             for _, i in texts.near(symbol.bbox, POWER_NAME_GAP):
                 text = texts.texts[i]
-                if not _is_power_name(text.text, profile):
+                if not _is_power_name(text, profile):
                     continue
                 # The first text drawn after the symbol, or else one in line with it.
                 if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text, loose):
@@ -113,7 +121,7 @@ def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profil
     for symbol in filter(_could_be_power, symbols):
         for _, i in pool.near(symbol.bbox, POWER_NAME_GAP):
             text = pool.texts[i]
-            if _is_power_name(text.text, profile) and _in_line(symbol, text):
+            if _is_power_name(text, profile) and _in_line(symbol, text):
                 symbol.power = text.text
                 symbol.anchors = _anchors(symbol, scene)
                 pool.used.add(i)
@@ -128,13 +136,19 @@ def _could_be_power(symbol: Symbol) -> bool:
     return not symbol.power and len(symbol.pins) <= 1 and bool(symbol.body) and small
 
 
-def _is_power_name(text: str, profile: Profile) -> bool:
-    # A designator nearby means a one-pin part, such as a test point.
+def _is_power_name(text: Text, profile: Profile) -> bool:
+    # A designator nearby means a one-pin part, such as a test point. Where designators
+    # have a colour of their own, a name in another colour, such as A15, is not one.
+    other_colour = (
+        bool(profile.colors.get("designator"))
+        and text.color is not None
+        and not profile.is_("designator", text.color)
+    )
     return (
-        _is_net_name(text)
-        and text not in profile.not_power_nets
-        and not is_common_ref(text)
-        and not PART_VALUE.match(text)
+        _is_net_name(text.text)
+        and text.text not in profile.not_power_nets
+        and (other_colour or not is_common_ref(text.text))
+        and not PART_VALUE.match(text.text)
     )
 
 
@@ -310,12 +324,19 @@ def _in_line(symbol: Symbol, text: Text, loose: bool = False) -> bool:
     # The name sits past the end away from where the wire meets the pin.
     if geometry.is_horizontal(symbol.pins[0].line):
         far = cx < x0 if ax > (x0 + x1) / 2 else cx > x1
-        return left_or_right or (overhangs(ty0, ty1, ay, y0, y1) and far)
+        return (left_or_right or overhangs(ty0, ty1, ay, y0, y1)) and far
     far = cy < y0 if ay > (y0 + y1) / 2 else cy > y1
-    return above_or_below or (overhangs(tx0, tx1, ax, x0, x1) and far)
+    return (above_or_below or overhangs(tx0, tx1, ax, x0, x1)) and far
 
 
-def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profile: Profile) -> None:
+def _assign_refs(
+    symbols: list[Symbol],
+    texts: _Texts,
+    runs: Runs | None,
+    profile: Profile,
+    values: set[int],
+) -> None:
+    """`values` holds the ids of texts drawn where a value goes."""
     parts = [s for s in symbols if s.pins and not s.power]
     first_reach = profile.designator_first and runs
     candidates = []
@@ -339,6 +360,8 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
                 cost += MANY_PINS_COST
             if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile):
                 cost += INSIDE_BODY_COST
+            if id(text) in values:
+                cost += VALUE_FIRST_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
             elif runs and profile.designator_first and runs.first_text(symbol) != text.seq:
@@ -362,6 +385,26 @@ def _assign_refs(symbols: list[Symbol], texts: _Texts, runs: Runs | None, profil
             _set_ref(parts[si], texts.texts[ti].text)
             taken.add(si)
     texts.used |= set(used)
+
+
+def _values_by_order(scene: Scene, profile: Profile) -> set[int]:
+    """Ids of the texts that drawing order shows are values, where each part's value
+    is drawn right before its designator: in a run of designator-coloured texts drawn
+    back to back, every second one counting back from the last."""
+    if not profile.value_before_designator:
+        return set()
+    order = sorted(
+        [(t.seq, 0, k) for k, t in enumerate(scene.fields)]
+        + [(s.seq, 1, k) for k, s in enumerate(scene.shapes)]
+    )
+    values, run = set(), []
+    for _, kind, k in [*order, (0, 1, -1)]:
+        if kind == 0 and profile.is_("designator", scene.fields[k].color):
+            run.append(scene.fields[k])
+            continue
+        values |= {id(t) for t in run[-2::-2]}
+        run = []
+    return values
 
 
 def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int]]:
@@ -424,6 +467,9 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
             named.add(i)
             used.add(t)
 
+    rest = [k for k in range(len(numbers)) if k not in used]
+    used |= {rest[k] for k in _number_rows(symbols, [numbers[k] for k in rest])}
+
     # Small parts often hide pin numbers. Diodes are numbered from one end of
     # the triangle, other parts from the top or bottom, then the left.
     by_ref: dict[str, list[Symbol]] = {}
@@ -450,6 +496,192 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
 
     unused = [t for k, t in enumerate(numbers) if k not in used]
     _name_pins(symbols, unused + scene.fields, profile.pin_name_gap)
+
+    # Last, a transistor with neither numbers nor names shown: its pins by role.
+    for parts in by_ref.values():
+        if not any(p.number for s in parts for p in s.pins):
+            for pin, role in _transistor_roles(parts, scene):
+                pin.number = role
+
+
+def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]]:
+    """Names for the pins of a transistor drawn without numbers. The base or gate is
+    the pin square to the other two, leading to the middle of a bar; the emitter or
+    source is the one nearer the arrowhead along the drawing, and a body diode, which
+    joins both, is not taken for it. A bipolar transistor leaves its bar on slants."""
+    pins = [p for s in parts for p in s.pins]
+    if len(pins) != 3:
+        return []
+    own = {p.shape for p in pins}
+    body = [scene.shapes[i] for s in parts for i in s.shapes if i not in own]
+    lines = [s for s in body if len(s.points) == 2 and not s.closed]
+    for k, control in enumerate(pins):
+        a, b = (p for j, p in enumerate(pins) if j != k)
+        u, v, w = (geometry.unit(*p.line) for p in (control, a, b))
+        if abs(v[0] * w[0] + v[1] * w[1]) < 0.99 or abs(u[0] * v[0] + u[1] * v[1]) > 0.1:
+            continue
+        # Carried on inwards, perhaps along a lead, the pin meets the bar's middle.
+        (x, y), (dx, dy) = control.line[0], geometry.unit(control.line[1], control.line[0])
+        ahead = [(x + dx * t / 10, y + dy * t / 10) for t in range(int(BAR_REACH * 10) + 1)]
+        bars = [s for s in lines if abs(_cos(s.points, control.line)) < 0.1]
+        if not any(geometry.is_interior(q, tuple(s.points), 0.1) for q in ahead for s in bars):
+            continue
+        arrows = [s for s in body if s.closed and len(_corners(s)) in (3, 4)]
+        arrows = [s for s in arrows if max(_box_sides(s.bbox)) < ARROW_SIZE]
+        best = None
+        for arrow in arrows:
+            da, db = _path_lengths(body, arrow, (a.line[0], b.line[0]))
+            if da != db and (best is None or abs(da - db) > best[0]):
+                best = (abs(da - db), a if da < db else b)
+        if best is None:
+            return []
+        emitter = best[1]
+        other = b if emitter is a else a
+        slants = any(not geometry.is_axis_aligned(tuple(s.points), 0.01) for s in lines)
+        names = ("B", "E", "C") if slants else ("G", "S", "D")
+        return list(zip((control, emitter, other), names, strict=True))
+    return []
+
+
+def _cos(points: list[Point], line: Segment) -> float:
+    u, v = geometry.unit(points[0], points[-1]), geometry.unit(*line)
+    return u[0] * v[0] + u[1] * v[1]
+
+
+def _corners(shape: Shape) -> set[Point]:
+    return {(round(x, 2), round(y, 2)) for x, y in shape.points}
+
+
+def _box_sides(box: BBox) -> tuple[float, float]:
+    return box[2] - box[0], box[3] - box[1]
+
+
+def _path_lengths(
+    body: list[Shape], start: Shape, ends: tuple[Point, Point]
+) -> tuple[float, float]:
+    """Distances along the drawing's lines from one of its shapes to two points on it."""
+    offsets = list(itertools.accumulate((len(s.points) for s in body), initial=0))
+    nodes = [p for s in body for p in s.points] + list(ends)
+    edges: dict[int, list[tuple[float, int]]] = {k: [] for k in range(len(nodes))}
+
+    def link(i: int, j: int) -> None:
+        length = geometry.distance(nodes[i], nodes[j])
+        edges[i].append((length, j))
+        edges[j].append((length, i))
+
+    segs = [
+        (o + n, o + n + 1)
+        for s, o in zip(body, offsets[:-1], strict=True)
+        for n in range(len(s.points) - 1)
+    ]
+    heads = [
+        (s, o)
+        for s, o in zip(body, offsets[:-1], strict=True)
+        if s.closed and max(_box_sides(s.bbox)) < ARROW_SIZE
+    ]
+    for i, j in segs:
+        link(i, j)
+    for p in range(len(nodes)):
+        for i, j in segs:
+            if (
+                p not in (i, j)
+                and geometry.distance_to_segment(nodes[p], (nodes[i], nodes[j])) <= MEET
+            ):
+                link(p, i)
+                link(p, j)
+        # A line ending under an arrowhead, inside it, meets it.
+        for s, o in heads:
+            if geometry.in_polygon(nodes[p], s.points):
+                for n in range(o, o + len(s.points)):
+                    link(p, n)
+    k = body.index(start)
+    best = {n: 0.0 for n in range(offsets[k], offsets[k + 1])}
+    queue = [(0.0, n) for n in best]
+    while queue:
+        d, n = heapq.heappop(queue)
+        if d > best[n]:
+            continue
+        for length, m in edges[n]:
+            if d + length < best.get(m, float("inf")):
+                best[m] = d + length
+                heapq.heappush(queue, (d + length, m))
+    far = float("inf")
+    return best.get(len(nodes) - 2, far), best.get(len(nodes) - 1, far)
+
+
+def _number_rows(symbols: list[Symbol], numbers: list[Text]) -> set[int]:
+    """Number each row of unnumbered pins from the numbers at its ends: card sockets
+    and headers may mark only the first pin of a row, past it or as pin 1 beside it,
+    or the first and last. With one mark the count goes up from it. Returns the
+    indices of the numbers used."""
+    used: set[int] = set()
+    for symbol in symbols:
+        if not symbol.ref:
+            continue
+        for row in _rows(symbol.pins):
+            numbered = [p for p in row if p.number]
+            if numbered:
+                # Only an end pin numbered, and as the first: its mark sits beside it.
+                end = numbered[0]
+                if len(numbered) > 1 or end not in (row[0], row[-1]) or end.number != "1":
+                    continue
+                row = row if end is row[0] else row[::-1]
+                a, step = int(end.number), 1
+            else:
+                first = _row_mark(row, numbers, used)
+                last = _row_mark(row[::-1], numbers, used)
+                if first is None and last is None:
+                    continue
+                if first is not None and last is not None:
+                    a, b = (int(numbers[k].text) for k in (first, last))
+                    if abs(a - b) != len(row) - 1:
+                        continue
+                    step = 1 if b > a else -1
+                else:
+                    row = row if first is not None else row[::-1]
+                    a, step = int(numbers[first if first is not None else last].text), 1
+                used |= {k for k in (first, last) if k is not None}
+            for n, pin in enumerate(row):
+                pin.number = str(a + step * n)
+    return used
+
+
+def _row_mark(row: list[Pin], numbers: list[Text], used: set[int]) -> int | None:
+    """The number set past the first pin of a row, in line with its pins."""
+    end, inner = row[0], row[1]
+    out = geometry.unit(inner.at, end.at)
+    pitch = geometry.distance(inner.at, end.at)
+    (x0, y0), (x1, y1) = end.line
+    flat = geometry.is_horizontal(end.line)
+    lo, hi = sorted((x0, x1) if flat else (y0, y1))
+    marks = []
+    for k, text in enumerate(numbers):
+        if k in used or not text.text.isdigit():
+            continue
+        cx, cy = geometry.center(text.bbox)
+        ahead = (cx - end.at[0]) * out[0] + (cy - end.at[1]) * out[1]
+        t0, _, t1, _ = text.bbox if flat else (text.bbox[1], 0, text.bbox[3], 0)
+        if 0 < ahead <= ROW_HEAD_REACH * pitch and t0 <= hi and lo <= t1:
+            marks.append((ahead, k))
+    return min(marks)[1] if marks else None
+
+
+def _rows(pins: list[Pin]) -> list[list[Pin]]:
+    """Evenly spaced pins pointing one way with their ends in line, in order along it."""
+    lines: dict[tuple, list[Pin]] = {}
+    for pin in pins:
+        dx, dy = geometry.unit(*pin.line)
+        horizontal = abs(dx) > abs(dy)
+        across = pin.at[0] if horizontal else pin.at[1]
+        key = (round(dx), round(dy), round(across, 1))
+        lines.setdefault(key, []).append(pin)
+    rows = []
+    for (dx, _, _), row in lines.items():
+        row.sort(key=lambda p: p.at[1] if dx else p.at[0])
+        steps = [geometry.distance(a.at, b.at) for a, b in zip(row, row[1:], strict=False)]
+        if len(row) >= MIN_ROW and max(steps) - min(steps) <= 0.05:
+            rows.append(row)
+    return rows
 
 
 def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> None:
@@ -534,8 +766,10 @@ def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | No
         gap = min(abs(near), abs(far))
     elif near >= -0.3:
         gap = near
-    else:
+    elif far >= -0.3:
         gap = far + OTHER_SIDE_COST
+    else:  # across the pin's line: written over the pin
+        gap = OTHER_SIDE_COST
     return gap if -0.3 <= gap <= PIN_NUMBER_GAP else None
 
 
