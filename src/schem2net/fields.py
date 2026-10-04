@@ -43,6 +43,8 @@ MANY_PINS = 4  # more pins than a resistor, capacitor or inductor has
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 VALUE_FIRST_COST = REF_SEARCH  # "Z80" drawn right before "U1" is the value
+AMONG_VALUES_COST = 2.5  # mm; "A20" drawn among values is likely one too
+LAYER_NEIGHBOURS = 6  # texts drawn either side of a name, among which other names are
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 PIECE_GAP = 1.27  # mm between pieces of one drawn symbol; parts sit a grid step apart
 CORNER_GAP = 0.1  # mm between lines that meet in a drawing
@@ -70,7 +72,8 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 piece = [s for s in named if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
                 symbol.power = piece[0].power if piece else profile.unnamed_ground
                 symbol.anchors = _anchors(symbol, scene)
-    _assign_refs(symbols, texts, runs, profile, _values_by_order(scene, profile))
+    values = _values_by_order(scene, profile)
+    _assign_refs(symbols, texts, runs, profile, values, _among_values(scene, profile))
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
     _assign_values(symbols, texts, runs, profile.pin_name_gap)
 
@@ -335,8 +338,10 @@ def _assign_refs(
     runs: Runs | None,
     profile: Profile,
     values: set[int],
+    among_values: set[int],
 ) -> None:
-    """`values` holds the ids of texts drawn where a value goes."""
+    """`values` holds the ids of texts drawn where a value goes, `among_values` those
+    of texts drawn among values."""
     parts = [s for s in symbols if s.pins and not s.power]
     first_reach = profile.designator_first and runs
     candidates = []
@@ -362,6 +367,8 @@ def _assign_refs(
                 cost += INSIDE_BODY_COST
             if id(text) in values:
                 cost += VALUE_FIRST_COST
+            if id(text) in among_values:
+                cost += AMONG_VALUES_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
             elif runs and profile.designator_first and runs.first_text(symbol) != text.seq:
@@ -405,6 +412,26 @@ def _values_by_order(scene: Scene, profile: Profile) -> set[int]:
         values |= {id(t) for t in run[-2::-2]}
         run = []
     return values
+
+
+def _among_values(scene: Scene, profile: Profile) -> set[int]:
+    """Where all part names are drawn together, and all values, as Eagle draws layer by
+    layer: ids of texts that look like designators drawn among values, with no other
+    designator around them and a share of values such as 10k or 3.3V, as A20 is. Pin
+    numbers, drawn in turn with their pins, are plain numbers."""
+    if not profile.names_by_layer:
+        return set()
+    texts = sorted(scene.fields, key=lambda t: t.seq)
+    refs = [is_common_ref(t.text) for t in texts]
+    values = [t.text[:1].isdigit() and not t.text.isdigit() for t in texts]
+    w = LAYER_NEIGHBOURS
+    out = set()
+    for k, t in enumerate(texts):
+        around = slice(max(0, k - w), k + 1 + w)
+        others = len(texts[around]) - 1
+        if refs[k] and sum(refs[around]) == 1 and others and 3 * sum(values[around]) >= others:
+            out.add(id(t))
+    return out
 
 
 def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int]]:

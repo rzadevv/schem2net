@@ -822,3 +822,26 @@ def test_pnp_transistor_with_its_arrow_over_the_emitter_slant():
         "E": (16.51, 123.62),
         "C": (16.51, 133.78),
     }
+
+
+def test_eagle_value_drawn_among_values_does_not_name_the_part():
+    """Eagle draws layer by layer, values together and names together. A20 below the
+    box looks like a designator and sits as near as U1 above it."""
+    b = SceneBuilder()
+    b.shape((10, 10), (20, 10), (20, 30), (10, 30), (10, 10))
+    for y in (12.54, 15.08, 17.62, 20.16):
+        b.shape((10, y), (7.46, y))
+        b.shape((20, y), (22.54, y))
+    for text in ("10k", "3.3V", "22uF", "100nF", "1k", "NA", "47pF"):
+        b.field(text, 60, 60)
+    b.field("A20", 11, 30.69)
+    for text in ("4k7", "1uF", "GND", "10k", "2.2k", "0R", "5V"):
+        b.field(text, 60, 60)
+    for text in ("R1", "C2", "C3"):
+        b.field(text, 70, 70)
+    b.field("U1", 11, 8.0)
+    for text in ("R2", "C4", "L1"):
+        b.field(text, 70, 70)
+
+    (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if len(s.pins) == 8]
+    assert part.ref == "U1"

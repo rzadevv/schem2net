@@ -162,7 +162,10 @@ across the pin, past the end away from the wire.
 
 Eagle's libraries place a part's name above its box, so a text inside the box,
 however much it looks like a designator (A0, U3), is taken as a pin name first,
-and one beside a pin outside it as a pad number.
+and one beside a pin outside it as a pad number. Eagle draws layer by layer,
+values before names, so a text that looks like a designator but is drawn among
+values (A20 among 10k and 3.3V, with no other designator around it) is taken for
+a value when a name sits as near.
 
 Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit. Net labels are the

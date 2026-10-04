@@ -10,6 +10,7 @@ field = [[128, 128, 128], [80, 80, 80], [0, 0, 0]]
 pin_number = [[128, 128, 128], [80, 80, 80], [0, 0, 0], [128, 0, 0], [201, 13, 12]]  # pads
 
 [order]
+names_by_layer = true  # drawn layer by layer: names among names, values among values
 designators_in_pin_colour = true  # Eagle 9 writes designators in the symbol red
 designators_outside = true  # >NAME sits outside the box; texts inside are pin names
 
