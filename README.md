@@ -28,13 +28,13 @@ Early development.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
-| A, KiCad | Dev | 57 | 25,608 | 0.88 | 0.94 |
+| A, KiCad | Dev | 57 | 25,608 | 0.89 | 0.94 |
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.86 |
 | C, Eagle | Dev | 96 | 7,038 | 0.68 | 0.64 |
-| C, Eagle | Test | 42 | 2,903 | 0.57 | 0.51 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.70 | 0.63 |
+| C, Eagle | Test | 42 | 2,903 | 0.57 | 0.52 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.74 | 0.69 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.69 | 0.60 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.66 | 0.63 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.42 | 0.07 |
