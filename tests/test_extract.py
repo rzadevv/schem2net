@@ -6,7 +6,16 @@ from schem2net import buses, fields, geometry, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
 from schem2net.refdes import REFDES, is_common_ref
-from schem2net.scene import Label, Scene, Shape, Sheet, SheetPin, _join_runs, drop_sheet_references
+from schem2net.scene import (
+    Label,
+    Scene,
+    Shape,
+    Sheet,
+    SheetPin,
+    _join_runs,
+    drop_sheet_references,
+    values_run,
+)
 from schem2net.scene import build as build_scene
 
 KICAD = profile.load("kicad")
@@ -957,3 +966,15 @@ def test_stacked_capacitors_whose_plates_overlap_stay_apart():
     parts, _ = netlist(b.scene)
     assert sorted(parts) == ["C41", "C42", "C43"]
     assert all(len(p.pins) == 2 for p in parts.values())
+
+
+def test_values_drawn_together_are_known_even_when_repeated():
+    """Eagle draws values together; one value written for several parts in turn
+    counts once, and a label drawn among designators is not a value."""
+    words = ["10k", "3.3V", "22uF", "1k", "100nF", "4k7", "47pF"]
+    words += ["RA0805_0R"] * 5 + ["2.2k", "0R", "5V", "1uF", "10nF", "33R", "12pF"]
+    words += ["R1", "C1", "C2", "R2", "U1", "LCD_D3", "L1", "C3", "R4", "C5", "U2", "R6"]
+    texts = [Text(k, w, (0, 0, 1, 1), 1.0, 0.0, None, k) for k, w in enumerate(words)]
+    run = values_run(texts)
+    assert all(id(t) in run for t in texts if t.text == "RA0805_0R")
+    assert not any(id(t) in run for t in texts if t.text == "LCD_D3")

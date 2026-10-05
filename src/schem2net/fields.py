@@ -25,7 +25,7 @@ from schem2net.refdes import (
     TWO_TERMINAL_PREFIXES,
     is_common_ref,
 )
-from schem2net.scene import Scene, Shape
+from schem2net.scene import Scene, Shape, values_run
 
 if TYPE_CHECKING:
     from schem2net.symbols import Pin, Runs, Symbol
@@ -454,22 +454,12 @@ def _values_by_order(scene: Scene, profile: Profile) -> set[int]:
 
 def _among_values(scene: Scene, profile: Profile) -> set[int]:
     """Where all part names are drawn together, and all values, as Eagle draws layer by
-    layer: ids of texts that look like designators drawn among values, with no other
-    designator around them and a share of values such as 10k or 3.3V, as A20 is. Pin
-    numbers, drawn in turn with their pins, are plain numbers."""
+    layer: ids of texts that look like designators but are drawn among values, as A20
+    is among 10k and 3.3V."""
     if not profile.names_by_layer:
         return set()
-    texts = sorted(scene.fields, key=lambda t: t.seq)
-    refs = [is_common_ref(t.text) for t in texts]
-    values = [t.text[:1].isdigit() and not t.text.isdigit() for t in texts]
-    w = LAYER_NEIGHBOURS
-    out = set()
-    for k, t in enumerate(texts):
-        around = slice(max(0, k - w), k + 1 + w)
-        others = len(texts[around]) - 1
-        if refs[k] and sum(refs[around]) == 1 and others and 3 * sum(values[around]) >= others:
-            out.add(id(t))
-    return out
+    run = values_run(scene.fields, LAYER_NEIGHBOURS)
+    return {id(t) for t in scene.fields if id(t) in run and is_common_ref(t.text)}
 
 
 def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int]]:

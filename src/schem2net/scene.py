@@ -198,9 +198,13 @@ def build(page: Page, profile: Profile) -> Scene:
         taken = {id(text) for text, _ in boxed}
         if profile.labels_on_wires:
             # The others name the wire they sit on, as a label laid along it.
+            # Where values are drawn together, one of them is no label, however long.
+            values = values_run(scene.fields) if profile.names_by_layer else set()
             for text in scene.fields:
                 if id(text) in taken or PART_VALUE.match(text.text) or is_common_ref(text.text):
                     continue  # a value or designator drawn over a passing wire
+                if id(text) in values:
+                    continue
                 if _on_wire(text, scene.wires, wire_index):
                     scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
                     taken.add(id(text))
@@ -543,6 +547,31 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
             yield text, (fx, box[1] if fy < ty else box[3])
         else:
             yield text, (box[0] if fx < tx else box[2], ty)
+
+
+def values_run(texts: list[Text], reach: int = 6) -> set[int]:
+    """Ids of the texts drawn among part values, where a generator draws its values
+    together, as Eagle draws layer by layer: no designator is drawn within `reach`
+    texts either side, and a third of those texts or more read as values, such as 10k
+    or 3.3V. One value written for several parts in turn counts once. Pin numbers,
+    drawn in turn with their pins, are plain numbers."""
+    groups: list[list[Text]] = []
+    for text in sorted(texts, key=lambda t: t.seq):
+        if groups and groups[-1][0].text == text.text:
+            groups[-1].append(text)
+        else:
+            groups.append([text])
+    words = [g[0].text for g in groups]
+    refs = [is_common_ref(w) for w in words]
+    values = [w[:1].isdigit() and not w.isdigit() for w in words]
+    out = set()
+    for k, group in enumerate(groups):
+        if k < reach or k + reach >= len(groups):
+            continue  # too near the ends of the page's text to tell
+        around = slice(k - reach, k + 1 + reach)
+        if sum(refs[around]) == refs[k] and 3 * (sum(values[around]) - values[k]) >= 2 * reach:
+            out |= {id(t) for t in group}
+    return out
 
 
 def _on_wire(text: Text, wires: list[Segment], index: GridIndex) -> bool:
