@@ -978,3 +978,20 @@ def test_values_drawn_together_are_known_even_when_repeated():
     run = values_run(texts)
     assert all(id(t) in run for t in texts if t.text == "RA0805_0R")
     assert not any(id(t) in run for t in texts if t.text == "LCD_D3")
+
+
+def test_eagle_diode_drawn_as_three_lines_names_its_pads():
+    """A printer draws the triangle as three lines; Eagle's diode pads are C and A."""
+    red = (128, 0, 0)
+    b = SceneBuilder()
+    b.shape((24.8, 35.7), (27.4, 35.7), color=red)  # the cathode bar
+    b.shape((27.4, 38.3), (26.1, 35.7), color=red)
+    b.shape((26.1, 35.7), (24.8, 38.3), color=red)
+    b.shape((24.8, 38.3), (27.4, 38.3), color=red)
+    b.shape((26.1, 34.5), (26.1, 35.7), color=red)
+    b.shape((26.1, 39.5), (26.1, 38.3), color=red)
+    b.scene.wires += [((26.1, 34.5), (26.1, 30)), ((26.1, 39.5), (26.1, 44))]
+    b.field("D2", 28.2, 36.7)
+
+    (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref == "D2"]
+    assert {p.number: p.at for p in part.pins} == {"C": (26.1, 34.5), "A": (26.1, 39.5)}

@@ -36,3 +36,4 @@ min_length = 0.5  # mm
 numbers_above = true  # pad numbers sit above horizontal pins
 at_body_edge = true  # many symbols draw no pin line; wires end on the outline
 name_gap = 2.6  # mm; pin names sit well inside the outline
+diode_names = ["C", "A"]  # diode packages name their pads for the cathode and anode

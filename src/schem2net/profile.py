@@ -20,6 +20,7 @@ class Profile:
     symbols_in_pieces: bool = False  # symbols drawn as separate lines, as ground bars
     pin_name_gap: float = 1.5  # mm between a pin's inner end and its name
     diode_pin_one_is_anode: bool = False
+    diode_pin_names: tuple[str, ...] = ()  # cathode and anode pads, where named so
     fields_follow_symbol: bool = False
     drawn_by_part: bool = False  # each part drawn whole, with designators between parts
     designator_first: bool = False
@@ -68,6 +69,7 @@ def load(name: str) -> Profile:
         symbols_in_pieces=order.get("symbols_in_pieces", False),
         pin_name_gap=pins.get("name_gap", 1.5),
         diode_pin_one_is_anode=pins.get("diode_one_is_anode", False),
+        diode_pin_names=tuple(pins.get("diode_names", ())),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
         drawn_by_part=order.get("by_part", False) or order.get("fields_follow_symbol", False),
         designator_first=order.get("designator_first", False),

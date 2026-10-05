@@ -560,6 +560,10 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
                 key=lambda p: min(geometry.distance(p.line[0], v) for v in tips),
                 reverse=profile.diode_pin_one_is_anode,
             )
+            if profile.diode_pin_names:  # pads named for the cathode and the anode
+                cathode, anode = order[::-1] if profile.diode_pin_one_is_anode else order
+                cathode.number, anode.number = profile.diode_pin_names
+                continue
         else:
             down = -1 if profile.hidden_pin_one_at_bottom else 1
             order = sorted(part_pins, key=lambda p: (down * p.at[1], p.at[0]))
@@ -828,14 +832,52 @@ def _size(text: Text) -> float:
 
 
 def _triangle_corners(symbol: Symbol, scene: Scene) -> list[Point]:
-    """Corners of closed three-sided outlines, such as the body of a diode."""
+    """Corners of closed three-sided outlines, such as the body of a diode, or of three
+    lines that meet end to end, as a printer may draw one."""
     corners = []
     for i in symbol.shapes:
         shape = scene.shapes[i]
         unique = {(round(x, 2), round(y, 2)) for x, y in shape.points}
         if shape.closed and len(unique) == 3:
             corners += list(unique)
+    if corners:
+        return corners
+    lines = [
+        tuple(scene.shapes[i].points) for i in symbol.shapes if len(scene.shapes[i].points) == 2
+    ]
+    lines = [ln for ln in lines if geometry.distance(*ln) > MIN_GROUND_BASE]
+
+    def meet(p: Point, q: Point) -> bool:
+        return geometry.distance(p, q) <= CORNER_GAP
+
+    # Two lines meeting at one end, and a third joining their other ends.
+    for i, first in enumerate(lines):
+        for second in lines[i + 1 :]:
+            shared = [(p, q) for p in first for q in second if meet(p, q)]
+            if len(shared) != 1:
+                continue
+            apex = shared[0][0]
+            e1 = next(p for p in first if not meet(p, apex))
+            e2 = next(q for q in second if not meet(q, apex))
+            for third in lines:
+                c, d = third
+                closes = (meet(c, e1) and meet(d, e2)) or (meet(c, e2) and meet(d, e1))
+                if closes and _on_axis(
+                    symbol.pins, apex, geometry.center(geometry.bbox_of((e1, e2)))
+                ):
+                    return [apex, e1, e2]
     return corners
+
+
+def _on_axis(pins: list[Pin], apex: Point, base: Point) -> bool:
+    """A diode's two pins start at its triangle's tip and at the middle of its base."""
+    if len(pins) != 2:
+        return False
+    a, b = (p.line[0] for p in pins)
+    near = 2 * CORNER_GAP
+    return (geometry.distance(a, apex) <= near and geometry.distance(b, base) <= near) or (
+        geometry.distance(b, apex) <= near and geometry.distance(a, base) <= near
+    )
 
 
 def _within_outline(symbol: Symbol, text: Text) -> bool:

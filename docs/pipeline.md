@@ -110,7 +110,8 @@ decides: graphics separated from the pin by a designator belong to another
 symbol, such as a ground port placed over the pin's end.
 
 Small parts often hide their pin numbers. KiCad parts then count from the top
-and diodes from the cathode. Altium parts are placed horizontally with pin 1
+and diodes from the cathode; Eagle's diode packages name their pads C and A. A
+printer may draw a diode's triangle as three lines. Altium parts are placed horizontally with pin 1
 on the left and usually turned counter-clockwise, so upright parts count from
 the bottom, and most Altium diode libraries make the anode pin 1.
 
