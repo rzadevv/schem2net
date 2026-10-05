@@ -34,8 +34,8 @@ Early development.
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.86 |
 | C, Eagle | Dev | 96 | 7,038 | 0.69 | 0.64 |
 | C, Eagle | Test | 42 | 2,903 | 0.57 | 0.52 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.75 | 0.69 |
-| D, Olimex, held out | Test | 24 | 9,286 | 0.71 | 0.61 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.76 | 0.72 |
+| D, Olimex, held out | Test | 24 | 9,286 | 0.72 | 0.62 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.66 | 0.64 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.42 | 0.07 |
 
