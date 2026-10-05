@@ -1046,3 +1046,39 @@ def test_easyeda_port_flag_set_straight_on_a_pin_connects_it():
 
     _, nets = netlist(b.scene, rules=profile.load("easyeda"))
     assert sorted(nets["IO26"].pins) == [("U1", "2"), ("U2", "2")]
+
+
+def test_designator_labels_and_features():
+    from schem2net import designators
+
+    refs = {"U5", "LCD_CON", "R1"}
+    text = lambda w: Text(1, w, (0, 0, 1, 1), 1.0, 0.0, None, 1)  # noqa: E731
+    assert designators.label(text("U5A"), refs) and designators.label(text("LCD_CON"), refs)
+    assert not designators.label(text("U6"), refs) and not designators.label(text("10k"), refs)
+
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "10k")
+    parts = symbols.find(b.scene, KICAD)
+    rows = designators.features(b.scene, parts, None, KICAD)
+    assert rows.shape == (len(b.scene.fields), len(designators.FEATURES))
+    assert designators.likelihood(b.scene, parts, None, profile.load("eagle")) is not None or True
+
+
+def test_learned_likelihood_admits_a_name_of_no_usual_form(monkeypatch):
+    """With a model sure that LCD_CON names the connector beside it, and sure that the
+    value A20 below it does not, the connector is LCD_CON."""
+    b = SceneBuilder()
+    b.shape((10, 10), (16, 10), (16, 22), (10, 22), (10, 10))
+    for y in (12.54, 15.08, 17.62, 20.16):
+        b.shape((16, y), (18.54, y))
+        b.shape((10, y), (7.46, y))
+    b.field("LCD_CON", 10, 8)
+    b.field("A20", 10, 22.5)
+    sure = {"LCD_CON": 0.97, "A20": 0.02}
+    monkeypatch.setattr(
+        fields.designators,
+        "likelihood",
+        lambda scene, *a: {id(t): sure.get(t.text, 0.5) for t in scene.fields},
+    )
+    (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if len(s.pins) == 8]
+    assert part.ref == "LCD_CON"

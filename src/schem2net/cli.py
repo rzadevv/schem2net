@@ -13,6 +13,7 @@ from schem2net import diff as revisions
 from schem2net import export as exporters
 from schem2net import fills, kicad_sch, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
+from schem2net.bench import designators as designator_examples
 from schem2net.bench import font, roundtrip, runner
 from schem2net.bench import roles as role_examples
 from schem2net.bench.score import Counts
@@ -272,6 +273,36 @@ def build_roles(
         f"{g} {sum(len(e[1]) for d in designs for e in d)}" for g, designs in examples.items()
     )
     typer.echo(f"{output}: learned from paths of {counts}")
+
+
+@app.command("build-designators")
+def build_designators(
+    bench_dir: BenchDir = Path("bench"),
+    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
+        "src/schem2net/profiles/designators.npz"
+    ),
+    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
+) -> None:
+    """Learn which texts are designators from the dev split of every corpus, whose truth
+    netlists say which texts name parts. Needs scikit-learn (the dev dependencies)."""
+    designs = []
+    for name in "abcde":
+        try:
+            loaded = corpora.load(name, bench_dir)
+        except FileNotFoundError:
+            continue
+        designs += [
+            loaded.build_dir(p)
+            for p in loaded.projects
+            if loaded.is_built(p) and loaded.split(p) == "dev"
+        ]
+    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
+        examples = [e for found in pool.map(designator_examples.rows, designs) for e in found]
+    designator_examples.save(designator_examples.train(examples), output)
+    counts = Counter()
+    for generator, _, labels in examples:
+        counts[generator] += int((labels >= 0).sum())
+    typer.echo(f"{output}: learned from {len(designs)} designs, texts {dict(counts)}")
 
 
 @app.command("bench-schematic")

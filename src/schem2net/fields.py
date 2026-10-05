@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from schem2net import geometry
+from schem2net import designators, geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point, Text
 from schem2net.profile import Profile
@@ -43,6 +43,9 @@ MANY_PINS = 4  # more pins than a resistor, capacitor or inductor has
 OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 VALUE_FIRST_COST = REF_SEARCH  # "Z80" drawn right before "U1" is the value
+UNLIKELY_COST = REF_SEARCH  # for a text the learned model is sure is no designator
+SURE_DESIGNATOR = 0.9  # the model's certainty that admits a name of no usual form
+UNUSUAL_FORM_COST = 1.0  # mm; a name of no usual form gives way at the same distance
 AMONG_VALUES_COST = 2.5  # mm; "A20" drawn among values is likely one too
 FUNCTION_NAME_GAP = 5.0  # mm from a part to a name such as I2C or PWR
 LAYER_NEIGHBOURS = 6  # texts drawn either side of a name, among which other names are
@@ -78,7 +81,8 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
         if symbol.power:
             symbol.anchors = _anchors(symbol, scene, tips)
     values = _values_by_order(scene, profile)
-    _assign_refs(symbols, texts, runs, profile, values, _among_values(scene, profile))
+    likely = designators.likelihood(scene, symbols, runs, profile)
+    _assign_refs(symbols, texts, runs, profile, values, _among_values(scene, profile), likely)
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
     _assign_values(symbols, texts, runs, profile.pin_name_gap)
 
@@ -349,9 +353,11 @@ def _assign_refs(
     profile: Profile,
     values: set[int],
     among_values: set[int],
+    likely: dict[int, float] | None = None,
 ) -> None:
     """`values` holds the ids of texts drawn where a value goes, `among_values` those
-    of texts drawn among values."""
+    of texts drawn among values, and `likely`, by id, how likely each text is to be a
+    designator, where a model was learned for the generator."""
     parts = [s for s in symbols if s.pins and not s.power]
     first_reach = profile.designator_first and runs
     candidates = []
@@ -360,6 +366,15 @@ def _assign_refs(
         return any(
             REFDES.match(texts.texts[ti].text) and runs.owns(symbol, texts.texts[ti].seq)
             for _, ti in texts.near(symbol.body or symbol.bbox, 3 * REF_SEARCH)
+        )
+
+    def _usual_nearby(symbol: Symbol) -> bool:
+        """A designator of the usual form near the part that the model finds likely."""
+        return any(
+            REFDES.match(texts.texts[ti].text)
+            and likely.get(id(texts.texts[ti]), 1.0) >= 0.5
+            and not is_pin_name(symbol, texts.texts[ti], profile.pin_name_gap)
+            for _, ti in texts.near(symbol.body or symbol.bbox, REF_SEARCH)
         )
 
     for si, symbol in enumerate(parts):
@@ -380,15 +395,27 @@ def _assign_refs(
             # And only where the part's own texts hold no usual designator: a unit with
             # its own reference may draw a pin name such as V+ first.
             first = first_reach and runs.first_text(symbol) == text.seq and gap > 0
-            if not match and not (first and _name_like(text.text) and not _own_ref(symbol)):
+            p = likely.get(id(text)) if likely else None
+            # A name of no usual form the model is sure of, for a part with no likely
+            # designator of the usual form beside it: LCD_CON, not a net name by U1.
+            surely = p is not None and p >= SURE_DESIGNATOR and gap > 0
+            surely = surely and not match and not _usual_nearby(symbol)
+            if not match and not (
+                _name_like(text.text) and (surely or (first and not _own_ref(symbol)))
+            ):
                 continue
             cost = gap
             prefix = match.group(1).rstrip("$") if match else None
-            if prefix not in COMMON_PREFIXES:  # a pin name may be drawn first too
+            if p is not None:  # the model weighs what the text says, and how it sits
+                # Only its doubt counts: certain designators keep the distances they have.
+                cost += UNLIKELY_COST * max(0.0, 1 - 2 * p)
+                if not match:  # at one distance, the usual form first
+                    cost += UNUSUAL_FORM_COST
+            elif prefix not in COMMON_PREFIXES:  # a pin name may be drawn first too
                 cost += UNKNOWN_PREFIX_COST
-            if not match:  # never ahead of a usual designator at the same distance
-                cost += LATER_FIELD_COST
-            elif prefix in TWO_TERMINAL_PREFIXES and len(symbol.pins) > MANY_PINS:
+                if not match:  # never ahead of a usual designator at the same distance
+                    cost += LATER_FIELD_COST
+            if prefix in TWO_TERMINAL_PREFIXES and len(symbol.pins) > MANY_PINS:
                 cost += MANY_PINS_COST
             if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile):
                 cost += INSIDE_BODY_COST
@@ -420,9 +447,8 @@ def _assign_refs(
             taken.add(si)
     texts.used |= set(used)
     if profile.names_by_layer:
-        _name_by_function(
-            [p for k, p in enumerate(parts) if k not in taken], texts, profile, among_values
-        )
+        unnamed = [p for k, p in enumerate(parts) if k not in taken]
+        _name_by_function(unnamed, texts, profile, among_values)
 
 
 def _name_by_function(

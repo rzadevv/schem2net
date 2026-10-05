@@ -84,6 +84,24 @@ keep this share of their colour pin accuracy: Eagle 98%, KiCad 78%, Altium
 50%. Before, a black page read as nothing. Altium loses most on text: net labels
 and pin names look much alike without their colours.
 
+## Designator model
+
+`schem2net build-designators` learns which texts name parts, from every corpus's
+dev split. Each design is read as usual up to the point where designators are given
+out; there each text's features are taken (what it says, where it sits against the
+nearest part and the wires, what was drawn just before and after it) and the truth
+netlist gives the label: a text that is a part's reference, or one with a unit
+letter, is a designator. A string written more than once in a design, such as C1
+naming both a capacitor and a transistor's pin, is left out, as its label is not
+known. The truth is used for nothing else, and test boards are never read. One
+model is learned per generator and written to `profiles/designators.npz`.
+
+Dev results in the README are measured with models learned without the board being
+read: the dev designs are split in four by a hash of their names, and each quarter is
+read with the model learned from the other three. `schem2net bench` on the dev split
+reads with the stored model, which has seen those designs, so its dev figures run a
+little high; test figures are not affected.
+
 ## Splits
 
 Each project is assigned to `dev` or `test` by a hash of its name, so the

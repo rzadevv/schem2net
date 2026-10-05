@@ -71,6 +71,11 @@ when the part's own texts hold no usual designator, and never ahead of one at th
 same distance, for a pin name may be drawn first too. A lone letter never names a
 part.
 
+A learned model also weighs every text (see the benchmark notes): how likely it is a
+designator, from what it says, where it sits and what was drawn around it. A text
+the model finds unlike a designator costs more, as a value such as A20 or Z80 does,
+and a word of no usual form that it is sure of may name a part.
+
 A pin number usually sits beside its pin; some libraries centre it on the pin's
 line instead. Card sockets and headers may mark only the first pin of each row,
 past its end or as pin 1 beside it, or the first and last: an evenly spaced row of
