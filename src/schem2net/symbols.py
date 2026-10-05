@@ -116,7 +116,37 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
         pin = Pin(chain[0].id, (a, b) if a_inner else (b, a))
         for shape in chain:
             pins[shape.id] = pin
-    return pins
+    # Only where drawing order keeps neighbouring symbols apart, so the lines made
+    # body join nothing of another symbol.
+    return _without_bodies(pins, scene, index) if profile.fields_follow_symbol else pins
+
+
+def _without_bodies(pins: dict[int, Pin], scene: Scene, index: GridIndex) -> dict[int, Pin]:
+    """A line another pin starts on square, at its middle, is body when it was only
+    taken for a pin by starting on a line it runs along: the plate of a capacitor whose
+    end overlaps its neighbour's plate, the parts set a grid step apart."""
+    started = set()
+    for k, pin in pins.items():
+        for j in index.near(pin.line[0], TOUCH):
+            square = j in pins and abs(_cosine(pin.line, pins[j].line)) < 0.1
+            if j != k and square and pins[j] is not pin and _starts_on(pin, scene, k, j):
+                started.add(j)
+    body = set()
+    for k in started:
+        pin = pins[k]
+        for j in index.near(pin.line[0], TOUCH):
+            other = scene.shapes[j]
+            along = len(other.points) == 2 and abs(_cosine(pin.line, tuple(other.points))) > 0.99
+            if j != k and along and _starts_on(pin, scene, k, j):
+                body.add(id(pin))
+    return {k: p for k, p in pins.items() if id(p) not in body}
+
+
+def _starts_on(pin: Pin, scene: Scene, k: int, j: int) -> bool:
+    """Whether pin k starts on shape j, between its ends."""
+    line = tuple(scene.shapes[j].points)
+    tol = (scene.shapes[k].width + scene.shapes[j].width) / 2 + TOUCH
+    return len(line) == 2 and geometry.is_interior(pin.line[0], line, tol)
 
 
 def _inner_end(

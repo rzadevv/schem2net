@@ -51,6 +51,10 @@ power symbol sits on a pin. A line whose free end is inside the body's box is
 drawing, except that a closed outline the line starts on counts by its shape: an
 amplifier's supply pins leave the slanted sides of its triangle and end within
 its box. The two strokes of a "+" mark cross at their middles; neither is a pin.
+Capacitors set a grid step apart may have plates longer than the step, each plate's
+end on the middle of its neighbour's, and a plate then looks like a pin. Where
+drawing order keeps neighbouring symbols apart, as in KiCad and Altium, a line that
+runs on from another and that a pin starts on square is taken for body.
 
 Symbols are groups of graphics that touch, except through a pin's free end.
 Two one-pin pieces facing each other on one axis are joined, which covers

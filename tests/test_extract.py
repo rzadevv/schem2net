@@ -938,3 +938,22 @@ def test_letters_after_a_designator_are_units_where_the_document_shows_others():
     assert (one.ref, one.unit, two.unit) == ("CM1", "A", "B")
     assert (alone.ref, alone.unit) == ("I2C", None)
     assert (usual.ref, usual.unit) == ("U5", "A")
+
+
+def test_stacked_capacitors_whose_plates_overlap_stay_apart():
+    """Capacitors a grid step apart, their plates longer than the step: each plate's
+    end lies on the middle of the next one's, but a line a pin starts on is body."""
+    b = SceneBuilder()
+    for k, y in enumerate((21.58, 22.85, 24.12)):
+        red = (132, 0, 0)
+        b.shape((22.42, y - 0.76), (22.42, y + 0.77), width=0.165, color=red)
+        b.shape((22.93, y - 0.76), (22.93, y + 0.77), width=0.165, color=red)
+        b.shape((22.99, y), (23.94, y), width=0.076, color=red)
+        b.shape((22.42, y), (21.4, y), width=0.076, color=red)
+        b.scene.wires += [((18, y), (21.4, y)), ((23.94, y), (27, y))]
+        b.field(f"C{41 + k}", 15, y - 0.6)
+        b.field("100nF", 28, y - 0.6)
+
+    parts, _ = netlist(b.scene)
+    assert sorted(parts) == ["C41", "C42", "C43"]
+    assert all(len(p.pins) == 2 for p in parts.values())
