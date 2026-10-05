@@ -168,7 +168,12 @@ however much it looks like a designator (A0, U3), is taken as a pin name first,
 and one beside a pin outside it as a pad number. Eagle draws layer by layer,
 values before names, so a text that looks like a designator but is drawn among
 values (A20 among 10k and 3.3V, with no other designator around it) is taken for
-a value when a name sits as near.
+a value when a name sits as near. Eagle takes any name for a part, and designers
+name jumpers and connectors by what they do: I2C, PWR, LCD_CON. A part left without
+a designator takes the nearest unused word beside it that is not one of its pin
+names, a value, a number or a note. A letter after a designator's number marks a
+unit, as in U5A, but I2C is a name: a designator of no usual prefix keeps its
+letter unless the document shows it in other units too, as CM1A and CM1B.
 
 Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit. Net labels are the

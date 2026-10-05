@@ -44,6 +44,7 @@ OTHER_SYMBOL_COST = REF_SEARCH  # text drawn after a different symbol
 LATER_FIELD_COST = 5.0  # where the designator is the first text drawn after its symbol
 VALUE_FIRST_COST = REF_SEARCH  # "Z80" drawn right before "U1" is the value
 AMONG_VALUES_COST = 2.5  # mm; "A20" drawn among values is likely one too
+FUNCTION_NAME_GAP = 5.0  # mm from a part to a name such as I2C or PWR
 LAYER_NEIGHBOURS = 6  # texts drawn either side of a name, among which other names are
 UNPAIRED_COST = 3 * REF_SEARCH + 1
 PIECE_GAP = 1.27  # mm between pieces of one drawn symbol; parts sit a grid step apart
@@ -392,6 +393,43 @@ def _assign_refs(
             _set_ref(parts[si], texts.texts[ti].text)
             taken.add(si)
     texts.used |= set(used)
+    if profile.names_by_layer:
+        _name_by_function(
+            [p for k, p in enumerate(parts) if k not in taken], texts, profile, among_values
+        )
+
+
+def _name_by_function(
+    parts: list[Symbol], texts: _Texts, profile: Profile, among_values: set[int]
+) -> None:
+    """Eagle takes any name for a part, and designers name jumpers and connectors by
+    what they do: I2C, PWR, LCD_CON. A part left without a designator takes the nearest
+    unused word beside it that is not one of its pin names, a value, a number or a note."""
+    options = []
+    for si, symbol in enumerate(parts):
+        if len(symbol.pins) < 2:
+            continue
+        for gap, ti in texts.near(symbol.body or symbol.bbox, FUNCTION_NAME_GAP):
+            text = texts.texts[ti]
+            word = text.text
+            if (
+                not any(c.isalpha() for c in word)
+                or any(c.isspace() for c in word)  # a note, not a name
+                or word[:1].isdigit()
+                or PART_VALUE.match(word)
+                or id(text) in among_values
+                or _within_outline(symbol, text)
+                or is_pin_name(symbol, text, profile.pin_name_gap)
+            ):
+                continue
+            options.append((gap, si, ti))
+    named = set()
+    for _, si, ti in sorted(options):
+        if si in named or ti in texts.used:
+            continue
+        parts[si].ref = texts.texts[ti].text
+        named.add(si)
+        texts.used.add(ti)
 
 
 def _values_by_order(scene: Scene, profile: Profile) -> set[int]:
@@ -462,6 +500,23 @@ def _set_ref(symbol: Symbol, text: str) -> None:
     prefix, number, unit = REFDES.match(text).groups()
     symbol.ref = prefix + number
     symbol.unit = unit or None
+
+
+def whole_names(pages: list[list[Symbol]]) -> None:
+    """A designator of no usual prefix with a letter after its number is a name, such
+    as I2C, unless the document shows it in other units too, as CM1A and CM1B."""
+    units: dict[str, set[str]] = {}
+    for symbols in pages:
+        for s in symbols:
+            if s.ref and s.unit:
+                units.setdefault(s.ref, set()).add(s.unit)
+    for symbols in pages:
+        for s in symbols:
+            if not (s.ref and s.unit and len(s.unit) == 1 and len(units[s.ref]) == 1):
+                continue
+            match = REFDES.match(s.ref)
+            if match and match.group(1).rstrip("$") not in COMMON_PREFIXES:
+                s.ref, s.unit = s.ref + s.unit, None
 
 
 def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: set[int]) -> None:

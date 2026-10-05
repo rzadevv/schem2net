@@ -910,3 +910,31 @@ def test_mosfet_with_its_gate_at_the_end_of_its_bar_is_not_a_potentiometer():
 
     found = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref == "Q2"]
     assert found and all(p.number is None for s in found for p in s.pins)
+
+
+def test_eagle_part_named_by_its_function():
+    """A jumper named I2C has no number in its name; a note beside it is no name."""
+    b = SceneBuilder()
+    b.shape((10, 10), (14, 10), (14, 13), (10, 13), (10, 10))
+    b.shape((10, 11.5), (7.46, 11.5))
+    b.shape((14, 11.5), (16.54, 11.5))
+    b.scene.wires += [((7.46, 11.5), (3, 11.5)), ((16.54, 11.5), (21, 11.5))]
+    b.field("Open by default", 10, 14.5)
+    b.field("I2C", 10.5, 8.2)
+
+    found = symbols.find(b.scene, profile.load("eagle"))
+    fields.whole_names([found])
+    (part,) = [s for s in found if s.ref]
+    assert part.ref == "I2C"
+
+
+def test_letters_after_a_designator_are_units_where_the_document_shows_others():
+    def part(ref, unit):
+        return symbols.Symbol([], (0, 0, 1, 1), ref=ref, unit=unit)
+
+    one, two, alone = part("CM1", "A"), part("CM1", "B"), part("I2", "C")
+    usual = part("U5", "A")
+    fields.whole_names([[one, alone], [two, usual]])
+    assert (one.ref, one.unit, two.unit) == ("CM1", "A", "B")
+    assert (alone.ref, alone.unit) == ("I2C", None)
+    assert (usual.ref, usual.unit) == ("U5", "A")

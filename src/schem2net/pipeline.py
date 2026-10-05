@@ -4,7 +4,7 @@ import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from schem2net import bookmarks, grid, ingest, pdf, profile, roles, scene, strokes, symbols
+from schem2net import bookmarks, fields, grid, ingest, pdf, profile, roles, scene, strokes, symbols
 from schem2net.ir import Design, Issue, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Page
@@ -112,8 +112,11 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         if rules.labels_show_sheet:
             scene.drop_sheet_references(result.scene, len(doc.pages))
         result.symbols = symbols.find(result.scene, rules)
-        netlister.add_page(result.scene, result.symbols)
 
+    read = [result for result in pages if result.scene is not None]
+    fields.whole_names([result.symbols for result in read])
+    for result in read:
+        netlister.add_page(result.scene, result.symbols)
     found = netlister.result()
     design.components = found.components
     design.nets = found.nets
