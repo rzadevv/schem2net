@@ -65,6 +65,11 @@ channel. Eagle draws by layer, so there neighbours' drawings interleave.
 Designators are paired with symbols one to one, nearest first overall. A value
 can look like a designator: "L298" by a driver's box. Resistors, capacitors,
 inductors and fuses have few pins, so their prefixes cost more by a part of many.
+Where the designator is drawn first, as in KiCad, the first text after a part names
+it whatever its form, GPIO1-1 or USB-Serial/JTAG1: when it lies clear of the part,
+when the part's own texts hold no usual designator, and never ahead of one at the
+same distance, for a pin name may be drawn first too. A lone letter never names a
+part.
 
 A pin number usually sits beside its pin; some libraries centre it on the pin's
 line instead. Card sockets and headers may mark only the first pin of each row,
@@ -198,7 +203,7 @@ pages are read at that fixed scale. Designators and values are navy; pin texts
 take their part's colours, so their roles come from position, as in Eagle. A net
 port flag set beside its name works like a power symbol: a small shape on a wire
 that names the net, joined at the corner its wire ends on, or set straight on a
-pin's tip; flags stacked edge to edge stay apart, each naming its own net. A
+pin's tip with no wire, joined at the corner on the tip; flags stacked edge to edge stay apart, each naming its own net. A
 flag's name may look like a designator, such as A15, but designators are navy and
 the name is not. A ground sign is a stem and separate bars drawn in turn, joined
 into one symbol.

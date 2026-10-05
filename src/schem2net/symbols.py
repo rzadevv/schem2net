@@ -333,6 +333,8 @@ def _contacts(
         if apart is not None and not _drawn_together(first, other, apart):
             continue
         tol = (width + other.width) / 2 + TOUCH
+        if not _near_box(end, other.bbox, tol):
+            continue
         for seg in geometry.segments(other.points):
             if geometry.distance_to_segment(end, seg) > tol:
                 continue
@@ -366,8 +368,9 @@ def _group(
     belong to different symbols, though a pin may follow the texts of the pin before."""
     uf = UnionFind()
     stubs: set[int] = set()
-    for shape in scene.shapes:
+    for shape in scene.shapes:  # groups come out in the order of their first shape
         uf.find(shape.id)
+    for shape in scene.shapes:
         pin = pins.get(shape.id)
         for v in [pin.line[0]] if pin else shape.points:
             for j in index.near(v, 1.0):
@@ -389,6 +392,8 @@ def _group(
                     continue
                 if flags_apart and _flag(shape) and _flag(other):
                     continue  # port flags stacked edge to edge name nets of their own
+                if not _near_box(v, other.bbox, tol) or uf.find(shape.id) == uf.find(j):
+                    continue  # joined already, or too far from all of it to touch
                 # A pin may also end inside a filled pad it leaves.
                 if any(
                     geometry.distance_to_segment(v, s) <= tol
@@ -715,6 +720,11 @@ def _in_body(pin: Pin, body: list[Shape]) -> bool:
         return True
     rest = [s.bbox for s in body if s.id not in {t.id for t in starts_on}]
     return bool(rest) and _inside(pin.at, _union(rest))
+
+
+def _near_box(p: Point, box: BBox, tol: float) -> bool:
+    """Whether p lies within tol of the box: no point of a shape is nearer than its box."""
+    return box[0] - tol <= p[0] <= box[2] + tol and box[1] - tol <= p[1] <= box[3] + tol
 
 
 def _inside(p: Point, box: BBox) -> bool:

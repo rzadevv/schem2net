@@ -164,15 +164,13 @@ def distance(a: Shape, b: Shape) -> float:
 
 def _distance(a: np.ndarray, b: np.ndarray) -> float:
     """distance() on arrays of segments, shaped (n, 2, 2)."""
+
     # Each segment pair compared end to end, and with one of them turned round.
-    same = np.maximum(
-        np.linalg.norm(a[:, None, 0] - b[None, :, 0], axis=2),
-        np.linalg.norm(a[:, None, 1] - b[None, :, 1], axis=2),
-    )
-    flipped = np.maximum(
-        np.linalg.norm(a[:, None, 0] - b[None, :, 1], axis=2),
-        np.linalg.norm(a[:, None, 1] - b[None, :, 0], axis=2),
-    )
+    def apart(i: int, j: int) -> np.ndarray:
+        return np.hypot(a[:, None, i, 0] - b[None, :, j, 0], a[:, None, i, 1] - b[None, :, j, 1])
+
+    same = np.maximum(apart(0, 0), apart(1, 1))
+    flipped = np.maximum(apart(0, 1), apart(1, 0))
     gaps = np.minimum(same, flipped)
 
     def one_way(rows: np.ndarray) -> float:

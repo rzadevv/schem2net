@@ -72,7 +72,11 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 # A piece drawn beside it may have taken its name.
                 piece = [s for s in named if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
                 symbol.power = piece[0].power if piece else profile.unnamed_ground
-                symbol.anchors = _anchors(symbol, scene)
+    # Where each power symbol connects; a flag may sit straight on a part's pin.
+    tips = [p.at for s in symbols if not s.power for p in s.pins]
+    for symbol in symbols:
+        if symbol.power:
+            symbol.anchors = _anchors(symbol, scene, tips)
     values = _values_by_order(scene, profile)
     _assign_refs(symbols, texts, runs, profile, values, _among_values(scene, profile))
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
@@ -113,7 +117,6 @@ def _name_power_symbols(
                 # The first text drawn after the symbol, or else one in line with it.
                 if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text, loose):
                     symbol.power = text.text
-                    symbol.anchors = _anchors(symbol, scene)
                     texts.used.add(i)
                     break
 
@@ -127,7 +130,6 @@ def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profil
             text = pool.texts[i]
             if _is_power_name(text, profile) and _in_line(symbol, text):
                 symbol.power = text.text
-                symbol.anchors = _anchors(symbol, scene)
                 pool.used.add(i)
                 break
     claimed = {id(local[i]) for i in pool.used}
@@ -244,30 +246,37 @@ def _has_triangle(symbol: Symbol, scene: Scene) -> bool:
 
 def _merge_collinear(segs: list[Segment]) -> list[Segment]:
     """Join segments that continue each other, such as a base drawn in two halves."""
-    segs = list(segs)
+    segs: list[Segment | None] = list(segs)
     merged = True
     while merged:
         merged = False
-        for i, a in enumerate(segs):
-            for j in range(i + 1, len(segs)):
-                b = segs[j]
-                for p, q in ((a[0], a[1]), (a[1], a[0])):
-                    for r, t in ((b[0], b[1]), (b[1], b[0])):
-                        if geometry.distance(p, r) > CORNER_GAP:
-                            continue
-                        u, v = geometry.unit(p, q), geometry.unit(r, t)
-                        if u[0] * v[0] + u[1] * v[1] < -0.999:  # straight on through p
-                            segs[i] = (q, t)
-                            del segs[j]
-                            merged = True
-                            break
-                    if merged:
-                        break
-                if merged:
-                    break
-            if merged:
-                break
+        ends = GridIndex(cell=1.0)
+        for k, seg in enumerate(segs):
+            for p in seg:
+                ends.add(k, (p[0], p[1], p[0], p[1]))
+        for i in range(len(segs)):
+            if segs[i] is None:
+                continue  # joined to an earlier one in this pass
+            for j in sorted(ends.near(segs[i][0], CORNER_GAP) | ends.near(segs[i][1], CORNER_GAP)):
+                if j <= i or segs[j] is None:
+                    continue
+                joined = _straight_on(segs[i], segs[j])
+                if joined:
+                    segs[i], segs[j], merged = joined, None, True
+        segs = [seg for seg in segs if seg is not None]
     return segs
+
+
+def _straight_on(a: Segment, b: Segment) -> Segment | None:
+    """The two as one segment, where b carries straight on from an end of a."""
+    for p, q in ((a[0], a[1]), (a[1], a[0])):
+        for r, t in ((b[0], b[1]), (b[1], b[0])):
+            if geometry.distance(p, r) > CORNER_GAP:
+                continue
+            u, v = geometry.unit(p, q), geometry.unit(r, t)
+            if u[0] * v[0] + u[1] * v[1] < -0.999:  # straight on through p
+                return (q, t)
+    return None
 
 
 def _has_bars(symbol: Symbol, scene: Scene) -> bool:
@@ -289,10 +298,10 @@ def _has_bars(symbol: Symbol, scene: Scene) -> bool:
     return False
 
 
-def _anchors(symbol: Symbol, scene: Scene) -> list[Point]:
+def _anchors(symbol: Symbol, scene: Scene, tips: list[Point]) -> list[Point]:
     """A power symbol connects at its pin, or else at a loose end of its drawing, or
     at the middle of its base when it is a lone triangle; a port flag, a closed outline,
-    at the corner its wire ends on."""
+    at the corner its wire ends on, or the corner set on a pin's tip (`tips`)."""
     if symbol.pins:
         return [p.at for p in symbol.pins]
     shapes = [scene.shapes[i] for i in symbol.shapes]
@@ -301,7 +310,7 @@ def _anchors(symbol: Symbol, scene: Scene) -> list[Point]:
     if loose or base:
         return loose or [base]
     corners = {p for shape in shapes for p in shape.points}
-    ends = [e for wire in scene.wires for e in wire]
+    ends = [e for wire in scene.wires for e in wire] + tips
     return [c for c in corners if any(geometry.distance(c, e) <= CORNER_GAP for e in ends)]
 
 
@@ -346,6 +355,13 @@ def _assign_refs(
     parts = [s for s in symbols if s.pins and not s.power]
     first_reach = profile.designator_first and runs
     candidates = []
+
+    def _own_ref(symbol: Symbol) -> bool:
+        return any(
+            REFDES.match(texts.texts[ti].text) and runs.owns(symbol, texts.texts[ti].seq)
+            for _, ti in texts.near(symbol.body or symbol.bbox, 3 * REF_SEARCH)
+        )
+
     for si, symbol in enumerate(parts):
         # Where the designator is drawn first, that text may sit further away.
         reach = 3 * REF_SEARCH if first_reach else REF_SEARCH
@@ -355,13 +371,23 @@ def _assign_refs(
             text = texts.texts[ti]
             if profile.colors.get("designator") and not profile.is_("designator", text.color):
                 continue  # where designators have a colour of their own, only that
+            if is_pin_name(symbol, text, profile.pin_name_gap):
+                continue
             match = REFDES.match(text.text)
-            if not match or is_pin_name(symbol, text, profile.pin_name_gap):
+            # Where the designator is drawn first, the first text after a part names it,
+            # whatever its form: GPIO1-1, USB-Serial/JTAG1.
+            # Clear of the part: a text on it is drawing, such as a connector's caption.
+            # And only where the part's own texts hold no usual designator: a unit with
+            # its own reference may draw a pin name such as V+ first.
+            first = first_reach and runs.first_text(symbol) == text.seq and gap > 0
+            if not match and not (first and _name_like(text.text) and not _own_ref(symbol)):
                 continue
             cost = gap
-            prefix = match.group(1).rstrip("$")
-            if prefix not in COMMON_PREFIXES:
+            prefix = match.group(1).rstrip("$") if match else None
+            if prefix not in COMMON_PREFIXES:  # a pin name may be drawn first too
                 cost += UNKNOWN_PREFIX_COST
+            if not match:  # never ahead of a usual designator at the same distance
+                cost += LATER_FIELD_COST
             elif prefix in TWO_TERMINAL_PREFIXES and len(symbol.pins) > MANY_PINS:
                 cost += MANY_PINS_COST
             if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile):
@@ -413,10 +439,8 @@ def _name_by_function(
             text = texts.texts[ti]
             word = text.text
             if (
-                not any(c.isalpha() for c in word)
-                or any(c.isspace() for c in word)  # a note, not a name
+                not _name_like(word)
                 or word[:1].isdigit()
-                or PART_VALUE.match(word)
                 or id(text) in among_values
                 or _within_outline(symbol, text)
                 or is_pin_name(symbol, text, profile.pin_name_gap)
@@ -487,9 +511,24 @@ def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int
 
 
 def _set_ref(symbol: Symbol, text: str) -> None:
-    prefix, number, unit = REFDES.match(text).groups()
+    match = REFDES.match(text)
+    if not match:  # a name of the designer's own, taken whole
+        symbol.ref, symbol.unit = text, None
+        return
+    prefix, number, unit = match.groups()
     symbol.ref = prefix + number
     symbol.unit = unit or None
+
+
+def _name_like(word: str) -> bool:
+    """One word with a letter in it that is not a value or a lone letter, as a pin
+    name such as K is: it may name a part."""
+    return (
+        len(word) > 1
+        and any(c.isalpha() for c in word)
+        and not any(c.isspace() for c in word)
+        and not PART_VALUE.match(word)
+    )
 
 
 def whole_names(pages: list[list[Symbol]]) -> None:

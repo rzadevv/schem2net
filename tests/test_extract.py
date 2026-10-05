@@ -995,3 +995,54 @@ def test_eagle_diode_drawn_as_three_lines_names_its_pads():
 
     (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref == "D2"]
     assert {p.number: p.at for p in part.pins} == {"C": (26.1, 34.5), "A": (26.1, 39.5)}
+
+
+def test_kicad_reference_is_the_first_text_whatever_its_form():
+    """KiCad draws a symbol's reference first, after its graphics: GPIO1-1 names the
+    connector though it is no usual designator. A diode's pin name, a lone letter
+    drawn before its reference, does not."""
+    b = SceneBuilder()
+    b.shape((10, 10), (14, 10), (14, 20), (10, 20), (10, 10))
+    for y in (12.54, 15.08, 17.62):
+        b.shape((10, y), (7.46, y))
+        b.shape((14, y), (16.54, y))
+    b.field("GPIO1-1", 10, 8)
+    b.field("Conn_02x03", 10, 21)
+    b.shape((40, 10), (40, 12))  # a diode: bar, triangle, pins above and below
+    b.shape((39, 12), (41, 12))
+    b.shape((39, 14), (41, 14), (40, 12), (39, 14))
+    b.shape((40, 14), (40, 16.54))
+    b.shape((40, 10), (40, 7.46))
+    b.field("K", 41, 8)
+    b.field("D1", 42, 12)
+    b.field("LED", 42, 14)
+    b.shape((70, 10), (74, 10), (74, 20), (70, 20), (70, 10))  # a caption on its body
+    for y in (12.54, 15.08, 17.62):
+        b.shape((70, y), (67.46, y))
+    b.field("MEM", 70.5, 14)
+    b.field("J2", 70, 2)
+
+    parts, _ = netlist(b.scene)
+    assert sorted(parts) == ["D1", "GPIO1-1", "J2"]
+
+
+def test_easyeda_port_flag_set_straight_on_a_pin_connects_it():
+    """No wire: the flag's tip is the pin's tip, and the flags of one name join."""
+    red, navy, blue = (135, 0, 0), (0, 0, 128), (0, 0, 255)
+    b = SceneBuilder()
+    for ref, x in (("U1", 10), ("U2", 40)):
+        b.seq += 1
+        b.scene.fields.append(Text(b.seq, ref, (x, -1, x + 2, 0.2), 1.27, 0.0, navy, b.seq))
+        b.shape((x, 2), (x + 6, 2), (x + 6, 22), (x, 22), (x, 2), width=0.25, color=red)
+        b.shape((x + 6, 12), (x + 8.54, 12), width=0.25, color=red)
+        b.shape((x, 12), (x - 2.54, 12), width=0.25, color=red)
+    for tip in (18.54, 48.54):  # the flags, drawn later
+        b.seq += 10
+        flag = [(tip, 12), (tip + 1.27, 10.73), (tip + 5, 10.73), (tip + 5, 13.27)]
+        b.shape(*flag, (tip + 1.27, 13.27), (tip, 12), width=0.25, color=blue)
+        b.seq += 1
+        box = (tip + 5.5, 11.4, tip + 9, 12.6)
+        b.scene.fields.append(Text(b.seq, "IO26", box, 1.27, 0.0, blue, b.seq))
+
+    _, nets = netlist(b.scene, rules=profile.load("easyeda"))
+    assert sorted(nets["IO26"].pins) == [("U1", "2"), ("U2", "2")]
