@@ -26,16 +26,18 @@ Early development.
   are recognised by their colours.
 - Other generators are not supported yet.
 
+Dev figures are read with learned models that never saw the design in question.
+
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
 | A, KiCad | Dev | 57 | 25,608 | 0.89 | 0.94 |
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
-| B, Altium, drawing only | Dev | 30 | 6,677 | 0.87 | 0.88 |
-| B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.86 |
+| B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
+| B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
 | C, Eagle | Dev | 96 | 7,038 | 0.71 | 0.67 |
 | C, Eagle | Test | 42 | 2,903 | 0.59 | 0.54 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.76 | 0.72 |
-| D, Olimex, held out | Test | 24 | 9,286 | 0.72 | 0.62 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.77 | 0.72 |
+| D, Olimex, held out | Test | 24 | 9,286 | 0.74 | 0.64 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.68 | 0.65 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.50 | 0.09 |
 
