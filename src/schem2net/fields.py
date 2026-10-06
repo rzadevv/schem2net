@@ -9,6 +9,7 @@ from __future__ import annotations
 import heapq
 import itertools
 import re
+from collections import Counter
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -32,6 +33,9 @@ if TYPE_CHECKING:
 
 REF_SEARCH = 10.0  # mm around a symbol body
 POWER_NAME_GAP = 2.5  # mm between a power symbol and its name
+FLAG_CLEAR = 0.5  # mm by which a flag's own name is plainly nearer than any other
+ORDER_VOTES = 3  # flags that must show which side of its mark a name is drawn
+ORDER_SHARE = 0.8  # of them, the share that must agree
 POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
 OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
@@ -112,6 +116,8 @@ def _name_power_symbols(
     symbols: list[Symbol], texts: _Texts, scene: Scene, profile: Profile, runs: Runs | None
 ) -> None:
     """Power symbols are small, have at most one pin and a net name next to them."""
+    if profile.drawn_by_part and not runs:
+        _name_flags_by_order(symbols, texts, scene, profile)
     # A name in line with the symbol first; only then one that overhangs it.
     for loose in (False, True):
         for symbol in filter(_could_be_power, symbols):
@@ -139,6 +145,48 @@ def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profil
                 break
     claimed = {id(local[i]) for i in pool.used}
     scene.labels = [label for label in scene.labels if id(label) not in claimed]
+
+
+def _name_flags_by_order(
+    symbols: list[Symbol], texts: _Texts, scene: Scene, profile: Profile
+) -> None:
+    """Drawn one at a time, a flag's name comes right before its mark or right after
+    it: EasyEDA draws a net label's text and then the cross where it meets the wire,
+    and another export the other way round. The cross sits by the text's corner, as
+    near the next label's text as its own, so the order names it. Which way round the
+    page draws is told by the flags whose name is plain by distance."""
+    by_seq = {t.seq: i for i, t in enumerate(texts.texts)}
+    flags = []
+    for symbol in filter(_could_be_power, symbols):
+        seqs = [scene.shapes[k].seq for k in symbol.shapes]
+        sides = {"before": by_seq.get(min(seqs) - 1), "after": by_seq.get(max(seqs) + 1)}
+        sides = {
+            side: i
+            for side, i in sides.items()
+            if i is not None
+            and _is_power_name(texts.texts[i], profile)
+            and geometry.bbox_gap(symbol.bbox, texts.texts[i].bbox) <= POWER_NAME_GAP
+        }
+        if sides:
+            flags.append((symbol, sides))
+    votes = Counter()
+    for symbol, sides in flags:
+        gaps = sorted(
+            (geometry.bbox_gap(symbol.bbox, texts.texts[i].bbox), i)
+            for _, i in texts.near(symbol.bbox, POWER_NAME_GAP)
+            if _is_power_name(texts.texts[i], profile)
+        )
+        if len(gaps) == 1 or (len(gaps) > 1 and gaps[1][0] > 2 * gaps[0][0] + FLAG_CLEAR):
+            for side, i in sides.items():
+                votes[side] += i == gaps[0][1]
+    side, count = max(votes.items(), key=lambda kv: kv[1], default=("", 0))
+    if count < ORDER_VOTES or count < ORDER_SHARE * sum(votes.values()):
+        return
+    for symbol, sides in flags:
+        i = sides.get(side)
+        if i is not None and i not in texts.used:
+            symbol.power = texts.texts[i].text
+            texts.used.add(i)
 
 
 def _could_be_power(symbol: Symbol) -> bool:
@@ -662,6 +710,10 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
                 (p for p in part_pins if p is not middle), key=lambda p: (down * p.at[1], p.at[0])
             )
             roles = [(ends[0], "1"), (middle, "2"), (ends[1], "3")]
+            # A solder jumper's ends lie in pads alike: which is 1 depends on how it was
+            # turned. A wrong guess joins nets wrongly, so only the common pad is named.
+            if all(_in_any(p.line[0], pads) for p in ends):
+                roles = [(middle, "2")]
         for pin, role in roles:
             pin.number = role
 
@@ -724,7 +776,19 @@ def _leads_to_bar(pin: Pin, lines: list[Shape], pads: list[Shape]) -> bool:
     # The edge of a filled pad, drawn over its outline, is no bar.
     edges = [seg for s in pads for seg in geometry.segments(s.points)]
     bars = [b for b in bars if not all(_on_any(p, edges) for p in b)]
+    # Nor is the bridge of a solder jumper, which runs from one pad into another.
+    bars = [b for b in bars if not _bridges(b, pads)]
     return any(geometry.distance_to_segment(q, bar) <= 0.1 for q in ahead for bar in bars)
+
+
+def _in_any(p: Point, pads: list[Shape]) -> bool:
+    return any(geometry.in_polygon(p, s.points) for s in pads)
+
+
+def _bridges(line: tuple[Point, ...], pads: list[Shape]) -> bool:
+    """Whether a line's two ends lie in two different pads."""
+    ends = [{k for k, s in enumerate(pads) if geometry.in_polygon(p, s.points)} for p in line]
+    return all(ends) and len(ends[0] | ends[1]) >= 2 and ends[0] != ends[1]
 
 
 def _on_any(p: Point, segs: list[Segment]) -> bool:

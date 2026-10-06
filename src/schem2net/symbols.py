@@ -26,6 +26,7 @@ EDGE_PIN_LENGTH = 2.54  # mm; how far out a pin with no line is laid along its w
 EDGE_PIN_GAP = 0.5  # mm from a drawn pin within which a wire end is that pin's
 FLAG_SIZE = 10.0  # mm; a closed outline smaller than this may be a port flag
 PAD_SIZE = 5.0  # mm; a filled outline smaller than this may be a pad a pin leaves
+BRIDGE_STEPS = 10  # points along a line tested for lying in a pad
 BODY_OVER_FLAG = 3.0  # a body is this many times the size of a flag on a pin's tip
 BIT_SIZE = 4.0  # mm; pinless pieces smaller than this may be bits of a neighbour
 BIT_GAP = 0.8  # mm between such a bit and the piece drawn next to it
@@ -400,6 +401,26 @@ def _group(
                     for s in geometry.segments(other.points)
                 ) or (pin and _pad(other) and geometry.in_polygon(v, other.points)):
                     uf.union(shape.id, j)
+        if pin or len(shape.points) != 2:
+            continue
+        # A line from one filled pad into another is drawn with them and any pad it
+        # crosses, as the bridge of a solder jumper is with its pads.
+        pads = [
+            j
+            for j in index.within(shape.bbox)
+            if j != shape.id
+            and j not in pins
+            and _pad(scene.shapes[j])
+            and (apart is None or _drawn_together(shape, scene.shapes[j], apart))
+        ]
+        ends = [
+            {j for j in pads if geometry.in_polygon(v, scene.shapes[j].points)}
+            for v in shape.points
+        ]
+        if all(ends) and ends[0] != ends[1]:
+            for j in pads:
+                if _runs_into(shape.points, scene.shapes[j].points):
+                    uf.union(shape.id, j)
 
     symbols = []
     for members in uf.groups().values():
@@ -412,6 +433,14 @@ def _group(
         box = _union([scene.shapes[m].bbox for m in members])
         symbols.append(Symbol(sorted(members), box, own, body=body_box))
     return symbols
+
+
+def _runs_into(line: list[Point], outline: list[Point]) -> bool:
+    (x0, y0), (x1, y1) = line
+    steps = [k / BRIDGE_STEPS for k in range(BRIDGE_STEPS + 1)]
+    return any(
+        geometry.in_polygon((x0 + t * (x1 - x0), y0 + t * (y1 - y0)), outline) for t in steps
+    )
 
 
 def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) -> list[Symbol]:
@@ -441,9 +470,10 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
         for piece in pieces:
             a, b = spans[id(piece)]
             drawn_with = a <= hi + DRAWN_TOGETHER_SEQ and lo <= b + DRAWN_TOGETHER_SEQ
-            # Near the box's edge: a part drawn well inside a section frame is not its pin.
+            # Near the box's edge. A box's pins connect outside it: a part whose pins all
+            # end inside a section frame is not the frame's.
             near = geometry.bbox_gap(box.bbox, piece.bbox) <= DRAWN_TOGETHER_GAP
-            near = near and not _well_inside(piece.bbox, box.bbox)
+            near = near and not all(_inside(p.at, box.bbox) for p in piece.pins)
             if (drawn_with and near) or _enters(piece, box):
                 joined.union(id(box), id(piece))
     # Where parts are drawn one at a time, close pieces drawn interleaved are one part
@@ -477,13 +507,6 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
     for s in symbols:
         groups.setdefault(joined.find(id(s)), []).append(s)
     return [_combine(parts) for parts in groups.values()]
-
-
-def _well_inside(inner: BBox, outer: BBox) -> bool:
-    """Inside the outer box and clear of its edges by more than a pin's reach."""
-    g = DRAWN_TOGETHER_GAP
-    x0, y0, x1, y1 = outer
-    return x0 + g < inner[0] and inner[2] < x1 - g and y0 + g < inner[1] and inner[3] < y1 - g
 
 
 def _enters(piece: Symbol, box: Symbol) -> bool:

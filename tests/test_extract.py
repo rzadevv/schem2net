@@ -642,6 +642,40 @@ def test_eagle_pin_names_in_the_number_colour_name_one_pin_each():
     assert sorted(p.number for p in u1.pins) == sorted(n for n, *_ in left + right)
 
 
+def test_eagle_three_pad_solder_jumper_is_one_part():
+    """SparkFun's I2C jumper: two half-round pads either side of a square one, a bridge
+    drawn across all three, and a pin into each. The bridge joins the pads into one
+    part and is no transistor's bar: the middle pin is 2."""
+    red, grey = (128, 0, 0), (128, 128, 128)
+    b = SceneBuilder()
+    y = 98.93
+    pads = [
+        [(54.61, 97.66), (53.6, 97.9), (53.32, y), (53.6, 99.95), (54.61, 100.2), (54.61, 97.66)],
+        [(57.4, 97.66), (58.4, 97.9), (58.68, y), (58.4, 99.95), (57.4, 100.2), (57.4, 97.66)],
+        [(55.4, 97.7), (56.6, 97.7), (56.6, 100.2), (55.4, 100.2), (55.4, 97.7)],
+    ]
+    for pad in pads:
+        b.shape(*pad, width=0.0, color=red)
+        b.scene.shapes[-1].filled = True
+    b.shape((54.2, y), (58.0, y), width=0.25, color=red)  # the bridge
+    b.shape((50.93, y), (53.47, y), width=0.17, color=red)
+    b.shape((61.09, y), (58.55, y), width=0.17, color=red)
+    b.shape((56.0, 93.9), (56.0, 97.7), width=0.17, color=red)
+    b.scene.wires += [((45, y), (50.93, y)), ((61.09, y), (66, y)), ((56, 88), (56, 93.9))]
+    b.seq += 1
+    b.scene.fields.append(Text(b.seq, "I2C", (53.5, 101.9, 57.3, 103.6), 1.78, 0.0, grey, b.seq))
+
+    found = symbols.find(b.scene, profile.load("eagle"))
+    fields.whole_names([found])  # I2 unit C, but no other unit of I2 in the document
+    (jumper,) = [s for s in found if s.pins]
+    assert jumper.ref == "I2C" and not jumper.power
+    assert sorted((p.number or "", p.at) for p in jumper.pins) == [
+        ("", (50.93, y)),
+        ("", (61.09, y)),
+        ("2", (56.0, 93.9)),
+    ]
+
+
 def test_pins_leave_the_slanted_sides_of_a_triangle_past_a_polarity_mark():
     """An amplifier's supply pin starts on a slanted side and ends within the triangle's
     box; a "+" drawn against an input is a mark, not a pin."""
@@ -685,6 +719,52 @@ def test_easyeda_ground_with_hidden_name_does_not_take_a_designator():
     assert list(parts) == ["R1"]
     assert nets["GND"].pins == [("R1", "2")]
     assert nets["VIN"].pins == [("R1", "1")]
+
+
+def test_section_frame_does_not_take_the_part_drawn_after_it():
+    """A frame drawn just before the lowest part of a column holds it whole, pins and
+    all, so the part is not the frame's. Joined to the frame, it would leave its name
+    to the part above, and each name in the column would move up one."""
+    red, navy, black = (140, 36, 36), (0, 0, 128), (0, 0, 0)
+    b = SceneBuilder()
+    b.shape((6.3, 11.9), (127, 11.9), (127, 91.9), (6.3, 91.9), (6.3, 11.9), color=black)
+    for ref, y in (("R16", 88.1), ("R17", 79.2), ("R18", 69.1)):
+        b.seq += 1
+        box = (98.9, y - 3.4, 102.5, y - 1.7)
+        b.scene.fields.append(Text(b.seq, "220", box, 1.6, 0.0, navy, b.seq))
+        b.seq += 1
+        box = (99.0, y - 5.7, 102.9, y - 4.0)
+        b.scene.fields.append(Text(b.seq, ref, box, 1.6, 0.0, navy, b.seq))
+        b.shape((95.2, y), (97.3, y), width=0.25, color=red)
+        b.shape((103.4, y), (105.4, y), width=0.25, color=red)
+        body = ((97.3, y - 1), (103.4, y - 1), (103.4, y + 1), (97.3, y + 1), (97.3, y - 1))
+        b.shape(*body, width=0.25, color=red)
+        b.scene.wires += [((90, y), (95.2, y)), ((105.4, y), (110, y))]
+
+    found = symbols.find(b.scene, profile.load("easyeda"))
+    named = {s.ref: s.bbox[1] for s in found if s.ref}
+    assert named == {"R16": 87.1, "R17": 78.2, "R18": 68.1}
+
+
+def test_easyeda_net_label_is_named_by_the_text_drawn_before_its_mark():
+    """An EasyEDA net label is its text, then a small cross where it meets the wire,
+    below the text's start: nearer the label of the row below than its own text.
+    Labels standing apart show which way round the page draws them."""
+    blue, black = (0, 0, 255), (0, 0, 0)
+    b = SceneBuilder()
+    rows = [("A1", 81.7, 104.14), ("A2", 79.2, 106.68)]
+    rows += [("D0", 20, 30), ("D1", 40, 30), ("D2", 60, 30)]
+    for name, y, x in rows:
+        b.seq += 1
+        box = (x + 0.56, y - 2.2, x + 3.1, y - 0.6)
+        b.scene.fields.append(Text(b.seq, name, box, 1.6, 0.0, blue, b.seq))
+        b.shape((x - 0.25, y - 0.25), (x + 0.25, y + 0.25), width=0.03, color=black)
+        b.shape((x - 0.25, y + 0.25), (x + 0.25, y - 0.25), width=0.03, color=black)
+        b.scene.wires.append(((95, y), (120, y)))
+
+    found = symbols.find(b.scene, profile.load("easyeda"))
+    flags = sorted((round(geometry.center(s.bbox)[1], 1), s.power) for s in found if s.power)
+    assert flags == [(20, "D0"), (40, "D1"), (60, "D2"), (79.2, "A2"), (81.7, "A1")]
 
 
 def test_value_shaped_like_an_inductor_does_not_name_a_part_of_many_pins():
@@ -957,8 +1037,8 @@ def test_eagle_value_drawn_among_values_does_not_name_the_part():
 
 
 def test_solder_jumper_pins_end_inside_filled_pads():
-    """A three-way solder jumper: its pins end inside the pads, and its hidden numbers
-    count from the top, then the left."""
+    """A three-way solder jumper: its pins end inside the pads. Its common pad is pin 2;
+    which end is 1 depends on how it was turned, so the ends stay unnumbered."""
     red = (128, 0, 0)
     b = SceneBuilder()
     for y0, y1 in ((20.4, 21.7), (22.5, 23.8), (24.5, 25.8)):  # top, middle, bottom pads
@@ -975,8 +1055,8 @@ def test_solder_jumper_pins_end_inside_filled_pads():
     b.field("SJ1", 24, 18)
 
     found = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.ref == "SJ1"]
-    numbers = {p.number: p.at for s in found for p in s.pins}
-    assert numbers == {"1": (21.7, 18.0), "2": (26.8, 23.1), "3": (21.7, 28.2)}
+    numbers = sorted((p.number or "", p.at) for s in found for p in s.pins)
+    assert numbers == [("", (21.7, 18.0)), ("", (21.7, 28.2)), ("2", (26.8, 23.1))]
 
 
 def test_potentiometer_wiper_is_pin_two():

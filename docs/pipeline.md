@@ -89,8 +89,14 @@ the emitter or source is the one nearer the arrowhead along the drawing, where a
 body diode, which joins both, is not taken for the arrow; a bipolar transistor
 leaves its bar on slants. A potentiometer or a three-way jumper with hidden numbers
 has two ends facing apart and a wiper or common pad square to them: that is pin 2,
-and the ends count as a two-pin part's do. A pin may end inside a small filled pad,
-as a solder jumper draws them, and belongs to it.
+and a potentiometer's ends count as a two-pin part's do. A solder jumper's ends lie
+in pads alike, and which is 1 depends on how it was turned. Read by position they
+come out right only about three times in four, and a wrong end joins its nets
+wrongly, which costs more than an end left unnumbered; so they stay unnumbered.
+A pin may end inside a small filled pad,
+as a solder jumper draws them, and belongs to it; so does a line from one such pad
+into another, with any pad it crosses, as a jumper's bridge does. Running from pad
+to pad, a bridge is no transistor's bar.
 
 ## Sheets and buses
 
@@ -266,8 +272,13 @@ with each pin's name, number and line in turn; EasyEDA Pro writes the designator
 after the drawing. So of two navy texts drawn back to back the first is the value,
 however much it looks like a designator ("Z80" over "U1"), and a pin whose ends both
 meet other lines tip to tip belongs to the part drawn with it. A part's units are
-numbered after a dot, as in U3.1. A section frame drawn right after the last part
-inside it is not a connector box: the part is well inside it, not by its edge.
+numbered after a dot, as in U3.1. A section frame drawn next to a part inside it
+is not that part's box: a box's pins connect outside it, and a part whose pins all
+end inside the frame is the frame's no more than any other. A net label is its
+text and a small cross where it meets the wire, by the text's corner and so as
+near the next label's text as its own; the cross takes the text drawn right
+before it or right after it, whichever way round the page draws the labels whose
+name is plain by distance.
 
 A PDF printed from a browser or through a PDF printer does not say which tool drew
 it. The drawing still does: the profile whose wire colour is there and whose
