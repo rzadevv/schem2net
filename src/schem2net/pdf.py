@@ -115,6 +115,9 @@ def _read_text(obj, matrix: Matrix, parent: Matrix, textpage, id: int) -> Text |
         obj, textpage, ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ushort)), length
     )
     content = buffer.raw.decode("utf-16-le").rstrip("\x00").strip()
+    # PDFium reads a dash that ends a line as a hyphen breaking a word, and returns it as
+    # the control character 2.
+    content = content.replace("\x02", "-")
     if not content:
         return None
 

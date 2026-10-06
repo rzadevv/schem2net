@@ -38,6 +38,9 @@ class Text:
     color: Color | None
     seq: int = 0
     visible: bool = True  # False for text drawn in invisible mode, such as search layers
+    # How much shorter the text is drawn than it would be at full size: subscripts are
+    # drawn small, but a generator places text by its width at full size.
+    shrink: float = 0.0
 
 
 @dataclass(slots=True)

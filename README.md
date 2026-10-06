@@ -30,7 +30,7 @@ Dev figures are read with learned models that never saw the design in question.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
-| A, KiCad | Dev | 57 | 25,608 | 0.90 | 0.94 |
+| A, KiCad | Dev | 57 | 25,608 | 0.91 | 0.94 |
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |

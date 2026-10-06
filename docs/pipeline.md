@@ -92,9 +92,15 @@ as a solder jumper draws them, and belongs to it.
 ## Sheets and buses
 
 Each page's hierarchical path comes from its title block. A sheet box on a
-parent page is found by its file name; the child page's path is the parent's
-path plus the sheet name. A sheet pin joins the hierarchical label of the same
-name on the child page.
+parent page is found by its file name, which sits just below the box; the top
+of a text's box is the font's ascent, so it may cross the box's line. The child
+page's path is the parent's path plus the sheet name. A sheet pin is named by
+the text inside the box level with its flag, and joins the hierarchical label
+of the same name on the child page. KiCad sets a name against its flag by its
+width at full size, but draws subscripts small, so a name with a subscript ends
+short of its flag by what the subscript lost; sheet pins and hierarchical
+labels allow for that gap. A hierarchical label of a bus is written in the bus
+colour, beside its flag.
 
 Buses join their member nets. A vector bus `D[0..7]` is matched by position
 where it crosses into a sheet, so `D[8..15]` on the parent can feed `D[0..7]`
@@ -170,6 +176,9 @@ A PDF may split one string into pieces, at spaces, subscripts or overbars. Piece
 drawn in turn in one colour, side by side on one line, are joined; words of one
 size on one line share their tops or their baseline. A pin's name centred on the
 pin and its number set above it are drawn in turn too, but on two lines.
+PDFium reads a dash that ends a line of text as a hyphen breaking a word and
+returns a control character for it; it is read back as a dash, so `CLK-` keeps
+its name.
 
 Letters that only size tells from their capitals (c, o, s, v, w, x, z, and
 in sans fonts I and l) take the case of the rest of their word, so one net name

@@ -504,6 +504,53 @@ def test_supply_name_anchored_at_one_end_overhangs_its_arrow():
     assert [s.power for s in found] == ["3.3V"]
 
 
+def test_sheet_found_when_its_file_text_reaches_over_the_box_line():
+    """The file text's box reaches up to the font's ascent, which can cross the box line."""
+    brown, teal = (132, 0, 0), (0, 100, 100)
+    page = Page(1, 200, 200)
+    box = [(66.04, 72.39), (100.33, 72.39), (100.33, 107.95), (66.04, 107.95), (66.04, 72.39)]
+    flag = [(99.06, 75.57), (100.33, 75.57), (100.33, 76.84), (99.06, 76.84), (99.06, 75.57)]
+    page.paths = [Path(0, [box], 0.15, brown, None), Path(1, [flag], 0.15, teal, None)]
+    page.texts = [
+        Text(0, "M.2", (66.1, 70.2, 69.3, 71.6), 1.27, 0.0, teal),
+        Text(1, "File: m2.kicad_sch", (66.06, 107.88, 83.8, 109.4), 1.27, 0.0, (114, 86, 0)),
+        *_subscripted(84.76, 75.25, "PCIe", "C1x1", "{PCIe}"),
+        Text(0, "DP1{DP}", (90.71, 77.79, 98.85, 79.88), 1.27, 0.0, (0, 0, 132)),  # next row
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, KICAD)
+    assert [sheet.name for sheet in built.sheets] == ["M.2"]
+    # KiCad sets text against its flag by its width at full size, subscripts included;
+    # drawn small, they leave a wider gap.
+    assert [(p.name, p.at[0]) for p in built.sheets[0].pins] == [("PCIeC1x1{PCIe}", 100.33)]
+
+
+def test_bus_hierarchical_label_with_a_subscript_keeps_its_flag():
+    """A hierarchical label of a bus is written in the bus colour, beside its flag."""
+    page = Page(1, 200, 200)
+    diamond = [(196.85, 91.44), (196.21, 90.81), (195.58, 91.44), (196.21, 92.08), (196.85, 91.44)]
+    page.paths = [Path(0, [diamond], 0.15, (114, 86, 0), None)]
+    page.texts = _subscripted(181.28, 90.49, "PCIe", "C1x1", "{PCIe}")
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, KICAD)
+    assert [(lb.text, lb.kind) for lb in built.labels] == [("PCIeC1x1{PCIe}", "hier")]
+
+
+def _subscripted(x: float, y: float, head: str, sub: str, tail: str) -> list[Text]:
+    """Bus-coloured text in three pieces, the middle one a subscript, as KiCad draws
+    PCIe_{C1x1}{PCIe}."""
+    navy = (0, 0, 132)
+    return [
+        Text(0, head, (x, y + 0.18, x + 4.38, y + 1.61), 1.27, 0.0, navy),
+        Text(0, sub, (x + 4.23, y + 0.86, x + 6.74, y + 1.77), 0.762, 0.0, navy),
+        Text(0, tail, (x + 6.59, y, x + 12.67, y + 2.09), 1.27, 0.0, navy),
+    ]
+
+
 def test_eagle_label_laid_on_a_wire():
     """Classic Eagle labels: a name just above its wire, in the colour of names and values."""
     green, grey = (0, 128, 0), (128, 128, 128)

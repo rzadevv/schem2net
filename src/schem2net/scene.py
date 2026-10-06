@@ -18,6 +18,8 @@ LABEL_UNDER = 0.9  # share of the label's length the wire runs under
 MIN_COLOUR_HITS = 5  # pin ends a colour must reach to be taken as a wire or body colour
 BUS_WIDTH_RATIO = 1.8  # a wire-coloured line this much thicker than usual is a bus
 SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
+SHEET_PIN_GAP = 1.5  # mm between a sheet pin's flag and its name
+FLAG_GAP = 1.0  # mm between a label's flag and its text
 NO_CONNECT_MAX_SIZE = 3.0  # mm, the length of one stroke of a no-connect cross
 
 
@@ -411,15 +413,16 @@ def _find_sheets(
     for file in files:
         fx0, fy0, _, fy1 = file.bbox
         # The file name sits below the box's left corner, or above it for short sheets.
+        # A text's box reaches up to the font's ascent, which can cross the line.
         found = [
-            (b, o)
+            (min(abs(fy0 - b[3]), abs(b[1] - fy1)), b, o)
             for b, o in boxes
             if abs(b[0] - fx0) < 1
-            and (0 <= fy0 - b[3] < SHEET_TEXT_GAP or -0.5 <= b[1] - fy1 < SHEET_TEXT_GAP)
+            and (-0.5 <= fy0 - b[3] < SHEET_TEXT_GAP or -0.5 <= b[1] - fy1 < SHEET_TEXT_GAP)
         ]
         if not found:
             continue
-        box, outline = found[0]
+        _, box, outline = min(found, key=lambda f: f[0])
         x0, y0, x1, y1 = box
         top = min(y0, fy0)
         # Large names leave a wider gap when no letter reaches below the line.
@@ -437,8 +440,10 @@ def _find_sheets(
             at = _on_edge(pin_box, box)
             if at is None:
                 continue
-            text = min(scene.fields + bus_texts, key=lambda t: geometry.bbox_gap(t.bbox, pin_box))
-            if geometry.bbox_gap(text.bbox, pin_box) < 1.5:
+            # Its name is level with it, inside the box.
+            level = [t for t in scene.fields + bus_texts if _level(t.bbox, pin_box, at, box)]
+            text = min(level, key=lambda t: geometry.bbox_gap(t.bbox, pin_box), default=None)
+            if text and geometry.bbox_gap(text.bbox, pin_box) < SHEET_PIN_GAP + text.shrink:
                 sheet.pins.append(SheetPin(text.text, at))
                 taken.append(text)
         scene.fields = [t for t in scene.fields if not any(t is u for u in taken)]
@@ -508,6 +513,18 @@ def _closed(points: list[Point]) -> bool:
     return len(points) > 2 and geometry.distance(points[0], points[-1]) < 1e-3
 
 
+def _level(text: BBox, pin: BBox, at: Point, box: BBox) -> bool:
+    """Whether a text inside a sheet box is level with one of its pins: across the pin's
+    row on a side edge, or its column on the top or bottom edge."""
+    tx, ty = geometry.center(text)
+    if not (box[0] < tx < box[2] and box[1] < ty < box[3]):
+        return False
+    cx, cy = geometry.center(pin)
+    if at[0] in (box[0], box[2]):
+        return text[1] <= cy <= text[3]
+    return text[0] <= cx <= text[2]
+
+
 def _on_edge(pin: BBox, box: BBox, tol: float = 0.05) -> Point | None:
     """Where a sheet pin's outline meets the edge of its sheet box, if it does."""
     cx, cy = geometry.center(pin)
@@ -533,11 +550,17 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
         index.add(i, box)
     for text in texts:
         x0, y0, x1, y1 = text.bbox
+        reach = FLAG_GAP + text.shrink
         near = [
             (geometry.bbox_gap(text.bbox, boxes[i]), i)
-            for i in index.within((x0 - 1, y0 - 1, x1 + 1, y1 + 1))
+            for i in index.within((x0 - reach, y0 - reach, x1 + reach, y1 + reach))
         ]
-        near = [(gap, i) for gap, i in near if gap < 1.0]
+        # Further off, only for text drawn short of its width (see Text.shrink), on its line.
+        near = [
+            (gap, i)
+            for gap, i in near
+            if gap < FLAG_GAP or (gap < reach and _on_line(text, geometry.center(boxes[i])))
+        ]
         if not near:
             continue
         box = boxes[min(near)[1]]
@@ -547,6 +570,12 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
             yield text, (fx, box[1] if fy < ty else box[3])
         else:
             yield text, (box[0] if fx < tx else box[2], ty)
+
+
+def _on_line(text: Text, point: Point) -> bool:
+    lo, hi = _across(text.bbox, text.angle)
+    across = point[0] if round(text.angle) % 180 == 90 else point[1]
+    return lo <= across <= hi
 
 
 def values_run(texts: list[Text], reach: int = 6) -> set[int]:
@@ -632,18 +661,27 @@ def _join_runs(texts: list[Text]) -> list[Text]:
         if prev and continues(prev, text):
             gap = _along(text.bbox, text.angle)[0] - _along(prev.bbox, prev.angle)[1]
             joiner = " " if gap > 0.25 * prev.size else ""
+            size = max(prev.size, text.size)
             out[-1] = Text(
                 id=prev.id,
                 text=prev.text + joiner + text.text,
                 bbox=geometry.union_bbox(prev.bbox, text.bbox),
-                size=max(prev.size, text.size),
+                size=size,
                 angle=prev.angle,
                 color=prev.color,
                 seq=text.seq,
+                shrink=_shrink(prev, size) + _shrink(text, size),
             )
         else:
             out.append(text)
     return out
+
+
+def _shrink(piece: Text, size: float) -> float:
+    """How much longer a piece of text would be at the given size than as drawn."""
+    lo, hi = _along(piece.bbox, piece.angle)
+    smaller = piece.size and piece.size < size
+    return piece.shrink + ((hi - lo) * (size / piece.size - 1) if smaller else 0.0)
 
 
 def continues(prev: Text, text: Text) -> bool:
