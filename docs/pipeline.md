@@ -100,7 +100,8 @@ Buses join their member nets. A vector bus `D[0..7]` is matched by position
 where it crosses into a sheet, so `D[8..15]` on the parent can feed `D[0..7]`
 on the child. A group bus `I2C{SCL SDA}` is matched by member name. When a
 group names an alias defined outside the drawing, its members are taken from
-the labels that use its prefix.
+the labels that use its prefix on any sheet: a sheet that only passes the bus on
+to another names none of them itself.
 
 ## Generator profiles
 

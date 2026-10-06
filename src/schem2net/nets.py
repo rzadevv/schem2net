@@ -269,13 +269,20 @@ class Netlister:
         return min(same, key=lambda s: s[0])[1] if same else bus
 
     def _join_bus_members(self) -> None:
-        """Join the member nets of each bus crossing into a child sheet."""
+        """Join the member nets of each bus crossing into a child sheet. An alias names
+        the same members on every sheet, so they are taken from the labels of all of
+        them: a sheet that only passes the bus on has none of its own."""
+        every = set().union(*self.local_names.values())
+
+        def names(page: int, bus: busnames.Bus) -> set[str]:
+            return self.local_names[page] | every if bus.members is None else self.local_names[page]
+
         for page, child, key, bus in self.sheet_buses:
             for child_page, child_bus in self.label_buses.get((child, key), []):
                 if child_bus.vector != bus.vector:
                     continue
-                up = busnames.member_nets(bus, self.local_names[page])
-                down = busnames.member_nets(child_bus, self.local_names[child_page])
+                up = busnames.member_nets(bus, names(page, bus))
+                down = busnames.member_nets(child_bus, names(child_page, child_bus))
                 for member in up.keys() & down.keys() if bus.vector else up.keys() | down.keys():
                     above = up.get(member, bus.prefix + bus.separator + member)
                     below = down.get(member, child_bus.prefix + child_bus.separator + member)

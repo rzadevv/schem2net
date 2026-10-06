@@ -1082,3 +1082,34 @@ def test_learned_likelihood_admits_a_name_of_no_usual_form(monkeypatch):
     )
     (part,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if len(s.pins) == 8]
     assert part.ref == "LCD_CON"
+
+
+def test_alias_bus_passes_through_a_sheet_that_names_none_of_its_members():
+    """{MEM} names an alias whose members are defined outside the drawing. Sheet A only
+    passes it on to its own sheet C, so neither the root nor A has a label of a member."""
+    root = SceneBuilder()
+    root.scene.path = "/"
+    root.scene.buses.append(((20, 10), (60, 10)))
+    root.scene.sheets += [
+        Sheet("A", (0, 0, 20, 20), [SheetPin("{MEM}", (20, 10))]),
+        Sheet("B", (60, 0, 80, 20), [SheetPin("{MEM}", (60, 10))]),
+    ]
+
+    middle = SceneBuilder()
+    middle.scene.page, middle.scene.path = 2, "/A/"
+    middle.scene.labels.append(Label("{MEM}", "hier", (1, 9.3, 7, 10.6), 0.0, [(10, 10)]))
+    middle.scene.buses.append(((10, 10), (40, 10)))
+    middle.scene.sheets.append(Sheet("C", (40, 0, 60, 20), [SheetPin("{MEM}", (40, 10))]))
+
+    def leaf(page, path, ref):
+        b = SceneBuilder()
+        b.scene.page, b.scene.path = page, path
+        b.resistor(10, 10, ref, "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("MEM.CLK", "local", (12, 6.0, 18, 7.2), 0.0))
+        b.scene.labels.append(Label("{MEM}", "hier", (31, 9.3, 37, 10.6), 0.0, [(30, 10)]))
+        b.scene.buses.append(((30, 10), (40, 10)))
+        return b.scene
+
+    _, nets = netlist(root.scene, middle.scene, leaf(3, "/A/C/", "R1"), leaf(4, "/B/", "R2"))
+    assert nets["MEM.CLK"].pins == [("R1", "1"), ("R2", "1")]
