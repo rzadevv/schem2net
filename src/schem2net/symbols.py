@@ -43,6 +43,11 @@ class Pin:
     shape: int
     line: Segment  # from the body to the connection point
     number: str | None = None
+    # How the number was found: read beside the pin, counted along a "row" from its
+    # marks, its "name", a "library" symbol, the generator's "pad names" for a diode, or,
+    # where the drawing shows none, the diode's "polarity", a transistor's "role" or
+    # the pin's "position".
+    how: str | None = None
 
     @property
     def at(self) -> Point:

@@ -1217,6 +1217,27 @@ def test_eagle_diode_drawn_as_three_lines_names_its_pads():
     assert {p.number: p.at for p in part.pins} == {"C": (26.1, 34.5), "A": (26.1, 39.5)}
 
 
+def test_a_diodes_hidden_numbers_are_reported_as_guessed():
+    """Which end of a diode is pin 1 is the library's choice; with numbers hidden it is a
+    guess, and said so. Eagle's diode pads are named, so nothing is guessed there."""
+
+    def diode(rules, red):
+        b = SceneBuilder()
+        b.shape((24.8, 35.7), (27.4, 35.7), color=red)  # the cathode bar
+        b.shape((27.4, 38.3), (26.1, 35.7), (24.8, 38.3), (27.4, 38.3), color=red)
+        b.shape((26.1, 34.5), (26.1, 35.7), color=red)
+        b.shape((26.1, 39.5), (26.1, 38.3), color=red)
+        b.scene.wires += [((26.1, 34.5), (26.1, 30)), ((26.1, 39.5), (26.1, 44))]
+        b.field("D2", 28.2, 36.7)
+        netlister = Netlister()
+        netlister.add_page(b.scene, symbols.find(b.scene, rules))
+        return [i for i in netlister.result().issues if i.kind == "pin_number_guessed"]
+
+    (guess,) = diode(KICAD, None)
+    assert sorted(guess.pins) == [("D2", "1"), ("D2", "2")]
+    assert diode(profile.load("eagle"), (128, 0, 0)) == []
+
+
 def test_kicad_reference_is_the_first_text_whatever_its_form():
     """KiCad draws a symbol's reference first, after its graphics: GPIO1-1 names the
     connector though it is no usual designator. A diode's pin name, a lone letter

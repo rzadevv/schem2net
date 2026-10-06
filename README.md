@@ -35,8 +35,8 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.92 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
-| C, Eagle | Dev | 96 | 7,038 | 0.74 | 0.70 |
-| C, Eagle | Test | 42 | 2,903 | 0.64 | 0.59 |
+| C, Eagle | Dev | 96 | 7,038 | 0.75 | 0.72 |
+| C, Eagle | Test | 42 | 2,903 | 0.65 | 0.61 |
 | D, Olimex, held out | Dev | 24 | 11,745 | 0.78 | 0.73 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.75 | 0.65 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
@@ -81,9 +81,12 @@ was extracted.
 `diff` matches parts by designator and nets by the pins they share, so a
 renamed net is not reported, but a pin moving to another net is.
 
-The report colours each net, circles pins of low-confidence nets in red and
-marks problems the checks found in orange. Click a net in the list to highlight
-it.
+The report colours each net and lists everything worth checking, grouped, the
+likeliest wrong connections first: nets joined on weak evidence, pin numbers the
+drawing does not show and that were guessed, pins on no net, labels on no wire.
+Click an entry to zoom to it; click a net to highlight it. The JSON says the same:
+each issue names the pins it puts in doubt, and each pin says how its number was
+found when it was not printed beside it.
 
 ## MCP server
 

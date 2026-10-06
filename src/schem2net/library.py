@@ -293,16 +293,19 @@ def resolve(
             if named:
                 if not pin.number and len(numbers) == 1:
                     pin.number = numbers[0]
+                    pin.how = "library"
                     gained += 1
                 continue
             if not numbers:
                 continue
             first = pin.number if pin.number in numbers else numbers[0]
             gained += pin.number != first
+            if pin.number != first or pin.how not in ("read", "row"):
+                pin.how = "library"
             pin.number = first
             for number in numbers:
                 if number != first:
-                    symbol.pins.append(type(pin)(pin.shape, pin.line, number))
+                    symbol.pins.append(type(pin)(pin.shape, pin.line, number, "library"))
                     gained += 1
     return gained
 

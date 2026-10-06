@@ -42,7 +42,10 @@ still scores. A product page sometimes links
 the schematic of a related board, so each pair was checked: the `.sch` wires
 must land on the PDF's when the sheet is laid over the page, and a PDF linked
 from several projects stays only with the board it was made from. 138 pairs
-remain.
+remain. Each part also keeps its device set's name (JUMPER-SMT_2_NO,
+CRYSTAL-32MHZ), so the scorer knows what kind of part it is. Fifteen corpus C truth
+files written before the one-pad rule listed every pad of such pins; they were
+written again from their `.sch` files.
 
 Corpus D is held out: nothing was tuned on it, and it only measures how
 results carry over to another maker's boards. Olimex keeps each board's
@@ -140,8 +143,18 @@ single pin in the ground truth are not scored.
 | `flag_recall` | Share of wrong nets that were flagged low-confidence (below 0.8). |
 | `flag_precision` | Share of flagged nets that were actually wrong. |
 | `perfect_designs` | Share of designs with every net correct. |
+| `silent_error_rate` | Share of pins that are wrong with nothing flagging them: on a net of full confidence and named by no issue. What a user cannot catch. |
+| `pin_flag_recall`, `pin_flag_precision` | Pin by pin: the share of wrong pins flagged, and of flagged pins that are wrong. |
+| `review_share` | Share of the pins found that are flagged: what a reviewer is asked to check. |
+| `designs_without_silent_errors` | Share of designs whose every wrong pin is flagged. |
 
 Corpus totals are summed over pins, not averaged over designs.
+
+Accuracy alone says little about whether a netlist can be used: a board 95% right
+whose errors no one can find is worse than one 90% right whose doubtful pins are
+all marked. So each wrong pin is also asked whether anything flags it: a net of
+low confidence, or an issue naming the pin, such as a pin number the drawing does
+not show and the extraction guessed.
 
 A pin read by its name, because its number is hidden, counts as the pin of that
 name when the name is unique on its part. kicad-cli writes a pin's function as its
@@ -156,9 +169,13 @@ whose truth gives no value ("~", as every part of corpus B and many Eagle parts
 have) is not scored for its value.
 
 Swapping the two pins of a resistor, non-polarised capacitor, inductor,
-ferrite bead, fuse or crystal is not counted as an error. These parts are
-recognised by their KiCad symbol, or by designator (R, C, L, FB, F) when the
-symbol is named after a value or package. Symbols whose names mark them as
+ferrite bead, fuse, crystal, solder jumper or two-pin push switch is not counted
+as an error: the circuit is the same either way, and a drawing with hidden numbers
+cannot tell its ends apart. These parts are recognised by their library symbol or
+Eagle device set (a name with jumper, crystal, resonator, fuse, ferrite or a
+momentary switch in it), or by designator (R, C, L, FB, F) when the symbol is
+named after a value or package; their two pins may be numbered anyhow (1 and 3,
+P$1 and P$2). A two-pin connector is not among them: which end is which matters. Symbols whose names mark them as
 polarised (`CP`, `C_Polarized`, electrolytic, tantalum) are not treated this
 way. Nets are first paired without the pins of these parts, so a board full of
 decoupling capacitors turned the other way round cannot pair its supply nets

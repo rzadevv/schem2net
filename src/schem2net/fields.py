@@ -656,6 +656,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
     for _, t, i in sorted(options):
         if t not in used and i not in named:
             pins[i].number = PAD_COUNT.sub("", numbers[t].text)  # "A6*2": pin A6, two pads
+            pins[i].how = "read"
             named.add(i)
             used.add(t)
 
@@ -683,12 +684,14 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
             if profile.diode_pin_names:  # pads named for the cathode and the anode
                 cathode, anode = order[::-1] if profile.diode_pin_one_is_anode else order
                 cathode.number, anode.number = profile.diode_pin_names
+                cathode.how = anode.how = "pad names"
                 continue
         else:
             down = -1 if profile.hidden_pin_one_at_bottom else 1
             order = sorted(part_pins, key=lambda p: (down * p.at[1], p.at[0]))
         for number, pin in enumerate(order, 1):
             pin.number = str(number)
+            pin.how = "polarity" if len(part_pins) == 2 and tips else "position"
 
     unused = [t for k, t in enumerate(numbers) if k not in used]
     # Texts in a colour both roles share are in both lists; each names one pin at most.
@@ -706,6 +709,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
         if any(p.number for p in part_pins):
             continue
         roles = _transistor_roles(parts, scene)
+        how = "role"
         middle = _middle_pin(part_pins) if not roles else None
         own = {p.shape for p in part_pins}
         body = [scene.shapes[i] for s in parts for i in s.shapes if i not in own]
@@ -716,12 +720,14 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
                 (p for p in part_pins if p is not middle), key=lambda p: (down * p.at[1], p.at[0])
             )
             roles = [(ends[0], "1"), (middle, "2"), (ends[1], "3")]
+            how = "position"
             # A solder jumper's ends lie in pads alike: which is 1 depends on how it was
             # turned. A wrong guess joins nets wrongly, so only the common pad is named.
             if all(_in_any(p.line[0], pads) for p in ends):
                 roles = [(middle, "2")]
         for pin, role in roles:
             pin.number = role
+            pin.how = how
 
 
 def _middle_pin(pins: list[Pin]) -> Pin | None:
@@ -901,6 +907,7 @@ def _number_rows(symbols: list[Symbol], numbers: list[Text]) -> set[int]:
                 used |= {k for k in (first, last) if k is not None}
             for n, pin in enumerate(row):
                 pin.number = str(a + step * n)
+                pin.how = "row"
     return used
 
 
@@ -963,6 +970,7 @@ def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> Non
     for _, t, key, pin in sorted(options, key=lambda o: o[0]):
         if t not in taken and key not in named:
             pin.number = texts[t].text
+            pin.how = "name"
             taken.add(t)
             named.add(key)
 

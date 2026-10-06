@@ -3,7 +3,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from schem2net.bench.score import Counts, score
-from schem2net.ir import Component, Design, Net, Pin, Source
+from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 
 
 def design(nets, components=(), confidence=None):
@@ -199,3 +199,37 @@ def test_parts_with_no_value_in_the_truth_are_not_scored_for_value():
     predicted = design({"A": [("R1", "1"), ("C1", "1")]})
     predicted.components = [Component(ref="R1", value="10k"), Component(ref="C1", value="100n")]
     assert score(predicted, truth).metrics()["value_accuracy"] == 1
+
+
+def test_a_wrong_pin_no_flag_points_to_is_a_silent_error():
+    truth = design({"A": [("U1", "1"), ("R1", "1")], "B": [("U1", "2"), ("R2", "1")]})
+    swapped = {"A": [("U1", "2"), ("R1", "1")], "B": [("U1", "1"), ("R2", "1")]}
+    silent = score(design(swapped), truth).metrics()
+    assert silent["silent_error_rate"] == 0.5 and silent["designs_without_silent_errors"] == 0
+
+    predicted = design(swapped)
+    predicted.issues = [Issue(kind="pin_number_guessed", pins=[("U1", "1"), ("U1", "2")])]
+    flagged = score(predicted, truth).metrics()
+    assert flagged["silent_error_rate"] == 0 and flagged["pin_flag_recall"] == 1
+    assert flagged["designs_without_silent_errors"] == 1
+
+
+def test_swapped_ends_of_a_crystal_are_forgiven_but_not_of_a_connector():
+    """Whatever its pads are called, a crystal's two ends are alike; a two-pin header's
+    are not, as a battery's polarity depends on them."""
+    xtal = Component(ref="Y1", symbol="lib:CRYSTAL-32MHZ", pins=[Pin(num="P$1"), Pin(num="P$2")])
+    head = Component(ref="J1", symbol="lib:CONN_02", pins=[Pin(num="1"), Pin(num="2")])
+    truth = design(
+        {
+            "A": [("Y1", "P$1"), ("U1", "1"), ("J1", "1"), ("U1", "3")],
+            "B": [("Y1", "P$2"), ("U1", "2"), ("J1", "2"), ("U1", "4")],
+        },
+        [xtal, head],
+    )
+    predicted = design(
+        {
+            "A": [("Y1", "P$2"), ("U1", "1"), ("J1", "2"), ("U1", "3")],
+            "B": [("Y1", "P$1"), ("U1", "2"), ("J1", "1"), ("U1", "4")],
+        }
+    )
+    assert score(predicted, truth).metrics()["pin_accuracy"] == 6 / 8

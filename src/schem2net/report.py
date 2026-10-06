@@ -1,12 +1,12 @@
 """An HTML page that draws the extracted nets over the schematic.
 
 Each net gets its own colour. Pins of low-confidence nets are circled in red;
-problems found by the checks, such as wire ends touching nothing, are marked in
-orange and listed under the summary.
-Clicking a net in the list highlights it.
+problems found by the checks, such as wire ends touching nothing, and pin numbers
+the drawing does not show, are marked in orange. Everything to check is listed in
+one queue, most serious first; clicking an entry shows where it is, and clicking a
+net in the list highlights the net.
 """
 
-from collections import Counter
 from html import escape
 
 from schem2net.ir import LOW_CONFIDENCE, Net
@@ -41,6 +41,13 @@ svg { width: 100%; height: auto; background: var(--paper); border: 1px solid var
 .txt { fill: var(--ink); font-family: sans-serif; }
 .low { stroke: var(--bad); fill: none; }
 .unnumbered { stroke: var(--warn); fill: none; }
+.guess { stroke: var(--warn); fill: none; stroke-dasharray: 0.4 0.3; }
+.mark.on { stroke: var(--fg); stroke-width: 0.6; }
+.todo { max-height: 45vh; overflow: auto; margin-bottom: 12px; }
+.todo h2 { color: var(--fg); font-weight: 600; margin: 0 0 6px; }
+details { margin-bottom: 6px; }
+summary { cursor: pointer; }
+.todo ol { list-style: none; margin: 2px 0 0 14px; padding: 0; }
 body.focus [data-net] { opacity: 0.12; }
 body.focus [data-net].on { opacity: 1; }
 @media (max-width: 700px) {
@@ -50,6 +57,27 @@ body.focus [data-net].on { opacity: 1; }
 """
 
 SCRIPT = """
+for (const item of document.querySelectorAll('li[data-mark]')) {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.mark.on, li[data-mark].on').forEach(e => e.classList.remove('on'));
+    const mark = document.getElementById(item.dataset.mark);
+    item.classList.add('on');
+    if (mark) {
+      mark.classList.add('on');
+      const svg = mark.ownerSVGElement;
+      svg.dataset.full = svg.dataset.full || svg.getAttribute('viewBox');
+      const x = +mark.getAttribute('cx'), y = +mark.getAttribute('cy');
+      svg.setAttribute("viewBox", `${x - 40} ${y - 27} 80 55`);
+      svg.scrollIntoView({block: 'center', behavior: 'smooth'});
+    }
+  });
+}
+// Double-click a page to see all of it again.
+for (const svg of document.querySelectorAll('main svg')) {
+  svg.addEventListener('dblclick', () => {
+    if (svg.dataset.full) svg.setAttribute('viewBox', svg.dataset.full);
+  });
+}
 const items = document.querySelectorAll('li[data-net]');
 let current = null;
 for (const item of items) {
@@ -81,7 +109,23 @@ ISSUE_TEXT = {
     "board_page": "board drawing, skipped",
     "table_page": "table, skipped",
     "raster_page": "scanned page, skipped",
+    "pin_number_guessed": "pin numbers not shown, guessed",
+    "low_confidence_net": "net joined on weak evidence",
 }
+# The review queue, grouped: first what most often means a wrong connection.
+ORDER = [
+    "power_nets_merged",
+    "low_confidence_net",
+    "pin_number_guessed",
+    "duplicate_pin",
+    "connected_no_connect",
+    "unattached_label",
+    "unnumbered_pin",
+    "designator_without_part",
+    "unconnected_pin",
+    "dangling_wire",
+]
+OPEN_GROUPS = 3  # groups shown unfolded
 
 
 def render(extraction: Extraction) -> str:
@@ -91,8 +135,9 @@ def render(extraction: Extraction) -> str:
     low = [n for n in design.nets if n.confidence < LOW_CONFIDENCE]
 
     items = "\n".join(_net_item(net) for net in design.nets)
+    todo = _review(design, extraction)
     pages = "\n".join(
-        _page(result, extraction.wire_nets, net_of_pin, nets, design.issues)
+        _page(result, extraction.wire_nets, net_of_pin, nets, todo)
         for result in extraction.pages
         if result.scene is not None
     )
@@ -114,7 +159,7 @@ def render(extraction: Extraction) -> str:
 <aside>
 <h1>{title}</h1>
 <div class="meta">{meta}</div>
-{_issue_summary(design.issues)}
+{_todo_list(todo)}
 <ul>
 {items}
 </ul>
@@ -128,14 +173,69 @@ def render(extraction: Extraction) -> str:
 """
 
 
-def _issue_summary(issues: list) -> str:
-    counts = Counter(issue.kind for issue in issues)
-    if not counts:
-        return ""
-    rows = "".join(
-        f"<li>{n} × {escape(ISSUE_TEXT.get(kind, kind))}</li>" for kind, n in counts.most_common()
-    )
-    return f'<ul class="issues">{rows}</ul>'
+def _review(design, extraction: Extraction) -> list[dict]:
+    """Everything a reviewer should look at, with where it is: issues, and nets joined
+    on weak evidence at their first pin. Guessed pin numbers are marked at each pin."""
+    where = {}
+    for result in extraction.pages:
+        for symbol in result.symbols:
+            for pin in symbol.pins:
+                if pin.number is not None:
+                    where.setdefault((symbol.ref, pin.number), (result.page.number, pin.at))
+    todo = []
+    for issue in design.issues:
+        if issue.pins:
+            spots = [where[tuple(p)] for p in issue.pins if tuple(p) in where]
+        elif issue.page is not None and issue.at:
+            spots = [(issue.page, issue.at)]
+        else:
+            spots = []
+        what = issue.detail or ", ".join(f"{r}.{n}" for r, n in issue.pins)
+        if not what and issue.page is not None:
+            what = f"page {issue.page}"
+        todo.append({"kind": issue.kind, "severity": issue.severity, "what": what, "spots": spots})
+    for net in design.nets:
+        if net.confidence < LOW_CONFIDENCE and net.pins:
+            spot = where.get(tuple(net.pins[0]))
+            name = net.name or ", ".join(f"{r}.{n}" for r, n in net.pins[:3])
+            todo.append(
+                {
+                    "kind": "low_confidence_net",
+                    "severity": "warn",
+                    "what": name,
+                    "spots": [spot] if spot else [],
+                }
+            )
+    rank = {kind: k for k, kind in enumerate(ORDER)}
+    todo.sort(key=lambda t: rank.get(t["kind"], len(ORDER)))
+    for k, item in enumerate(todo):
+        item["id"] = f"m{k}"
+    return todo
+
+
+def _todo_list(todo: list[dict]) -> str:
+    if not todo:
+        return '<p class="meta">Nothing to check.</p>'
+    groups: dict[str, list[dict]] = {}
+    for item in todo:
+        groups.setdefault(item["kind"], []).append(item)
+    out = [
+        f'<div class="todo"><h2>To check ({len(todo)})</h2>'
+        '<p class="meta">Click an entry to zoom to it; double-click the page to zoom out.</p>'
+    ]
+    for k, (kind, items) in enumerate(groups.items()):
+        rows = "".join(
+            "<li" + (f' data-mark="{t["id"]}"' if t["spots"] else "") + ">"
+            f'<span class="n" title="{escape(t["what"])}">{escape(t["what"])}</span></li>'
+            for t in items
+        )
+        label = escape(ISSUE_TEXT.get(kind, kind))
+        state = " open" if k < OPEN_GROUPS else ""
+        out.append(
+            f"<details{state}><summary>{label} ({len(items)})</summary><ol>{rows}</ol></details>"
+        )
+    out.append("</div>")
+    return "".join(out)
 
 
 def _net_item(net: Net) -> str:
@@ -150,7 +250,7 @@ def _net_item(net: Net) -> str:
 
 
 def _page(
-    result: PageResult, wire_nets: dict, net_of_pin: dict, nets: dict[str, Net], issues: list
+    result: PageResult, wire_nets: dict, net_of_pin: dict, nets: dict[str, Net], todo: list
 ) -> str:
     page, scene = result.page, result.scene
     out = [
@@ -196,12 +296,16 @@ def _page(
                 out.append(
                     f'<circle class="low" data-net="{net}" cx="{x:.2f}" cy="{y:.2f}" r="1.2"/>'
                 )
-    for issue in issues:
-        if issue.page == page.number and issue.at:
-            x, y = issue.at
-            text = escape(ISSUE_TEXT.get(issue.kind, issue.kind))
+    for item in todo:
+        text = escape(ISSUE_TEXT.get(item["kind"], item["kind"]))
+        guess = item["kind"] == "pin_number_guessed"
+        for k, (on, (x, y)) in enumerate(item["spots"]):
+            if on != page.number:
+                continue
+            mark = f' id="{item["id"]}"' if k == 0 else ""
             out.append(
-                f'<circle class="unnumbered" cx="{x:.2f}" cy="{y:.2f}" r="0.8">'
+                f'<circle{mark} class="mark {"guess" if guess else "unnumbered"}" '
+                f'cx="{x:.2f}" cy="{y:.2f}" r="{1.6 if guess else 0.8}">'
                 f"<title>{text}</title></circle>"
             )
     out.append("</svg></section>")

@@ -22,6 +22,7 @@ class Pin(BaseModel):
     num: str
     name: str | None = None
     at: tuple[float, float] | None = None
+    how: str | None = None  # how the number was found, where it was not printed beside it
 
 
 class Component(BaseModel):
@@ -56,6 +57,8 @@ class Issue(BaseModel):
     net: str | None = None
     page: int | None = None
     at: tuple[float, float] | None = None
+    pins: list[PinRef] = []  # the pins it puts in doubt
+    detail: str | None = None  # what it is about, as a reader names it: R12, UART_TX, U3.5
 
 
 class Design(BaseModel):

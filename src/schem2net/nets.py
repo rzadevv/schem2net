@@ -78,7 +78,9 @@ class Netlister:
                 continue
             c = geometry.center(text.bbox)
             if not any(b[0] <= c[0] <= b[2] and b[1] <= c[1] <= b[3] for b in bodies):
-                self.issues.append(Issue(kind="designator_without_part", page=page, at=c))
+                self.issues.append(
+                    Issue(kind="designator_without_part", page=page, at=c, detail=text.text)
+                )
         wires = scene.wires
         wire_index = GridIndex()
         for i, seg in enumerate(wires):
@@ -174,7 +176,9 @@ class Netlister:
                         labelled.add(target[2])
                 else:
                     at = geometry.center(label.bbox)
-                    self.issues.append(Issue(kind="unattached_label", page=page, at=at))
+                    self.issues.append(
+                        Issue(kind="unattached_label", page=page, at=at, detail=label.text)
+                    )
 
         # A sheet pin on this page is the same net as the matching label on the child page.
         self.nested |= bool(scene.sheets)
@@ -318,7 +322,10 @@ class Netlister:
         members: dict[tuple, set[tuple[str, str]]] = defaultdict(set)
         pages: dict[tuple, set[int]] = defaultdict(set)
         issues = list(self.issues)
+        guessed: dict[tuple[str, int], list[tuple]] = defaultdict(list)
         for node, page, symbol, pin in self.pins:
+            if _doubtful(pin, symbol):
+                guessed[symbol.ref, page].append((symbol, pin))
             comp = components.setdefault(
                 symbol.ref,
                 Component(ref=symbol.ref, value=symbol.value, page=page, bbox=symbol.bbox),
@@ -326,13 +333,26 @@ class Netlister:
             if symbol.unit and symbol.unit not in comp.units:
                 comp.units.append(symbol.unit)
             if pin.number is None:
-                issues.append(Issue(kind="unnumbered_pin", page=page, at=pin.at))
+                issues.append(Issue(kind="unnumbered_pin", page=page, at=pin.at, detail=symbol.ref))
                 continue
             self._pin_numbers[symbol.ref][pin.number].append((node, (page, symbol.unit)))
-            comp.pins.append(PinOut(num=pin.number, at=pin.at))
+            comp.pins.append(PinOut(num=pin.number, at=pin.at, how=pin.how))
             root = find(node)
             members[root].add((symbol.ref, pin.number))
             pages[root].add(page)
+
+        # Numbers the drawing does not show, guessed where libraries disagree.
+        for (ref, page), drawn in guessed.items():
+            symbol = drawn[0][0]
+            issues.append(
+                Issue(
+                    kind="pin_number_guessed",
+                    page=page,
+                    detail=ref,
+                    at=geometry.center(symbol.bbox),
+                    pins=[(ref, pin.number) for _, pin in drawn],
+                )
+            )
 
         # Consistency checks. Each failure is reported and caps the confidence of its nets.
         caps: dict[tuple, float] = defaultdict(lambda: 1.0)
@@ -343,21 +363,24 @@ class Netlister:
         for root, found in power.items():
             if len(found) > 1:
                 caps[root] = min(caps[root], MERGED_POWER_CONFIDENCE)
-                issues.append(Issue(kind="power_nets_merged", severity="error"))
+                detail = " and ".join(sorted(found))
+                issues.append(Issue(kind="power_nets_merged", severity="error", detail=detail))
         # Pins on no net should carry a no-connect flag, and flagged pins should be on none.
-        for node, page, _, pin in self.pins:
+        for node, page, symbol, pin in self.pins:
             if pin.number is None:
                 continue
             alone = len(members[find(node)]) < 2 and not kinds[find(node)]
+            where = {"page": page, "at": pin.at, "detail": f"{symbol.ref}.{pin.number}"}
             if alone and node not in self.no_connect:
-                issues.append(Issue(kind="unconnected_pin", severity="info", page=page, at=pin.at))
+                issues.append(Issue(kind="unconnected_pin", severity="info", **where))
             elif not alone and node in self.no_connect:
-                issues.append(Issue(kind="connected_no_connect", page=page, at=pin.at))
-        for numbers in self._pin_numbers.values():
-            for drawn in numbers.values():
+                issues.append(Issue(kind="connected_no_connect", **where))
+        for ref, numbers in self._pin_numbers.items():
+            for number, drawn in numbers.items():
                 units = Counter(unit for _, unit in drawn)
                 if any(n > 1 for n in units.values()):
-                    issues.append(Issue(kind="duplicate_pin", page=drawn[0][0][1]))
+                    page = drawn[0][0][1]
+                    issues.append(Issue(kind="duplicate_pin", page=page, detail=f"{ref}.{number}"))
                     for node, _ in drawn:
                         caps[find(node)] = min(caps[find(node)], DUPLICATE_PIN_CONFIDENCE)
 
@@ -448,3 +471,11 @@ def _under_label(
         if -0.2 <= gap <= LABEL_GAP and overlaps and (best is None or gap < best[0]):
             best = (gap, node)
     return best[1] if best else None
+
+
+def _doubtful(pin, symbol) -> bool:
+    """A number guessed where libraries number alike-looking parts either way: a diode's
+    end where the generator has no rule for which is 1, or a three-pin part's ends."""
+    if pin.number is None:
+        return False
+    return pin.how == "polarity" or (pin.how == "position" and len(symbol.pins) > 2)

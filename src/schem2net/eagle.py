@@ -47,7 +47,8 @@ def read(path: str | Path) -> Design:
         # Pins sharing a name are told apart by "@2" and so on, which is never drawn.
         named = {pad: pin.split("@")[0] for (_, pin), pad in pads[key].items()}
         pins = [Pin(num=pad, name=named[pad]) for pad in sorted(named)]
-        components.append(Component(ref=name, value=part.get("value"), pins=pins))
+        symbol = part.get("deviceset", "")  # what the part is: JUMPER-SMT_2_NO, CRYSTAL...
+        components.append(Component(ref=name, value=part.get("value"), symbol=symbol, pins=pins))
 
     members: dict[str, set[tuple[str, str]]] = defaultdict(set)
     for sheet in schematic.iterfind("sheets/sheet"):
