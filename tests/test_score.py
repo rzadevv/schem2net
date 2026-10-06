@@ -189,3 +189,13 @@ def test_values_match_with_or_without_the_ohm_sign():
 
     assert _same_value("10kΩ", "10k") and _same_value("100 ohms", "100")
     assert not _same_value("10k", "10") and not _same_value("4.7uF", "4.7u")
+
+
+def test_parts_with_no_value_in_the_truth_are_not_scored_for_value():
+    truth = design(
+        {"A": [("R1", "1"), ("C1", "1")]}, [part("R1", "Device:R"), part("C1", "Device:C")]
+    )
+    truth.components[0].value, truth.components[1].value = "10k", "~"
+    predicted = design({"A": [("R1", "1"), ("C1", "1")]})
+    predicted.components = [Component(ref="R1", value="10k"), Component(ref="C1", value="100n")]
+    assert score(predicted, truth).metrics()["value_accuracy"] == 1

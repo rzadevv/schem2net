@@ -47,6 +47,7 @@ class Counts:
     refs_true: int = 0
     refs_predicted: int = 0
     refs_common: int = 0
+    values_known: int = 0  # parts in common whose truth gives a value
     values_correct: int = 0
     wrong_nets: int = 0
     flagged_nets: int = 0
@@ -65,7 +66,7 @@ class Counts:
             "connection_f1": _ratio(2 * self.pairs_correct, self.pairs_predicted + self.pairs_true),
             "component_precision": _ratio(self.refs_common, self.refs_predicted),
             "component_recall": _ratio(self.refs_common, self.refs_true),
-            "value_accuracy": _ratio(self.values_correct, self.refs_common),
+            "value_accuracy": _ratio(self.values_correct, self.values_known),
             "flag_recall": _ratio(self.wrong_flagged, self.wrong_nets),
             "flag_precision": _ratio(self.wrong_flagged, self.flagged_nets),
             "perfect_designs": _ratio(self.perfect_designs, self.designs),
@@ -117,7 +118,10 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     pred_refs = {comp.ref: comp for comp in predicted.components}
     common = true_refs.keys() & pred_refs.keys()
     c.refs_true, c.refs_predicted, c.refs_common = len(true_refs), len(pred_refs), len(common)
-    c.values_correct = sum(_same_value(true_refs[r].value, pred_refs[r].value) for r in common)
+    # A netlist writes "~" for a part with no value; there is nothing to score.
+    known = [r for r in common if (true_refs[r].value or "~").strip() not in ("", "~")]
+    c.values_known = len(known)
+    c.values_correct = sum(_same_value(true_refs[r].value, pred_refs[r].value) for r in known)
 
     matched_true = {p: t for t, p in match.items()}
     for p, net in enumerate(pred_nets):

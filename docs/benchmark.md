@@ -151,7 +151,9 @@ KiCad's `~{CS}`, Eagle's `!CS` and Altium's `C\S\` are all drawn CS.
 
 Values match ignoring spaces, case and an ohm sign, which a drawing often leaves
 off (10kΩ drawn 10k). Some designs keep a library name in the value field, such as
-R_2k_0402 drawn as 2k, or leave the value unprinted; those count as misses.
+R_2k_0402 drawn as 2k, or leave the value unprinted; those count as misses. A part
+whose truth gives no value ("~", as every part of corpus B and many Eagle parts
+have) is not scored for its value.
 
 Swapping the two pins of a resistor, non-polarised capacitor, inductor,
 ferrite bead, fuse or crystal is not counted as an error. These parts are
