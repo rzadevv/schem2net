@@ -275,8 +275,12 @@ port flag set beside its name works like a power symbol: a small shape on a wire
 that names the net, joined at the corner its wire ends on, or set straight on a
 pin's tip with no wire, joined at the corner on the tip; flags stacked edge to edge stay apart, each naming its own net. A
 flag's name may look like a designator, such as A15, but designators are navy and
-the name is not. A ground sign is a stem and separate bars drawn in turn, joined
-into one symbol.
+the name is not. A net label may also be plain text set at a wire's open end,
+level with the wire and running on past it; an end that meets a pin is no open end,
+and the text there is the pin's number. Newer exports mark where a label meets
+its wire with a grey dot; the name nearest the dot labels that wire, wherever it is
+set beside it. A ground sign is a stem and separate
+bars drawn in turn, joined into one symbol.
 
 EasyEDA draws each part whole: its value, then its designator, then its drawing,
 with each pin's name, number and line in turn; EasyEDA Pro writes the designator
@@ -296,7 +300,10 @@ it. The drawing still does: the profile whose wire colour is there and whose
 colours cover most of the ink is taken, and inks the printer shifted a step or two
 are set back to the profile's own, lines to drawn roles' colours and text to text
 roles'. Such a page has lost its exporter's scale, so its scale comes from its
-wire grid.
+wire grid. A grid fits a page at half its true scale as well as at it, when wires
+keep to the half grid; rows of pins tell which, as nearly every library sets pins
+2.54 mm apart, so a page whose pins step twice or half that is read again at the
+pitch's scale.
 
 ## Pages printed without colour
 

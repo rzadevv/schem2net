@@ -3,6 +3,7 @@
 import math
 import re
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
@@ -15,6 +16,8 @@ from schem2net.refdes import PART_VALUE, is_common_ref
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
 LABEL_RISE = 0.6  # text heights between a label laid on a wire and the wire
 LABEL_UNDER = 0.9  # share of the label's length the wire runs under
+ANCHOR_REACH = 1.5  # mm between a label's anchor dot and its name, or its wire's end
+LABEL_END = 0.5  # mm between a wire's open end and the label set at it
 MIN_COLOUR_HITS = 5  # pin ends a colour must reach to be taken as a wire or body colour
 BUS_WIDTH_RATIO = 1.8  # a wire-coloured line this much thicker than usual is a bus
 SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
@@ -124,10 +127,13 @@ def build(page: Page, profile: Profile) -> Scene:
         wire_like = _drawn_with_wires(paths, page.texts, profile, _is_line)
         dot_like = _drawn_with_wires(paths, page.texts, profile, _is_dot)
 
+    anchors: list[Point] = []  # marks where a net label meets its wire
     for path in paths:
         color = path.stroke or path.fill
         if path.seq in dot_like or (profile.is_("wire", color) and _is_dot_or_ring(path)):
             scene.junctions.append(geometry.center(path.bbox))
+        elif profile.is_("label_anchor", color) and _is_dot(path):
+            anchors.append(geometry.center(path.bbox))
         elif path.seq in thick or profile.is_("bus", path.stroke):
             scene.buses.extend(_segments(path))
         elif _is_wire(path, wire_like, profile):
@@ -187,6 +193,8 @@ def build(page: Page, profile: Profile) -> Scene:
         sub for p in paths if p.stroke and not p.fill for sub in p.subpaths if _closed(sub)
     ] + _outlines_from_lines(page.paths)  # before dropping copies: flags share sides
     used = _find_sheets(scene, sheet_files, pin_outlines, bus_texts, outlines_any)
+    if anchors:
+        _anchored_labels(scene, anchors, profile)
     if profile.labels_in_outlines:
         # Labels share the field colour; they are the ones in an outline on a wire.
         wire_index = GridIndex()
@@ -202,12 +210,24 @@ def build(page: Page, profile: Profile) -> Scene:
             # The others name the wire they sit on, as a label laid along it.
             # Where values are drawn together, one of them is no label, however long.
             values = values_run(scene.fields) if profile.names_by_layer else set()
+            drawn = GridIndex(cell=2.0)
+            for shape in scene.shapes:
+                drawn.add(shape.id, shape.bbox)
+
+            # A pin's end meets symbol graphics; the open end a label is set at, none.
+            def meets(end: Point) -> bool:
+                return any(
+                    geometry.distance_to_segment(end, seg) <= LABEL_END
+                    for i in drawn.near(end, LABEL_END)
+                    for seg in geometry.segments(scene.shapes[i].points)
+                )
+
             for text in scene.fields:
                 if id(text) in taken or PART_VALUE.match(text.text) or is_common_ref(text.text):
                     continue  # a value or designator drawn over a passing wire
                 if id(text) in values:
                     continue
-                if _on_wire(text, scene.wires, wire_index):
+                if _on_wire(text, scene.wires, wire_index, meets):
                     scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
                     taken.add(id(text))
         scene.fields = [t for t in scene.fields if id(t) not in taken]
@@ -603,8 +623,48 @@ def values_run(texts: list[Text], reach: int = 6) -> set[int]:
     return out
 
 
-def _on_wire(text: Text, wires: list[Segment], index: GridIndex) -> bool:
-    """True if a wire runs under nearly all of the text, just below its baseline."""
+def _anchored_labels(scene: Scene, anchors: list[Point], profile: Profile) -> None:
+    """Net labels marked by a dot where they meet their wire, at its open end: each dot
+    takes the nearest name beside it, one to one, never a designator's colour."""
+    ends = GridIndex(cell=2.0)
+    for k, wire in enumerate(scene.wires):
+        for end in wire:
+            ends.add(k, (*end, *end))
+    on_ends = [
+        a
+        for a in anchors
+        if any(
+            geometry.distance(a, end) <= ANCHOR_REACH
+            for k in ends.near(a, ANCHOR_REACH)
+            for end in scene.wires[k]
+        )
+    ]
+    texts = [t for t in scene.fields if not profile.is_("designator", t.color)]
+    pairs = sorted(
+        (geometry.bbox_gap((*a, *a), t.bbox), i, j)
+        for i, a in enumerate(on_ends)
+        for j, t in enumerate(texts)
+        if geometry.bbox_gap((*a, *a), t.bbox) <= ANCHOR_REACH
+    )
+    named, taken = set(), set()
+    for _, i, j in pairs:
+        if i in named or j in taken:
+            continue
+        text = texts[j]
+        scene.labels.append(Label(text.text, "local", text.bbox, text.angle, [on_ends[i]]))
+        named.add(i)
+        taken.add(j)
+    gone = {id(texts[j]) for j in taken}
+    scene.fields = [t for t in scene.fields if id(t) not in gone]
+    scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in gone]
+
+
+def _on_wire(
+    text: Text, wires: list[Segment], index: GridIndex, meets: Callable | None = None
+) -> bool:
+    """True if a wire runs under nearly all of the text, just below its baseline, or
+    ends where the text starts or stops, as a label set at a wire's open end: an end
+    that `meets` nothing drawn, as a pin's end would."""
     x0, y0, x1, y1 = text.bbox
     vertical = round(text.angle) % 180 == 90
     rise = LABEL_RISE * text.size
@@ -618,6 +678,15 @@ def _on_wire(text: Text, wires: list[Segment], index: GridIndex) -> bool:
             continue
         under = min(hi, max(a, b)) - max(lo, min(a, b))
         if 0 <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
+            return True
+        # Ending at the text from either side, not running on under it.
+        near = [
+            e
+            for e in wires[k]
+            if min(abs((e[1] if vertical else e[0]) - v) for v in (lo, hi)) <= LABEL_END
+        ]
+        open_end = meets is None or not any(meets(e) for e in near)
+        if 0 <= gap <= rise and near and under <= LABEL_END and open_end:
             return True
     return False
 

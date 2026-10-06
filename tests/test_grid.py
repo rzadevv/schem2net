@@ -57,3 +57,17 @@ def test_a_sheet_printed_to_fit_smaller_paper():
     kicad = profile.load("kicad")
     page = _recoloured(_page(0.7071, steps=0.5), min(kicad.colors["wire"]))  # 1.27 mm ends
     assert grid.scale(page, kicad) == pytest.approx(0.7071, abs=0.002)
+
+
+def test_pin_pitch_tells_a_page_read_at_twice_its_size():
+    """Rows of pins 5.08 mm apart: the page is twice the size it was drawn at."""
+    from schem2net.symbols import Pin, Symbol
+
+    def chip(x, pitch):
+        part = Symbol([], (x, 0, x + 10, 40))
+        part.pins = [Pin(0, ((x, k * pitch), (x - 2 * pitch, k * pitch))) for k in range(8)]
+        return part
+
+    assert grid.pitch_factor([chip(20 * k, 5.08) for k in range(4)]) == 2.0
+    assert grid.pitch_factor([chip(20 * k, 2.54) for k in range(4)]) == 1.0
+    assert grid.pitch_factor([chip(0, 5.08)]) == 1.0  # too few pins to judge

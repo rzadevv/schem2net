@@ -65,6 +65,14 @@ def extract(file: str | Path, embedded: bool = True, region: Region | None = Non
     return run(file, embedded, region).design
 
 
+def _read(result: PageResult, rules: profile.Profile, pages: int) -> None:
+    """The page's scene and symbols."""
+    result.scene = scene.build(result.page, rules)
+    if rules.labels_show_sheet:
+        scene.drop_sheet_references(result.scene, pages)
+    result.symbols = symbols.find(result.scene, rules)
+
+
 def run(file: str | Path, embedded: bool = True, region: Region | None = None) -> Extraction:
     """Extract a design. With `embedded`, a netlist carried in the file is used as is.
 
@@ -120,10 +128,11 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         factor = grid.scale(result.page, rules, exported=not printed)
         if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
             result.page = grid.rescale(result.page, 1 / factor)
-        result.scene = scene.build(result.page, rules)
-        if rules.labels_show_sheet:
-            scene.drop_sheet_references(result.scene, len(doc.pages))
-        result.symbols = symbols.find(result.scene, rules)
+        _read(result, rules, len(doc.pages))
+        if printed and (pitch := grid.pitch_factor(result.symbols)) != 1.0:
+            # A wire grid fits at half the true scale too; the pins' pitch tells which.
+            result.page = grid.rescale(result.page, 1 / pitch)
+            _read(result, rules, len(doc.pages))
 
     read = [result for result in pages if result.scene is not None]
     fields.whole_names([result.symbols for result in read])

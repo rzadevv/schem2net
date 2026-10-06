@@ -39,8 +39,8 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | C, Eagle | Test | 42 | 2,903 | 0.64 | 0.59 |
 | D, Olimex, held out | Dev | 24 | 11,745 | 0.78 | 0.73 |
 | D, Olimex, held out | Test | 24 | 9,286 | 0.75 | 0.65 |
-| E, EasyEDA | Dev | 18 | 2,487 | 0.70 | 0.72 |
-| E, EasyEDA | Test | 12 | 1,669 | 0.49 | 0.09 |
+| E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
+| E, EasyEDA | Test | 12 | 1,669 | 0.51 | 0.10 |
 
 ## Install
 

@@ -9,6 +9,7 @@ symbol = [[135, 0, 0], [128, 0, 0], [161, 0, 0], [140, 36, 36], [0, 0, 0], [0, 0
 field = [[0, 0, 128], [0, 0, 255], [0, 0, 0], [136, 0, 0], [255, 0, 0]]
 designator = [[0, 0, 128]]  # designators and values are always navy
 pin_number = [[0, 0, 255], [0, 0, 0], [136, 0, 0], [255, 0, 0]]
+label_anchor = [[153, 153, 153]]  # newer exports mark where a net label meets its wire
 
 [order]
 symbols_in_pieces = true  # a ground sign is a stem and separate bars, drawn in turn

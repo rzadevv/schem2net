@@ -551,6 +551,46 @@ def _subscripted(x: float, y: float, head: str, sub: str, tail: str) -> list[Tex
     ]
 
 
+def test_label_set_at_a_wires_open_end():
+    """EasyEDA writes a net label as plain text starting where its wire ends."""
+    green, blue = (0, 135, 0), (0, 0, 255)
+    page = Page(1, 100, 100)
+    page.paths = [Path(0, [[(40, 20), (61.67, 20)]], 0.25, green, None)]
+    page.texts = [
+        Text(0, "UART_TX", (61.8, 18.4, 69.2, 19.8), 1.4, 0.0, blue),
+        Text(1, "RX", (20, 10, 22, 11.4), 1.4, 0.0, blue),  # near no wire end
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, profile.load("easyeda"))
+    assert [(lb.text, lb.kind) for lb in built.labels] == [("UART_TX", "local")]
+
+
+def test_label_marked_by_a_dot_at_its_wires_end():
+    """Newer EasyEDA exports mark where a net label meets its wire with a grey dot; the
+    name beside it labels the wire, though it does not sit along it. A designator,
+    navy, is never a label."""
+    green, blue, navy, grey = (0, 135, 0), (0, 0, 255), (0, 0, 128), (153, 153, 153)
+    page = Page(1, 100, 100)
+    dot = [(76.3, 61.1), (76.6, 60.8), (76.9, 61.1), (76.6, 61.4), (76.3, 61.1)]
+    page.paths = [
+        Path(0, [[(76.63, 61.08), (76.63, 62.0)]], 0.25, green, None),
+        Path(1, [dot], 0.04, None, grey, curved=True),
+    ]
+    page.texts = [
+        Text(0, "3V3", (73.59, 61.52, 76.31, 62.69), 1.6, 0.0, blue),
+        Text(1, "R5", (77.0, 59.8, 79.0, 61.0), 1.6, 0.0, navy),
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, profile.load("easyeda"))
+    assert [lb.text for lb in built.labels] == ["3V3"]
+    assert geometry.distance(built.labels[0].outline[0], (76.6, 61.1)) < 1e-6
+    assert [t.text for t in built.fields] == ["R5"]
+
+
 def test_eagle_label_laid_on_a_wire():
     """Classic Eagle labels: a name just above its wire, in the colour of names and values."""
     green, grey = (0, 128, 0), (128, 128, 128)

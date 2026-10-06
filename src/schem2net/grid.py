@@ -23,6 +23,9 @@ MIN_AGREEMENT = 0.5  # how well the phases must agree at the chosen spacing
 COARSER_AGREEMENT = 0.35  # the same, for a coarser grid nearer 1:1
 PEAK = 0.005  # a peak is searched for this far either side of a scale
 SAME = 0.005  # scales this close to 1 are taken as 1
+PIN_PITCH = 2.54  # mm between neighbouring pins in a row, in nearly every library
+MIN_ROWS = 20  # pin spacings needed to judge a page's pitch
+PITCH_SLACK = 0.1  # share by which the pitch may miss a multiple of the standard one
 
 
 def scale(page: Page, profile: Profile, exported: bool = True) -> float:
@@ -104,3 +107,29 @@ def _agreement(values: np.ndarray, grid: float) -> np.ndarray:
         return np.zeros(len(SCALES))
     phases = 2 * np.pi * values[None, :] / (grid * SCALES[:, None])
     return np.abs(np.exp(1j * phases).mean(axis=1))
+
+
+def pitch_factor(symbols) -> float:
+    """How many times the standard pin pitch the page's pins are apart: 2.0 where rows
+    of pins step 5.08 mm, 0.5 where 1.27 mm, and 1.0 otherwise or when unsure. A wire
+    grid fits a page at half its true scale as well as at it; the pins tell which."""
+    steps = []
+    for symbol in symbols:
+        if len(symbol.pins) < 4:
+            continue
+        rows: dict[tuple[bool, float], list[float]] = {}
+        for pin in symbol.pins:
+            (x0, y0), (x1, y1) = pin.line
+            across = abs(y1 - y0) < 0.01  # a horizontal pin: its row runs down the page
+            key = (across, round(x1 if across else y1, 1))
+            rows.setdefault(key, []).append(y1 if across else x1)
+        for at in rows.values():
+            at.sort()
+            steps += [b - a for a, b in zip(at, at[1:], strict=False) if b - a > 0.1]
+    if len(steps) < MIN_ROWS:
+        return 1.0
+    step = float(np.median(steps))
+    for factor in (2.0, 0.5):
+        if abs(step / (factor * PIN_PITCH) - 1) < PITCH_SLACK:
+            return factor
+    return 1.0
