@@ -17,7 +17,8 @@ and the benchmark read.
 | 9 | KiCad netlist and schematic, BOM, HTML report, MCP server | `export.py`, `kicad_sch.py`, `report.py`, `mcp_server.py` | done |
 
 Pin numbers the PDF does not show, and pins stacked under one drawn pin, are taken
-from KiCad's symbol libraries once they are indexed (see Part libraries). Hidden
+from KiCad's symbol libraries, and the names of unnamed pins from Eagle's, once
+they are indexed (see Part libraries). Hidden
 power pins that stand apart from every drawn pin are not handled yet.
 
 ## Pages that are not schematics
@@ -130,6 +131,18 @@ alone. Each drawn pin then takes the numbers of every library pin under it. A
 symbol redrawn in the library since the design no longer fits; if every number
 read is still its own, the hidden pins of the same name stacked under each are
 added. Libraries a project carries with it are not read.
+
+A value may be read wrongly, a pad number taken for it say; a part of three pins
+or more that fits nothing by its value is looked up by the texts printed around
+it, and the fit decides. Two pins make too common a shape to go on.
+
+Eagle libraries (.lbr) are indexed the same way: each device is found by the
+values Eagle prints for it, its device set's name filled in with technology and
+device, and each gate is a unit. An Eagle part's pads depend on its package,
+which the drawing does not show and which libraries rename between versions, so
+only the names of the library's pins are taken, for pins read with neither
+number nor name. The same holds for any part whose packages number its pins
+apart.
 
 ## Generator profiles
 

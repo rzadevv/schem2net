@@ -27,7 +27,7 @@ Early development.
 - Other generators are not supported yet.
 
 Dev figures are read with learned models that never saw the design in question,
-and KiCad's symbol libraries indexed (see `docs/benchmark.md`).
+and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
@@ -62,10 +62,13 @@ schem2net extract board.pdf --region 2:10,20,150,100   # only part of page 2, in
 schem2net index-library /usr/share/kicad/symbols      # once: KiCad's symbol libraries
 ```
 
-`index-library` lets KiCad PDFs be read with the pin numbers they hide: an IC
-drawn with pin names only, or many pins stacked under one drawn pin, is numbered
-from its library symbol when its value names one. Point it at KiCad's installed
-symbols or at a copy of https://gitlab.com/kicad/libraries/kicad-symbols.
+`index-library` lets PDFs be read with the pin numbers they hide: an IC drawn
+with pin names only, or many pins stacked under one drawn pin, is numbered from
+its library symbol when its value names one. Point it at KiCad's installed
+symbols or at a copy of https://gitlab.com/kicad/libraries/kicad-symbols. For
+Eagle PDFs, point it at the maker's .lbr files, such as
+https://github.com/sparkfun/SparkFun-Eagle-Libraries; Eagle parts take only pin
+names from them, as their pads depend on the package.
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports
 into the PCB editor; footprints are not in the PDF, so assign them in KiCad.

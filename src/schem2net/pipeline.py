@@ -130,7 +130,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     if rules.pin_library:
         parts = library.load(rules.pin_library)
         for result in read:
-            library.resolve(result.symbols, parts)
+            by_name = rules.pin_library in library.BY_NAME
+            library.resolve(result.symbols, parts, by_name, result.scene.fields)
     for result in read:
         netlister.add_page(result.scene, result.symbols)
     found = netlister.result()

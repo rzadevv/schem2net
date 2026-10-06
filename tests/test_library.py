@@ -1,6 +1,7 @@
 """Numbering pins from KiCad's symbol libraries."""
 
 from schem2net import library
+from schem2net.primitives import Text
 from schem2net.symbols import Pin, Symbol
 
 CHIP = """(kicad_symbol_lib
@@ -116,3 +117,70 @@ def test_a_redrawn_symbol_still_adds_the_pins_stacked_under_its_numbers(tmp_path
     ]
     library.resolve([chip], _library(tmp_path))
     assert sorted(p.number for p in chip.pins) == ["1", "2", "3", "4"]
+
+
+def test_a_part_whose_value_was_misread_is_found_by_the_name_printed_beside_it(tmp_path):
+    chip = Symbol([], (90, 40, 110, 60), value="4")  # a pad number taken for the value
+    chip.pins = [
+        _pin((95.08, 47.46), (92.38, 47.46), "1"),
+        _pin((100, 55.08), (100, 57.62), "GND"),
+        _pin((104.92, 47.46), (107.62, 47.46)),
+    ]
+    printed = [Text(0, "CHIP", (100, 36, 106, 38), 1.27, 0.0, None)]
+    library.resolve([chip], _library(tmp_path), texts=printed)
+    assert sorted(p.number for p in chip.pins) == ["1", "2", "3", "4"]
+
+
+LBR = """<?xml version="1.0" encoding="utf-8"?>
+<eagle version="9.6.2"><drawing><library>
+<symbols>
+  <symbol name="AMP">
+    <pin name="IN" x="-7.62" y="0" length="short"/>
+    <pin name="OUT" x="7.62" y="0" length="short" rot="R180"/>
+  </symbol>
+  <symbol name="SUPPLY">
+    <pin name="V+" x="0" y="5.08" length="short" rot="R270"/>
+    <pin name="GND@1" x="0" y="-5.08" length="short" rot="R90"/>
+  </symbol>
+</symbols>
+<devicesets>
+  <deviceset name="DUAL_AMP" prefix="U">
+    <gates>
+      <gate name="A" symbol="AMP" x="0" y="0"/>
+      <gate name="B" symbol="AMP" x="0" y="10"/>
+      <gate name="P" symbol="SUPPLY" x="0" y="20" addlevel="request"/>
+    </gates>
+    <devices>
+      <device name="-SOIC" package="SO8">
+        <connects>
+          <connect gate="A" pin="IN" pad="3"/><connect gate="A" pin="OUT" pad="1"/>
+          <connect gate="B" pin="IN" pad="5"/><connect gate="B" pin="OUT" pad="7"/>
+          <connect gate="P" pin="V+" pad="8"/><connect gate="P" pin="GND@1" pad="4 9"/>
+        </connects>
+        <technologies><technology name="">
+          <attribute name="VALUE" value="LM358"/>
+        </technology></technologies>
+      </device>
+    </devices>
+  </deviceset>
+</devicesets>
+</library></drawing></eagle>
+"""
+
+
+def test_eagle_devices_are_indexed_by_the_values_eagle_prints(tmp_path):
+    (tmp_path / "Amps.lbr").write_text(LBR)
+    parts = library.index_eagle(tmp_path)
+    assert set(parts) == {"dual_amp", "dual_amp-soic", "lm358"}
+    name, pins = parts["lm358"][0]
+    assert name == "Amps:DUAL_AMP-SOIC"
+    # A lettered gate is the unit of its letter, as a designator such as U1B names it;
+    # a pin with two pads keeps the first.
+    assert [(p.number, p.name, p.unit) for p in pins] == [
+        ("3", "IN", 1),
+        ("1", "OUT", 1),
+        ("5", "IN", 2),
+        ("7", "OUT", 2),
+        ("8", "V+", 16),
+        ("4", "GND", 16),
+    ]

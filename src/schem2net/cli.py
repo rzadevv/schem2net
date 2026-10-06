@@ -152,16 +152,23 @@ def draw(
 @app.command("index-library")
 def index_library(
     folder: Annotated[
-        Path, typer.Argument(help="KiCad's symbol libraries: .kicad_sym files or folders.")
+        Path, typer.Argument(help="Symbol libraries: KiCad .kicad_sym, Eagle .lbr, or folders.")
     ],
 ) -> None:
-    """Index KiCad's symbol libraries, from which the pins a PDF leaves unnumbered and
-    the pins stacked under one drawn pin are numbered. KiCad installs them, as in
-    /usr/share/kicad/symbols, or get https://gitlab.com/kicad/libraries/kicad-symbols."""
-    parts = library.index(folder)
-    path = library.default_path("kicad")
-    library.save(parts, path)
-    typer.echo(f"{path}: {sum(len(v) for v in parts.values())} symbols")
+    """Index part libraries, from which the pins a PDF leaves unnumbered and the pins
+    stacked under one drawn pin are numbered. KiCad installs its own, as in
+    /usr/share/kicad/symbols, or get https://gitlab.com/kicad/libraries/kicad-symbols;
+    Eagle libraries come from the part makers, such as SparkFun's on GitHub. Each kind
+    found replaces the index of that kind."""
+    found = {"kicad": library.index(folder), "eagle": library.index_eagle(folder)}
+    for kind, parts in found.items():
+        if parts:
+            path = library.default_path(kind)
+            library.save(parts, path)
+            typer.echo(f"{path}: {sum(len(v) for v in parts.values())} {kind} symbols")
+    if not any(found.values()):
+        typer.echo(f"no KiCad or Eagle libraries under {folder}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("build-corpus")

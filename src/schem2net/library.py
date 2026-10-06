@@ -18,10 +18,13 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING
+from xml.etree import ElementTree
 
 from schem2net import sexpr
+from schem2net.geometry import GridIndex
 
 if TYPE_CHECKING:
+    from schem2net.primitives import Text
     from schem2net.symbols import Symbol
 
 
@@ -68,6 +71,75 @@ def index(root: Path) -> Library:
             if pins:
                 out[name.lower()].append((f"{lib}:{name}", pins))
     return dict(out)
+
+
+def index_eagle(root: Path) -> Library:
+    """Every device of the Eagle libraries (.lbr) under root, by the values Eagle prints
+    for it: its device set's name, filled in with technology and device, and any VALUE
+    attribute. A gate is a unit; a pin's number is its first pad, as in a netlist."""
+    out: Library = defaultdict(list)
+    found = sorted(
+        Path(folder) / name
+        for folder, _, names in os.walk(root, followlinks=True)
+        for name in names
+        if name.lower().endswith(".lbr")
+    )
+    for path in found:
+        try:
+            tree = ElementTree.parse(path).getroot()
+        except ElementTree.ParseError:
+            continue
+        for library in tree.iter("library"):
+            symbols = {s.get("name"): s for s in library.iter("symbol")}
+            for deviceset in library.iter("deviceset"):
+                for device, keys, pins in _devices(deviceset, symbols):
+                    name = f"{path.stem}:{deviceset.get('name')}{device}"
+                    for key in keys:
+                        out[key.lower()].append((name, pins))
+    return dict(out)
+
+
+def _devices(deviceset, symbols):
+    gates = list(deviceset.iter("gate"))
+    letters = all(len(g.get("name", "")) == 1 and g.get("name").isalpha() for g in gates)
+    units = {
+        g.get("name"): ord(g.get("name").upper()) - ord("A") + 1 if letters else k
+        for k, g in enumerate(gates, 1)
+    }
+    base = deviceset.get("name", "")
+    for device in deviceset.iter("device"):
+        pads = {
+            (c.get("gate"), c.get("pin")): c.get("pad", "").split()[0]
+            for c in device.iter("connect")
+            if c.get("pad")
+        }
+        pins = []
+        for gate in gates:
+            symbol = symbols.get(gate.get("symbol"))
+            if symbol is None:
+                continue
+            for pin in symbol.iter("pin"):
+                name = pin.get("name", "")
+                pins.append(
+                    LibPin(
+                        number=pads.get((gate.get("name"), name), name),
+                        name=name.split("@")[0],
+                        unit=units[gate.get("name")] if len(gates) > 1 else 0,
+                        at=(round(float(pin.get("x", 0)), 2), round(float(pin.get("y", 0)), 2)),
+                        hidden=False,
+                    )
+                )
+        if not pins:
+            continue
+        keys = {base.replace("*", "").replace("?", "")}
+        for technology in device.iter("technology"):
+            full = base.replace("*", technology.get("name", ""))
+            dev = device.get("name", "")
+            keys.add(full.replace("?", dev) if "?" in full else full + dev)
+            keys |= {
+                a.get("value", "") for a in technology.iter("attribute") if a.get("name") == "VALUE"
+            }
+        yield device.get("name", ""), {k for k in keys if k}, pins
 
 
 def _pins(name: str, symbols: dict[str, sexpr.Node], depth: int = 0) -> list[LibPin]:
@@ -160,9 +232,18 @@ TOUCH = 0.05  # mm between a drawn pin end and the library's
 CELL = 1.0  # mm, of the grid used to look pin ends up
 COVER = 0.8  # share of a unit's shown pins that must be drawn
 RENUMBERED = 0.1  # share of the numbers read that may differ from the library's
+NEAR = 5.0  # mm around a part searched for texts that name it
+MIN_SHAPE = 3  # pins that make a part's shape tell it from others
 
 
-def resolve(symbols: list[Symbol], library: Library) -> int:
+# Kinds whose pads depend on the package, which a drawing does not show, so that only
+# the names of pins are taken from them.
+BY_NAME = {"eagle"}
+
+
+def resolve(
+    symbols: list[Symbol], library: Library, by_name: bool = False, texts: list[Text] = ()
+) -> int:
     """Number the pins of parts whose value names a library symbol, and add the pins
     stacked under them. Returns how many pins gained a number.
 
@@ -171,22 +252,49 @@ def resolve(symbols: list[Symbol], library: Library) -> int:
     must agree, but for a few the designer renumbered, which keep their own. Only a fit
     that leaves no doubt is used. A symbol redrawn since the design no longer fits; if
     every number read is still its own, the hidden pins stacked under them are added.
+
+    By name, or where the library's packages number the pins apart, the pins read with
+    neither number nor name are given the names of the library's pins, and nothing else.
+
+    The part is looked up by its value, and failing that by the texts printed around
+    it, as a value may have been read wrongly; two pins say too little to go on then.
     """
+    index = GridIndex(cell=5.0)
+    for k, text in enumerate(texts):
+        index.add(k, text.bbox)
     gained = 0
     for symbol in symbols:
-        if symbol.power or not symbol.value or not symbol.pins:
-            continue
-        entries = library.get(symbol.value.strip().lower())
-        if not entries:
+        if symbol.power or not symbol.pins:
             continue
         unit = _unit_number(symbol.unit)
-        fits = {_numbering(f) for entry in entries for f in _fits(symbol, entry[1], unit)}
-        if not fits:
+        entries = library.get((symbol.value or "").strip().lower(), [])
+        placed = [f for entry in entries for f in _fits(symbol, entry[1], unit)]
+        if not placed and len(symbol.pins) >= MIN_SHAPE:
+            x0, y0, x1, y1 = symbol.bbox
+            box = (x0 - NEAR, y0 - NEAR, x1 + NEAR, y1 + NEAR)
+            keys = {texts[k].text.strip().lower() for k in index.within(box)}
+            others = [e for key in sorted(keys) for e in library.get(key, ())]
+            placed = [f for entry in others for f in _fits(symbol, entry[1], unit)]
+            entries = others if placed else entries
+        if not entries:
+            continue
+        named = by_name
+        fits = {_numbering(f, by_name=named) for f in placed}
+        if not fits and not named:
             fits = {_stacked(symbol, entry[1]) for entry in entries} - {None}
+        elif len(fits) > 1 and not named:
+            # Packages of one part number its pins apart; the pins' names still hold.
+            named = True
+            fits = {_numbering(f, by_name=True) for f in placed}
         if len(fits) != 1:
             continue
         numbering = fits.pop()
         for pin, numbers in zip(list(symbol.pins), numbering, strict=True):
+            if named:
+                if not pin.number and len(numbers) == 1:
+                    pin.number = numbers[0]
+                    gained += 1
+                continue
             if not numbers:
                 continue
             first = pin.number if pin.number in numbers else numbers[0]
@@ -292,6 +400,7 @@ def _agrees(label: str, pins: list[LibPin]) -> bool:
     return any(label in (p.number, p.name) for p in pins)
 
 
-def _numbering(under: list[list[LibPin]]) -> tuple[tuple[str, ...], ...]:
-    """The numbers under each drawn pin; none where the drawing numbers it otherwise."""
-    return tuple(tuple(sorted({p.number for p in ps})) for ps in under)
+def _numbering(under: list[list[LibPin]], by_name: bool = False) -> tuple[tuple[str, ...], ...]:
+    """The numbers, or names, under each drawn pin; none where the drawing numbers it
+    otherwise."""
+    return tuple(tuple(sorted({p.name if by_name else p.number for p in ps})) for ps in under)
