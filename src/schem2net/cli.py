@@ -11,7 +11,7 @@ import typer
 
 from schem2net import diff as revisions
 from schem2net import export as exporters
-from schem2net import fills, kicad_sch, pdf, pipeline, report, svg
+from schem2net import fills, kicad_sch, library, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
 from schem2net.bench import designators as designator_examples
 from schem2net.bench import font, roundtrip, runner
@@ -147,6 +147,21 @@ def draw(
     output = output or file.with_name(f"{file.stem}.p{page}.svg")
     output.write_text(svg.render(doc.pages[page - 1]))
     typer.echo(output)
+
+
+@app.command("index-library")
+def index_library(
+    folder: Annotated[
+        Path, typer.Argument(help="KiCad's symbol libraries: .kicad_sym files or folders.")
+    ],
+) -> None:
+    """Index KiCad's symbol libraries, from which the pins a PDF leaves unnumbered and
+    the pins stacked under one drawn pin are numbered. KiCad installs them, as in
+    /usr/share/kicad/symbols, or get https://gitlab.com/kicad/libraries/kicad-symbols."""
+    parts = library.index(folder)
+    path = library.default_path("kicad")
+    library.save(parts, path)
+    typer.echo(f"{path}: {sum(len(v) for v in parts.values())} symbols")
 
 
 @app.command("build-corpus")

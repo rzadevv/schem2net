@@ -26,12 +26,13 @@ Early development.
   are recognised by their colours.
 - Other generators are not supported yet.
 
-Dev figures are read with learned models that never saw the design in question.
+Dev figures are read with learned models that never saw the design in question,
+and KiCad's symbol libraries indexed (see `docs/benchmark.md`).
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
-| A, KiCad | Dev | 57 | 25,608 | 0.91 | 0.94 |
-| A, KiCad | Test | 9 | 2,863 | 0.94 | 0.91 |
+| A, KiCad | Dev | 57 | 25,608 | 0.92 | 0.96 |
+| A, KiCad | Test | 9 | 2,863 | 0.94 | 0.92 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
 | C, Eagle | Dev | 96 | 7,038 | 0.71 | 0.67 |
@@ -58,7 +59,13 @@ schem2net report board.pdf                     # nets drawn over the schematic, 
 schem2net schematic board.pdf                  # editable KiCad project, board-kicad/
 schem2net diff old.pdf new.pdf                 # parts and connections that changed
 schem2net extract board.pdf --region 2:10,20,150,100   # only part of page 2, in mm
+schem2net index-library /usr/share/kicad/symbols      # once: KiCad's symbol libraries
 ```
+
+`index-library` lets KiCad PDFs be read with the pin numbers they hide: an IC
+drawn with pin names only, or many pins stacked under one drawn pin, is numbered
+from its library symbol when its value names one. Point it at KiCad's installed
+symbols or at a copy of https://gitlab.com/kicad/libraries/kicad-symbols.
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports
 into the PCB editor; footprints are not in the PDF, so assign them in KiCad.

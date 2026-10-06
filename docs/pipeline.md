@@ -16,7 +16,9 @@ and the benchmark read.
 | 8 | Build nets, check them and score confidence | `nets.py` | done |
 | 9 | KiCad netlist and schematic, BOM, HTML report, MCP server | `export.py`, `kicad_sch.py`, `report.py`, `mcp_server.py` | done |
 
-Not handled yet: hidden power pins and pin numbers, which the PDF does not show.
+Pin numbers the PDF does not show, and pins stacked under one drawn pin, are taken
+from KiCad's symbol libraries once they are indexed (see Part libraries). Hidden
+power pins that stand apart from every drawn pin are not handled yet.
 
 ## Pages that are not schematics
 
@@ -108,6 +110,26 @@ on the child. A group bus `I2C{SCL SDA}` is matched by member name. When a
 group names an alias defined outside the drawing, its members are taken from
 the labels that use its prefix on any sheet: a sheet that only passes the bus on
 to another names none of them itself.
+
+## Part libraries
+
+ICs are often drawn with pin names and hidden numbers, and pins of one name are
+stacked: an FPGA's hundred ground balls lie under one drawn pin, which shows one
+number at most. KiCad's own symbol libraries hold every pin. `schem2net
+index-library DIR` reads them, as KiCad installs them or from their repository,
+into a file in the user's cache; without it, nothing changes.
+
+A KiCad part whose value names a library symbol, as values do by default, is
+checked against it: the symbol, in each of its units and eight orientations, is
+laid over the drawing so that every drawn pin end meets a library pin end, and
+the numbers and names already read must agree, but for a tenth that the
+designer renumbered, which keep their own. A unit named by the designator's
+letter is the only one tried. The fit must also show most of the unit's visible
+pins and must be the only one: a two-pin part that fits turned either way is left
+alone. Each drawn pin then takes the numbers of every library pin under it. A
+symbol redrawn in the library since the design no longer fits; if every number
+read is still its own, the hidden pins of the same name stacked under each are
+added. Libraries a project carries with it are not read.
 
 ## Generator profiles
 

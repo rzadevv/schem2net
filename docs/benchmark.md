@@ -102,6 +102,13 @@ read with the model learned from the other three. `schem2net bench` on the dev s
 reads with the stored model, which has seen those designs, so its dev figures run a
 little high; test figures are not affected.
 
+## Part library
+
+KiCad results are read with KiCad's symbol libraries indexed (`schem2net
+index-library`), from the kicad-symbols repository at commit e1bb0a65
+(2026-10-04). Libraries carried by the corpus projects are never read: a part from
+one of them keeps the numbers its drawing shows.
+
 ## Splits
 
 Each project is assigned to `dev` or `test` by a hash of its name, so the
