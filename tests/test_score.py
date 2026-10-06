@@ -182,3 +182,10 @@ def test_score_ignores_net_order_and_names(groups, rng):
     c = score(predicted, truth)
     assert c.pins_correct == c.pins
     assert c.nets_exact == c.nets
+
+
+def test_values_match_with_or_without_the_ohm_sign():
+    from schem2net.bench.score import _same_value
+
+    assert _same_value("10kΩ", "10k") and _same_value("100 ohms", "100")
+    assert not _same_value("10k", "10") and not _same_value("4.7uF", "4.7u")

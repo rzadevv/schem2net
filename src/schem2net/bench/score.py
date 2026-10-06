@@ -229,7 +229,16 @@ def _short_name(name: str | None) -> str:
 
 
 def _same_value(a: str | None, b: str | None) -> bool:
-    return "".join((a or "").split()).casefold() == "".join((b or "").split()).casefold()
+    """Values match ignoring spaces, case and an ohm sign written or left off: 10kΩ is
+    often drawn as 10k."""
+    return _plain_value(a) == _plain_value(b)
+
+
+def _plain_value(value: str | None) -> str:
+    return _OHMS.sub("", "".join((value or "").split()).casefold())
+
+
+_OHMS = re.compile(r"(?<=\d|[pnuμµmkg])(ω|Ω|ohms?)$")
 
 
 def _pairs(n: int) -> int:

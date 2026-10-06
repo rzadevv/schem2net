@@ -149,6 +149,10 @@ name and number, as in `D_1` for pin 1 named D, so the name alone counts as well
 A name is also taken as it is drawn, without the markup that puts a bar over it:
 KiCad's `~{CS}`, Eagle's `!CS` and Altium's `C\S\` are all drawn CS.
 
+Values match ignoring spaces, case and an ohm sign, which a drawing often leaves
+off (10kΩ drawn 10k). Some designs keep a library name in the value field, such as
+R_2k_0402 drawn as 2k, or leave the value unprinted; those count as misses.
+
 Swapping the two pins of a resistor, non-polarised capacitor, inductor,
 ferrite bead, fuse or crystal is not counted as an error. These parts are
 recognised by their KiCad symbol, or by designator (R, C, L, FB, F) when the

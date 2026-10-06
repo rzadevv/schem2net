@@ -1293,3 +1293,51 @@ def test_alias_bus_passes_through_a_sheet_that_names_none_of_its_members():
 
     _, nets = netlist(root.scene, middle.scene, leaf(3, "/A/C/", "R1"), leaf(4, "/B/", "R2"))
     assert nets["MEM.CLK"].pins == [("R1", "1"), ("R2", "1")]
+
+
+def test_values_are_paired_one_to_one_and_skip_pin_numbers_and_notes():
+    """R2's nearest text is also R3's only one; R2 takes the other. A note set closest to
+    R1 is no value, nor is the number of J1's pin, which has no value printed."""
+    grey = (128, 128, 128)
+
+    def part(ref, box, pins=()):
+        s = symbols.Symbol([], box, ref=ref)
+        s.pins = [symbols.Pin(0, line, number) for line, number in pins]
+        return s
+
+    r1 = part("R1", (10, 10, 12, 15))
+    j1 = part("J1", (30, 10, 32, 20), [(((32, 12), (34.54, 12)), "1")])
+    r2, r3 = part("R2", (40, 10, 42, 15)), part("R3", (45.2, 10, 47.2, 15))
+    texts = [
+        Text(0, "Cut trace to remove pull-ups", (12.5, 12, 28, 13), 1.3, 0.0, grey),
+        Text(1, "10k", (10, 16.5, 12, 17.5), 1.3, 0.0, grey),
+        Text(2, "1", (33, 10.6, 33.5, 11.6), 1.3, 0.0, grey),
+        Text(3, "1k", (43, 12, 44.1, 13), 1.3, 0.0, grey),  # 1.0 from R2, 1.1 from R3
+        Text(4, "2k", (40, 16.2, 42, 17.2), 1.3, 0.0, grey),  # 1.2 from R2
+    ]
+    fields._assign_values([r1, j1, r2, r3], fields._Texts(texts), None, 1.5)
+    assert [s.value for s in (r1, j1, r2, r3)] == ["10k", None, "2k", "1k"]
+
+
+def test_two_whole_values_side_by_side_stay_apart():
+    grey = (128, 128, 128)
+    pieces = [
+        Text(1, "0.1uF", (10, 10, 14, 11.3), 1.3, 0.0, grey, 1),
+        Text(2, "2.2nF", (14.1, 10, 18, 11.3), 1.3, 0.0, grey, 2),
+        Text(3, "4.7", (20, 10, 22, 11.3), 1.3, 0.0, grey, 3),
+        Text(4, "uF", (22.1, 10, 23.6, 11.3), 1.3, 0.0, grey, 4),
+    ]
+    assert [t.text for t in _join_runs(pieces)] == ["0.1uF", "2.2nF", "4.7uF"]
+
+
+def test_a_diodes_pin_letters_are_not_its_value():
+    grey = (128, 128, 128)
+    d1 = symbols.Symbol([], (10, 10, 12, 18), ref="D1")
+    d1.pins = [symbols.Pin(0, ((11, 12), (11, 10)), "1"), symbols.Pin(0, ((11, 16), (11, 18)), "2")]
+    texts = [
+        Text(0, "K", (11.5, 10.2, 12.3, 11.4), 1.3, 0.0, grey),
+        Text(1, "A", (11.5, 16.6, 12.3, 17.8), 1.3, 0.0, grey),
+        Text(2, "BAT43", (13.5, 13.4, 18, 14.6), 1.3, 0.0, grey),
+    ]
+    fields._assign_values([d1], fields._Texts(texts), None, 1.5)
+    assert d1.value == "BAT43"

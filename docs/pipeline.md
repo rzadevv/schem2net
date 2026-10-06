@@ -79,6 +79,17 @@ designator, from what it says, where it sits and what was drawn around it. A tex
 the model finds unlike a designator costs more, as a value such as A20 or Z80 does,
 and a word of no usual form that it is sure of may name a part.
 
+A part's value is the first text drawn after its designator where the generator
+draws each part's texts in turn, as KiCad does, and the text drawn right before it
+where values come first, as in EasyEDA; elsewhere values are paired with parts one
+to one, nearest first overall, so a part does not take its neighbour's. Where
+designators have a colour of their own, values share it, so a net name or pin text
+in another colour is never one.
+A pin's name or the number read for one of its pins is no value, nor is a single
+sign beside a pin, as a diode's A and K, nor a note of more than four words. Two texts that are each a whole value with its unit, as 0.1uF
+beside 2.2nF, are two parts' values however close they are drawn, and a line of
+Eagle's stroke text that reads as such values side by side is split per part.
+
 A pin number usually sits beside its pin; some libraries centre it on the pin's
 line instead. Card sockets and headers may mark only the first pin of each row,
 past its end or as pin 1 beside it, or the first and last: an evenly spaced row of

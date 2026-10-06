@@ -17,6 +17,7 @@ import numpy as np
 
 from schem2net import geometry
 from schem2net.primitives import BBox, Page, Path, Point, Text
+from schem2net.refdes import PART_VALUE
 
 TRACE_SLACK = 0.4  # text heights a traced letter may reach past its copy's box
 TRACE_RUN = 1.0  # the same, past either end of the line
@@ -61,7 +62,7 @@ def read(paths: list[Path], font: str) -> tuple[list[Text], set[int]]:
             # Outlines and arrows read as strings of signs; text is mostly letters.
             if sum(bool(c and c.isalnum()) for c in chars) < 0.5 * len(chars):
                 continue
-            texts.append(_text(line, chars, run))
+            texts += [_text(part, letters, run) for part, letters in _values_apart(line, chars)]
             used |= {s.seq for g in line.glyphs for s in g.strokes}
     return texts, used
 
@@ -329,6 +330,40 @@ def _aspect(segments: np.ndarray) -> float:
     points = segments.reshape(-1, 2)
     width, height = np.ptp(points[:, 0]), np.ptp(points[:, 1])
     return float(np.arctan2(width, height))  # an angle: stays finite for flat glyphs
+
+
+def _values_apart(line: Line, chars: list[str | None]) -> list[tuple[Line, list[str | None]]]:
+    """A line that reads as parts' values side by side, as Eagle draws the values of
+    neighbouring parts in turn, split into one per part: at its spaces where every word
+    is a value with its unit, or where no space is left, at the one place that leaves
+    such a value either side (0.1uF2.2nF)."""
+    words = [[0]]
+    for i in range(1, len(line.glyphs)):
+        prev, box = line.glyphs[i - 1].box, line.glyphs[i].box
+        gap = (box[0] - prev[2]) if line.horizontal else (prev[1] - box[3])
+        if gap > SPACE * line.height:
+            words.append([])
+        words[-1].append(i)
+
+    def whole(ks: list[int]) -> bool:
+        word = by_word("".join(chars[k] or "?" for k in ks), BY_SIZE)
+        return bool(PART_VALUE.match(word)) and any(c.isalpha() for c in word)
+
+    if len(words) > 1 and all(whole(ks) for ks in words):
+        cuts = words
+    elif len(words) == 1:
+        ks = words[0]
+        at = [k for k in range(1, len(ks)) if whole(ks[:k]) and whole(ks[k:])]
+        cuts = [ks[: at[0]], ks[at[0] :]] if len(at) == 1 else [ks]
+    else:
+        cuts = [list(range(len(line.glyphs)))]
+    return [
+        (
+            Line([line.glyphs[k] for k in ks], line.horizontal, line.base, line.height),
+            [chars[k] for k in ks],
+        )
+        for ks in cuts
+    ]
 
 
 def _text(line: Line, chars: list[str | None], run: list[Path]) -> Text:

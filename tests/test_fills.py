@@ -50,3 +50,21 @@ def test_letters_told_apart_by_size_follow_the_word():
     by_word = strokes.by_word
     assert by_word("ReIeased PCIe I2C AIike", fills.BY_SIZE) == "Released PCIe I2C Alike"
     assert by_word("I2C_sCK MoUT NREsET Sensor", strokes.BY_SIZE) == "I2C_SCK MOUT NRESET Sensor"
+
+
+def test_stroke_line_of_neighbouring_values_is_split_per_part():
+    """Eagle draws neighbouring parts' values in turn: one line, two values."""
+
+    def line(word, gaps):
+        glyphs, x = [], 0.0
+        for k, _ in enumerate(word):
+            glyphs.append(strokes.Glyph([], (x, 0.0, x + 1.0, 1.6)))
+            x += 1.0 + gaps.get(k, 0.2)
+        return strokes.Line(glyphs, True, 1.6, 1.6)
+
+    joined = strokes._values_apart(line("0.1uF2.2nF", {}), list("0.1uF2.2nF"))
+    assert ["".join(chars) for _, chars in joined] == ["0.1uF", "2.2nF"]
+    spaced = strokes._values_apart(line("10k10k", {2: 1.5}), list("10k10k"))
+    assert ["".join(chars) for _, chars in spaced] == ["10k", "10k"]
+    word = strokes._values_apart(line("VCC10k", {}), list("VCC10k"))
+    assert ["".join(chars) for _, chars in word] == ["VCC10k"]

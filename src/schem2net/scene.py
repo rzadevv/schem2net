@@ -690,6 +690,9 @@ def continues(prev: Text, text: Text) -> bool:
         return False
     start, _ = _along(text.bbox, text.angle)
     _, end = _along(prev.bbox, prev.angle)
+    # Two values each whole with a unit, as 0.1uF beside 2.2nF, are two parts' values.
+    if all(_whole_value(t.text) for t in (prev, text)):
+        return False
     # A designator is a field of its own, even when the value is drawn next to it.
     # Text written a letter or two at a time still joins up.
     if is_common_ref(prev.text) and prev.text[-1].isdigit():
@@ -715,6 +718,11 @@ def continues(prev: Text, text: Text) -> bool:
     # a body edge; text written a letter at a time may leave a wider gap.
     reach = 0.8 if min(len(prev.text.strip()), len(text.text.strip())) <= 1 else 0.5
     return -0.5 <= start - end <= reach * prev.size and beside
+
+
+def _whole_value(word: str) -> bool:
+    word = word.strip()
+    return bool(PART_VALUE.match(word)) and any(c.isalpha() for c in word)
 
 
 def _along(box: BBox, angle: float) -> tuple[float, float]:

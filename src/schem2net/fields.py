@@ -38,6 +38,7 @@ ORDER_VOTES = 3  # flags that must show which side of its mark a name is drawn
 ORDER_SHARE = 0.8  # of them, the share that must agree
 POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
+MAX_VALUE_WORDS = 4  # a longer text beside a part is a note, not its value
 OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name, unless the profile says
 SIDE_BEARING = 0.15  # of the text size, the most a letter's ink may fall short of its box
@@ -87,9 +88,11 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
             symbol.anchors = _anchors(symbol, scene, tips)
     values = _values_by_order(scene, profile)
     likely = designators.likelihood(scene, symbols, runs, profile)
-    _assign_refs(symbols, texts, runs, profile, values, _among_values(scene, profile), likely)
+    named_by = _assign_refs(
+        symbols, texts, runs, profile, values, _among_values(scene, profile), likely
+    )
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
-    _assign_values(symbols, texts, runs, profile.pin_name_gap)
+    _assign_values(symbols, texts, runs, profile.pin_name_gap, profile, named_by, values)
 
 
 class _Texts:
@@ -403,8 +406,10 @@ def _assign_refs(
     values: set[int],
     among_values: set[int],
     likely: dict[int, float] | None = None,
-) -> None:
-    """`values` holds the ids of texts drawn where a value goes, `among_values` those
+) -> dict[int, int]:
+    """Returns, by part id, the index of the text that names it.
+
+    `values` holds the ids of texts drawn where a value goes, `among_values` those
     of texts drawn among values, and `likely`, by id, how likely each text is to be a
     designator, where a model was learned for the generator."""
     parts = [s for s in symbols if s.pins and not s.power]
@@ -498,6 +503,7 @@ def _assign_refs(
     if profile.names_by_layer:
         unnamed = [p for k, p in enumerate(parts) if k not in taken]
         _name_by_function(unnamed, texts, profile, among_values)
+    return {id(parts[si]): ti for ti, si in used.items()}
 
 
 def _name_by_function(
@@ -1064,22 +1070,67 @@ def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | No
 
 
 def _assign_values(
-    symbols: list[Symbol], texts: _Texts, runs: Runs | None, name_gap: float
+    symbols: list[Symbol],
+    texts: _Texts,
+    runs: Runs | None,
+    name_gap: float,
+    profile: Profile | None = None,
+    named_by: dict[int, int] | None = None,
+    values: set[int] = frozenset(),
 ) -> None:
-    """The value is the next text drawn after the designator, or else the nearest one."""
-    for symbol in symbols:
-        if not symbol.ref:
-            continue
-        options = [
-            (text.seq if runs else gap, i)
-            for gap, i in texts.near(symbol.bbox, REF_SEARCH / 2)
-            if not is_pin_name(symbol, text := texts.texts[i], name_gap)
-            and (not runs or runs.owns(symbol, text.seq))
-        ]
-        if options:
-            _, i = min(options)
-            symbol.value = texts.texts[i].text
-            texts.used.add(i)
+    """The value is the next text drawn after the designator, or else the nearest one,
+    each text the value of one part. A pin's name or number is no value, nor is a note
+    written as a sentence. Where designators have a colour of their own, values share
+    it; where each part's value is drawn right before its designator, that text is it."""
+    named = [s for s in symbols if s.ref]
+    if profile and profile.value_before_designator and named_by:
+        by_seq = {t.seq: i for i, t in enumerate(texts.texts)}
+        for symbol in named:
+            ti = named_by.get(id(symbol))
+            vi = by_seq.get(texts.texts[ti].seq - 1) if ti is not None else None
+            if vi is not None and vi not in texts.used and id(texts.texts[vi]) in values:
+                symbol.value = texts.texts[vi].text
+                texts.used.add(vi)
+        named = [s for s in named if not s.value]
+    own_colour = bool(profile and profile.colors.get("designator"))
+    candidates = []
+    for si, symbol in enumerate(named):
+        for gap, ti in texts.near(symbol.bbox, REF_SEARCH / 2):
+            text = texts.texts[ti]
+            if own_colour and not profile.is_("designator", text.color):
+                continue
+            if is_pin_name(symbol, text, name_gap) or _read_as_number(symbol, text):
+                continue
+            if len(text.text.split()) > MAX_VALUE_WORDS:
+                continue
+            if runs and not runs.owns(symbol, text.seq):
+                continue
+            candidates.append((text.seq if runs else gap, si, ti))
+    if runs:  # drawn in turn: the first text after the designator, part by part
+        pairs = []
+        for si in range(len(named)):
+            mine = [(cost, ti) for cost, sj, ti in candidates if sj == si and ti not in texts.used]
+            if mine:
+                _, ti = min(mine)
+                pairs.append((si, ti))
+                texts.used.add(ti)
+    else:
+        pairs = _best_pairs(sorted(candidates))
+    for si, ti in pairs:
+        named[si].value = texts.texts[ti].text
+        texts.used.add(ti)
+
+
+def _read_as_number(symbol: Symbol, text: Text) -> bool:
+    """Whether the text labels one of the part's pins beside it: the number read for
+    it, or a single sign such as a diode's A and K or a capacitor's +."""
+    c = geometry.center(text.bbox)
+    word = text.text.strip()
+    return any(
+        (pin.number == word or len(word) == 1)
+        and geometry.distance_to_segment(c, pin.line) <= PIN_NUMBER_GAP + _size(text)
+        for pin in symbol.pins
+    )
 
 
 def _inside_body(symbol: Symbol, text: Text) -> bool:
