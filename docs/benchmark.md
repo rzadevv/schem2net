@@ -144,6 +144,8 @@ Corpus totals are summed over pins, not averaged over designs.
 A pin read by its name, because its number is hidden, counts as the pin of that
 name when the name is unique on its part. kicad-cli writes a pin's function as its
 name and number, as in `D_1` for pin 1 named D, so the name alone counts as well.
+A name is also taken as it is drawn, without the markup that puts a bar over it:
+KiCad's `~{CS}`, Eagle's `!CS` and Altium's `C\S\` are all drawn CS.
 
 Swapping the two pins of a resistor, non-polarised capacitor, inductor,
 ferrite bead, fuse or crystal is not counted as an error. These parts are

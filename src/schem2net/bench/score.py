@@ -152,10 +152,20 @@ def _pin_aliases(truth: Design) -> dict[PinRef, PinRef]:
 def _names(pin) -> set[str]:
     if not pin.name:
         return set()
+    names = {pin.name, _drawn(pin.name)}
     suffix = f"_{pin.num}"
     if pin.name.endswith(suffix) and len(pin.name) > len(suffix):
-        return {pin.name, pin.name[: -len(suffix)]}
-    return {pin.name}
+        names |= {n[: -len(suffix)] for n in names}
+    return names
+
+
+def _drawn(name: str) -> str:
+    """A name as drawn, without the markup for a bar over it: KiCad's ~{CS}, Eagle's
+    !CS and Altium's C\\S\\."""
+    return _OVERBAR.sub(r"\1", name).replace("!", "").replace("\\", "")
+
+
+_OVERBAR = re.compile(r"~\{([^}]*)\}")
 
 
 def match_nets(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> dict[int, int]:

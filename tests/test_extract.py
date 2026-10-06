@@ -589,6 +589,59 @@ def test_eagle_designator_outside_the_box_beats_a_pin_name_inside():
     assert [s.ref for s in found if s.pins] == ["U3"]
 
 
+def test_eagle_pin_names_in_the_number_colour_name_one_pin_each():
+    """Eagle writes pin names and numbers in one grey, so a name is offered both as a
+    number and as a name; it still names one pin. A name set right against the body's
+    edge, such as INT1 whose last letter is narrow, is a pin name and not the value."""
+    red, grey = (128, 0, 0), (128, 128, 128)
+    b = SceneBuilder()
+    b.shape(
+        (132.2, 106.5),
+        (152.5, 106.5),
+        (152.5, 121),
+        (132.2, 121),
+        (132.2, 106.5),
+        width=0.4,
+        color=red,
+    )
+    rows = (109.07, 111.61, 114.15, 116.69)
+    left = (
+        ("SCLK", 134.6, 140.1),
+        ("MOSI", 134.7, 139.8),
+        ("MISO", 134.7, 139.9),
+        ("CS", 134.7, 137.4),
+    )
+    right = (
+        ("VDDIO", 143.4, 150.1),
+        ("VS", 147.4, 150.1),
+        ("INT1", 145.8, 149.8),
+        ("INT2", 145.8, 150.1),
+    )
+    for y, (name, x0, x1) in zip(rows, left, strict=True):
+        b.shape((127.1, y), (132.2, y), width=0.15, color=red)
+        b.scene.wires.append(((120, y), (127.1, y)))
+        b.seq += 1
+        text = Text(b.seq, name, (x0, y - 0.85, x1, y + 0.8), 2.39, 0.0, grey, b.seq)
+        b.scene.fields.append(text)
+        b.scene.pin_numbers.append(text)
+    for y, (name, x0, x1) in zip(rows, right, strict=True):
+        b.shape((157.6, y), (152.5, y), width=0.15, color=red)
+        b.scene.wires.append(((157.6, y), (165, y)))
+        b.seq += 1
+        text = Text(b.seq, name, (x0, y - 0.85, x1, y + 0.8), 2.39, 0.0, grey, b.seq)
+        b.scene.fields.append(text)
+        b.scene.pin_numbers.append(text)
+    for word, y in (("U1", 102.3), ("ADXL362", 104.8)):
+        b.seq += 1
+        b.scene.fields.append(
+            Text(b.seq, word, (132.3, y, 135 + 2 * len(word), y + 1.6), 1.63, 0.0, grey, b.seq)
+        )
+
+    (u1,) = [s for s in symbols.find(b.scene, profile.load("eagle")) if s.pins]
+    assert (u1.ref, u1.value) == ("U1", "ADXL362")
+    assert sorted(p.number for p in u1.pins) == sorted(n for n, *_ in left + right)
+
+
 def test_pins_leave_the_slanted_sides_of_a_triangle_past_a_polarity_mark():
     """An amplifier's supply pin starts on a slanted side and ends within the triangle's
     box; a "+" drawn against an input is a mark, not a pin."""

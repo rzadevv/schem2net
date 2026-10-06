@@ -225,7 +225,10 @@ unit, as in U5A, but I2C is a name: a designator of no usual prefix keeps its
 letter unless the document shows it in other units too, as CM1A and CM1B.
 
 Names, values, pin names and pad numbers
-share one colour, so their roles come from where they sit. Net labels are the
+share one colour, so their roles come from where they sit; a text in that colour
+names one pin at most. A pin name is set a fixed distance in from the pin's end,
+measured to where the text is placed, so a narrow last letter, as in INT1, leaves
+a little more room to its ink. Net labels are the
 names inside an outline that meets a wire, or, in older designs, names laid
 along a wire just above it; a part value over a passing wire is not one. Many Eagle symbols draw no pin
 lines: a wire ending on a part's outline is a pin there, numbered by the text

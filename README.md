@@ -35,11 +35,11 @@ and KiCad's symbol libraries indexed (see `docs/benchmark.md`).
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.92 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
-| C, Eagle | Dev | 96 | 7,038 | 0.71 | 0.67 |
-| C, Eagle | Test | 42 | 2,903 | 0.59 | 0.54 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.77 | 0.72 |
-| D, Olimex, held out | Test | 24 | 9,286 | 0.74 | 0.64 |
-| E, EasyEDA | Dev | 18 | 2,487 | 0.68 | 0.65 |
+| C, Eagle | Dev | 96 | 7,038 | 0.73 | 0.69 |
+| C, Eagle | Test | 42 | 2,903 | 0.63 | 0.59 |
+| D, Olimex, held out | Dev | 24 | 11,745 | 0.78 | 0.73 |
+| D, Olimex, held out | Test | 24 | 9,286 | 0.75 | 0.65 |
+| E, EasyEDA | Dev | 18 | 2,487 | 0.68 | 0.66 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.50 | 0.09 |
 
 ## Install

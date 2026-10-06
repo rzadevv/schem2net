@@ -36,6 +36,7 @@ POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
 OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name, unless the profile says
+SIDE_BEARING = 0.15  # of the text size, the most a letter's ink may fall short of its box
 INSIDE_BODY_COST = REF_SEARCH  # a designator inside a part's outline, where profiles say
 UNKNOWN_PREFIX_COST = REF_SEARCH  # "LM358" looks like a designator but is a value
 MANY_PINS_COST = REF_SEARCH  # "L298" by a part of many pins is its value, not an inductor
@@ -636,7 +637,11 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
             pin.number = str(number)
 
     unused = [t for k, t in enumerate(numbers) if k not in used]
-    _name_pins(symbols, unused + scene.fields, profile.pin_name_gap)
+    # Texts in a colour both roles share are in both lists; each names one pin at most.
+    seen = {id(t) for t in unused}
+    _name_pins(
+        symbols, unused + [t for t in scene.fields if id(t) not in seen], profile.pin_name_gap
+    )
 
     # Last, a transistor with neither numbers nor names shown: its pins by role. A
     # potentiometer or a three-way jumper has two ends facing apart and a wiper or
@@ -1043,7 +1048,8 @@ def is_pin_name(symbol: Symbol, text: Text, gap: float = PIN_NAME_GAP) -> bool:
     x0, y0, x1, y1 = symbol.body
     if not (x0 + 0.3 <= c[0] <= x1 - 0.3 and y0 + 0.3 <= c[1] <= y1 - 0.3):
         return False
-    reach = gap + max(text.bbox[2] - text.bbox[0], text.bbox[3] - text.bbox[1]) / 2
+    # The ink of a narrow last letter, such as 1, stops short of where the text is set.
+    reach = gap + SIDE_BEARING * text.size + _size(text) / 2
     vertical_text = round(text.angle) % 180 == 90
     return any(
         geometry.distance(c, pin.line[0]) <= reach

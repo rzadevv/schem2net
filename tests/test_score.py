@@ -101,6 +101,14 @@ def test_pins_known_by_name_as_kicad_writes_it():
     assert score(predicted, truth).metrics()["pin_accuracy"] == 1
 
 
+def test_pins_known_by_name_as_drawn_without_overbar_markup():
+    """Eagle writes a barred CS as !CS and KiCad as ~{RST}; the PDF draws CS and RST."""
+    u = Component(ref="U1", pins=[Pin(num="6", name="!CS"), Pin(num="7", name="~{RST}")])
+    truth = design({"A": [("U1", "6"), ("R1", "1")], "B": [("U1", "7"), ("R2", "1")]}, [u])
+    predicted = design({"A": [("U1", "CS"), ("R1", "1")], "B": [("U1", "RST"), ("R2", "1")]})
+    assert score(predicted, truth).metrics()["pin_accuracy"] == 1
+
+
 def test_many_swapped_decoupling_capacitors_are_not_errors():
     caps = [part(f"C{i}", "Device:C") for i in range(1, 6)]
     truth = design(
