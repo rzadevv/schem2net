@@ -144,8 +144,9 @@ single pin in the ground truth are not scored.
 | `flag_precision` | Share of flagged nets that were actually wrong. |
 | `perfect_designs` | Share of designs with every net correct. |
 | `silent_error_rate` | Share of pins that are wrong with nothing flagging them: on a net of full confidence and named by no issue. What a user cannot catch. |
-| `pin_flag_recall`, `pin_flag_precision` | Pin by pin: the share of wrong pins flagged, and of flagged pins that are wrong. |
-| `review_share` | Share of the pins found that are flagged: what a reviewer is asked to check. |
+| `pin_flag_recall` | Share of wrong pins that something flags. |
+| `review_items_per_100_pins` | Things a reviewer is handed: each doubtful net and each issue naming pins counts once, per 100 pins. |
+| `review_precision` | Share of those that point at something wrong: a doubtful net that is wrong, an issue one of whose pins is wrong. |
 | `designs_without_silent_errors` | Share of designs whose every wrong pin is flagged. |
 
 Corpus totals are summed over pins, not averaged over designs.

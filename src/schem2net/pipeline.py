@@ -65,6 +65,11 @@ def extract(file: str | Path, embedded: bool = True, region: Region | None = Non
     return run(file, embedded, region).design
 
 
+def _producer(doc) -> str:
+    """What the PDF says made it, for a message: its creator or producer."""
+    return " / ".join(v for k in ("Creator", "Producer") if (v := doc.metadata.get(k, "").strip()))
+
+
 def _read(result: PageResult, rules: profile.Profile, pages: int) -> None:
     """The page's scene and symbols."""
     result.scene = scene.build(result.page, rules)
@@ -105,7 +110,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     if carried:
         return Extraction(carried, pages)
     if generator not in PROFILES:
-        design.issues.append(Issue(kind="no_profile", severity="error"))
+        made = generator if generator != "unknown" else _producer(doc) or "an unknown tool"
+        design.issues.append(Issue(kind="no_profile", severity="error", detail=made))
         return Extraction(design, pages)
 
     rules = profile.load(generator)

@@ -17,7 +17,7 @@ from schem2net.bench import designators as designator_examples
 from schem2net.bench import font, roundtrip, runner
 from schem2net.bench import roles as role_examples
 from schem2net.bench.score import Counts
-from schem2net.ir import Design
+from schem2net.ir import LOW_CONFIDENCE, Design
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -39,10 +39,8 @@ def extract(
     design = pipeline.extract(file, region=_region(region))
     output = output or file.with_suffix(".ir.json")
     design.save(output)
-    typer.echo(
-        f"{output}: {len(design.components)} components, "
-        f"{len(design.nets)} nets, {len(design.issues)} issues"
-    )
+    typer.echo(f"{output}: {len(design.components)} components, {len(design.nets)} nets")
+    _say(design)
 
 
 class Format(StrEnum):
@@ -72,6 +70,7 @@ def export(
     output = output or file.with_name(file.name.split(".")[0] + SUFFIXES[to])
     output.write_text(text)
     typer.echo(output)
+    _say(design)
 
 
 @app.command()
@@ -88,6 +87,7 @@ def schematic(
     output = output or file.with_name(file.stem + "-kicad")
     root = kicad_sch.write(extraction, output, file.stem)
     typer.echo(root)
+    _say(extraction.design)
 
 
 @app.command("diff")
@@ -105,6 +105,35 @@ def _load(file: Path, region: pipeline.Region | None = None) -> Design:
     return Design.load(file)
 
 
+SKIPPED = {"board_page": "a board drawing", "table_page": "a table", "raster_page": "scanned"}
+
+
+def _say(design: Design) -> None:
+    """Tell the reader what could not be read, and what to check; exit with an error
+    when nothing could be."""
+    issues = design.issues
+    for issue in issues:
+        if issue.kind == "no_profile":
+            typer.echo(
+                f"{design.source.file}: not drawn by a tool schem2net reads (the PDF says: "
+                f"{issue.detail}); it reads PDFs from KiCad, Altium, Eagle and EasyEDA. "
+                "Nothing was extracted.",
+                err=True,
+            )
+            raise typer.Exit(2)
+    for issue in issues:
+        if issue.kind in SKIPPED:
+            typer.echo(f"page {issue.page} skipped: {SKIPPED[issue.kind]}", err=True)
+    doubtful = [n for n in design.nets if n.confidence < LOW_CONFIDENCE]
+    worth = [i for i in issues if i.kind not in SKIPPED]
+    if doubtful or worth:
+        typer.echo(
+            f"{len(doubtful)} doubtful nets and {len(worth)} issues to check; "
+            "`schem2net report` shows where.",
+            err=True,
+        )
+
+
 def _region(text: str | None) -> pipeline.Region | None:
     return pipeline.Region.parse(text) if text else None
 
@@ -117,8 +146,10 @@ def report_(
 ) -> None:
     """Write an HTML page showing the extracted nets over the schematic."""
     output = output or file.with_suffix(".html")
-    output.write_text(report.render(pipeline.run(file, region=_region(region))))
+    extraction = pipeline.run(file, region=_region(region))
+    output.write_text(report.render(extraction))
     typer.echo(output)
+    _say(extraction.design)
 
 
 @app.command("serve-mcp")

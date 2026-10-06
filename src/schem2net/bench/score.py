@@ -56,11 +56,13 @@ class Counts:
     wrong_flagged: int = 0
     # Pin by pin, as a reviewer meets them: a pin is flagged when its net is doubtful or
     # an issue names it; a wrong pin nothing flags is a silent error.
-    pins_present: int = 0  # truth pins the extraction has on some net
     pins_wrong: int = 0
-    pins_flagged: int = 0
     pins_wrong_flagged: int = 0
     designs_without_silent_errors: int = 0
+    # What a reviewer is handed: each doubtful net, and each issue naming pins, is one
+    # thing to check; it is worth checking if something there is wrong.
+    pin_issues: int = 0
+    pin_issues_wrong: int = 0
 
     def __add__(self, other: "Counts") -> "Counts":
         return Counts(*(getattr(self, f.name) + getattr(other, f.name) for f in fields(self)))
@@ -81,8 +83,12 @@ class Counts:
             "perfect_designs": _ratio(self.perfect_designs, self.designs),
             "silent_error_rate": _ratio(self.pins_wrong - self.pins_wrong_flagged, self.pins),
             "pin_flag_recall": _ratio(self.pins_wrong_flagged, self.pins_wrong),
-            "pin_flag_precision": _ratio(self.pins_wrong_flagged, self.pins_flagged),
-            "review_share": _ratio(self.pins_flagged, self.pins_present),
+            "review_items_per_100_pins": _ratio(
+                100 * (self.flagged_nets + self.pin_issues), self.pins
+            ),
+            "review_precision": _ratio(
+                self.wrong_flagged + self.pin_issues_wrong, self.flagged_nets + self.pin_issues
+            ),
             "designs_without_silent_errors": _ratio(
                 self.designs_without_silent_errors, self.designs
             ),
@@ -157,10 +163,19 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
             p = pred_owner[pin]
             flagged = confidence[p] < low_confidence or pin in doubted
             wrong = match.get(t) != p
-            c.pins_present += 1
-            c.pins_flagged += flagged
             c.pins_wrong += wrong
             c.pins_wrong_flagged += wrong and flagged
+    right = {
+        pin
+        for t, net in enumerate(true_nets)
+        for pin in net
+        if pin in pred_owner and match.get(t) == pred_owner[pin]
+    }
+    for issue in predicted.issues:
+        named = {aliases.get(tuple(p), tuple(p)) for p in issue.pins} & true_owner.keys()
+        if named:
+            c.pin_issues += 1
+            c.pin_issues_wrong += bool(named - right)
     c.designs_without_silent_errors = int(c.pins_wrong == c.pins_wrong_flagged)
     c.perfect_designs = int(c.nets_exact == c.nets and c.wrong_nets == 0)
     return c

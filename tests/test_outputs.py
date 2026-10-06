@@ -1,5 +1,8 @@
 """Export, queries and the HTML report, on a small made-up design."""
 
+import pytest
+import typer
+
 from schem2net import bookmarks, diff, export, kicad, kicad_sch, report, sexpr, symbols
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 from schem2net.nets import Netlister
@@ -182,3 +185,24 @@ def test_diff_reports_changed_parts_and_moved_pins():
     assert moved["VIN"] == ([("U1", "1")], [])
     assert "AGND" not in moved
     assert diff.diff(DESIGN, DESIGN).empty
+
+
+def test_a_pdf_no_profile_reads_fails_loudly(capsys):
+    """A PDF from a tool schem2net does not read gives nothing: say so, and fail."""
+    from schem2net import cli
+
+    design = Design(
+        source=Source(file="pi.pdf"),
+        issues=[Issue(kind="no_profile", severity="error", detail="Microsoft: Print To PDF")],
+    )
+    with pytest.raises(typer.Exit) as stop:
+        cli._say(design)
+    assert stop.value.exit_code == 2
+    assert "Microsoft: Print To PDF" in capsys.readouterr().err
+
+
+def test_the_report_lists_what_to_check_with_its_pins():
+    issue = Issue(kind="pin_number_guessed", detail="D1", pins=[("D1", "1"), ("D1", "2")])
+    design = Design(source=Source(file="x.pdf"), issues=[issue])
+    html = report.render(Extraction(design, []))
+    assert "To check (1)" in html and "pin numbers not shown, guessed" in html and "D1" in html
