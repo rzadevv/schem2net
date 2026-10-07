@@ -2,6 +2,8 @@
 
 import ctypes
 import math
+import struct
+import zlib
 from pathlib import Path as FilePath
 
 import pypdfium2 as pdfium
@@ -212,3 +214,43 @@ def _bezier(p0: Point, p1: Point, p2: Point, p3: Point) -> list[Point]:
             )
         )
     return points
+
+
+PICTURE_DENSITY = 9  # pixels per mm of a page drawn under what was read from it
+PICTURE_PIXELS = (1800, 4000)  # the fewest and most pixels across
+
+
+def page_png(file: str | FilePath, number: int) -> bytes:
+    """Page `number` (from 1) as it is shown, rendered in grey as a PNG fine enough to
+    read when zoomed in, to lay under what was read from it."""
+    pdf = pdfium.PdfDocument(file)
+    try:
+        page = pdf[number - 1]
+        across = max(page.get_size())  # points
+        lo, hi = PICTURE_PIXELS
+        width = min(hi, max(lo, across * MM_PER_PT * PICTURE_DENSITY))
+        scale = width / across
+        pixels = page.render(scale=scale, grayscale=True).to_numpy()
+    finally:
+        pdf.close()
+    if pixels.ndim == 3:
+        pixels = pixels[:, :, 0]
+    return _png(pixels)
+
+
+def _png(grey) -> bytes:
+    """A greyscale PNG of an 8-bit image."""
+    height, width = grey.shape
+    rows = b"".join(b"\x00" + grey[y].tobytes() for y in range(height))
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 0, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(rows, 6))
+        + chunk(b"IEND", b"")
+    )

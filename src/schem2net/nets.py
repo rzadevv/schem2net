@@ -13,7 +13,7 @@ from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.ir import Component, Evidence, Issue, Net
 from schem2net.ir import Pin as PinOut
 from schem2net.primitives import Point
-from schem2net.refdes import REFDES, is_common_ref
+from schem2net.refdes import REFDES, TWO_TERMINAL_PREFIXES, is_common_ref
 from schem2net.scene import Label, Scene, name_key
 from schem2net.symbols import Pin, Symbol
 
@@ -475,7 +475,16 @@ def _under_label(
 
 def _doubtful(pin, symbol) -> bool:
     """A number guessed where libraries number alike-looking parts either way: a diode's
-    end where the generator has no rule for which is 1, or a three-pin part's ends."""
+    end where the generator has no rule for which is 1, a three-pin part's ends, or the
+    ends of a two-pin part other than a resistor, capacitor, inductor, fuse or ferrite,
+    such as a connector, whose order matters."""
     if pin.number is None:
         return False
-    return pin.how == "polarity" or (pin.how == "position" and len(symbol.pins) > 2)
+    if pin.how == "polarity":
+        return True
+    if pin.how != "position":
+        return False
+    if len(symbol.pins) > 2:
+        return True
+    match = REFDES.match(symbol.ref or "")
+    return not match or match.group(1).rstrip("$") not in TWO_TERMINAL_PREFIXES

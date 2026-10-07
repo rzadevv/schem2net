@@ -42,6 +42,24 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.51 | 0.10 |
 
+Accuracy says how much is right; what a user also needs is to know where the rest
+is. Silent errors are wrong pins that nothing flags. Review items are the doubtful
+nets and the issues naming pins, each one thing to check; precision is the share of
+them that point at something wrong.
+
+| Corpus | Split | Silent errors | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
+|---|---|---|---|---|---|---|
+| A, KiCad | Dev | 0.4% | 0.84 | 4.4 | 0.61 | 0.74 |
+| A, KiCad | Test | 1.1% | 0.58 | 3.7 | 0.71 | 0.56 |
+| B, Altium, drawing only | Dev | 0.3% | 0.92 | 12.5 | 0.48 | 0.83 |
+| B, Altium, drawing only | Test | 2.8% | 0.57 | 6.4 | 0.58 | 0.46 |
+| C, Eagle | Dev | 1.0% | 0.71 | 12.9 | 0.77 | 0.67 |
+| C, Eagle | Test | 1.1% | 0.71 | 14.7 | 0.82 | 0.71 |
+| D, Olimex, held out | Dev | 0.8% | 0.85 | 12.6 | 0.84 | 0.50 |
+| D, Olimex, held out | Test | 1.0% | 0.79 | 13.2 | 0.88 | 0.46 |
+| E, EasyEDA | Dev | 2.7% | 0.73 | 11.9 | 0.88 | 0.56 |
+| E, EasyEDA | Test | 1.5% | 0.77 | 11.9 | 0.87 | 0.58 |
+
 ## Install
 
 ```sh
@@ -81,7 +99,9 @@ was extracted.
 `diff` matches parts by designator and nets by the pins they share, so a
 renamed net is not reported, but a pin moving to another net is.
 
-The report colours each net and lists everything worth checking, grouped, the
+The report draws each net in its own colour over the pages as printed
+(`--no-pdf` leaves the pictures out for a lighter file), so what was read can be
+checked against the drawing. It lists everything worth checking, grouped, the
 likeliest wrong connections first: nets joined on weak evidence, pin numbers the
 drawing does not show and that were guessed, pins on no net, labels on no wire.
 Click an entry to zoom to it; click a net to highlight it. The JSON says the same:

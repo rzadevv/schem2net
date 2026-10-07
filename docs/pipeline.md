@@ -348,6 +348,17 @@ cap the confidence of the nets involved:
 | `designator_without_part` | a designator that no part claimed | |
 | `unattached_label` | a net label on no wire or pin | |
 | `unnumbered_pin` | a pin whose number was not found | |
+| `pin_number_guessed` | numbers the drawing does not show, guessed where they matter: which end of a diode is 1, the ends of a three-pin part, the order of a two-pin part other than a resistor, capacitor, inductor, fuse or ferrite | |
+
+Each pin in the output says how its number was found when it was not printed
+beside it: counted along a row from its marks (`row`), its name (`name`), a
+library symbol (`library`), the generator's pad names for a diode (`pad names`),
+or guessed from the drawing: the diode's triangle (`polarity`), a transistor's
+terminals (`role`), the pin's place (`position`). Guesses are right most of the
+time, so only those whose kind goes wrong often are reported, each issue naming
+the pins it puts in doubt. On the dev boards, a diode's end guessed from its
+triangle was wrong three times in four in EasyEDA, whose libraries number diodes
+either way, and almost never in Eagle, whose pads are named for cathode and anode.
 
 A pin drawn in several units of one part, such as a supply pin, is one pad, so
 its units are joined.

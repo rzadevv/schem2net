@@ -1,3 +1,4 @@
+import base64
 import json
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
@@ -143,11 +144,20 @@ def report_(
     file: Path,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
     region: RegionOption = None,
+    pdf_under: Annotated[
+        bool, typer.Option("--pdf/--no-pdf", help="Draw the nets over the pages as printed.")
+    ] = True,
 ) -> None:
     """Write an HTML page showing the extracted nets over the schematic."""
     output = output or file.with_suffix(".html")
     extraction = pipeline.run(file, region=_region(region))
-    output.write_text(report.render(extraction))
+    pictures = {}
+    if pdf_under and not region:
+        for result in extraction.pages:
+            if result.scene is not None:
+                data = base64.b64encode(pdf.page_png(file, result.page.number)).decode()
+                pictures[result.page.number] = f"data:image/png;base64,{data}"
+    output.write_text(report.render(extraction, pictures))
     typer.echo(output)
     _say(extraction.design)
 

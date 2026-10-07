@@ -38,6 +38,8 @@ section { margin-bottom: 24px; }
 h2 { font-size: 14px; color: var(--muted); font-weight: normal; }
 svg { width: 100%; height: auto; background: var(--paper); border: 1px solid var(--line); }
 .ink { stroke: var(--ink); fill: none; }
+.printed { opacity: 0.55; }
+@media (prefers-color-scheme: dark) { .printed { filter: invert(1); opacity: 0.5; } }
 .txt { fill: var(--ink); font-family: sans-serif; }
 .low { stroke: var(--bad); fill: none; }
 .unnumbered { stroke: var(--warn); fill: none; }
@@ -128,7 +130,10 @@ ORDER = [
 OPEN_GROUPS = 3  # groups shown unfolded
 
 
-def render(extraction: Extraction) -> str:
+def render(extraction: Extraction, pictures: dict[int, str] | None = None) -> str:
+    """The page; `pictures` holds, by page number, an image of each page as printed, as
+    a data URI, to draw what was read over it."""
+    pictures = pictures or {}
     design = extraction.design
     nets = {net.id: net for net in design.nets}
     net_of_pin = {pin: net.id for net in design.nets for pin in net.pins}
@@ -137,7 +142,9 @@ def render(extraction: Extraction) -> str:
     items = "\n".join(_net_item(net) for net in design.nets)
     todo = _review(design, extraction)
     pages = "\n".join(
-        _page(result, extraction.wire_nets, net_of_pin, nets, todo)
+        _page(
+            result, extraction.wire_nets, net_of_pin, nets, todo, pictures.get(result.page.number)
+        )
         for result in extraction.pages
         if result.scene is not None
     )
@@ -250,7 +257,12 @@ def _net_item(net: Net) -> str:
 
 
 def _page(
-    result: PageResult, wire_nets: dict, net_of_pin: dict, nets: dict[str, Net], todo: list
+    result: PageResult,
+    wire_nets: dict,
+    net_of_pin: dict,
+    nets: dict[str, Net],
+    todo: list,
+    picture: str | None = None,
 ) -> str:
     page, scene = result.page, result.scene
     out = [
@@ -258,10 +270,15 @@ def _page(
         f'<svg viewBox="0 0 {page.width:.1f} {page.height:.1f}" role="img" '
         f'aria-label="Page {page.number}">',
     ]
-    for shape in scene.shapes:
+    if picture:  # the page as printed shows the drawing; what was read goes over it
+        out.append(
+            f'<image class="printed" href="{picture}" x="0" y="0" width="{page.width:.2f}" '
+            f'height="{page.height:.2f}" preserveAspectRatio="none"/>'
+        )
+    for shape in [] if picture else scene.shapes:
         points = " ".join(f"{x:.2f},{y:.2f}" for x, y in shape.points)
         out.append(f'<polyline class="ink" stroke-width="0.15" points="{points}"/>')
-    for text in page.texts:
+    for text in [] if picture else page.texts:
         x0, _, _, y1 = text.bbox
         rotate = f' transform="rotate({-text.angle:.0f} {x0:.2f} {y1:.2f})"' if text.angle else ""
         out.append(

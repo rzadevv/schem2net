@@ -55,3 +55,16 @@ def test_text(tmp_path, pdf_builder):
     assert x0 == pytest.approx(25.4, abs=0.5)
     assert y1 == pytest.approx(72 * MM, abs=0.5)
     assert x1 > x0 and y1 > y0
+
+
+def test_page_picture_is_a_png_as_wide_as_the_page_reads(tmp_path, pdf_builder):
+    """A rotated page is pictured as shown, landscape, about 9 pixels per mm."""
+    import struct
+
+    b = pdf_builder()
+    b.line((72, 72), (144, 72), width=4)
+    png = pdf.page_png(b.save(tmp_path / "a.pdf", rotation=90), 1)
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    width, height = struct.unpack(">II", png[16:24])
+    assert width > height
+    assert width == pytest.approx(792 * MM * pdf.PICTURE_DENSITY, rel=0.01)

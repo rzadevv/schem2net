@@ -1402,3 +1402,18 @@ def test_a_diodes_pin_letters_are_not_its_value():
     ]
     fields._assign_values([d1], fields._Texts(texts), None, 1.5)
     assert d1.value == "BAT43"
+
+
+def test_a_two_pin_connectors_guessed_order_is_reported_but_a_resistors_is_not():
+    """Which end of a resistor is 1 makes no difference; of a connector it does."""
+
+    def guessed(ref):
+        b = SceneBuilder()
+        b.resistor(10, 10, ref, "x")
+        b.scene.wires += [((10, 7.46), (10, 3)), ((10, 17.54), (10, 22))]
+        netlister = Netlister()
+        netlister.add_page(b.scene, symbols.find(b.scene, KICAD))
+        return [i.detail for i in netlister.result().issues if i.kind == "pin_number_guessed"]
+
+    assert guessed("J1") == ["J1"]
+    assert guessed("R1") == []
