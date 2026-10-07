@@ -1,6 +1,6 @@
 import pytest
 
-from schem2net import ingest, pipeline
+from schem2net import ingest, pipeline, profile
 from schem2net.primitives import Document, Page, Path, Text
 
 
@@ -76,3 +76,17 @@ def test_a_dense_schematic_is_not_a_board():
         Path(k, [[(k, 20), (k + 5, 20)]], 0.15, (0, 150, 0), None, seq=k) for k in range(40)
     ]
     assert ingest.has_wires(page, kicad)
+
+
+def test_outlines_printed_line_by_line_are_joined():
+    """OrCAD prints every outline one line at a time. A pin, drawn after its part's
+    texts, and wires stay apart."""
+    red, maroon = (255, 0, 0), (128, 0, 64)
+    sides = [((0, 0), (5, 0)), ((5, 0), (5, 3)), ((5, 3), (0, 3)), ((0, 3), (0, 0))]
+    paths = [Path(k, [list(side)], 0.2, red, None, seq=k) for k, side in enumerate(sides)]
+    paths.append(Path(4, [[(0, 0), (-3, 0)]], 0.2, red, None, seq=6))
+    paths.append(Path(5, [[(10, 0), (15, 0)]], 0.2, maroon, None, seq=7))
+    paths.append(Path(6, [[(15, 0), (20, 0)]], 0.2, maroon, None, seq=8))
+    page = ingest.joined_lines(Page(1, 100, 100, paths=paths), profile.load("orcad"))
+    assert [len(p.subpaths[0]) for p in page.paths] == [5, 2, 2, 2]
+    assert page.paths[0].subpaths[0][-1] == (0, 0)

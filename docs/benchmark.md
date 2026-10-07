@@ -9,6 +9,7 @@
 | C | SparkFun schematic PDFs drawn in Eagle | The Eagle `.sch` in the board's repository |
 | D | Olimex schematic PDFs, KiCad and Eagle, held out | The schematic the PDF sits beside |
 | E | EasyEDA schematic PDFs, Std and Pro | The EasyEDA source the PDF sits beside |
+| F | OrCAD Capture schematic PDFs | The Cadence Allegro board the PDF sits beside |
 
 Manifests (`bench/corpus_*.toml`) store references only: a repository URL and
 commit, or a demo that ships with KiCad.
@@ -64,6 +65,18 @@ stores drawing, not nets, so wires, pins, net flags and labels that share a poin
 are joined, as EasyEDA does, on the file's exact coordinates. A Pro project names
 the net of every wire; its parts' pins are placed from their symbols.
 
+Corpus F pairs OrCAD Capture schematic PDFs from open hardware repositories
+(BeagleBoard.org boards, ROHM evaluation kits, CutiePi, a LaunchPad derived board,
+a Cadence tutorial) with the Allegro board (`.brd`) in the same repository. KiCad
+10 imports Allegro boards; the benchmark Docker image reads the board's pads into
+`truth.net`, as it does corpus B's boards. Each pair was checked by designators:
+every designator on the board is printed in the PDF, but for eight of 439 on the
+BeagleBoard-xM and one on the CutiePi. A board keeps few values, so values are
+scored on few parts. Capture prints to PDF through a printer driver (Ghostscript,
+Acrobat Distiller, Foxit, Microsoft's), so the PDF does not say what drew it and
+its colours decide. One design, the tutorial, is drawn in colours of its own and
+is not read; it counts as a design with nothing found.
+
 Eagle draws most text with its own stroke font, and some PDFs carry text as
 filled outlines. `schem2net build-font c` learns the shapes of both kinds of
 letters from the corpus C dev split: the `.sch` sheet is laid over the page by
@@ -117,9 +130,8 @@ so corpus D shows what is read without the maker's library.
 ## Splits
 
 Each project is assigned to `dev` or `test` by a hash of its name, so the
-split cannot drift. Corpus A holds out 10%, corpora B and C a third. Tune on
-`dev`.
-Report `test`.
+split cannot drift. Corpus A holds out 10%, corpora B, C and F a third, D and E
+half. Tune on `dev`. Report `test`.
 
 ```sh
 schem2net bench a --split dev

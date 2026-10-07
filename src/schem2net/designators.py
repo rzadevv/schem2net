@@ -21,7 +21,7 @@ from schem2net import geometry
 from schem2net.geometry import GridIndex
 from schem2net.primitives import BBox, Text
 from schem2net.profile import Profile
-from schem2net.refdes import COMMON_PREFIXES, PART_VALUE, REFDES, is_common_ref
+from schem2net.refdes import COMMON_PREFIXES, PART_VALUE, REFDES, is_common_ref, split_ref
 from schem2net.roles import Forest
 from schem2net.scene import Scene, values_run
 
@@ -243,5 +243,5 @@ def label(text: Text, refs: set[str]) -> bool:
     word = text.text.strip()
     if word in refs:
         return True
-    match = REFDES.match(word)
+    match = split_ref(word)
     return bool(match) and match.group(3) is not None and match.group(1) + match.group(2) in refs

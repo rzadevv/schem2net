@@ -25,6 +25,7 @@ from schem2net.refdes import (
     REFDES,
     TWO_TERMINAL_PREFIXES,
     is_common_ref,
+    split_ref,
 )
 from schem2net.scene import Scene, Shape, values_run
 
@@ -38,6 +39,7 @@ ORDER_VOTES = 3  # flags that must show which side of its mark a name is drawn
 ORDER_SHARE = 0.8  # of them, the share that must agree
 POWER_MAX_SIZE = 8.0  # mm
 PIN_NUMBER_GAP = 2.0  # mm between a pin and its number
+MAX_OVERHANG = 1.0  # mm by which a pin number's middle may lie past the pin's end
 MAX_VALUE_WORDS = 4  # a longer text beside a part is a note, not its value
 OTHER_SIDE_COST = 0.5  # mm added for a pin number on its unusual side
 PIN_NAME_GAP = 1.5  # mm between a pin's inner end and its name, unless the profile says
@@ -65,6 +67,8 @@ ARROW_SIZE = 4.0  # mm; a transistor's arrowhead is smaller than this
 BAR_REACH = 3.0  # mm from a transistor's base or gate pin to its bar
 MEET = 0.15  # mm between lines that meet in a symbol's drawing
 
+# A tolerance, voltage, power or current rating; "1A" may name a pad, "1.5A" does not.
+RATING = re.compile(r"^\d+([./]\d+)?\s*(%|[mkuμµ]?[VW])$|^\d+[./]\d+\s*[muμµ]?A$")
 PAD_COUNT = re.compile(r"\*\d+$")  # Eagle writes a pin on several pads as "A6*2"
 
 
@@ -74,13 +78,17 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
     if profile.power_names_in_labels:
         _name_power_from_labels(symbols, scene, profile)
     if profile.unnamed_ground:
-        named = [s for s in symbols if s.power]
+        named = {id(s): s.power for s in symbols if s.power}
+        # Bars and other pinless bits of one sign, each beside the next.
+        pieces = _pieces([s for s in symbols if not s.pins and (s.power or _could_be_power(s))])
         for symbol in filter(_could_be_power, symbols):
             # A part with a real pin is a component, such as a mounting hole.
             if not _has_real_pin(symbol, scene, profile) and _looks_like_ground(symbol, scene):
-                # A piece drawn beside it may have taken its name.
-                piece = [s for s in named if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
-                symbol.power = piece[0].power if piece else profile.unnamed_ground
+                # A piece drawn beside it, or further along its bits, may have taken its name.
+                near = [s for s in symbols if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
+                along = [k for s in near for k in [id(s), *pieces.get(id(s), ())]]
+                taken = [named[k] for k in along if k in named and k != id(symbol)]
+                symbol.power = taken[0] if taken else _ground_name(symbol, scene, profile)
     # Where each power symbol connects; a flag may sit straight on a part's pin.
     tips = [p.at for s in symbols if not s.power for p in s.pins]
     for symbol in symbols:
@@ -121,18 +129,24 @@ def _name_power_symbols(
     """Power symbols are small, have at most one pin and a net name next to them."""
     if profile.drawn_by_part and not runs:
         _name_flags_by_order(symbols, texts, scene, profile)
-    # A name in line with the symbol first; only then one that overhangs it.
+    # A name in line with the symbol first; only then one that overhangs it. Each name
+    # goes to the nearest symbol it may name: a printer may draw two in one path.
     for loose in (False, True):
-        for symbol in filter(_could_be_power, symbols):
-            for _, i in texts.near(symbol.bbox, POWER_NAME_GAP):
+        options = []
+        for k, symbol in enumerate(symbols):
+            if not _could_be_power(symbol):
+                continue
+            for gap, i in texts.near(symbol.bbox, POWER_NAME_GAP):
                 text = texts.texts[i]
                 if not _is_power_name(text, profile):
                     continue
                 # The first text drawn after the symbol, or else one in line with it.
                 if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text, loose):
-                    symbol.power = text.text
-                    texts.used.add(i)
-                    break
+                    options.append((gap, k, i))
+        for _, k, i in sorted(options):
+            if not symbols[k].power and i not in texts.used:
+                symbols[k].power = texts.texts[i].text
+                texts.used.add(i)
 
 
 def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
@@ -140,7 +154,7 @@ def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profil
     local = [label for label in scene.labels if label.kind == "local" and not label.outline]
     pool = _Texts([Text(i, lb.text, lb.bbox, 0.0, lb.angle, None) for i, lb in enumerate(local)])
     for symbol in filter(_could_be_power, symbols):
-        for _, i in pool.near(symbol.bbox, POWER_NAME_GAP):
+        for _, i in pool.near(symbol.bbox, profile.label_name_gap or POWER_NAME_GAP):
             text = pool.texts[i]
             if _is_power_name(text, profile) and _in_line(symbol, text):
                 symbol.power = text.text
@@ -192,6 +206,27 @@ def _name_flags_by_order(
             texts.used.add(i)
 
 
+def _pieces(symbols: list[Symbol]) -> dict[int, list[int]]:
+    """By symbol id, the ids of the symbols it is drawn in pieces with: a chain of small
+    symbols each beside the next, as the bars of a ground sign under its stem are."""
+    joined = UnionFind()
+    index = GridIndex()
+    for k, symbol in enumerate(symbols):
+        joined.find(k)
+        index.add(k, symbol.bbox)
+    for k, symbol in enumerate(symbols):
+        x0, y0, x1, y1 = symbol.bbox
+        near = (x0 - PIECE_GAP, y0 - PIECE_GAP, x1 + PIECE_GAP, y1 + PIECE_GAP)
+        for j in index.within(near):
+            if geometry.bbox_gap(symbol.bbox, symbols[j].bbox) <= PIECE_GAP:
+                joined.union(k, j)
+    return {
+        id(symbols[k]): [id(symbols[j]) for j in group if j != k]
+        for group in joined.groups().values()
+        for k in group
+    }
+
+
 def _could_be_power(symbol: Symbol) -> bool:
     x0, y0, x1, y1 = symbol.bbox
     small = max(x1 - x0, y1 - y0) <= POWER_MAX_SIZE
@@ -222,24 +257,60 @@ def _has_real_pin(symbol: Symbol, scene: Scene, profile: Profile) -> bool:
     return any(profile.is_("pin", scene.shapes[p.shape].color) for p in symbol.pins)
 
 
+def _ground_name(symbol: Symbol, scene: Scene, profile: Profile) -> str | None:
+    """The net of a ground sign whose name is hidden: the generator's usual ground, or
+    the name its library gives that sign, where it names signs apart."""
+    signs = profile.ground_signs
+    if "triangle" in signs and (
+        _has_triangle(symbol, scene) or _bare_triangle_base(symbol, scene) is not None
+    ):
+        return signs["triangle"]
+    if "rake" in signs and _is_rake(symbol, scene):
+        return signs["rake"]
+    return profile.unnamed_ground
+
+
 def _looks_like_ground(symbol: Symbol, scene: Scene) -> bool:
     """The ground sign: shrinking parallel bars, a triangle pointing away from the stem
-    or the wire, or a single bar across the stem with its name hidden."""
+    or the wire, a chassis rake, or a single bar across the stem with its name hidden."""
     return (
         _has_bars(symbol, scene)
         or _has_triangle(symbol, scene)
+        or _is_rake(symbol, scene)
         or _is_tee(symbol, scene)
         or _bare_triangle_base(symbol, scene) is not None
     )
 
 
+def _is_rake(symbol: Symbol, scene: Scene) -> bool:
+    """The chassis sign: a bar with short parallel strokes slanting from one side of it."""
+    segs = [seg for i in symbol.shapes for seg in geometry.segments(scene.shapes[i].points)]
+    bar = max(segs, key=lambda seg: geometry.distance(*seg), default=None)
+    if bar is None or not geometry.is_axis_aligned(bar, 0.01):
+        return False
+    along = geometry.unit(*bar)
+    normal = (-along[1], along[0])
+    strokes, sides = [], set()
+    for seg in segs:
+        if seg is bar or geometry.is_axis_aligned(seg, 0.01):
+            continue
+        on, off = sorted(seg, key=lambda p: geometry.distance_to_segment(p, bar))
+        if geometry.distance_to_segment(on, bar) > CORNER_GAP:
+            return False
+        if geometry.distance(*seg) >= geometry.distance(*bar):
+            return False
+        strokes.append(geometry.unit(on, off))
+        sides.add((off[0] - on[0]) * normal[0] + (off[1] - on[1]) * normal[1] > 0)
+    parallel = all(abs(a[0] * b[0] + a[1] * b[1]) > 0.99 for a in strokes for b in strokes)
+    return len(strokes) >= 2 and len(sides) == 1 and parallel
+
+
 def _bare_triangle_base(symbol: Symbol, scene: Scene) -> Point | None:
-    """The middle of the base of a symbol drawn as a lone triangle, base square to the page."""
-    if len(symbol.shapes) != 1:
-        return None
-    shape = scene.shapes[symbol.shapes[0]]
-    corners = list(dict.fromkeys((round(x, 2), round(y, 2)) for x, y in shape.points))
-    if not shape.closed or len(corners) != 3:
+    """The middle of the base of a symbol drawn as a lone triangle, base square to the
+    page: one closed outline, or three lines meeting at three corners."""
+    segs = [seg for i in symbol.shapes for seg in geometry.segments(scene.shapes[i].points)]
+    corners = list(dict.fromkeys((round(x, 2), round(y, 2)) for seg in segs for x, y in seg))
+    if len(segs) != 3 or len(corners) != 3:
         return None
     for k in range(3):
         a, b, apex = corners[k], corners[(k + 1) % 3], corners[(k + 2) % 3]
@@ -361,6 +432,18 @@ def _anchors(symbol: Symbol, scene: Scene, tips: list[Point]) -> list[Point]:
     if symbol.pins:
         return [p.at for p in symbol.pins]
     shapes = [scene.shapes[i] for i in symbol.shapes]
+    # A wire ending on it, as on the middle of a ground's top bar or in the mouth of an
+    # off-page arrow: at one point, for a symbol with wires at two is no power symbol.
+    x0, y0, x1, y1 = symbol.bbox
+    landed = [
+        end
+        for wire in scene.wires
+        for end in wire
+        if x0 - CORNER_GAP <= end[0] <= x1 + CORNER_GAP
+        and y0 - CORNER_GAP <= end[1] <= y1 + CORNER_GAP
+    ]
+    if landed and all(geometry.distance(end, landed[0]) <= CORNER_GAP for end in landed):
+        return landed[:1]
     loose = [p for shape in shapes if not shape.closed for p in (shape.points[0], shape.points[-1])]
     base = _bare_triangle_base(symbol, scene)
     if loose or base:
@@ -418,14 +501,14 @@ def _assign_refs(
 
     def _own_ref(symbol: Symbol) -> bool:
         return any(
-            REFDES.match(texts.texts[ti].text) and runs.owns(symbol, texts.texts[ti].seq)
+            split_ref(texts.texts[ti].text) and runs.owns(symbol, texts.texts[ti].seq)
             for _, ti in texts.near(symbol.body or symbol.bbox, 3 * REF_SEARCH)
         )
 
     def _usual_nearby(symbol: Symbol) -> bool:
         """A designator of the usual form near the part that the model finds likely."""
         return any(
-            REFDES.match(texts.texts[ti].text)
+            split_ref(texts.texts[ti].text)
             and likely.get(id(texts.texts[ti]), 1.0) >= 0.5
             and not is_pin_name(symbol, texts.texts[ti], profile.pin_name_gap)
             for _, ti in texts.near(symbol.body or symbol.bbox, REF_SEARCH)
@@ -442,7 +525,7 @@ def _assign_refs(
                 continue  # where designators have a colour of their own, only that
             if is_pin_name(symbol, text, profile.pin_name_gap):
                 continue
-            match = REFDES.match(text.text)
+            match = split_ref(text.text)
             # Where the designator is drawn first, the first text after a part names it,
             # whatever its form: GPIO1-1, USB-Serial/JTAG1.
             # Clear of the part: a text on it is drawing, such as a connector's caption.
@@ -592,7 +675,7 @@ def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int
 
 
 def _set_ref(symbol: Symbol, text: str) -> None:
-    match = REFDES.match(text)
+    match = split_ref(text)
     if not match:  # a name of the designer's own, taken whole
         symbol.ref, symbol.unit = text, None
         return
@@ -613,16 +696,24 @@ def _name_like(word: str) -> bool:
 
 
 def whole_names(pages: list[list[Symbol]]) -> None:
-    """A designator of no usual prefix with a letter after its number is a name, such
-    as I2C, unless the document shows it in other units too, as CM1A and CM1B."""
-    units: dict[str, set[str]] = {}
+    """A designator of no usual prefix with a unit after its number is a name, such as
+    I2C or GPIO1-1, unless the document shows it in other units too, as CM1A and CM1B. Units
+    of one part share no pads, so where every unit shows the same pin numbers, as R11A
+    and R11B do, each is a part of its own."""
+    units: dict[str, dict[str, set[str]]] = {}
     for symbols in pages:
         for s in symbols:
             if s.ref and s.unit:
-                units.setdefault(s.ref, set()).add(s.unit)
+                numbers = units.setdefault(s.ref, {}).setdefault(s.unit, set())
+                numbers |= {p.number for p in s.pins if p.number}
     for symbols in pages:
         for s in symbols:
-            if not (s.ref and s.unit and len(s.unit) == 1 and len(units[s.ref]) == 1):
+            if not (s.ref and s.unit):
+                continue
+            drawn = list(units[s.ref].values())
+            if len(drawn) > 1:
+                if drawn[0] and all(numbers == drawn[0] for numbers in drawn):
+                    s.ref, s.unit = s.ref + s.unit, None
                 continue
             match = REFDES.match(s.ref)
             if match and match.group(1).rstrip("$") not in COMMON_PREFIXES:
@@ -647,7 +738,9 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
                 continue
             if _inside_body(owned[i][1], text):
                 continue  # a pin name
-            gap = _number_gap(text.bbox, pins[i].line, profile.pin_numbers_above)
+            gap = _number_gap(
+                text.bbox, pins[i].line, profile.pin_numbers_above, profile.pin_numbers_overhang
+            )
             if gap is not None:
                 options.append((gap, t, i))
 
@@ -1051,21 +1144,34 @@ def _numbers_a_pin(symbol: Symbol, text: Text, profile: Profile) -> bool:
     return any(_number_gap(text.bbox, pin.line, above) is not None for pin in symbol.pins)
 
 
-def _number_gap(box: BBox, line: tuple[Point, Point], above: bool) -> float | None:
+def _number_gap(
+    box: BBox, line: tuple[Point, Point], above: bool, overhang_ok: bool = False
+) -> float | None:
     """Distance from a pin to a number placed beside it, or None if it is not beside it.
 
     With `above`, numbers usually sit above horizontal pins and left of vertical
-    ones; mirrored symbols put them on the other side, at a small extra cost.
+    ones; mirrored symbols put them on the other side, at a small extra cost. With
+    `overhang_ok`, a number on a short pin may overhang its tip a little; by how much
+    its middle does counts against it.
     """
     (ax, ay), (bx, by) = line
     if geometry.is_horizontal(line):
-        along, lo, hi, at = (box[0] + box[2]) / 2, min(ax, bx), max(ax, bx), ay
+        start, end, lo, hi, at = box[0], box[2], min(ax, bx), max(ax, bx), ay
         near, far = at - box[3], box[1] - at
     else:
-        along, lo, hi, at = (box[1] + box[3]) / 2, min(ay, by), max(ay, by), ax
+        start, end, lo, hi, at = box[1], box[3], min(ay, by), max(ay, by), ax
         near, far = at - box[2], box[0] - at
-    if not lo - 0.5 <= along <= hi + 0.5:
+    along = (start + end) / 2
+    overhang = max(lo - 0.5 - along, along - hi - 0.5, 0.0)
+    limit = MAX_OVERHANG if overhang_ok else 0.0
+    if overhang > limit or (overhang and (end < lo or start > hi)):
         return None
+    gap = _side_gap(near, far, above)
+    return gap + overhang if gap is not None else None
+
+
+def _side_gap(near: float, far: float, above: bool) -> float | None:
+    """The gap across the pin to its number, by the side the number is on."""
     if not above:
         gap = min(abs(near), abs(far))
     elif near >= -0.3:
@@ -1155,8 +1261,9 @@ def _inside_body(symbol: Symbol, text: Text) -> bool:
 
 
 def _is_value(text: str) -> bool:
-    """A part value with a unit or a decimal point, such as 10k or 0.1uF: never a pad."""
-    return bool(PART_VALUE.match(text)) and not text.isdigit()
+    """A part value with a unit or a decimal point, such as 10k or 0.1uF, or a rating,
+    such as 5%, 50V or 1/10W: never a pad."""
+    return (bool(PART_VALUE.match(text)) and not text.isdigit()) or bool(RATING.match(text))
 
 
 def _is_net_name(text: str) -> bool:

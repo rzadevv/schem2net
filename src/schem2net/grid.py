@@ -26,6 +26,7 @@ SAME = 0.005  # scales this close to 1 are taken as 1
 PIN_PITCH = 2.54  # mm between neighbouring pins in a row, in nearly every library
 MIN_ROWS = 20  # pin spacings needed to judge a page's pitch
 PITCH_SLACK = 0.1  # share by which the pitch may miss a multiple of the standard one
+STANDARD_SHARE = 0.2  # of steps at the standard pitch, enough to show it is the page's
 
 
 def scale(page: Page, profile: Profile, exported: bool = True) -> float:
@@ -62,9 +63,9 @@ def scale(page: Page, profile: Profile, exported: bool = True) -> float:
     if agreement[best] < enough:
         return 1.0
     found = float(SCALES[best])
-    # The grid fits at a half, a third or a quarter of the true scale as well as at it;
-    # a coarser fit, nearer 1:1, is the true one.
-    for times in (4, 3, 2):
+    # The grid fits at a half, a third or any whole share of the true scale as well as
+    # at it; a coarser fit, nearer 1:1, is the true one.
+    for times in range(int(SCALES[-1] / found), 1, -1):
         near = np.flatnonzero(np.abs(SCALES - times * found) <= PEAK * times * found)
         if not len(near) or abs(np.log(times * found)) >= abs(np.log(found)):
             continue
@@ -112,7 +113,9 @@ def _agreement(values: np.ndarray, grid: float) -> np.ndarray:
 def pitch_factor(symbols) -> float:
     """How many times the standard pin pitch the page's pins are apart: 2.0 where rows
     of pins step 5.08 mm, 0.5 where 1.27 mm, and 1.0 otherwise or when unsure. A wire
-    grid fits a page at half its true scale as well as at it; the pins tell which."""
+    grid fits a page at half its true scale as well as at it; the pins tell which.
+    Some libraries space pins two steps apart, so where a fair share of rows step
+    2.54 mm, that is the pitch."""
     steps = []
     for symbol in symbols:
         if len(symbol.pins) < 4:
@@ -128,8 +131,12 @@ def pitch_factor(symbols) -> float:
             steps += [b - a for a, b in zip(at, at[1:], strict=False) if b - a > 0.1]
     if len(steps) < MIN_ROWS:
         return 1.0
+    # Pins may skip a step, so rows of the standard pitch, if a fair share, set it.
+    standard = np.mean([abs(s / PIN_PITCH - 1) < PITCH_SLACK for s in steps])
     step = float(np.median(steps))
     for factor in (2.0, 0.5):
+        if factor > 1 and standard >= STANDARD_SHARE:
+            continue
         if abs(step / (factor * PIN_PITCH) - 1) < PITCH_SLACK:
             return factor
     return 1.0

@@ -73,7 +73,7 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
         index.add(shape.id, shape.bbox)
 
     pins = _find_pins(scene, index, profile)
-    apart = sorted(t.seq for t in scene.fields) if profile.fields_follow_symbol else None
+    apart = _text_seqs(scene, profile) if profile.fields_follow_symbol else None
     symbols = _merge_halves(_group(scene, index, pins, apart, profile.flags_on_pins))
     runs = Runs(symbols, scene, profile) if profile.fields_follow_symbol else None
     if runs:
@@ -84,6 +84,13 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
         _add_edge_pins(symbols, scene)
     fields.annotate(symbols, scene, profile, runs)
     return [s for s in symbols if s.ref or s.power]
+
+
+def _text_seqs(scene: Scene, profile: Profile) -> list[int]:
+    """Where the texts that end one symbol's drawing are drawn: its fields, and the
+    names of flags where each is drawn right after its flag."""
+    labels = scene.label_seqs if profile.labels_follow_flags else []
+    return sorted([t.seq for t in scene.fields] + labels)
 
 
 def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pin]:
@@ -621,9 +628,9 @@ class Runs:
         spans = sorted(
             (min(seqs), max(seqs), id(s))
             for s in symbols
-            if (seqs := [scene.shapes[i].seq for i in s.shapes])
+            if (seqs := [scene.shapes[i].seq for i in self._drawn_first(s)])
         )
-        text_seqs = sorted(t.seq for t in scene.fields)
+        text_seqs = _text_seqs(scene, profile)
 
         self.run: dict[int, int] = {}
         run, last_end = -1, None
@@ -646,6 +653,14 @@ class Runs:
                 body = bodies[ends[k][1]]
                 if not body or not _inside(geometry.center(text.bbox), body):
                     self.first.setdefault(run, text.seq)
+
+    def _drawn_first(self, symbol: Symbol) -> list[int]:
+        """The shapes drawn before the symbol's texts: all, or its body where the pins
+        come after the texts."""
+        if not self.profile.pins_after_fields:
+            return symbol.shapes
+        pins = {p.shape for p in symbol.pins}
+        return [i for i in symbol.shapes if i not in pins] or symbol.shapes
 
     def join_pieces(self, symbols: list[Symbol]) -> list[Symbol]:
         """Join nearby pieces drawn in one run, such as the bars of a ground symbol."""

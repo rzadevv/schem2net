@@ -57,6 +57,28 @@ def test_text(tmp_path, pdf_builder):
     assert x1 > x0 and y1 > y0
 
 
+def test_points_a_printer_repeats_are_dropped(tmp_path, pdf_builder):
+    """Some printers end each line by repeating its last point, or with a line of no
+    length at its end. A dot elsewhere stays."""
+    b = pdf_builder()
+    b.line((72, 72), (144, 72), (144, 72))
+    b.line((144, 72), (144, 72))
+    b.line((200, 72), (200, 72))
+    paths = pdf.read(b.save(tmp_path / "a.pdf")).pages[0].paths
+    assert [len(p.subpaths[0]) for p in paths] == [2, 2]
+    assert paths[1].subpaths[0][0] == pytest.approx((200 * MM, 720 * MM))
+
+
+def test_words_far_apart_in_one_text_object_are_separate_texts(tmp_path, pdf_builder):
+    """A printer may write a designator and its value, placed on one line, as one text."""
+    b = pdf_builder()
+    b.text("R1" + " " * 12 + "20", 72, 720, size=10)
+    b.text("Pin 1 is ground", 72, 600, size=10)
+    texts = pdf.read(b.save(tmp_path / "a.pdf")).pages[0].texts
+    assert [t.text for t in texts] == ["R1", "20", "Pin 1 is ground"]
+    assert texts[0].bbox[2] < texts[1].bbox[0]
+
+
 def test_page_picture_is_a_png_as_wide_as_the_page_reads(tmp_path, pdf_builder):
     """A rotated page is pictured as shown, landscape, about 9 pixels per mm."""
     import struct

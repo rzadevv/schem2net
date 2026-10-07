@@ -5,7 +5,7 @@ import math
 from schem2net import buses, fields, geometry, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
-from schem2net.refdes import REFDES, is_common_ref
+from schem2net.refdes import REFDES, is_common_ref, split_ref
 from schem2net.scene import (
     Label,
     Scene,
@@ -66,8 +66,10 @@ class SceneBuilder:
 
 def netlist(*scenes: Scene, rules=KICAD):
     netlister = Netlister(labels_span_pages=rules.labels_span_pages)
-    for scene in scenes:
-        netlister.add_page(scene, symbols.find(scene, rules))
+    found = [symbols.find(scene, rules) for scene in scenes]
+    fields.whole_names(found)  # as the pipeline does, once every page is read
+    for scene, page in zip(scenes, found, strict=True):
+        netlister.add_page(scene, page)
     components, nets, *_ = netlister.result()
     return {c.ref: c for c in components}, {n.name: n for n in nets}
 
@@ -478,6 +480,9 @@ def test_eagle_connector_box_joins_the_pins_that_cross_into_it():
 def test_part_values_are_never_pad_numbers():
     assert fields._is_value("10k") and fields._is_value("0.1uF") and fields._is_value("4.7")
     assert not fields._is_value("12") and not fields._is_value("A6")
+    # Nor are ratings written beside a part; "1A" may name a pad.
+    assert all(fields._is_value(t) for t in ("5%", "50V", "1/10W", "8.2A", "100mW"))
+    assert not fields._is_value("1A")
 
 
 def test_sheet_references_leave_label_names():
@@ -487,6 +492,15 @@ def test_sheet_references_leave_label_names():
     drop_sheet_references(page, sheets=3)
     # Sheet 1 is this one and there is no sheet 9: those are parts of names.
     assert [label.text for label in page.labels] == ["MCLK", "LRCK", "TX/1", "D/9"]
+
+
+def test_lists_of_sheets_beside_a_name_are_no_labels():
+    """OrCAD writes the sheets an off-page net is on beside its name: [2,10,11]."""
+    page = Scene(page=1)
+    for text in ("DDR_CLK", "[2,10,11]", "[3]", "[12]"):
+        page.labels.append(Label(text, "local", (0, 0, 5, 1), 0.0))
+    drop_sheet_references(page, sheets=11)
+    assert [label.text for label in page.labels] == ["DDR_CLK", "[12]"]
 
 
 def test_supply_name_anchored_at_one_end_overhangs_its_arrow():
@@ -853,6 +867,15 @@ def test_section_frame_drawn_after_a_part_does_not_take_its_pins():
     assert part.ref == "R1" and part.bbox == (47.46, 50, 57.54, 53)
 
 
+def test_pin_number_overhanging_the_end_of_a_short_pin():
+    """OrCAD centres a number near a pin's outer end; on a short pin it overhangs the tip,
+    but a long text past the tip, such as a part number, is no pin number."""
+    pin = ((180.4, 30.5), (182.9, 30.5))
+    assert fields._number_gap((182.4, 28.3, 184.6, 30.0), pin, True, True) is not None
+    assert fields._number_gap((182.4, 28.3, 184.6, 30.0), pin, True) is None
+    assert fields._number_gap((182.4, 28.3, 194.6, 30.0), pin, True, True) is None
+
+
 def test_pin_number_written_over_its_pin():
     """Some libraries centre the number on the pin line rather than above it."""
     number = (18.6, 112.5, 19.2, 114.5)
@@ -972,10 +995,13 @@ def test_power_name_sits_away_from_the_wire():
     assert not fields._in_line(ground, left) and fields._in_line(ground, right)
 
 
-def test_easyeda_numbered_units():
-    match = REFDES.match("U3.1")
+def test_numbered_units():
+    match = REFDES.match("U3.1")  # EasyEDA
     assert match and match.groups() == ("U", "3", ".1") and is_common_ref("U10.2")
     assert not REFDES.match("OLED0.66")  # a value
+    assert split_ref("U4-18").groups() == ("U", "4", "-18")  # OrCAD
+    assert split_ref("SW-1").groups() == ("SW-", "1", None)
+    assert not is_common_ref("XR22417-48")  # a library name
 
 
 def _mosfet(b, x, y):
@@ -1167,6 +1193,21 @@ def test_letters_after_a_designator_are_units_where_the_document_shows_others():
     assert (one.ref, one.unit, two.unit) == ("CM1", "A", "B")
     assert (alone.ref, alone.unit) == ("I2C", None)
     assert (usual.ref, usual.unit) == ("U5", "A")
+
+
+def test_units_with_the_same_pins_are_parts_of_their_own():
+    """Units of one part share no pads: R11A and R11B, each with pins 1 and 2, are two
+    resistors, while U5A and U5B of a dual amplifier are one part."""
+
+    def part(ref, unit, numbers):
+        pins = [symbols.Pin(k, ((0, 0), (0, 1)), n) for k, n in enumerate(numbers)]
+        return symbols.Symbol([], (0, 0, 1, 1), pins, ref=ref, unit=unit)
+
+    r_a, r_b = part("R11", "A", ["1", "2"]), part("R11", "B", ["2", "1"])
+    u_a, u_b = part("U5", "A", ["1", "2", "3"]), part("U5", "B", ["5", "6", "7"])
+    fields.whole_names([[r_a, u_a], [r_b, u_b]])
+    assert (r_a.ref, r_a.unit, r_b.ref) == ("R11A", None, "R11B")
+    assert (u_a.ref, u_a.unit, u_b.unit) == ("U5", "A", "B")
 
 
 def test_stacked_capacitors_whose_plates_overlap_stay_apart():
@@ -1417,3 +1458,76 @@ def test_a_two_pin_connectors_guessed_order_is_reported_but_a_resistors_is_not()
 
     assert guessed("J1") == ["J1"]
     assert guessed("R1") == []
+
+
+def test_an_orcad_page():
+    """OrCAD draws a part's body, then its texts, then its pins. A ground may be a bare
+    triangle of three lines whose base the wire ends on; an off-page arrow is named in
+    the net alias colour a little way beyond its arrows."""
+    orcad = profile.load("orcad")
+    blue, red, navy, maroon = (0, 0, 255), (255, 0, 0), (0, 0, 128), (128, 0, 64)
+    paths, texts = [], []
+
+    def line(colour, *points):
+        paths.append(
+            Path(len(paths), [list(points)], 0.25, colour, None, seq=len(paths) + len(texts))
+        )
+
+    def text(content, colour, x, y):
+        box = (x, y, x + 0.9 * len(content), y + 1.5)
+        texts.append(Text(len(texts), content, box, 1.5, 0.0, colour, len(paths) + len(texts)))
+
+    line(maroon, (17.46, 10), (10, 10))
+    line(maroon, (10, 10), (10, 15))
+    line(maroon, (32.54, 10), (40, 10))
+    line(blue, (20, 10), (21, 9), (23, 11), (25, 9), (27, 11), (29, 9), (30, 10))
+    text("R1", navy, 22, 5.5)
+    text("10k", navy, 22, 12)
+    line(red, (17.46, 10), (20, 10))
+    line(red, (30, 10), (32.54, 10))
+    line(red, (8, 15), (12, 15))
+    line(red, (12, 15), (10, 17.5))
+    line(red, (10, 17.5), (8, 15))
+    line(red, (40, 8.75), (41.25, 10))
+    line(red, (40, 11.25), (41.25, 10))
+    line(red, (41.25, 8.75), (42.5, 10))
+    line(red, (41.25, 11.25), (42.5, 10))
+    text("SDA", red, 46, 9.25)
+    scene = build_scene(Page(1, 100, 100, paths=paths, texts=texts), orcad)
+
+    _, nets = netlist(scene, rules=orcad)
+    assert {name: set(n.pins) for name, n in nets.items()} == {
+        "GND_SIGNAL": {("R1", "1")},
+        "SDA": {("R1", "2")},
+    }
+
+
+def test_a_designator_written_close_to_its_value_is_split_from_it():
+    """A printer may write "R22 0" as one text; navy is the designators' own colour."""
+    navy = (0, 0, 128)
+    texts = [
+        Text(0, "R22 0", (10, 10, 15, 11.5), 1.5, 0.0, navy, 1),
+        Text(1, "U3 BD82065FVJ", (10, 20, 11.5, 33), 1.5, 90.0, navy, 2),
+        Text(2, "Note 1", (30, 10, 36, 11.5), 1.5, 0.0, (0, 0, 0), 3),
+    ]
+    scene = build_scene(Page(1, 100, 100, texts=texts), profile.load("orcad"))
+    found = {t.text: t.bbox for t in scene.fields}
+    assert set(found) == {"R22", "0", "U3", "BD82065FVJ", "Note 1"}
+    assert found["R22"][2] <= found["0"][0]
+    assert found["U3"][1] >= found["BD82065FVJ"][3]  # read upwards: the designator below
+
+
+def test_a_chassis_rake_is_a_ground_named_by_its_sign():
+    """A bar with parallel strokes slanting from one side; Capture names the sign."""
+    b = SceneBuilder()
+    b.shape((74.3, 16.5), (74.9, 15.2), (77.4, 15.2), (76.8, 16.5))
+    b.shape((75.5, 16.5), (76.2, 15.2))
+    rake = symbols.Symbol([0, 1], (74.3, 15.2, 77.4, 16.5), body=(74.3, 15.2, 77.4, 16.5))
+    assert fields._is_rake(rake, b.scene)
+    assert fields._ground_name(rake, b.scene, profile.load("orcad")) == "GND_EARTH"
+    assert fields._ground_name(rake, b.scene, KICAD) == "GND"
+
+    b.shape((80, 15.2), (83, 15.2))
+    b.shape((80, 15.2), (80.6, 16.5))
+    b.shape((83, 15.2), (82.4, 16.5))  # slanting the other way: no rake
+    assert not fields._is_rake(symbols.Symbol([2, 3, 4], (80, 15.2, 83, 16.5)), b.scene)

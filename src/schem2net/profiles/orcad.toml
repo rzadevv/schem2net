@@ -1,0 +1,39 @@
+# OrCAD Capture's default schematic colours. Capture has no PDF export of its own:
+# its pages are printed to PDF, through PostScript, Foxit or Microsoft's printer.
+
+[colors]
+wire = [[128, 0, 64], [255, 0, 255]]  # wires, and the junction dots on them
+symbol = [[0, 0, 255], [255, 0, 0]]  # part bodies; power, ground and off-page symbols are red
+pin = [[255, 0, 0]]
+field = [[0, 0, 128], [0, 0, 0]]  # designators and values; power names and other properties in black
+designator = [[0, 0, 128]]  # designators and values are navy
+pin_number = [[0, 0, 0], [0, 64, 128]]  # numbers black, names blue-grey
+local_label = [[255, 0, 0]]  # net aliases and off-page connector names
+
+[labels]
+span_pages = true  # a net alias joins its name throughout the schematic
+sheet_reference = true  # off-page names may list the pages the net is on: [2,10,11]
+
+[order]
+symbols_in_pieces = true  # a ground sign is separate bars
+lines_in_pieces = true  # every outline is printed one line at a time
+fields_follow_symbol = true  # each part is drawn whole: its body, its texts, then its pins
+designator_first = true  # the designator, then the value and other properties
+pins_after_fields = true  # so a part's texts come between its body and its pins
+labels_follow_flags = true  # an off-page arrow's name is drawn right after it
+
+[power]
+names_in_labels = true  # off-page connectors are named in the net alias colour
+label_gap = 5.0  # mm; an off-page name sits a little way beyond its arrows
+unnamed_ground = "GND"  # ground symbols whose name is hidden
+# Capture's library names its ground signs; the name is often hidden.
+ground_signs = { triangle = "GND_SIGNAL", rake = "GND_EARTH" }
+
+[pins]
+max_width = 1.0  # mm; pins have their own colour, and printing may thicken lines
+min_length = 0.5  # mm
+numbers_above = true  # above horizontal pins, left of vertical ones
+numbers_overhang = true  # centred near the outer end, so on a short pin past its tip
+
+[wires]
+grid = [2.54, 1.27]  # mm: Capture's 0.1 inch grid

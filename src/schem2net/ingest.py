@@ -93,6 +93,35 @@ def _distance(a, b) -> int:
     return max(abs(x - y) for x, y in zip(a, b, strict=True))
 
 
+def joined_lines(page: Page, rules) -> Page:
+    """The page with outlines that were printed one line at a time joined back up: a
+    line drawn right after another, in its ink, from where that one ended carries the
+    same outline on. Wires are left as they are."""
+    paths, last_seq = [], None
+    for path in sorted(page.paths, key=lambda p: p.seq):
+        last = paths[-1] if paths else None
+        if (
+            last is not None
+            and path.seq == last_seq + 1
+            and _single_line(path)
+            and len(last.subpaths) == 1
+            and not last.fill
+            and (path.stroke, path.width) == (last.stroke, last.width)
+            and not rules.is_("wire", path.stroke)
+            and path.subpaths[0][0] == last.subpaths[0][-1]
+            and last.subpaths[0][0] != last.subpaths[0][-1]  # not closed yet
+        ):
+            paths[-1] = replace(last, subpaths=[last.subpaths[0] + [path.subpaths[0][1]]])
+        else:
+            paths.append(path)
+        last_seq = path.seq
+    return replace(page, paths=paths)
+
+
+def _single_line(path) -> bool:
+    return not path.fill and len(path.subpaths) == 1 and len(path.subpaths[0]) == 2
+
+
 def has_wires(page: Page, rules) -> bool:
     """True if the page has wires in the generator's colour and text besides: a schematic,
     however dense its drawing. Board prints have neither."""

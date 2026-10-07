@@ -13,7 +13,7 @@ from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.ir import Component, Evidence, Issue, Net
 from schem2net.ir import Pin as PinOut
 from schem2net.primitives import Point
-from schem2net.refdes import REFDES, TWO_TERMINAL_PREFIXES, is_common_ref
+from schem2net.refdes import REFDES, TWO_TERMINAL_PREFIXES, is_common_ref, split_ref
 from schem2net.scene import Label, Scene, name_key
 from schem2net.symbols import Pin, Symbol
 
@@ -47,9 +47,10 @@ class Result(NamedTuple):
 
 
 class Netlister:
-    def __init__(self, labels_span_pages: bool = False):
+    def __init__(self, labels_span_pages: bool = False, designators: frozenset = frozenset()):
         # Net labels with one name are one net on every page, unless sheets are nested.
         self.labels_span_pages = labels_span_pages
+        self.designators = designators  # the designators' own colours, where they have one
         self.nested = False
         self.no_connect: set[tuple] = set()  # pins flagged as left unconnected on purpose
         self.uf = UnionFind()
@@ -73,9 +74,11 @@ class Netlister:
         named = {s.ref for s in symbols if s.ref}
         bodies = [s.body for s in symbols if s.body]
         for text in scene.fields:
-            match = REFDES.match(text.text)
+            match = split_ref(text.text)
             if not is_common_ref(text.text) or match.group(1) + match.group(2) in named:
                 continue
+            if self.designators and text.color not in self.designators:
+                continue  # a pin number such as A6
             c = geometry.center(text.bbox)
             if not any(b[0] <= c[0] <= b[2] and b[1] <= c[1] <= b[3] for b in bodies):
                 self.issues.append(

@@ -76,6 +76,7 @@ class Scene:
     fields: list[Text] = field(default_factory=list)
     pin_numbers: list[Text] = field(default_factory=list)
     labels: list[Label] = field(default_factory=list)
+    label_seqs: list[int] = field(default_factory=list)  # where label texts are drawn
     sheets: list[Sheet] = field(default_factory=list)
     no_connects: list[Point] = field(default_factory=list)  # centres of no-connect crosses
 
@@ -90,17 +91,50 @@ def name_key(text: str) -> str:
 
 
 SHEET_REFERENCE = re.compile(r"\s*/\s*(\d+)(\.\d+[A-Z])?$")  # "/2" or "/2.3B" after a name
+SHEET_LIST = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")  # "[2,10,11]" written beside a name
 
 
 def drop_sheet_references(scene: Scene, sheets: int) -> None:
     """Cross-reference labels show, after the net name, the sheet the net goes on to and
-    where on it. That is not part of the name; it is told by naming another sheet of
-    the document, as a name like TX/1 does not."""
+    where on it, or beside it the list of sheets it is on. That is not part of the
+    name; it is told by naming sheets of the document, as a name like TX/1 does not."""
     for label in scene.labels:
         found = SHEET_REFERENCE.search(label.text)
         other = found and int(found.group(1)) != scene.page and 1 <= int(found.group(1)) <= sheets
         if other and found.start() > 0:
             label.text = label.text[: found.start()]
+    scene.labels = [
+        label
+        for label in scene.labels
+        if not (
+            (found := SHEET_LIST.fullmatch(label.text.strip()))
+            and all(1 <= int(n) <= sheets for n in found.group(1).split(","))
+        )
+    ]
+
+
+def _designator_apart(text: Text, profile: Profile) -> list[Text]:
+    """A designator and its value set side by side, which a printer wrote as one text,
+    such as "R22 0": where designators have a colour of their own, a text in it that
+    starts with one is split after it, its box shared by the letters of each."""
+    first, _, rest = text.text.partition(" ")
+    angle = round(text.angle) % 360
+    if not (rest.strip() and profile.is_("designator", text.color) and is_common_ref(first)):
+        return [text]
+    if angle not in (0, 90):
+        return [text]
+    share = (len(first) + 0.5) / len(text.text)
+    x0, y0, x1, y1 = text.bbox
+    if angle == 0:  # left to right
+        cut = x0 + share * (x1 - x0)
+        boxes = (x0, y0, cut, y1), (cut, y0, x1, y1)
+    else:  # bottom to top
+        cut = y1 - share * (y1 - y0)
+        boxes = (x0, cut, x1, y1), (x0, y0, x1, cut)
+    return [
+        replace(text, text=first, bbox=boxes[0]),
+        replace(text, text=rest.strip(), bbox=boxes[1]),
+    ]
 
 
 def build(page: Page, profile: Profile) -> Scene:
@@ -155,7 +189,8 @@ def build(page: Page, profile: Profile) -> Scene:
     sheet_files, bus_texts = [], []
     visible = [t for t in page.texts if t.visible] + drawn
     known = set().union(*profile.colors.values())
-    for text in _join_runs(_unique_texts(visible)):
+    joined = _join_runs(_unique_texts(visible))
+    for text in [part for t in joined for part in _designator_apart(t, profile)]:
         if profile.sheet_path_prefix and text.text.startswith(profile.sheet_path_prefix):
             scene.path = name_key(text.text.removeprefix(profile.sheet_path_prefix))
         elif profile.sheet_file_prefix and text.text.startswith(profile.sheet_file_prefix):
@@ -186,6 +221,7 @@ def build(page: Page, profile: Profile) -> Scene:
         elif text.color not in known:
             recoloured.append(text)
 
+    scene.label_seqs = sorted(t.seq for texts in label_texts.values() for t in texts)
     # Global labels share the symbol colour, so their outlines are found among the shapes.
     outlines["global"] = [s.points for s in scene.shapes if s.closed]
     # Sheet borders can have any colour, so every closed outline is a candidate.

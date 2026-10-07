@@ -187,24 +187,24 @@ the bottom, and most Altium diode libraries make the anode pin 1.
 A net label text inside a small outline is a port. Unless the design nests
 sheets, ports and net labels connect their name on every sheet.
 
-Power port names use the net label colour. Ground ports usually have no name
-and are recognised by their stacked bars, centred one above another, or their
-triangle. In Eagle and EasyEDA, whose pins and bodies share a colour, the stem
-of the GND sign reads as a pin, and the shape still decides; in KiCad the same
-sign is Earth, so there a pin keeps it a part. A ground drawn in pieces takes the
-name another piece beside it took. A power symbol's name sits past its end away
-from the wire, never beside its stem, where the number of the pin it sits on may
-be. Designers often
-change the wire colour, so each page's wire colour is learned from the lines
-that end on pin ends. Junctions may be drawn as rings, and wires crossing
-without a connection may jump over each other with a small arc, which is read
-as a straight wire. Pages are scaled to fit, so buses are told from wires by
-relative thickness. Text drawn in invisible mode, such as the pin markers of a
-Smart PDF, is not part of the drawing and is ignored, with one exception: KiCad
-7 and 8 draw each letter as strokes and lay an invisible copy of the text over
-them for search. An invisible text with ink of its own colour under it, a
-stroke or more per letter spread along it, is that copy: it is read as the
-text, and the strokes under it are dropped as its letters.
+Power port names use the net label colour. Ground ports usually have no name and are
+recognised by their stacked bars, centred one above another, their triangle, or the
+slanted strokes of a chassis rake. In Eagle and EasyEDA, whose pins and bodies share
+a colour, the stem of the GND sign reads as a pin, and the shape still decides; in
+KiCad the same sign is Earth, so there a pin keeps it a part. A ground drawn in
+pieces takes the name a piece beside it took, or one further along its pinless bars.
+A power symbol's name sits past its end away from the wire, never beside its stem,
+where the number of the pin it sits on may be; each name goes to the nearest symbol
+it may name. Designers often change the wire colour, so each page's wire colour is
+learned from the lines that end on pin ends. Junctions may be drawn as rings, and
+wires crossing without a connection may jump over each other with a small arc, which
+is read as a straight wire. Pages are scaled to fit, so buses are told from wires by
+relative thickness. Text drawn in invisible mode, such as the pin markers of a Smart
+PDF, is not part of the drawing and is ignored, with one exception: KiCad 7 and 8
+draw each letter as strokes and lay an invisible copy of the text over them for
+search. An invisible text with ink of its own colour under it, a stroke or more per
+letter spread along it, is that copy: it is read as the text, and the strokes under
+it are dropped as its letters.
 
 Eagle writes most text with its vector font, as strokes, so `strokes.py` reads
 it back: strokes drawn one after another in one style are cut into lines and
@@ -222,7 +222,8 @@ sheet printed to fit the paper keeps that pattern at another spacing, so
 the size it was drawn at before reading it; the sizes the rest of the pipeline
 expects, pin lengths and text gaps, then hold. A grid also fits at every
 spacing that divides it, so a page whose ends fit one of the usual grids as
-printed is taken as 1:1; otherwise the fit nearest 1:1 is taken.
+printed is taken as 1:1; otherwise the fit nearest 1:1 is taken, of the best fit
+and its whole multiples.
 
 A PDF may split one string into pieces, at spaces, subscripts or overbars. Pieces
 drawn in turn in one colour, side by side on one line, are joined; words of one
@@ -241,18 +242,21 @@ its arrow; a name in line with the symbol is preferred, then one that runs
 across the pin, past the end away from the wire.
 
 Eagle's libraries place a part's name above its box, so a text inside the box,
-however much it looks like a designator (A0, U3), is taken as a pin name first,
-and one beside a pin outside it as a pad number. Eagle draws layer by layer,
-values before names, so a text that looks like a designator but is drawn among
-values (A20 among 10k and 3.3V, with no other designator around it) is taken for
-a value when a name sits as near. Drawn among values, a long word laid along a
-wire, such as a resistor array's value, is no net label either; one value written
-for several parts in turn counts once. Eagle takes any name for a part, and designers
-name jumpers and connectors by what they do: I2C, PWR, LCD_CON. A part left without
-a designator takes the nearest unused word beside it that is not one of its pin
-names, a value, a number or a note. A letter after a designator's number marks a
-unit, as in U5A, but I2C is a name: a designator of no usual prefix keeps its
-letter unless the document shows it in other units too, as CM1A and CM1B.
+however much it looks like a designator (A0, U3), is taken as a pin name first, and
+one beside a pin outside it as a pad number. Eagle draws layer by layer, values
+before names, so a text that looks like a designator but is drawn among values (A20
+among 10k and 3.3V, with no other designator around it) is taken for a value when a
+name sits as near. Drawn among values, a long word laid along a wire, such as a
+resistor array's value, is no net label either; one value written for several parts
+in turn counts once. Eagle takes any name for a part, and designers name jumpers and
+connectors by what they do: I2C, PWR, LCD_CON. A part left without a designator
+takes the nearest unused word beside it that is not one of its pin names, a value, a
+number or a note. A letter after a designator's number marks a unit, as in U5A, but
+I2C is a name: a designator of no usual prefix keeps its letter unless the document
+shows it in other units too, as CM1A and CM1B. Units may also be numbered, as in
+U3.1 or U4-18, and GPIO1-1 is a name in the same way. Units of one part share no
+pads, so where every unit shows the same pin numbers, as R11A and R11B each with
+pins 1 and 2, each is a part of its own.
 
 Names, values, pin names and pad numbers
 share one colour, so their roles come from where they sit; a text in that colour
@@ -295,6 +299,29 @@ near the next label's text as its own; the cross takes the text drawn right
 before it or right after it, whichever way round the page draws the labels whose
 name is plain by distance.
 
+OrCAD Capture has no PDF export of its own; its pages reach PDF through a printer
+driver. Wires are maroon, pins red, part bodies blue, designators and values navy,
+pin names blue-grey, and pin numbers, power names and other properties black. Power,
+ground and off-page symbols are red like the pins. Capture prints each part whole:
+its body, then its designator, value and other properties, then its pins. So drawing
+order ties texts to parts as in KiCad, but measured from the body, which comes
+before the texts. It prints every outline one line at a time; a line drawn right
+after another, in its ink and from where that one ended, carries the same outline
+on, so outlines are joined back up before they are read. Flags stacked edge to edge,
+off-page arrows and ports, are kept apart by the name Capture draws right after
+each, as a part is by its designator. A power symbol with no pin connects where a
+wire ends on it, when the wires that do all end at one point. A ground may be a bare
+triangle of three lines, its wire ending on the middle of the base, or bars with no
+stem, the wire ending on the middle of the top one. An off-page connector is a pair
+of arrows whose wire ends in their mouth; its name, in the net alias colour, sits a
+little way beyond them, and the sheets the net is on may be listed beside it, as in
+`[2,10,11]`, which is no label. A ground's name is often hidden; Capture's library
+names its signs, so a bare triangle is GND_SIGNAL and a chassis rake GND_EARTH,
+apart from the GND of its bars. Capture's pins are a grid step long, so a number
+centred near a pin's outer end may overhang its tip; a long text past the tip, such
+as a part number, is no pin number, and neither is a rating such as 5%, 50V or
+1/10W, nor any value with a unit.
+
 A PDF printed from a browser or through a PDF printer does not say which tool drew
 it. The drawing still does: the profile whose wire colour is there and whose
 colours cover most of the ink is taken, and inks the printer shifted a step or two
@@ -303,7 +330,17 @@ roles'. Such a page has lost its exporter's scale, so its scale comes from its
 wire grid. A grid fits a page at half its true scale as well as at it, when wires
 keep to the half grid; rows of pins tell which, as nearly every library sets pins
 2.54 mm apart, so a page whose pins step twice or half that is read again at the
-pitch's scale.
+pitch's scale. Some libraries space pins two steps apart, so a page where a fair
+share of rows step 2.54 mm keeps that pitch.
+
+PDF printers leave traces of their own. Some end each line by repeating its last
+point, or with a line of no length at its end; both are dropped, so a line stays
+two points and drawing order stays as the generator wrote it. Some write texts
+placed on one line as one text object, such as a part's designator and its value
+far to its right; a text object whose words lie more than two letter heights apart
+is read as separate texts. Where designators have a colour of their own, a text in
+it that starts with a designator, as `R22 0` does, is a designator and its value
+written close together, and is split after the designator.
 
 ## Pages printed without colour
 

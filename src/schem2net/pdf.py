@@ -4,15 +4,17 @@ import ctypes
 import math
 import struct
 import zlib
+from dataclasses import replace
 from pathlib import Path as FilePath
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
 
-from schem2net.primitives import Color, Document, Page, Path, Point, Text
+from schem2net.primitives import BBox, Color, Document, Page, Path, Point, Text
 
 MM_PER_PT = 25.4 / 72
 BEZIER_STEPS = 8
+WORD_GAP = 2.0  # font sizes between words of one text object that are separate texts
 
 # Affine matrix (a, b, c, d, e, f) in PDF row-vector convention.
 Matrix = tuple[float, float, float, float, float, float]
@@ -33,30 +35,61 @@ def _read_page(page: pdfium.PdfPage, number: int) -> Page:
     textpage = page.get_textpage()
     count = raw.FPDFPage_CountObjects(page.raw)
     objects = [raw.FPDFPage_GetObject(page.raw, i) for i in range(count)]
-    _collect(objects, transform, textpage.raw, out)
+    _collect(objects, transform, textpage.raw, out, _chars(textpage.raw, transform))
     return out
 
 
-def _collect(objects, parent: Matrix, textpage, out: Page) -> None:
+def _chars(textpage, transform: Matrix) -> dict[int, list[tuple[str, BBox]]]:
+    """Each text object's characters with their boxes, by the object's address."""
+    found: dict[int, list[tuple[str, BBox]]] = {}
+    sides = [ctypes.c_double() for _ in range(4)]
+    for i in range(raw.FPDFText_CountChars(textpage)):
+        obj = raw.FPDFText_GetTextObject(textpage, i)
+        if not obj or not raw.FPDFText_GetCharBox(textpage, i, *map(ctypes.byref, sides)):
+            continue
+        left, right, bottom, top = (v.value for v in sides)
+        corners = [_apply(transform, x, y) for x in (left, right) for y in (bottom, top)]
+        xs, ys = zip(*corners, strict=True)
+        char = chr(raw.FPDFText_GetUnicode(textpage, i))
+        key = ctypes.cast(obj, ctypes.c_void_p).value
+        found.setdefault(key, []).append((char, (min(xs), min(ys), max(xs), max(ys))))
+    return found
+
+
+def _collect(objects, parent: Matrix, textpage, out: Page, chars) -> None:
     for obj in objects:
         kind = raw.FPDFPageObj_GetType(obj)
         matrix = _multiply(_object_matrix(obj), parent)
         if kind == raw.FPDF_PAGEOBJ_PATH:
             path = _read_path(obj, matrix, len(out.paths))
-            if path:
+            if path and not _repeats_end(path, out.paths[-1] if out.paths else None):
                 path.seq = len(out.paths) + len(out.texts)
                 out.paths.append(path)
         elif kind == raw.FPDF_PAGEOBJ_TEXT:
             text = _read_text(obj, matrix, parent, textpage, len(out.texts))
-            if text:
-                text.seq = len(out.paths) + len(out.texts)
-                out.texts.append(text)
+            key = ctypes.cast(obj, ctypes.c_void_p).value
+            for part in _apart(text, chars.get(key, [])) if text else []:
+                part.id = len(out.texts)
+                part.seq = len(out.paths) + len(out.texts)
+                out.texts.append(part)
         elif kind == raw.FPDF_PAGEOBJ_IMAGE:
             out.images += 1
         elif kind == raw.FPDF_PAGEOBJ_FORM:
             count = raw.FPDFFormObj_CountObjects(obj)
             children = [raw.FPDFFormObj_GetObject(obj, i) for i in range(count)]
-            _collect(children, matrix, textpage, out)
+            _collect(children, matrix, textpage, out, chars)
+
+
+def _repeats_end(path: Path, last: Path | None) -> bool:
+    """A line of no length at the end of the line just drawn, in its ink, which some
+    printers add after every line: it draws nothing new."""
+    return (
+        last is not None
+        and path.fill is None
+        and path.stroke == last.stroke
+        and path.width == last.width
+        and all(p == last.subpaths[-1][-1] for sub in path.subpaths for p in sub)
+    )
 
 
 def _read_path(obj, matrix: Matrix, id: int) -> Path | None:
@@ -82,7 +115,9 @@ def _read_path(obj, matrix: Matrix, id: int) -> Path | None:
                 subpaths.append(current)
             current = [point]
         elif kind == raw.FPDF_SEGMENT_LINETO:
-            current.append(point)
+            # Some printers repeat a line's end; a dot is a line to its own start.
+            if len(current) < 2 or point != current[-1]:
+                current.append(point)
         elif kind == raw.FPDF_SEGMENT_BEZIERTO:
             controls.append(point)
             if len(controls) == 3:
@@ -135,6 +170,42 @@ def _read_text(obj, matrix: Matrix, parent: Matrix, textpage, id: int) -> Text |
         color=_color(raw.FPDFPageObj_GetFillColor, obj),
         visible=raw.FPDFTextObj_GetTextRenderMode(obj) != raw.FPDF_TEXTRENDERMODE_INVISIBLE,
     )
+
+
+def _apart(text: Text, chars: list[tuple[str, BBox]]) -> list[Text]:
+    """A text object whose words lie far apart is texts that a printer joined into one
+    object, such as a part's designator and its value written on one line."""
+    angle = math.radians(text.angle)
+    along = (math.cos(angle), -math.sin(angle))  # reading direction, y down
+
+    def span(box: BBox) -> tuple[float, float]:
+        ends = [x * along[0] + y * along[1] for x in box[::2] for y in box[1::2]]
+        return min(ends), max(ends)
+
+    words: list[list[tuple[str, BBox | None]]] = [[]]
+    end = None
+    for char, box in chars:
+        if char.isspace():
+            words[-1].append((char, None))
+            continue
+        start, stop = span(box)
+        if end is not None and start - end > WORD_GAP * text.size:
+            words.append([])
+        words[-1].append((char, box))
+        end = stop
+    if len(words) < 2:
+        return [text]
+    parts = []
+    for word in words:
+        boxes = [box for _, box in word if box]
+        box = (
+            min(b[0] for b in boxes),
+            min(b[1] for b in boxes),
+            max(b[2] for b in boxes),
+            max(b[3] for b in boxes),
+        )
+        parts.append(replace(text, text="".join(c for c, _ in word).strip(), bbox=box))
+    return parts
 
 
 def _page_transform(page: pdfium.PdfPage) -> tuple[Matrix, float, float]:

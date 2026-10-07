@@ -117,7 +117,7 @@ def _say(design: Design) -> None:
         if issue.kind == "no_profile":
             typer.echo(
                 f"{design.source.file}: not drawn by a tool schem2net reads (the PDF says: "
-                f"{issue.detail}); it reads PDFs from KiCad, Altium, Eagle and EasyEDA. "
+                f"{issue.detail}); it reads PDFs from KiCad, Altium, Eagle, EasyEDA and OrCAD. "
                 "Nothing was extracted.",
                 err=True,
             )

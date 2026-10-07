@@ -1,0 +1,218 @@
+# Corpus F: published schematic PDFs drawn in OrCAD Capture, paired with the Cadence
+# Allegro board they were laid out as. KiCad imports the board; its pads give the true
+# netlist. Only references are stored here.
+
+test_share = 0.33
+
+[[project]]
+name = "cutiepi-board"
+repo = "https://github.com/cutiepi-io/cutiepi-board"
+commit = "1c5492733812fe1ae23d3b046f65bc3c73a0dd2f"
+pdf = "CutiePi_V2.3_schematic-20210414.pdf"
+pcb = "CutiePi_V2_3_TapeOut/CutiePi_V2_3_PCB/CutiePi_V2_3.brd"
+
+[[project]]
+name = "fedevel-cadence-tutorial"
+repo = "https://github.com/FEDEVEL/youtube-cadence-quick-tutorial"
+commit = "b90d8302a4c7d3ea2ecbc3b9a83c8e8ad5dfa197"
+pdf = "Schematic.pdf"
+pcb = "allegro/led_youtube.brd"
+
+[[project]]
+name = "rohm-bd9109fvm-evk"
+repo = "https://github.com/ROHMUSDC/BD9109FVM-EVK-101"
+commit = "b1106120fd4126b1a7d263930183c0390a753ffe"
+pdf = "Design Files/Schematic_BOM/BD9109FVMEVK-101_SCH_REV00_2013-11-22.pdf"
+pcb = "Design Files/BOARD/BD9109FVMEVK-101_BRD_REV00_2013-11-22.brd"
+
+[[project]]
+name = "rohm-bd95841muv-evk"
+repo = "https://github.com/ROHMUSDC/BD95841MUVEVK-101"
+commit = "6b341d68e5d62792a5150d642443acd675daf558"
+pdf = "Design Files/Schematic_BOM/BD95841MUVEVK-101_SCH_REV00_2014-01-06.pdf"
+pcb = "Design Files/BOARD/BD95841MUVEVK-101_BRD_REV00_2014-01-06.brd"
+
+[[project]]
+name = "rohm-bd95861muv-evk"
+repo = "https://github.com/ROHMUSDC/BD95861MUV-EVK-101"
+commit = "451a219bfb7530231c642f9b2100b0dc08c0a28f"
+pdf = "Design Files/Schematic_BOM/BD95861MUVEVK-101_SCH_REV01_2014-01-22.pdf"
+pcb = "Design Files/Board/BD95861MUVEVK-101_BRD_REV01_2014-01-22.brd"
+
+[[project]]
+name = "rohm-bd9b300muv-evk"
+repo = "https://github.com/ROHMUSDC/BD9B300MUV-EVK-101"
+commit = "47c251366e4f2838857438bd1300f2fd5812672d"
+pdf = "Design Files/Schematic_BOM/BD9B300MUV-E2EVK-101_SCH_REV00_2014-07-08.pdf"
+pcb = "Design Files/BOARD/BD9B300MUV-E2EVK-101_BRD_REV00_2014-07-09.brd"
+
+[[project]]
+name = "rohm-bd9c601efj-evk"
+repo = "https://github.com/ROHMUSDC/BD9C601EFJEVK-101"
+commit = "54d5bdc15c57f750e991068113968c2e5c565c8f"
+pdf = "Design Files/Schematic_BOM/BD9C601EFJEVK-101_SCH_REV00_2014-04-23.pdf"
+pcb = "Design Files/BOARD/BD9C601EFJEVK-101_BRD_REV00_2014-01-06.brd"
+
+[[project]]
+name = "rohm-bd9d321efj-evk"
+repo = "https://github.com/ROHMUSDC/BD9D321EFJ-EVK-101"
+commit = "0b8a83d256560a7b431be542bfedafea8c6f930a"
+pdf = "Design Files/Schematic_BOM/BD9D321EFJ-E2EVK-101_SCH_REV00_2014-09-26.pdf"
+pcb = "Design Files/BOARD/BD9D321EFJ-E2EVK-101_BRD_REV00_2014-0926_1800.brd"
+
+[[project]]
+name = "rohm-bd9e151nux-evk"
+repo = "https://github.com/ROHMUSDC/BD9E151NUX-EVK-101"
+commit = "53ea6e66930d55ff018aa9e6414b789502c07523"
+pdf = "Design Files/Schematic_BOM/BD9E151NUX-E2EVK-101_SCH_REV00_2014-08-19_1800.pdf"
+pcb = "Design Files/BOARD/BD9E151NUX-E2EVK-101_BRD_REV00_2014-08-20.brd"
+
+[[project]]
+name = "rohm-bd9g341aefj-evk"
+repo = "https://github.com/ROHMUSDC/BD9G341AEFJ-EVK-101"
+commit = "4523ea64e1a491da37cf8a7083b56ba247a18225"
+pdf = "Design Files/Schematic_BOM/BD9G341EFJ-E2EVK-101_SCH_REV01_2014-10-17.pdf"
+pcb = "Design Files/BOARD/BD9G341EFJ-E2EVK-101_BRD_REV00_2014-11-05.brd"
+
+[[project]]
+name = "rohm-bu90002gwz-evk"
+repo = "https://github.com/ROHMUSDC/BU90002GWZ-EVK-101"
+commit = "4686e17d5788af242d475dd9147909be8dcdb9c5"
+pdf = "Design Files/Schematic_BOM/BU90002GWZEVK-101_SCH_REV01_2014-02-10.pdf"
+pcb = "Design Files/BOARD/BU90002GWZEVK-101_BRD_REV01_2014-02-10.brd"
+
+[[project]]
+name = "rohm-bu90003gwz-evk"
+repo = "https://github.com/ROHMUSDC/BU90003GWZ-E2-EVK-101"
+commit = "1870acd6c88b30aa7307365e08cec1150715c66c"
+pdf = "Design Files/Schematic_BOM/BU90003GWZEVK-101_SCH_REV00_2014-02-10.pdf"
+pcb = "Design Files/BOARD/BU90003GWZEVK-101_BRD_REV00_2014-01-27.brd"
+
+[[project]]
+name = "rohm-bu90004gwz-evk"
+repo = "https://github.com/ROHMUSDC/BU90004GWZ-E2-EVK-101"
+commit = "1a1b014eb15ccf34413ae4420005f56a0f028735"
+pdf = "Design Files/Schematic_BOM/BU90004GWZ-E2EVK-101_SCH_REV00_2014-02-12.pdf"
+pcb = "Design Files/BOARD/BU90004GWZ-E2EVK-101_BRD_REV00_2014-02-12.brd"
+
+[[project]]
+name = "rohm-bu90005gwz-evk"
+repo = "https://github.com/ROHMUSDC/BU90005GWZ-E2-EVK-101"
+commit = "e851ee88ce75ed88425a71094cb2eae95103acda"
+pdf = "Design Files/Schematic_BOM/BU90005GWZ-E2EVK-101_SCH_REV00_2014-02-12.pdf"
+pcb = "Design Files/BOARD/BU90005GWZ-E2EVK-101_BRD_REV00_2014-02-12.brd"
+
+[[project]]
+name = "rohm-bu90006gwz-evk"
+repo = "https://github.com/ROHMUSDC/BU90006GWZ-E2-EVK-101"
+commit = "4fc30c47c72ae1b1994d5bd2f9d3fc0b76dadf08"
+pdf = "Design Files/Schematic_BOM/BU90006GWZ-E2EVK-101_SCH_REV00_2014-02-12.pdf"
+pcb = "Design Files/BOARD/BU90006GWZ-E2EVK-101_BRD_REV00_2014-02-12.brd"
+
+[[project]]
+name = "rohm-bu90007gwz-evk"
+repo = "https://github.com/ROHMUSDC/BU90007GWZ-E2EVK-101"
+commit = "64133932f786e1704148f0a14f028fb4d441f52d"
+pdf = "Design Files/Schematic_BOM/BU90007GWZ-E2EVK-101_SCH_REV00_2014-02-13.pdf"
+pcb = "Design Files/BOARD/BU90007GWZ-E2EVK-101_BRD_REV00_2014-02-12.brd"
+
+[[project]]
+name = "rohm-lapis-dev-board"
+repo = "https://github.com/ROHMUSDC/LapisDevBoard"
+commit = "9d9b0e64d89d419d117e60f8accff1a6c0aa4e42"
+pdf = "DESIGN FILES/LaPi Schematic Rev 1.9.pdf"
+pcb = "DESIGN FILES/LaPi Allegro PCB Layout/LaPi-Rev1.9.brd"
+
+[[project]]
+name = "rohm-pressure-sensor-demo"
+repo = "https://github.com/ROHMUSDC/ROHM-SensorExpo2016-Pressure-Sensor-Demo"
+commit = "0eb8fce47ebb18ee4bdfd4e820022a691b05f244"
+pdf = "HW Source Files/Schematic_BOM/SENSORS EXPO DEMO_12MAY2016_1200.pdf"
+pcb = "HW Source Files/PCB_Layout/Sensors_Expo_Demo_LED_MCU_2016-05-12.brd"
+
+[[project]]
+name = "rohm-sensor-platform-base"
+repo = "https://github.com/ROHMUSDC/ROHMSensorPlatformEVK"
+commit = "0f39ea501b5b7da109f7a9aa7d394ba615c9ab22"
+pdf = "Hardware Design Files/Sensor Kit Base Board/Schematic-BOM/ROHM_SENSOR_PLATFORM_BASE_BOARD_SCH_REV02_20140918.pdf"
+pcb = "Hardware Design Files/Sensor Kit Base Board/Layout Files/SENSOR_PLATFORM_BASEBOARD_REV02_2014-09-18_1200.brd"
+
+[[project]]
+name = "rohm-multi-sensor-shield"
+repo = "https://github.com/ROHMUSDC/ROHM_SensorPlatform_Multi-Sensor-Shield"
+commit = "9d00077c29b1241ea5ddbb05d4bff57d327b8f2e"
+pdf = "Documentation/Sensor Shield HW PDF Files/ROHM_SENSORSHLD1-EVK-101_SCH_REV01_2016-03-16.pdf"
+pcb = "HW Source Files/SENSORSHLD1-EVK-101 HW Design Files/PCB_Layout/ROHM_SENSORSHLD1-EVK-101_BRD_REV01_2016-03-24.brd"
+
+[[project]]
+name = "rohm-usb-pd-host-evk"
+repo = "https://github.com/ROHMUSDC/ROHM_USB-PD_BM92T30-BM92T70-EVK-Demo"
+commit = "4a2274cf8e63591c32e34b8851250a6d24619567"
+pdf = "Hardware Design Files/EVK1_BD92T30-Host_REV03/Schematic_BOM/ROHM_USB-PD_DP-ALTMODE_EVK1_SCH_Rev03_2016-02-23.pdf"
+pcb = "Hardware Design Files/EVK1_BD92T30-Host_REV03/Board/EVK1_BM92T30-HOST-EVK-101_BRD_REV03_2016-02-26.brd"
+
+[[project]]
+name = "rohm-usb-pd-device-evk"
+repo = "https://github.com/ROHMUSDC/ROHM_USB-PD_BM92T30-BM92T70-EVK-Demo"
+commit = "4a2274cf8e63591c32e34b8851250a6d24619567"
+pdf = "Hardware Design Files/EVK2_BD92T50-Device_REV05/Schematic_BOM/ROHM_USB-PD_DP-ALTMODE_EVK2_SCH_REV05_2016-03-17.pdf"
+pcb = "Hardware Design Files/EVK2_BD92T50-Device_REV05/Board/EVK2_BM92T70-DEVICE-EVK-101_BRD_REV05_2016-03-18.brd"
+
+[[project]]
+name = "rohm-stepper-driver"
+repo = "https://github.com/ROHMUSDC/StepperDriverCTRL"
+commit = "7c7ea69d9f7491705b615af4b8f221540b1c0910"
+pdf = "SCHEMATIC (Rev 1.0).pdf"
+pcb = "Design Files for Rev 1.0/STEPPER EVAL BRD - PCB Board File - Rev 1.0.brd"
+
+[[project]]
+name = "ti-launchxl-cc1310"
+repo = "https://github.com/sangphanthanh/CP_SmartGarden"
+commit = "032f605cc1d97f0b293c117c269594f6b710cd25"
+pdf = "Document/Hardware/mcu/swrc319/LAUNCHXL-CC1310_1_3_0_Schematic.pdf"
+pcb = "Document/Hardware/mcu/swrc319/Cadence/Allegro/LAUNCHXL-CC1310.brd"
+
+[[project]]
+name = "beaglebone-black"
+repo = "https://github.com/beagleboard/beaglebone-black"
+commit = "c7bbdb9676c0cacc8dd9a2f656ee2dab34d98fca"
+pdf = "BBB-SCH.pdf"
+pcb = "ALLEGRO/BeagleBone Black_PCB_RevD_250403.brd"
+
+[[project]]
+name = "beagleboard-xm"
+repo = "https://github.com/beagleboard/beagleboard-xm"
+commit = "a14c542f0de8507e001a6d652daaf85bc654e422"
+pdf = "BeagleBoard-xM_SCH.pdf"
+pcb = "PCB/ALLEGRO/BeagleBoard-xM.brd"
+
+[[project]]
+name = "beaglebone-ai-reva2"
+repo = "https://github.com/beagleboard/beaglebone-ai"
+commit = "819b6268c33ed85f1030205eea24a68261d30681"
+pdf = "BeagleBone-AI_RevA2_sch.pdf"
+pcb = "HW/BeagleBone-AI-RevA2/BeagleBone AI_RevA2_PCB_200527.brd"
+license = "CC-BY-4.0"
+
+[[project]]
+name = "beaglebone-ai"
+repo = "https://github.com/beagleboard/beaglebone-ai"
+commit = "819b6268c33ed85f1030205eea24a68261d30681"
+pdf = "BeagleBone-AI_sch.pdf"
+pcb = "HW/BeagleBone-AI.brd"
+license = "CC-BY-4.0"
+
+[[project]]
+name = "beaglebone-ai-64"
+repo = "https://github.com/beagleboard/beaglebone-ai-64"
+commit = "7313ca3cca8a7035bd077dc51d4a9b3a40e4c1a3"
+pdf = "hw/BeagleBone_AI-64_Rev_B1_SCH_220602.pdf"
+pcb = "hw/BeagleBone_AI-64_Rev_B1_PCB_220602.brd"
+license = "CC-BY-4.0"
+
+[[project]]
+name = "pocketbeagle-grove-cape"
+repo = "https://github.com/beagleboard/capes"
+commit = "5c7c21154fd4a9155f0ca0754398c54ce858e37a"
+pdf = "pocketbeagle/Grove/Grove_Cape_sch.pdf"
+pcb = "pocketbeagle/Grove/Grove_Cape.brd"

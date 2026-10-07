@@ -23,7 +23,7 @@ from schem2net.primitives import Page
 from schem2net.scene import Scene
 from schem2net.symbols import Symbol
 
-PROFILES = {"kicad", "altium", "eagle", "easyeda"}
+PROFILES = {"kicad", "altium", "eagle", "easyeda", "orcad"}
 
 
 @dataclass
@@ -115,10 +115,12 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         return Extraction(design, pages)
 
     rules = profile.load(generator)
-    netlister = Netlister(labels_span_pages=rules.labels_span_pages)
+    netlister = Netlister(rules.labels_span_pages, rules.colors.get("designator", frozenset()))
     for result in pages:
         if printed:
             result.page = ingest.snap_colours(result.page, rules)
+        if rules.lines_in_pieces:
+            result.page = ingest.joined_lines(result.page, rules)
         result.page = strokes.traced(result.page)
         # Text drawn as strokes leaves a page with almost no text objects, like a board.
         kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
