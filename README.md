@@ -43,8 +43,8 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | D, Olimex, held out | Test | 24 | 9,286 | 0.75 | 0.65 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.51 | 0.10 |
-| F, OrCAD | Dev | 18 | 13,444 | 0.92 | 0.96 |
-| F, OrCAD | Test | 12 | 5,680 | 0.89 | 0.91 |
+| F, OrCAD | Dev | 18 | 13,444 | 0.92 | 0.97 |
+| F, OrCAD | Test | 12 | 5,680 | 0.89 | 0.92 |
 
 Accuracy says how much is right; what a user also needs is to know where the rest
 is. Silent errors are wrong pins that nothing flags. Review items are the doubtful
@@ -63,8 +63,8 @@ them that point at something wrong.
 | D, Olimex, held out | Test | 1.0% | 0.79 | 13.1 | 0.88 | 0.46 |
 | E, EasyEDA | Dev | 2.7% | 0.73 | 11.9 | 0.88 | 0.56 |
 | E, EasyEDA | Test | 1.5% | 0.77 | 11.8 | 0.87 | 0.58 |
-| F, OrCAD | Dev | 0.9% | 0.82 | 9.0 | 0.77 | 0.61 |
-| F, OrCAD | Test | 0.8% | 0.89 | 12.7 | 0.88 | 0.58 |
+| F, OrCAD | Dev | 0.9% | 0.81 | 8.9 | 0.75 | 0.61 |
+| F, OrCAD | Test | 0.8% | 0.89 | 12.3 | 0.86 | 0.58 |
 
 ## Install
 

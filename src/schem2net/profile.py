@@ -17,6 +17,7 @@ class Profile:
     pin_numbers_overhang: bool = False  # a number may overhang the tip of a short pin
     hidden_pin_one_at_bottom: bool = False
     pins_at_body_edge: bool = False
+    pinless_at_body_edge: bool = False  # only parts drawn with no pin line at all
     flags_on_pins: bool = False  # port flags may sit straight on a pin's tip
     symbols_in_pieces: bool = False  # symbols drawn as separate lines, as ground bars
     lines_in_pieces: bool = False  # outlines printed one line at a time
@@ -47,6 +48,7 @@ class Profile:
     not_power_nets: frozenset[str] = frozenset()
     power_names_in_labels: bool = False
     label_name_gap: float | None = None  # mm from a flag to its name in the label colour
+    power_name_gap: float | None = None  # mm from a power symbol to its name
     unnamed_ground: str | None = None
     ground_signs: dict[str, str] = field(default_factory=dict)  # hidden names, by sign
     ground_stems: bool = False  # the unnamed ground's sign has a stem that reads as a pin
@@ -72,7 +74,8 @@ def load(name: str) -> Profile:
         pin_numbers_above=pins.get("numbers_above", False),
         pin_numbers_overhang=pins.get("numbers_overhang", False),
         hidden_pin_one_at_bottom=pins.get("hidden_one_at_bottom", False),
-        pins_at_body_edge=pins.get("at_body_edge", False),
+        pins_at_body_edge=bool(pins.get("at_body_edge", False)),
+        pinless_at_body_edge=pins.get("at_body_edge") == "pinless",
         flags_on_pins=pins.get("flags_on_tips", False),
         symbols_in_pieces=order.get("symbols_in_pieces", False),
         lines_in_pieces=order.get("lines_in_pieces", False),
@@ -103,6 +106,7 @@ def load(name: str) -> Profile:
         not_power_nets=frozenset(power.get("not_nets", [])),
         power_names_in_labels=power.get("names_in_labels", False),
         label_name_gap=power.get("label_gap"),
+        power_name_gap=power.get("name_gap"),
         unnamed_ground=power.get("unnamed_ground"),
         ground_signs=power.get("ground_signs", {}),
         ground_stems=power.get("ground_stems", False),

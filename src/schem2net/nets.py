@@ -18,6 +18,7 @@ from schem2net.scene import Label, Scene, name_key
 from schem2net.symbols import Pin, Symbol
 
 TOL = 0.05  # mm; KiCad places connections exactly
+NO_CONNECT_REACH = 0.3  # mm from a pin's tip to the middle of its no-connect cross, as printed
 LABEL_GAP = 1.5  # mm between a local label's baseline and its wire
 
 WEIGHTS = {
@@ -143,7 +144,7 @@ class Netlister:
                 node = ("p", page, pin.shape)
                 self.uf.find(node)
                 self.pins.append((node, page, symbol, pin))
-                if any(geometry.distance(pin.at, c) <= TOL for c in scene.no_connects):
+                if any(geometry.distance(pin.at, c) <= NO_CONNECT_REACH for c in scene.no_connects):
                     self.no_connect.add(node)
                 points.append((pin.at, node))
                 pin_lines.append((pin.line, node))
@@ -243,7 +244,12 @@ class Netlister:
                         for m in point_index.near(end, TOL)
                     )
                     or any(_on(end, buses[j]) for j in bus_index.near(end, TOL))
-                    or any(geometry.distance(end, c) <= TOL for c in scene.no_connects)
+                    or any(geometry.distance(end, c) <= NO_CONNECT_REACH for c in scene.no_connects)
+                    # On a pin drawn with no line, laid out along its wire.
+                    or any(
+                        pin_lines[k][1][2] < 0 and _on(end, pin_lines[k][0])
+                        for k in pin_index.near(end, TOL)
+                    )
                 )
                 if not touches:
                     self.join(("w", page, i), ("dangling", page, i, end), "dangling")

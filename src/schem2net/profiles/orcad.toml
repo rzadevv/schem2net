@@ -25,6 +25,7 @@ labels_follow_flags = true  # an off-page arrow's name is drawn right after it
 [power]
 names_in_labels = true  # off-page connectors are named in the net alias colour
 label_gap = 5.0  # mm; an off-page name sits a little way beyond its arrows
+name_gap = 5.0  # mm; so may a power name; drawing order still ties it to its symbol
 unnamed_ground = "GND"  # ground symbols whose name is hidden
 # Capture's library names its ground signs; the name is often hidden.
 ground_signs = { triangle = "GND_SIGNAL", rake = "GND_EARTH" }
@@ -34,6 +35,7 @@ max_width = 1.0  # mm; pins have their own colour, and printing may thicken line
 min_length = 0.5  # mm
 numbers_above = true  # above horizontal pins, left of vertical ones
 numbers_overhang = true  # centred near the outer end, so on a short pin past its tip
+at_body_edge = "pinless"  # a part drawn with no pin line, as a test point, has pins of no length
 
 [wires]
 grid = [2.54, 1.27]  # mm: Capture's 0.1 inch grid

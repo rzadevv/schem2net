@@ -131,12 +131,13 @@ def _name_power_symbols(
         _name_flags_by_order(symbols, texts, scene, profile)
     # A name in line with the symbol first; only then one that overhangs it. Each name
     # goes to the nearest symbol it may name: a printer may draw two in one path.
+    reach = profile.power_name_gap or POWER_NAME_GAP
     for loose in (False, True):
         options = []
         for k, symbol in enumerate(symbols):
             if not _could_be_power(symbol):
                 continue
-            for gap, i in texts.near(symbol.bbox, POWER_NAME_GAP):
+            for gap, i in texts.near(symbol.bbox, reach):
                 text = texts.texts[i]
                 if not _is_power_name(text, profile):
                     continue

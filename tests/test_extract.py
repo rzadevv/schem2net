@@ -2,7 +2,7 @@
 
 import math
 
-from schem2net import buses, fields, geometry, profile, symbols
+from schem2net import buses, fields, geometry, nets, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
 from schem2net.refdes import REFDES, is_common_ref, split_ref
@@ -408,6 +408,19 @@ def test_no_connect_cross_is_not_a_bus():
     built = build_scene(page, KICAD)
     assert built.no_connects == [(10.0, 10.0)]
     assert built.buses == []
+
+
+def test_a_no_connect_cross_a_printer_drew_askew_still_flags_its_pin():
+    """One stroke longer and flatter than the other, their middles apart: the pin at
+    the cross is still left open on purpose."""
+    brown = (128, 64, 0)
+    page = Page(1, 300, 300)
+    page.paths = [
+        Path(0, [[(199.85, 194.91), (201.61, 196.32)]], 0.01, brown, None, seq=0),
+        Path(1, [[(201.26, 194.91), (199.85, 196.32)]], 0.01, brown, None, seq=1),
+    ]
+    (centre,) = build_scene(page, profile.load("orcad")).no_connects
+    assert geometry.distance(centre, (200.67, 195.59)) < nets.NO_CONNECT_REACH
 
 
 def test_checks_report_merged_power_and_unconnected_pins():
@@ -1531,3 +1544,30 @@ def test_a_chassis_rake_is_a_ground_named_by_its_sign():
     b.shape((80, 15.2), (80.6, 16.5))
     b.shape((83, 15.2), (82.4, 16.5))  # slanting the other way: no rake
     assert not fields._is_rake(symbols.Symbol([2, 3, 4], (80, 15.2, 83, 16.5)), b.scene)
+
+
+def test_a_test_point_drawn_with_no_pin_line_connects_at_its_outline():
+    """OrCAD test points are a box with no pin line; the wire ends on the box. A ground
+    with no pin, in the pin colour, is left as a power symbol."""
+    orcad = profile.load("orcad")
+    blue, red, navy, maroon = (0, 0, 255), (255, 0, 0), (0, 0, 128), (128, 0, 64)
+    paths = [
+        Path(0, [[(10, 20), (30, 20)]], 0.25, maroon, None, seq=0),
+        Path(1, [[(10, 20), (10, 25)]], 0.25, maroon, None, seq=1),
+        Path(
+            2,
+            [[(31.3, 18.7), (31.3, 21.3), (33.8, 21.3), (33.8, 18.7), (31.3, 18.7)]],
+            0.25,
+            blue,
+            None,
+            seq=2,
+        ),
+        Path(4, [[(8, 25), (12, 25)]], 0.25, red, None, seq=5),
+        Path(5, [[(12, 25), (10, 27.5)]], 0.25, red, None, seq=6),
+        Path(6, [[(10, 27.5), (8, 25)]], 0.25, red, None, seq=7),
+    ]
+    paths[0].subpaths = [[(10, 20), (31.3, 20)]]
+    texts = [Text(0, "TP1", (31, 16, 34, 17.5), 1.5, 0.0, navy, 3)]
+    scene = build_scene(Page(1, 100, 100, paths=paths, texts=texts), orcad)
+    _, found = netlist(scene, rules=orcad)
+    assert {name: set(n.pins) for name, n in found.items()} == {"GND_SIGNAL": {("TP1", "1")}}

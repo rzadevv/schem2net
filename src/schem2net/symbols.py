@@ -81,7 +81,7 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     else:  # a frame spans all the drawing: gone first, so no piece joins it
         symbols = _join_drawn_together(_without_frames(symbols), scene, profile)
     if profile.pins_at_body_edge:
-        _add_edge_pins(symbols, scene)
+        _add_edge_pins(symbols, scene, profile if profile.pinless_at_body_edge else None)
     fields.annotate(symbols, scene, profile, runs)
     return [s for s in symbols if s.ref or s.power]
 
@@ -532,14 +532,21 @@ def _enters(piece: Symbol, box: Symbol) -> bool:
     return True
 
 
-def _add_edge_pins(symbols: list[Symbol], scene: Scene) -> None:
-    """Pins drawn with no line: a wire that ends on a symbol's outline is a pin there.
+def _add_edge_pins(symbols: list[Symbol], scene: Scene, pinless: Profile | None = None) -> None:
+    """Pins drawn with no line: a wire that ends on a symbol's outline is a pin there,
+    on any symbol or, given a profile (`pinless`), only on parts drawn in body colours
+    with no pin at all, as a test point is; power symbols there share the pin colour.
 
     The pin is laid along the wire, out to where its number is written.
     """
+
+    def body_only(symbol: Symbol) -> bool:
+        colours = {scene.shapes[i].color for i in symbol.shapes}
+        return not symbol.pins and not any(pinless.is_("pin", c) for c in colours)
+
     index = GridIndex()
     for k, symbol in enumerate(symbols):
-        if symbol.body and not symbol.power:
+        if symbol.body and not symbol.power and (pinless is None or body_only(symbol)):
             index.add(k, symbol.body)
     next_id = -1
     for a, b in scene.wires:

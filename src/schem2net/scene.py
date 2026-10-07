@@ -24,6 +24,9 @@ SHEET_TEXT_GAP = 2.0  # mm between a sheet box and its name or file text
 SHEET_PIN_GAP = 1.5  # mm between a sheet pin's flag and its name
 FLAG_GAP = 1.0  # mm between a label's flag and its text
 NO_CONNECT_MAX_SIZE = 3.0  # mm, the length of one stroke of a no-connect cross
+CROSS_EXACT = 0.05  # mm by which the strokes of a cross as drawn may differ
+CROSS_SLACK = 0.1  # of a no-connect stroke's length, by which its two strokes may miss
+CROSS_SLANT = 0.4  # share by which a stroke may be steeper or longer than the other
 
 
 @dataclass(slots=True)
@@ -301,22 +304,33 @@ def build(page: Page, profile: Profile) -> Scene:
 
 
 def _no_connect_crosses(paths: list[Path]) -> tuple[set[int], list[Point]]:
-    """Small crosses of two equal diagonal strokes: the no-connect flags on pins."""
+    """Small crosses of two equal diagonal strokes: the no-connect flags on pins. A
+    printer may draw one stroke longer or flatter than the other, their middles apart;
+    such a cross still marks a pin, but its strokes are kept, as letters such as X
+    drawn in strokes look the same."""
     strokes = []
     for p in paths:
         if p.fill or not p.stroke or len(p.subpaths) != 1 or len(p.subpaths[0]) != 2:
             continue
         (x0, y0), (x1, y1) = p.subpaths[0]
         dx, dy = x1 - x0, y1 - y0
-        if 0.5 < math.hypot(dx, dy) < NO_CONNECT_MAX_SIZE and abs(abs(dx) - abs(dy)) < 0.05:
-            strokes.append((p, ((x0 + x1) / 2, (y0 + y1) / 2), dx * dy > 0))
+        diagonal = min(abs(dx), abs(dy)) > (1 - CROSS_SLANT) * max(abs(dx), abs(dy))
+        if 0.5 < math.hypot(dx, dy) < NO_CONNECT_MAX_SIZE and diagonal:
+            exact = abs(abs(dx) - abs(dy)) < CROSS_EXACT
+            strokes.append((p, ((x0 + x1) / 2, (y0 + y1) / 2), dx * dy > 0, exact))
     seqs, centres = set(), []
-    for i, (a, mid_a, down_a) in enumerate(strokes):
-        for b, mid_b, down_b in strokes[i + 1 :]:
-            same_size = abs(geometry.distance(*a.subpaths[0]) - geometry.distance(*b.subpaths[0]))
-            if down_a != down_b and geometry.distance(mid_a, mid_b) < 0.05 and same_size < 0.05:
+    for i, (a, mid_a, down_a, exact_a) in enumerate(strokes):
+        for b, mid_b, down_b, exact_b in strokes[i + 1 :]:
+            if down_a == down_b:
+                continue
+            size = geometry.distance(*a.subpaths[0])
+            apart = geometry.distance(mid_a, mid_b)
+            unequal = abs(size - geometry.distance(*b.subpaths[0]))
+            if exact_a and exact_b and apart < CROSS_EXACT and unequal < CROSS_EXACT:
                 seqs |= {a.seq, b.seq}
-                centres.append(mid_a)
+            elif not (apart < CROSS_SLACK * size and unequal < CROSS_SLANT * size):
+                continue
+            centres.append(((mid_a[0] + mid_b[0]) / 2, (mid_a[1] + mid_b[1]) / 2))
     return seqs, centres
 
 

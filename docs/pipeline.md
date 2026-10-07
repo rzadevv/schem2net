@@ -315,12 +315,15 @@ triangle of three lines, its wire ending on the middle of the base, or bars with
 stem, the wire ending on the middle of the top one. An off-page connector is a pair
 of arrows whose wire ends in their mouth; its name, in the net alias colour, sits a
 little way beyond them, and the sheets the net is on may be listed beside it, as in
-`[2,10,11]`, which is no label. A ground's name is often hidden; Capture's library
-names its signs, so a bare triangle is GND_SIGNAL and a chassis rake GND_EARTH,
-apart from the GND of its bars. Capture's pins are a grid step long, so a number
-centred near a pin's outer end may overhang its tip; a long text past the tip, such
-as a part number, is no pin number, and neither is a rating such as 5%, 50V or
-1/10W, nor any value with a unit.
+`[2,10,11]`, which is no label. A power name may sit as far off, as drawing order
+ties it to its symbol. A ground's name is often hidden; Capture's library names its
+signs, so a bare triangle is GND_SIGNAL and a chassis rake GND_EARTH, apart from the
+GND of its bars. Capture's pins are a grid step long, so a number centred near a
+pin's outer end may overhang its tip; a long text past the tip, such as a part
+number, is no pin number, and neither is a rating such as 5%, 50V or 1/10W, nor any
+value with a unit. A part drawn with no pin line, in body colours only, as a test
+point is, connects where a wire ends on its outline; ground and power signs are red
+like pins, so they are left out.
 
 A PDF printed from a browser or through a PDF printer does not say which tool drew
 it. The drawing still does: the profile whose wire colour is there and whose
@@ -340,7 +343,10 @@ placed on one line as one text object, such as a part's designator and its value
 far to its right; a text object whose words lie more than two letter heights apart
 is read as separate texts. Where designators have a colour of their own, a text in
 it that starts with a designator, as `R22 0` does, is a designator and its value
-written close together, and is split after the designator.
+written close together, and is split after the designator. A printer may also round the two strokes of a
+no-connect cross apart, one longer or flatter than the other; such a cross still
+flags the pin whose tip lies near its middle, but its strokes are kept, as a letter
+X drawn in strokes looks the same.
 
 ## Pages printed without colour
 
@@ -379,7 +385,7 @@ cap the confidence of the nets involved:
 |---|---|---|
 | `power_nets_merged` | two power names on one net, such as GND and 3V3 | capped at 0.4 |
 | `duplicate_pin` | a pin number used twice in one unit of a part | capped at 0.6 |
-| `dangling_wire` | a wire end touching nothing and no no-connect flag | 0.6 |
+| `dangling_wire` | a wire end touching nothing, no no-connect flag, and no pin drawn with no line | 0.6 |
 | `unconnected_pin` | a pin on no net, without a no-connect flag | |
 | `connected_no_connect` | a pin flagged no-connect that is connected | |
 | `designator_without_part` | a designator that no part claimed | |
