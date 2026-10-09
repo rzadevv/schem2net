@@ -1,4 +1,4 @@
-<p align="center"><img src="schem2net.png" alt="schem2net" width="600"></p>
+<p align="center"><img src="schem2net.png" alt="schem2net" width="800"></p>
 
 Recover netlists from vector schematic PDFs.
 
