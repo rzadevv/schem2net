@@ -334,14 +334,6 @@ pdf = "A20/A20-SOM-EVB/A20-SOM-EVB_Rev_C.pdf"
 license = "see repository"
 
 [[project]]
-name = "olimex-stmp15x-shield-inuxino_micro_extension_rev_a_stmp15x_shield_gpio1_extension"
-repo = "https://github.com/OLIMEX/STMP15X-SHIELD"
-commit = "584b609e158f36955ddab94a411c4e137d2825c1"
-eagle = "HARDWARE/STMP15x-SHIELD_Rev_A/Extensions/A10-A20-OLINUXINO-MICRO_Extension_Rev_A_STMP15x-SHIELD_GPIO1_EXTENSION.sch"
-pdf = "HARDWARE/STMP15x-SHIELD_Rev_A/Extensions/A10-A20-OLINUXINO-MICRO_Extension_Rev_A_STMP15x-SHIELD_GPIO1_EXTENSION.pdf"
-license = "GPL-3.0"
-
-[[project]]
 name = "olimex-uext-3to5v-hardware_uext_3to5v_rev_a_uext_3to5v_rev_a"
 repo = "https://github.com/OLIMEX/UEXT-3TO5V"
 commit = "a10fee1703466b9883cc3a483760177ee6be21aa"

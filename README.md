@@ -41,7 +41,7 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
 | C, Eagle | Dev | 96 | 7,038 | 0.76 | 0.72 |
 | C, Eagle | Test | 42 | 2,903 | 0.66 | 0.61 |
-| D, Olimex | Dev | 24 | 11,745 | 0.78 | 0.73 |
+| D, Olimex | Dev | 23 | 11,565 | 0.80 | 0.75 |
 | D, Olimex | Test | 24 | 9,286 | 0.75 | 0.65 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.51 | 0.10 |
@@ -63,7 +63,7 @@ share of them that point at something wrong.
 | B, Altium, drawing only | Test | 2.7% | 5.3% | 0.58 | 6.5 | 0.59 | 0.46 |
 | C, Eagle | Dev | 1.0% | 20.8% | 0.69 | 12.7 | 0.77 | 0.67 |
 | C, Eagle | Test | 1.0% | 30.9% | 0.70 | 14.4 | 0.81 | 0.71 |
-| D, Olimex | Dev | 0.8% | 16.6% | 0.84 | 12.5 | 0.83 | 0.50 |
+| D, Olimex | Dev | 0.8% | 15.3% | 0.84 | 12.7 | 0.83 | 0.48 |
 | D, Olimex | Test | 1.0% | 20.2% | 0.78 | 12.9 | 0.88 | 0.46 |
 | E, EasyEDA | Dev | 2.7% | 16.9% | 0.73 | 11.9 | 0.88 | 0.50 |
 | E, EasyEDA | Test | 1.5% | 42.6% | 0.77 | 11.8 | 0.87 | 0.58 |

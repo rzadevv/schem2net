@@ -55,7 +55,8 @@ published schematic PDF in its repository, beside the schematic it was printed
 from, KiCad or Eagle; one revision of each board is used. Boards in KiCad's old
 `.sch` format are left out, since current kicad-cli cannot read them for the
 truth. Its first run found that KiCad 7 and 8 PDFs, which draw text as strokes,
-were taken for board prints and skipped; they are read now.
+were taken for board prints and skipped; they are read now. One pair was dropped
+later: the PDF beside its `.sch` is a parts list, not the drawing.
 
 Corpus E pairs EasyEDA schematic PDFs, as EasyEDA names its exports
 (`Schematic_<project>.pdf`, `SCH_<sheet>.pdf`), with the source kept in the same
