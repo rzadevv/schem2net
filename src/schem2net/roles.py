@@ -406,6 +406,11 @@ class Forest:
         return self.value[node]
 
 
+def learned(generator: str) -> bool:
+    """Whether roles were learned for the generator's pages printed in black."""
+    return _models(generator) is not None
+
+
 @cache
 def _models(generator: str):
     """The learned models of a generator, or None where none were learned."""
@@ -426,6 +431,9 @@ def _role(colour, profile: Profile, roles: tuple[str, ...]) -> int:
 def _colour(profile: Profile, roles: tuple[str, ...], k: int | None):
     if k is None or k >= len(roles) or not profile.colors.get(roles[k]):
         return None
+    # Where designators have a colour of their own, fields take it: values share it.
+    if roles[k] == "field" and profile.colors.get("designator"):
+        return min(profile.colors["designator"])
     return min(profile.colors[roles[k]])
 
 

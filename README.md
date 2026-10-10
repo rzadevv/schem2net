@@ -23,9 +23,11 @@ Early development.
   pages; they keep most, not all, of the accuracy of colour pages.
 - EasyEDA PDFs, from Std or Pro, are read too. This is early work.
 - OrCAD Capture PDFs, printed through a PDF printer, are read in Capture's
-  default colours.
+  default colours or in black.
 - PDFs printed from a browser or a PDF printer, which do not say what drew them,
-  are recognised by their colours.
+  are recognised by their colours. One in black, or in colours no profile
+  knows, is read as each generator in turn, keeping the reading that joins the
+  most pins, and is marked as guessed.
 - Other generators are not supported yet.
 
 Dev figures are read with learned models that never saw the design in question,

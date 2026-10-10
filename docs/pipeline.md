@@ -363,6 +363,18 @@ colour and the page is read as usual. The models are gradient-boosted trees,
 three per generator, learned from colour pages (see the benchmark notes) and
 stored as node arrays in `profiles/roles.npz`; reading them needs only numpy.
 
+Where a profile gives designators a colour of their own, as OrCAD's navy, a page
+printed in black has lost it: texts beside a part, its designator, value and other
+properties, are told apart by where they sit and the designator model, as on a
+KiCad page.
+
+A PDF printed in black through a PDF printer says nothing of what drew it, and
+neither do its colours. It is read as each generator whose roles were learned,
+and the reading that joins the most pins into nets is kept; reading as the wrong
+generator finds few parts and fewer connections. So is a PDF in a colour theme of
+the designer's own that no profile fits: its ink is taken as black first. The
+design then carries a `generator_guessed` issue naming the generator taken.
+
 Designers can change the colour theme, so a label may come in a colour the
 profile does not know. Such texts get their role from the same text model, with
 everything in a known colour kept as it is: a string the PDF splits into pieces
@@ -383,6 +395,7 @@ cap the confidence of the nets involved:
 
 | Issue | Meaning | Net confidence |
 |---|---|---|
+| `generator_guessed` | the PDF does not say what drew it and its colours fit no profile: read as each generator whose roles were learned, keeping the reading that joined the most pins | |
 | `power_nets_merged` | two power names on one net, such as GND and 3V3 | capped at 0.4 |
 | `duplicate_pin` | a pin number used twice in one unit of a part | capped at 0.6 |
 | `dangling_wire` | a wire end touching nothing, no no-connect flag, and no pin drawn with no line | 0.6 |

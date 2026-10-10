@@ -74,8 +74,8 @@ every designator on the board is printed in the PDF, but for eight of 439 on the
 BeagleBoard-xM and one on the CutiePi. A board keeps few values, so values are
 scored on few parts. Capture prints to PDF through a printer driver (Ghostscript,
 Acrobat Distiller, Foxit, Microsoft's), so the PDF does not say what drew it and
-its colours decide. One design, the tutorial, is drawn in colours of its own and
-is not read; it counts as a design with nothing found.
+its colours decide. One design, the tutorial, is drawn in colours of its own; its
+ink is taken as black and read with the learned roles.
 
 Eagle draws most text with its own stroke font, and some PDFs carry text as
 filled outlines. `schem2net build-font c` learns the shapes of both kinds of
@@ -94,11 +94,18 @@ colour is a wire, a text in the label colour a label. No truth netlist is used,
 and test boards are never read. It needs scikit-learn, one of the dev
 dependencies; the trees are written to `profiles/roles.npz`.
 
+The KiCad, Altium and Eagle trees in that file were learned before the PDF reader
+last changed, and are kept. Learned again now, they change the reading of a few
+colour pages, on the dev splits for the worse: corpus B's loses 0.3 points of pin
+accuracy. So `build-roles` reproduces the OrCAD trees but not the others.
+
 To see how pages printed in black fare, recolour a dev PDF's ink to black and
 read it again. With models learned without the board in question, dev pages
 keep this share of their colour pin accuracy: Eagle 98%, KiCad 78%, Altium
-50%. Before, a black page read as nothing. Altium loses most on text: net labels
-and pin names look much alike without their colours.
+50%, OrCAD 47%. Before, a black page read as nothing. Altium loses most on text:
+net labels and pin names look much alike without their colours. An OrCAD PDF does
+not say what drew it, so in black it is read as each generator in turn; two of
+corpus F's 30 designs are then taken for another one.
 
 ## Designator model
 

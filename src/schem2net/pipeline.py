@@ -1,7 +1,7 @@
 """Run the extraction stages on one PDF."""
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from schem2net import (
@@ -19,11 +19,12 @@ from schem2net import (
 )
 from schem2net.ir import Design, Issue, Source
 from schem2net.nets import Netlister
-from schem2net.primitives import Page
+from schem2net.primitives import Document, Page
 from schem2net.scene import Scene
 from schem2net.symbols import Symbol
 
 PROFILES = {"kicad", "altium", "eagle", "easyeda", "orcad"}
+BLACK, WHITE = (0, 0, 0), (255, 255, 255)
 
 
 @dataclass
@@ -93,7 +94,7 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         embedded = False
     generator = ingest.detect_generator(doc)
     printed = False  # through a browser or a PDF printer, which do not say who drew it
-    if generator not in PROFILES and generator != "orcad":
+    if generator not in PROFILES:
         guessed = ingest.guess_by_colour(doc, {name: profile.load(name) for name in PROFILES})
         if guessed:
             generator, printed = guessed, True
@@ -110,17 +111,57 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     if carried:
         return Extraction(carried, pages)
     if generator not in PROFILES:
+        read = _read_as_any(doc, design, region)
+        if read:
+            return read
         made = generator if generator != "unknown" else _producer(doc) or "an unknown tool"
         design.issues.append(Issue(kind="no_profile", severity="error", detail=made))
         return Extraction(design, pages)
+    return _extract(doc, design, generator, printed, region)
 
+
+def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | None:
+    """A PDF that says nothing of what drew it, in colours no profile knows, such as one
+    printed in black: its ink taken as black, read as each generator whose roles were
+    learned, keeping the reading that joins the most pins. None if none joins any."""
+    black = Document(pages=[_in_black(page) for page in doc.pages], metadata=doc.metadata)
+    best, most = None, 0
+    for generator in sorted(PROFILES):
+        if not roles.learned(generator):
+            continue
+        trial = _extract(black, design.model_copy(deep=True), generator, True, region)
+        joined = sum(len(net.pins) for net in trial.design.nets if len(net.pins) >= 2)
+        if joined > most:
+            best, most = trial, joined
+    if best:
+        best.design.issues.append(
+            Issue(kind="generator_guessed", detail=best.design.source.generator)
+        )
+    return best
+
+
+def _in_black(page: Page) -> Page:
+    """The page with every ink but white made black, as a printer without colour would."""
+
+    def ink(colour):
+        return colour if colour in (None, WHITE) else BLACK
+
+    paths = [replace(p, stroke=ink(p.stroke), fill=ink(p.fill)) for p in page.paths]
+    texts = [replace(t, color=ink(t.color)) for t in page.texts]
+    return replace(page, paths=paths, texts=texts)
+
+
+def _extract(
+    doc, design: Design, generator: str, printed: bool, region: Region | None
+) -> Extraction:
+    """Read every page with the generator's profile."""
+    design.source.generator = generator
+    pages = [PageResult(page) for page in doc.pages]
     rules = profile.load(generator)
     netlister = Netlister(rules.labels_span_pages, rules.colors.get("designator", frozenset()))
     for result in pages:
         if printed:
             result.page = ingest.snap_colours(result.page, rules)
-        if rules.lines_in_pieces:
-            result.page = ingest.joined_lines(result.page, rules)
         result.page = strokes.traced(result.page)
         # Text drawn as strokes leaves a page with almost no text objects, like a board.
         kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
@@ -129,18 +170,23 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
         if kind != "vector":
             design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
             continue
+        page_rules = rules
         if roles.colourless(result.page):  # printed in black: roles from shapes
             result.page = roles.recolour(result.page, rules)
+            # Designators and the texts beside them are told apart by colour no more.
+            page_rules = replace(rules, colors={**rules.colors, "designator": frozenset()})
         else:  # texts in colours of the designer's own: roles from what they sit on
             result.page = roles.name_unknown_texts(result.page, rules)
+        if rules.lines_in_pieces:  # once roles are known, as the models see lines apart
+            result.page = ingest.joined_lines(result.page, rules)
         factor = grid.scale(result.page, rules, exported=not printed)
         if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
             result.page = grid.rescale(result.page, 1 / factor)
-        _read(result, rules, len(doc.pages))
+        _read(result, page_rules, len(doc.pages))
         if printed and (pitch := grid.pitch_factor(result.symbols)) != 1.0:
             # A wire grid fits at half the true scale too; the pins' pitch tells which.
             result.page = grid.rescale(result.page, 1 / pitch)
-            _read(result, rules, len(doc.pages))
+            _read(result, page_rules, len(doc.pages))
 
     read = [result for result in pages if result.scene is not None]
     fields.whole_names([result.symbols for result in read])

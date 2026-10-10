@@ -99,3 +99,25 @@ def test_a_name_drawn_with_a_mark_of_its_colour_is_not_a_net_label():
 
     assert not drawn_with([wire])
     assert drawn_with([wire, mark])
+
+
+def test_fields_take_the_designators_own_colour_where_there_is_one():
+    """OrCAD prints designators and values navy and other properties black: a text
+    found to be a field is given navy, so it may be read as a designator."""
+    field = roles.TEXT_ROLES.index("field")
+    assert roles._colour(profile.load("orcad"), roles.TEXT_ROLES, field) == (0, 0, 128)
+    assert roles._colour(profile.load("kicad"), roles.TEXT_ROLES, field) == (0, 100, 100)
+
+
+def test_a_page_made_black_keeps_its_white():
+    from schem2net.pipeline import _in_black
+
+    page = Page(1, 10, 10)
+    page.paths = [
+        Path(0, [[(0, 0), (1, 1)]], 0.1, (255, 0, 0), None),
+        Path(1, [[(0, 0), (1, 0), (1, 1), (0, 0)]], 0.1, None, (255, 255, 255)),
+    ]
+    page.texts = [Text(0, "U1", (0, 0, 1, 1), 1.0, 0.0, (0, 0, 128))]
+    black = _in_black(page)
+    assert [p.stroke or p.fill for p in black.paths] == [(0, 0, 0), (255, 255, 255)]
+    assert roles.colourless(black) and black.texts[0].color == (0, 0, 0)

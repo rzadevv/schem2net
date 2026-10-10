@@ -9,6 +9,7 @@ field = [[0, 0, 128], [0, 0, 0]]  # designators and values; power names and othe
 designator = [[0, 0, 128]]  # designators and values are navy
 pin_number = [[0, 0, 0], [0, 64, 128]]  # numbers black, names blue-grey
 local_label = [[255, 0, 0]]  # net aliases and off-page connector names
+note = [[128, 0, 0]]  # title block and free text
 
 [labels]
 span_pages = true  # a net alias joins its name throughout the schematic

@@ -123,6 +123,14 @@ def _say(design: Design) -> None:
             )
             raise typer.Exit(2)
     for issue in issues:
+        if issue.kind == "generator_guessed":
+            typer.echo(
+                f"{design.source.file}: the PDF does not say what drew it, and its colours "
+                f"are none schem2net knows; read as {issue.detail}, the reading that joined "
+                "the most pins. Check it with care.",
+                err=True,
+            )
+    for issue in issues:
         if issue.kind in SKIPPED:
             typer.echo(f"page {issue.page} skipped: {SKIPPED[issue.kind]}", err=True)
     doubtful = [n for n in design.nets if n.confidence < LOW_CONFIDENCE]
@@ -314,7 +322,7 @@ def build_roles(
 ) -> None:
     """Learn path and text roles from the colour pages of each corpus's dev split, for
     reading pages printed in black. Needs scikit-learn (the dev dependencies)."""
-    generators = {"a": "kicad", "b": "altium", "c": "eagle"}
+    generators = {"a": "kicad", "b": "altium", "c": "eagle", "f": "orcad"}
     jobs = []
     for name, generator in generators.items():
         try:

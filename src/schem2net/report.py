@@ -113,9 +113,11 @@ ISSUE_TEXT = {
     "raster_page": "scanned page, skipped",
     "pin_number_guessed": "pin numbers not shown, guessed",
     "low_confidence_net": "net joined on weak evidence",
+    "generator_guessed": "drawing tool not known, guessed",
 }
 # The review queue, grouped: first what most often means a wrong connection.
 ORDER = [
+    "generator_guessed",
     "power_nets_merged",
     "low_confidence_net",
     "pin_number_guessed",
