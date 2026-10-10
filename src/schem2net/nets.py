@@ -33,6 +33,10 @@ WEIGHTS = {
     "t_contact": 0.85,
     "shared_pin": 0.95,  # one pin drawn in several units
     "dangling": 0.6,  # a wire end touching nothing: often a connection that was missed
+    # A page known by a power name only where it is hidden, such as a ground sign's,
+    # joined to the pages of that name: the name is the generator's usual one, and
+    # modules of one design may each name their ground apart.
+    "hidden_name": 0.7,
 }
 LONE_PIN_CONFIDENCE = 0.5
 # Consistency checks: a net that fails one is capped at this confidence.
@@ -59,6 +63,9 @@ class Netlister:
         self.names: dict[tuple, str] = {}
         self.pins: list[tuple[tuple, int, Symbol, Pin]] = []
         self.local_names: dict[int, set[str]] = defaultdict(set)
+        # Pages of each global name: where it is printed, and where it is hidden.
+        self.printed_pages: dict[str, set[int]] = defaultdict(set)
+        self.hidden_pages: dict[str, set[int]] = defaultdict(set)
         self.issues: list[Issue] = []
         # Buses crossing into child sheets: (page, child path, name) -> bus on this page
         self.sheet_buses: list[tuple[int, str, str, busnames.Bus]] = []
@@ -136,7 +143,13 @@ class Netlister:
             if symbol.power:
                 node = ("s", page, si)
                 self.names[node] = symbol.power
-                self.join(node, ("global", name_key(symbol.power)), "global_name")
+                key = name_key(symbol.power)
+                if symbol.power_hidden:
+                    self.hidden_pages[key].add(page)
+                    self.join(node, ("hidden", page, key), "global_name")
+                else:
+                    self.printed_pages[key].add(page)
+                    self.join(node, ("global", key), "global_name")
                 points += [(p, node) for p in symbol.anchors]
                 ports.add(node)
                 continue
@@ -154,6 +167,7 @@ class Netlister:
             key = name_key(label.text)
             self.names[node] = label.text
             if label.kind == "global":
+                self.printed_pages[key].add(page)
                 self.join(node, ("global", key), "global_name")
             else:
                 self.join(node, ("local", page, key), "local_name")
@@ -316,6 +330,12 @@ class Netlister:
             for page, keys in self.local_names.items():
                 for key in keys:
                     self.join(("local", page, key), ("label", key), "local_name")
+        for key, hidden in self.hidden_pages.items():
+            printed = self.printed_pages[key]
+            for page in hidden:
+                weak = page not in printed and len(hidden | printed) > 1
+                kind = "hidden_name" if weak else "global_name"
+                self.join(("hidden", page, key), ("global", key), kind)
         find = self.uf.find
         kinds: dict[tuple, Counter] = defaultdict(Counter)
         for a, _, kind in self.edges:

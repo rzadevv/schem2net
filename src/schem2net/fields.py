@@ -88,7 +88,11 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 near = [s for s in symbols if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
                 along = [k for s in near for k in [id(s), *pieces.get(id(s), ())]]
                 taken = [named[k] for k in along if k in named and k != id(symbol)]
-                symbol.power = taken[0] if taken else _ground_name(symbol, scene, profile)
+                if taken:
+                    symbol.power = taken[0]
+                else:
+                    symbol.power = _ground_name(symbol, scene, profile)
+                    symbol.power_hidden = True
     # Where each power symbol connects; a flag may sit straight on a part's pin.
     tips = [p.at for s in symbols if not s.power for p in s.pins]
     for symbol in symbols:

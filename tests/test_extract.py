@@ -1571,3 +1571,22 @@ def test_a_test_point_drawn_with_no_pin_line_connects_at_its_outline():
     scene = build_scene(Page(1, 100, 100, paths=paths, texts=texts), orcad)
     _, found = netlist(scene, rules=orcad)
     assert {name: set(n.pins) for name, n in found.items()} == {"GND_SIGNAL": {("TP1", "1")}}
+
+
+def test_pages_joined_only_by_a_hidden_ground_name_are_doubted():
+    """Modules of one design may each name their ground apart, behind the same sign: a
+    page that never prints the name joins the other pages on weak evidence."""
+
+    def netlist(*hidden):
+        netlister = Netlister()
+        for page, h in enumerate(hidden, 1):
+            r = symbols.Symbol([], (0, 0, 2, 4), [symbols.Pin(0, ((1, 1), (1, 0)), "1")])
+            r.ref = f"R{page}"
+            ground = symbols.Symbol([], (0, -2, 2, 0), power="GND", anchors=[(1, 0)])
+            ground.power_hidden = h
+            netlister.add_page(Scene(page=page), [r, ground])
+        return [n for n in netlister.result().nets if len(n.pins) > 1]
+
+    assert netlist(True, True)[0].confidence < 0.8
+    assert netlist(False, True)[0].confidence < 0.8
+    assert netlist(False, False)[0].confidence >= 0.8

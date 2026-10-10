@@ -65,8 +65,8 @@ them that point at something wrong.
 | D, Olimex, held out | Test | 1.0% | 0.79 | 13.1 | 0.88 | 0.46 |
 | E, EasyEDA | Dev | 2.7% | 0.73 | 11.9 | 0.88 | 0.56 |
 | E, EasyEDA | Test | 1.5% | 0.77 | 11.8 | 0.87 | 0.58 |
-| F, OrCAD | Dev | 0.9% | 0.81 | 8.9 | 0.75 | 0.61 |
-| F, OrCAD | Test | 0.8% | 0.89 | 12.3 | 0.86 | 0.58 |
+| F, OrCAD | Dev | 0.6% | 0.88 | 9.0 | 0.75 | 0.61 |
+| F, OrCAD | Test | 0.8% | 0.89 | 12.4 | 0.86 | 0.58 |
 
 ## Install
 

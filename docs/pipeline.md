@@ -390,6 +390,12 @@ weakest join: shared ends and junction dots are trusted fully, wire ends
 landing on the middle of another wire without a dot less so. A net with a
 single pin is flagged.
 
+A ground sign whose name is hidden is given the generator's usual ground name.
+On one page that is safe, but the modules of a design may each name their
+ground apart behind the same sign (GND, LED_GND, MCU_GND), and nothing printed
+tells them apart. So a page that knows a power name only from hidden signs joins
+the other pages of that name on weak evidence, and the net is flagged.
+
 Checks then look for things that cannot be right, report them as issues, and
 cap the confidence of the nets involved:
 

@@ -64,6 +64,7 @@ class Symbol:
     unit: str | None = None
     value: str | None = None
     power: str | None = None  # net name, for power symbols
+    power_hidden: bool = False  # the name is not printed: the generator's usual one
     anchors: list[Point] = field(default_factory=list)  # where a power symbol connects
 
 
