@@ -64,7 +64,10 @@ def _chars(textpage, transform: Matrix) -> dict[int, list[tuple[str, BBox]]]:
     return found
 
 
-def _collect(objects, parent: Matrix, textpage, out: Page, chars) -> None:
+MAX_FORM_DEPTH = 32  # forms nested deeper are left unread, as no plotter nests so far
+
+
+def _collect(objects, parent: Matrix, textpage, out: Page, chars, depth: int = 0) -> None:
     for obj in objects:
         kind = raw.FPDFPageObj_GetType(obj)
         matrix = _multiply(_object_matrix(obj), parent)
@@ -82,10 +85,10 @@ def _collect(objects, parent: Matrix, textpage, out: Page, chars) -> None:
                 out.texts.append(part)
         elif kind == raw.FPDF_PAGEOBJ_IMAGE:
             out.images += 1
-        elif kind == raw.FPDF_PAGEOBJ_FORM:
+        elif kind == raw.FPDF_PAGEOBJ_FORM and depth < MAX_FORM_DEPTH:
             count = raw.FPDFFormObj_CountObjects(obj)
             children = [raw.FPDFFormObj_GetObject(obj, i) for i in range(count)]
-            _collect(children, matrix, textpage, out, chars)
+            _collect(children, matrix, textpage, out, chars, depth + 1)
 
 
 def _repeats_end(path: Path, last: Path | None) -> bool:
@@ -299,22 +302,22 @@ PICTURE_DENSITY = 9  # pixels per mm of a page drawn under what was read from it
 PICTURE_PIXELS = (1800, 4000)  # the fewest and most pixels across
 
 
-def page_png(file: str | FilePath, number: int) -> bytes:
-    """Page `number` (from 1) as it is shown, rendered in grey as a PNG fine enough to
-    read when zoomed in, to lay under what was read from it."""
+def page_pngs(file: str | FilePath, numbers: list[int]) -> dict[int, bytes]:
+    """Pages, by number from 1, as they are shown, rendered in grey as PNGs fine enough
+    to read when zoomed in, to lay under what was read from them."""
     pdf = pdfium.PdfDocument(file)
+    out = {}
     try:
-        page = pdf[number - 1]
-        across = max(page.get_size())  # points
-        lo, hi = PICTURE_PIXELS
-        width = min(hi, max(lo, across * MM_PER_PT * PICTURE_DENSITY))
-        scale = width / across
-        pixels = page.render(scale=scale, grayscale=True).to_numpy()
+        for number in numbers:
+            page = pdf[number - 1]
+            across = max(page.get_size())  # points
+            lo, hi = PICTURE_PIXELS
+            width = min(hi, max(lo, across * MM_PER_PT * PICTURE_DENSITY))
+            pixels = page.render(scale=width / across, grayscale=True).to_numpy()
+            out[number] = _png(pixels[:, :, 0] if pixels.ndim == 3 else pixels)
     finally:
         pdf.close()
-    if pixels.ndim == 3:
-        pixels = pixels[:, :, 0]
-    return _png(pixels)
+    return out
 
 
 def _png(grey) -> bytes:

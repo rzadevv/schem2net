@@ -116,9 +116,11 @@ ISSUE_TEXT = {
     "pin_number_guessed": "pin numbers not shown, guessed",
     "low_confidence_net": "net joined on weak evidence",
     "generator_guessed": "drawing tool not known, guessed",
+    "page_failed": "page that could not be read",
 }
 # The review queue, grouped: first what most often means a wrong connection.
 ORDER = [
+    "page_failed",
     "generator_guessed",
     "power_nets_merged",
     "duplicate_designator",

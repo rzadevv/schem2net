@@ -28,7 +28,7 @@ jobs:
           key: corpus-a-${{ hashFiles('bench/corpus_a.toml', 'docker/Dockerfile.kicad') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         run: make corpus
-      - run: uv run schem2net bench a --split dev --json bench-dev.json
+      - run: uv run schem2net bench a --split dev --json bench-dev.json --baseline bench/baseline_a_dev.json
       - uses: actions/upload-artifact@v4
         with:
           name: bench-dev

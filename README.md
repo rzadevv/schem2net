@@ -5,8 +5,8 @@ Recover netlists from vector schematic PDFs.
 Most schematic PDFs from chip vendors and board makers were plotted by an EDA
 tool, so every wire, pin and label sits at an exact coordinate. schem2net reads
 that geometry and computes connectivity from it instead of guessing from
-pixels. Every net gets a confidence score, and accuracy is measured against a
-public benchmark.
+pixels. Every net carries a confidence, the weight of the weakest evidence that
+joined it, and accuracy is measured against a public benchmark.
 
 ## Status
 
@@ -41,32 +41,34 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
 | C, Eagle | Dev | 96 | 7,038 | 0.76 | 0.72 |
 | C, Eagle | Test | 42 | 2,903 | 0.66 | 0.61 |
-| D, Olimex, held out | Dev | 24 | 11,745 | 0.78 | 0.73 |
-| D, Olimex, held out | Test | 24 | 9,286 | 0.75 | 0.65 |
+| D, Olimex | Dev | 24 | 11,745 | 0.78 | 0.73 |
+| D, Olimex | Test | 24 | 9,286 | 0.75 | 0.65 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
 | E, EasyEDA | Test | 12 | 1,669 | 0.51 | 0.10 |
 | F, OrCAD | Dev | 18 | 13,444 | 0.92 | 0.97 |
 | F, OrCAD | Test | 12 | 5,680 | 0.89 | 0.92 |
 
 Accuracy says how much is right; what a user also needs is to know where the rest
-is. Silent errors are wrong pins that nothing flags. Review items are the doubtful
-nets and the issues naming pins, each one thing to check; precision is the share of
-them that point at something wrong.
+is. Silent errors are pins on a wrong net that nothing flags. Pins not found are on
+no net at all: a part left out, a pin read with another number, or one the drawing
+hides; most of the accuracy lost on corpora C to E is here. Review items are the
+doubtful nets and the issues naming pins, each one thing to check; precision is the
+share of them that point at something wrong.
 
-| Corpus | Split | Silent errors | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
-|---|---|---|---|---|---|---|
-| A, KiCad | Dev | 0.4% | 0.84 | 4.4 | 0.61 | 0.74 |
-| A, KiCad | Test | 0.9% | 0.66 | 3.8 | 0.72 | 0.67 |
-| B, Altium, drawing only | Dev | 0.3% | 0.93 | 12.7 | 0.49 | 0.83 |
-| B, Altium, drawing only | Test | 2.7% | 0.59 | 6.5 | 0.59 | 0.46 |
-| C, Eagle | Dev | 1.0% | 0.70 | 12.7 | 0.77 | 0.67 |
-| C, Eagle | Test | 1.0% | 0.70 | 14.4 | 0.81 | 0.71 |
-| D, Olimex, held out | Dev | 0.8% | 0.84 | 12.5 | 0.83 | 0.50 |
-| D, Olimex, held out | Test | 1.0% | 0.79 | 13.1 | 0.88 | 0.46 |
-| E, EasyEDA | Dev | 2.7% | 0.73 | 11.9 | 0.88 | 0.56 |
-| E, EasyEDA | Test | 1.5% | 0.77 | 11.8 | 0.87 | 0.58 |
-| F, OrCAD | Dev | 0.6% | 0.88 | 9.0 | 0.75 | 0.61 |
-| F, OrCAD | Test | 0.8% | 0.89 | 12.4 | 0.86 | 0.58 |
+| Corpus | Split | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
+|---|---|---|---|---|---|---|---|
+| A, KiCad | Dev | 0.4% | 5.9% | 0.84 | 4.4 | 0.61 | 0.74 |
+| A, KiCad | Test | 0.9% | 3.2% | 0.66 | 3.8 | 0.72 | 0.67 |
+| B, Altium, drawing only | Dev | 0.3% | 8.9% | 0.93 | 12.7 | 0.49 | 0.83 |
+| B, Altium, drawing only | Test | 2.7% | 5.3% | 0.58 | 6.5 | 0.59 | 0.46 |
+| C, Eagle | Dev | 1.0% | 20.8% | 0.69 | 12.7 | 0.77 | 0.67 |
+| C, Eagle | Test | 1.0% | 30.9% | 0.70 | 14.4 | 0.81 | 0.71 |
+| D, Olimex | Dev | 0.8% | 16.6% | 0.84 | 12.5 | 0.83 | 0.50 |
+| D, Olimex | Test | 1.0% | 20.2% | 0.78 | 12.9 | 0.88 | 0.46 |
+| E, EasyEDA | Dev | 2.7% | 16.9% | 0.73 | 11.9 | 0.88 | 0.50 |
+| E, EasyEDA | Test | 1.5% | 42.6% | 0.77 | 11.8 | 0.87 | 0.58 |
+| F, OrCAD | Dev | 0.6% | 3.3% | 0.88 | 9.0 | 0.75 | 0.61 |
+| F, OrCAD | Test | 0.8% | 3.7% | 0.89 | 12.4 | 0.86 | 0.58 |
 
 ## Install
 
@@ -145,7 +147,7 @@ make bench-b    # score extraction from the drawing on its dev split
 make bench-schematic  # write corpus A as KiCad projects and check them with kicad-cli
 make corpus-c   # fetch corpus C (SparkFun Eagle PDFs and their .sch)
 make bench-c    # score extraction on its dev split
-make corpus-d   # fetch corpus D (Olimex PDFs and their schematics, held out)
+make corpus-d   # fetch corpus D (Olimex PDFs and their schematics)
 make bench-d    # score it
 make corpus-e   # fetch corpus E (EasyEDA PDFs and their sources)
 make bench-e    # score it

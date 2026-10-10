@@ -233,3 +233,9 @@ def test_swapped_ends_of_a_crystal_are_forgiven_but_not_of_a_connector():
         }
     )
     assert score(predicted, truth).metrics()["pin_accuracy"] == 6 / 8
+
+
+def test_a_pin_left_out_of_every_net_is_counted_as_missed():
+    truth = design({"A": [("U1", "1"), ("R1", "1")], "B": [("U1", "2"), ("R2", "1")]})
+    found = score(design({"A": [("U1", "1"), ("R1", "1")]}), truth).metrics()
+    assert found["missed_pin_rate"] == 0.5 and found["silent_error_rate"] == 0

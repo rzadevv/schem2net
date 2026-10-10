@@ -68,6 +68,11 @@ def extract(file: str | Path, embedded: bool = True, region: Region | None = Non
     return run(file, embedded, region).design
 
 
+def _sha256(file: Path) -> str:
+    with file.open("rb") as f:
+        return hashlib.file_digest(f, "sha256").hexdigest()
+
+
 def _producer(doc) -> str:
     """What the PDF says made it, for a message: its creator or producer."""
     return " / ".join(v for k in ("Creator", "Producer") if (v := doc.metadata.get(k, "").strip()))
@@ -105,7 +110,7 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     design = Design(
         source=Source(
             file=file.name,
-            sha256=hashlib.sha256(file.read_bytes()).hexdigest(),
+            sha256=_sha256(file),
             generator=generator,
             pages=len(doc.pages),
         )
@@ -164,38 +169,20 @@ def _extract(
     rules = profile.load(generator)
     netlister = Netlister(rules.labels_span_pages, rules.colors.get("designator", frozenset()))
     for result in pages:
-        if printed:
-            result.page = ingest.snap_colours(result.page, rules)
-        result.page = strokes.traced(result.page)
-        # Text drawn as strokes leaves a page with almost no text objects, like a board.
-        kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
-        if kind == "board" and ingest.has_wires(result.page, rules):
-            kind = "vector"  # a dense schematic, with few texts for its drawing
-        if kind != "vector":
-            design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
-            continue
-        page_rules = rules
-        if roles.colourless(result.page):  # printed in black: roles from shapes
-            result.page = roles.recolour(result.page, rules)
-            # Designators and the texts beside them are told apart by colour no more.
-            page_rules = replace(rules, colors={**rules.colors, "designator": frozenset()})
-        else:  # texts in colours of the designer's own: roles from what they sit on
-            result.page = roles.name_unknown_texts(result.page, rules)
-        if rules.lines_in_pieces:  # once roles are known, as the models see lines apart
-            result.page = ingest.joined_lines(result.page, rules)
-        factor = grid.scale(result.page, rules, exported=not printed)
-        if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
-            result.page = grid.rescale(result.page, 1 / factor)
-        _read(result, page_rules, len(doc.pages))
-        if printed and (pitch := grid.pitch_factor(result.symbols)) != 1.0:
-            # A wire grid fits at half the true scale too; the pins' pitch tells which.
-            result.page = grid.rescale(result.page, 1 / pitch)
-            _read(result, page_rules, len(doc.pages))
+        try:
+            _read_page(result, design, rules, printed, region, len(doc.pages))
+        except Exception as e:  # one page the reader trips on: the others are still read
+            result.scene, result.symbols = None, []
+            detail = f"{type(e).__name__}: {e}"
+            design.issues.append(
+                Issue(kind="page_failed", severity="error", page=result.page.number, detail=detail)
+            )
 
     read = [result for result in pages if result.scene is not None]
     fields.whole_names([result.symbols for result in read])
     if rules.pin_library:
         parts = library.load(rules.pin_library)
+        design.source.library = library.fingerprint(rules.pin_library)
         for result in read:
             by_name = rules.pin_library in library.BY_NAME
             library.resolve(result.symbols, parts, by_name, result.scene.fields)
@@ -206,3 +193,41 @@ def _extract(
     design.nets = found.nets
     design.issues += found.issues
     return Extraction(design, pages, found.wire_nets)
+
+
+def _read_page(
+    result: PageResult,
+    design: Design,
+    rules: profile.Profile,
+    printed: bool,
+    region: Region | None,
+    pages: int,
+) -> None:
+    """One page's scene and symbols, read with the generator's profile."""
+    if printed:
+        result.page = ingest.snap_colours(result.page, rules)
+    result.page = strokes.traced(result.page)
+    # Text drawn as strokes leaves a page with almost no text objects, like a board.
+    kind = ingest.page_kind(result.page, text_as_strokes=bool(region or rules.text_font))
+    if kind == "board" and ingest.has_wires(result.page, rules):
+        kind = "vector"  # a dense schematic, with few texts for its drawing
+    if kind != "vector":
+        design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
+        return
+    page_rules = rules
+    if roles.colourless(result.page):  # printed in black: roles from shapes
+        result.page = roles.recolour(result.page, rules)
+        # Designators and the texts beside them are told apart by colour no more.
+        page_rules = replace(rules, colors={**rules.colors, "designator": frozenset()})
+    else:  # texts in colours of the designer's own: roles from what they sit on
+        result.page = roles.name_unknown_texts(result.page, rules)
+    if rules.lines_in_pieces:  # once roles are known, as the models see lines apart
+        result.page = ingest.joined_lines(result.page, rules)
+    factor = grid.scale(result.page, rules, exported=not printed)
+    if factor != 1.0:  # printed to fit the paper: read it at the size it was drawn
+        result.page = grid.rescale(result.page, 1 / factor)
+    _read(result, page_rules, pages)
+    if printed and (pitch := grid.pitch_factor(result.symbols)) != 1.0:
+        # A wire grid fits at half the true scale too; the pins' pitch tells which.
+        result.page = grid.rescale(result.page, 1 / pitch)
+        _read(result, page_rules, pages)

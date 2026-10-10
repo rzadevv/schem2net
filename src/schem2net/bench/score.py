@@ -55,9 +55,13 @@ class Counts:
     flagged_nets: int = 0
     wrong_flagged: int = 0
     # Pin by pin, as a reviewer meets them: a pin is flagged when its net is doubtful or
-    # an issue names it; a wrong pin nothing flags is a silent error.
+    # an issue names it; a pin on a wrong net nothing flags is a silent error. A pin on
+    # no net at all, such as one of a part left out, is counted apart: the netlist is
+    # short of it, rather than wrong about it.
     pins_wrong: int = 0
     pins_wrong_flagged: int = 0
+    pins_missed: int = 0
+    pins_missed_flagged: int = 0
     designs_without_silent_errors: int = 0
     # What a reviewer is handed: each doubtful net, and each issue naming pins, is one
     # thing to check; it is worth checking if something there is wrong.
@@ -83,6 +87,7 @@ class Counts:
             "perfect_designs": _ratio(self.perfect_designs, self.designs),
             "silent_error_rate": _ratio(self.pins_wrong - self.pins_wrong_flagged, self.pins),
             "pin_flag_recall": _ratio(self.pins_wrong_flagged, self.pins_wrong),
+            "missed_pin_rate": _ratio(self.pins_missed, self.pins),
             "review_items_per_100_pins": _ratio(
                 100 * (self.flagged_nets + self.pin_issues), self.pins
             ),
@@ -159,6 +164,8 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     for t, net in enumerate(true_nets):
         for pin in net:
             if pin not in pred_owner:
+                c.pins_missed += 1
+                c.pins_missed_flagged += pin in doubted
                 continue
             p = pred_owner[pin]
             flagged = confidence[p] < low_confidence or pin in doubted

@@ -85,7 +85,7 @@ def test_page_picture_is_a_png_as_wide_as_the_page_reads(tmp_path, pdf_builder):
 
     b = pdf_builder()
     b.line((72, 72), (144, 72), width=4)
-    png = pdf.page_png(b.save(tmp_path / "a.pdf", rotation=90), 1)
+    png = pdf.page_pngs(b.save(tmp_path / "a.pdf", rotation=90), [1])[1]
     assert png.startswith(b"\x89PNG\r\n\x1a\n")
     width, height = struct.unpack(">II", png[16:24])
     assert width > height

@@ -1,0 +1,24 @@
+{
+  "corpus": "a",
+  "split": "dev",
+  "total": {
+    "pin_accuracy": 0.9096766635426429,
+    "signal_pin_accuracy": 0.9254567742688693,
+    "net_exact": 0.8579668348954578,
+    "connection_precision": 0.9980051232063111,
+    "connection_recall": 0.8956180323866872,
+    "connection_f1": 0.9440435728913144,
+    "component_precision": 0.9934169278996865,
+    "component_recall": 0.9725333742519564,
+    "value_accuracy": 0.47621305516042356,
+    "flag_recall": 0.6020992366412213,
+    "flag_precision": 0.842456608811749,
+    "perfect_designs": 0.2982456140350877,
+    "silent_error_rate": 0.00324117463292721,
+    "pin_flag_recall": 0.8517857142857143,
+    "missed_pin_rate": 0.06845517025929397,
+    "review_items_per_100_pins": 4.810996563573883,
+    "review_precision": 0.5771103896103896,
+    "designs_without_silent_errors": 0.7719298245614035
+  }
+}

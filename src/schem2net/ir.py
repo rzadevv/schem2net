@@ -17,6 +17,7 @@ class Source(BaseModel):
     sha256: str | None = None
     generator: str = "unknown"
     pages: int = 0
+    library: str | None = None  # the indexed part library read with, if any
 
 
 class Pin(BaseModel):

@@ -11,8 +11,9 @@ from schem2net.query import Query
 INSTRUCTIONS = """\
 Answers questions about a schematic whose netlist was extracted from its PDF.
 Pins are written as REF.NUMBER, for example U3.14. Every net carries a
-confidence between 0 and 1; nets below 0.8 were joined by a guess and are
-worth checking against the drawing.
+confidence: the weight of the weakest evidence that joined it, not a
+probability. Nets below 0.8 were joined by a guess, or failed a check, and
+are worth checking against the drawing.
 """
 
 

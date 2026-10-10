@@ -135,7 +135,9 @@ ICs are often drawn with pin names and hidden numbers, and pins of one name are
 stacked: an FPGA's hundred ground balls lie under one drawn pin, which shows one
 number at most. KiCad's own symbol libraries hold every pin. `schem2net
 index-library DIR` reads them, as KiCad installs them or from their repository,
-into a file in the user's cache; without it, nothing changes.
+into a file in the user's cache; without it, nothing changes. A design read with
+an index names it, and the start of its hash, in `source.library`, as the same PDF
+can read differently with another index or none.
 
 A KiCad part whose value names a library symbol, as values do by default, is
 checked against it: the symbol, in each of its units and eight orientations, is
@@ -401,6 +403,7 @@ cap the confidence of the nets involved:
 
 | Issue | Meaning | Net confidence |
 |---|---|---|
+| `page_failed` | the reader stopped on this page with an error, named in the issue; the other pages are read | |
 | `generator_guessed` | the PDF does not say what drew it and its colours fit no profile: read as each generator whose roles were learned, keeping the reading that joined the most pins | |
 | `power_nets_merged` | two power names on one net, such as GND and 3V3 | capped at 0.4 |
 | `duplicate_pin` | a pin number used twice in one unit of a part | capped at 0.6 |

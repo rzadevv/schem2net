@@ -7,7 +7,7 @@
 | A | Open KiCad projects rendered with `kicad-cli` (KiCad 10) | Netlist exported by `kicad-cli` |
 | B | Altium schematic PDFs published in open hardware repositories | The netlist the PDF carries, checked against the board file |
 | C | SparkFun schematic PDFs drawn in Eagle | The Eagle `.sch` in the board's repository |
-| D | Olimex schematic PDFs, KiCad and Eagle, held out | The schematic the PDF sits beside |
+| D | Olimex schematic PDFs, KiCad and Eagle | The schematic the PDF sits beside |
 | E | EasyEDA schematic PDFs, Std and Pro | The EasyEDA source the PDF sits beside |
 | F | OrCAD Capture schematic PDFs | The Cadence Allegro board the PDF sits beside |
 
@@ -48,8 +48,9 @@ CRYSTAL-32MHZ), so the scorer knows what kind of part it is. Fifteen corpus C tr
 files written before the one-pad rule listed every pad of such pins; they were
 written again from their `.sch` files.
 
-Corpus D is held out: nothing was tuned on it, and it only measures how
-results carry over to another maker's boards. Olimex keeps each board's
+Corpus D measures how results carry over to another maker's boards. No rule was
+tuned on it, but it is not held out: its first run found a bug, below, and its dev
+split is among those the designator model learns from. Olimex keeps each board's
 published schematic PDF in its repository, beside the schematic it was printed
 from, KiCad or Eagle; one revision of each board is used. Boards in KiCad's old
 `.sch` format are left out, since current kicad-cli cannot read them for the
@@ -125,6 +126,22 @@ read with the model learned from the other three. `schem2net bench` on the dev s
 reads with the stored model, which has seen those designs, so its dev figures run a
 little high; test figures are not affected.
 
+## Learned files
+
+Four files in `profiles/` are learned from the dev splits, never from test:
+
+| File | Learned from | Made by |
+|---|---|---|
+| `roles.npz` | colour pages of A, B, C and F | `schem2net build-roles` |
+| `designators.npz` | A to E, with their truth netlists | `schem2net build-designators` |
+| `eagle_font.json`, `eagle_fills.json` | C, with its `.sch` files | `schem2net build-font c` |
+
+They hold tree thresholds, leaf values and glyph strokes measured from those
+designs, not the designs. The designs are under their makers' licences, listed in
+the manifests: mostly CC BY-SA 4.0 (SparkFun, most of corpus B), GPL-3.0 (most
+of Olimex), MIT, Apache-2.0 and CERN-OHL; some list none. Whether such
+measurements fall under those licences is not settled here.
+
 ## Part library
 
 Results are read with part libraries indexed (`schem2net index-library`): KiCad's,
@@ -140,9 +157,26 @@ Each project is assigned to `dev` or `test` by a hash of its name, so the
 split cannot drift. Corpus A holds out 10%, corpora B, C and F a third, D and E
 half. Tune on `dev`. Report `test`.
 
+Test figures are not untouched. Rules are judged on dev, but test was benched
+after many changes, and a test board that got worse sent us looking for the
+cause. The splits are kept, as the learned models were trained on the dev
+boards: splitting again would put boards they have seen into test. Take test
+figures as a check on dev, not a blind estimate; with nine to forty designs a
+split, a few points either way is noise.
+
 ```sh
 schem2net bench a --split dev
 schem2net bench a --split test --json results.json
+```
+
+CI builds corpus A and fails when its dev split reads worse than
+`bench/baseline_a_dev.json`: pin accuracy or connection F1 down more than 0.002, or
+silent errors up more than 0.001. CI has no part library indexed, so the baseline is
+read without one (`XDG_CACHE_HOME` pointing at an empty folder) and with the stored
+models. A change meant to move these figures writes the baseline again:
+
+```sh
+XDG_CACHE_HOME=$(mktemp -d) schem2net bench a --split dev --json bench/baseline_a_dev.json
 ```
 
 ## Metrics
@@ -163,6 +197,7 @@ single pin in the ground truth are not scored.
 | `flag_precision` | Share of flagged nets that were actually wrong. |
 | `perfect_designs` | Share of designs with every net correct. |
 | `silent_error_rate` | Share of pins that are wrong with nothing flagging them: on a net of full confidence and named by no issue. What a user cannot catch. |
+| `missed_pin_rate` | Share of pins on no net at all: a part left out, a pin read with another number, a pin the drawing hides. The netlist is short of them rather than wrong about them, so they are not counted as silent errors. |
 | `pin_flag_recall` | Share of wrong pins that something flags. |
 | `review_items_per_100_pins` | Things a reviewer is handed: each doubtful net and each issue naming pins counts once, per 100 pins. |
 | `review_precision` | Share of those that point at something wrong: a doubtful net that is wrong, an issue one of whose pins is wrong. |

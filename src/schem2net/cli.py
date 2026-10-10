@@ -8,17 +8,10 @@ from functools import partial
 from pathlib import Path
 from typing import Annotated
 
-import numpy as np
 import typer
 
 from schem2net import __version__, fills, kicad_sch, library, pdf, pipeline, report, svg
-from schem2net import diff as revisions
 from schem2net import export as exporters
-from schem2net.bench import corpus as corpora
-from schem2net.bench import designators as designator_examples
-from schem2net.bench import font, roundtrip, runner
-from schem2net.bench import roles as role_examples
-from schem2net.bench.score import Counts
 from schem2net.ir import LOW_CONFIDENCE, Design
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
@@ -129,6 +122,8 @@ def diff_(
     new: Annotated[Path, typer.Argument(help="Later revision.")],
 ) -> None:
     """List parts added, removed or changed in value, and pins that moved between nets."""
+    from schem2net import diff as revisions
+
     typer.echo(revisions.render(revisions.diff(_load(old), _load(new))), nl=False)
 
 
@@ -184,6 +179,8 @@ def _say(design: Design) -> None:
     for issue in issues:
         if issue.kind in SKIPPED:
             typer.echo(f"page {issue.page} skipped: {SKIPPED[issue.kind]}", err=True)
+        elif issue.kind == "page_failed":
+            typer.echo(f"page {issue.page} could not be read ({issue.detail})", err=True)
     doubtful = [n for n in design.nets if n.confidence < LOW_CONFIDENCE]
     worth = [i for i in issues if i.kind not in SKIPPED]
     if doubtful or worth:
@@ -220,10 +217,9 @@ def report_(
     _refuse(extraction.design)
     pictures = {}
     if pdf_under and not region:
-        for result in extraction.pages:
-            if result.scene is not None:
-                data = base64.b64encode(pdf.page_png(file, result.page.number)).decode()
-                pictures[result.page.number] = f"data:image/png;base64,{data}"
+        read = [result.page.number for result in extraction.pages if result.scene is not None]
+        for number, png in pdf.page_pngs(file, read).items():
+            pictures[number] = f"data:image/png;base64,{base64.b64encode(png).decode()}"
     _write(output, report.render(extraction, pictures))
     typer.echo(output)
     _say(extraction.design)
@@ -279,16 +275,18 @@ def index_library(
         raise typer.Exit(1)
 
 
-@app.command("build-corpus")
+@app.command("build-corpus", hidden=True)
 def build_corpus(corpus: CorpusName = "a", bench_dir: BenchDir = Path("bench")) -> None:
     """Render corpus projects to (PDF, netlist) pairs with kicad-cli in Docker."""
+    from schem2net.bench import corpus as corpora
+
     failed = corpora.build(corpora.load(corpus, bench_dir), log=typer.echo)
     if failed:
         typer.echo(f"{len(failed)} projects failed: {', '.join(failed)}", err=True)
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(hidden=True)
 def bench(
     corpus: CorpusName = "a",
     split: Annotated[str, typer.Option(help="dev, test or all.")] = "dev",
@@ -298,8 +296,16 @@ def bench(
     drawing_only: Annotated[
         bool, typer.Option(help="Ignore netlists carried in the PDF, such as Altium bookmarks.")
     ] = False,
+    baseline: Annotated[
+        Path | None,
+        typer.Option(help="JSON from an earlier run: fail if pins or silent errors got worse."),
+    ] = None,
 ) -> None:
     """Score the extractor against a built corpus."""
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import runner
+    from schem2net.bench.score import Counts
+
     extract = partial(pipeline.extract, embedded=not drawing_only)
     results = runner.run(
         corpora.load(corpus, bench_dir), split=split, sample=sample, extract=extract
@@ -325,15 +331,41 @@ def bench(
             "designs": {name: counts.metrics() for name, counts in results},
         }
         json_out.write_text(json.dumps(report, indent=2))
+    if baseline:
+        worse = _worse(json.loads(baseline.read_text())["total"], total.metrics())
+        for line in worse:
+            typer.echo(line, err=True)
+        if worse:
+            raise typer.Exit(1)
 
 
-@app.command("build-font")
+# How far a total may move before it counts as worse: summing floats over designs in
+# another order, or another machine, may move the last digits.
+TOLERANCE = {"pin_accuracy": -0.002, "connection_f1": -0.002, "silent_error_rate": 0.001}
+
+
+def _worse(before: dict, now: dict) -> list[str]:
+    """What got worse since a baseline, beyond the tolerance."""
+    out = []
+    for name, allowed in TOLERANCE.items():
+        if before.get(name) is None or now.get(name) is None:
+            continue
+        change = now[name] - before[name]
+        if change * allowed > 0 and abs(change) > abs(allowed):
+            out.append(f"{name} went from {before[name]:.4f} to {now[name]:.4f}")
+    return out
+
+
+@app.command("build-font", hidden=True)
 def build_font(
     corpus: CorpusName = "c",
     bench_dir: BenchDir = Path("bench"),
     out_dir: Annotated[Path, typer.Option("-o", "--out-dir")] = Path("src/schem2net/profiles"),
 ) -> None:
     """Learn Eagle's glyph shapes, stroked and outlined, from a corpus (dev split)."""
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import font
+
     loaded = corpora.load(corpus, bench_dir)
     dirs = [
         loaded.build_dir(p)
@@ -372,7 +404,7 @@ def build_font(
     )
 
 
-@app.command("build-roles")
+@app.command("build-roles", hidden=True)
 def build_roles(
     bench_dir: BenchDir = Path("bench"),
     output: Annotated[Path, typer.Option("-o", "--output")] = Path(
@@ -381,6 +413,11 @@ def build_roles(
 ) -> None:
     """Learn path and text roles from the colour pages of each corpus's dev split, for
     reading pages printed in black. Needs scikit-learn (the dev dependencies)."""
+    import numpy as np
+
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import roles as role_examples
+
     generators = {"a": "kicad", "b": "altium", "c": "eagle", "f": "orcad"}
     jobs = []
     for name, generator in generators.items():
@@ -405,7 +442,7 @@ def build_roles(
     typer.echo(f"{output}: learned from paths of {counts}")
 
 
-@app.command("build-designators")
+@app.command("build-designators", hidden=True)
 def build_designators(
     bench_dir: BenchDir = Path("bench"),
     output: Annotated[Path, typer.Option("-o", "--output")] = Path(
@@ -415,6 +452,9 @@ def build_designators(
 ) -> None:
     """Learn which texts are designators from the dev split of every corpus, whose truth
     netlists say which texts name parts. Needs scikit-learn (the dev dependencies)."""
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import designators as designator_examples
+
     designs = []
     for name in "abcde":
         try:
@@ -435,7 +475,7 @@ def build_designators(
     typer.echo(f"{output}: learned from {len(designs)} designs, texts {dict(counts)}")
 
 
-@app.command("bench-schematic")
+@app.command("bench-schematic", hidden=True)
 def bench_schematic(
     corpus: CorpusName = "a",
     split: Annotated[str, typer.Option(help="dev, test or all.")] = "dev",
@@ -443,6 +483,9 @@ def bench_schematic(
     work: Annotated[Path, typer.Option(help="Where to write the projects.")] = Path("bench/out"),
 ) -> None:
     """Check the KiCad schematic export: same netlist read back, and ERC errors."""
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import roundtrip
+
     loaded = corpora.load(corpus, bench_dir)
     projects = [
         p

@@ -282,3 +282,34 @@ def test_trace_passes_a_part_whose_pins_share_a_number():
         nets=[Net(id="n1", name="A", pins=[("R3", "1")])],
     )
     assert Query(design).trace("R3.1")
+
+
+def test_a_page_the_reader_trips_on_is_reported_and_the_rest_read(monkeypatch):
+    from schem2net import pipeline
+    from schem2net.primitives import Document
+
+    read = pipeline._read_page
+
+    def trip(result, *args):
+        if result.page.number == 1:
+            raise ValueError("odd page")
+        return read(result, *args)
+
+    monkeypatch.setattr(pipeline, "_read_page", trip)
+    doc = Document(pages=[Page(1, 100, 100), Page(2, 100, 100)], metadata={})
+    found = pipeline._extract(doc, Design(source=Source(file="x.pdf")), "kicad", False, None)
+    failed = [i for i in found.design.issues if i.kind == "page_failed"]
+    assert [(i.page, i.detail) for i in failed] == [(1, "ValueError: odd page")]
+
+
+def test_a_bench_worse_than_its_baseline_is_told():
+    from schem2net.cli import _worse
+
+    before = {"pin_accuracy": 0.90, "connection_f1": 0.90, "silent_error_rate": 0.010}
+    same = {"pin_accuracy": 0.899, "connection_f1": 0.91, "silent_error_rate": 0.0105}
+    assert _worse(before, same) == []
+    worse = {"pin_accuracy": 0.89, "connection_f1": 0.90, "silent_error_rate": 0.02}
+    assert [line.split()[0] for line in _worse(before, worse)] == [
+        "pin_accuracy",
+        "silent_error_rate",
+    ]

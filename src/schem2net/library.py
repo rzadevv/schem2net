@@ -11,6 +11,7 @@ is taken from it (see `resolve`).
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import os
 from collections import defaultdict
@@ -197,6 +198,16 @@ def save(library: Library, path: Path) -> None:
 def default_path(kind: str = "kicad") -> Path:
     base = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
     return Path(base) / "schem2net" / f"{kind}-symbols.json.gz"
+
+
+@cache
+def fingerprint(kind: str = "kicad") -> str | None:
+    """Which index a design was read with, as its file name and the start of its hash, so
+    two readings of one PDF that differ can be told apart; None where none is indexed."""
+    path = default_path(kind)
+    if not path.is_file():
+        return None
+    return f"{path.name} {hashlib.sha256(path.read_bytes()).hexdigest()[:12]}"
 
 
 @cache
