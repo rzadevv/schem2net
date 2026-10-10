@@ -1,6 +1,6 @@
 [project]
 name = "schem2net"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Recover netlists from vector schematic PDFs."
 readme = "README.md"
 license = "Apache-2.0"
@@ -8,17 +8,17 @@ requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.26",
     "pydantic>=2.6",
-    "pypdfium2>=4.30",
+    "pypdfium2>=5",
     "scipy>=1.11",
     "typer>=0.12",
 ]
 
 [project.scripts]
-schem2net = "schem2net.cli:app"
+schem2net = "schem2net.cli:main"
 
 [project.optional-dependencies]
 mcp = [
-    "mcp>=2.2",
+    "mcp>=2.2,<3",
 ]
 
 [dependency-groups]
@@ -32,6 +32,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/schem2net/__init__.py"
 
 [tool.ruff]
 line-length = 100

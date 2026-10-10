@@ -1,5 +1,6 @@
 """Intermediate representation shared by extraction, export and scoring."""
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -71,7 +72,11 @@ class Design(BaseModel):
     issues: list[Issue] = []
 
     def save(self, path: str | Path) -> None:
-        Path(path).write_text(self.model_dump_json(by_alias=True, exclude_none=True, indent=2))
+        """Write the whole file or nothing: a failed run leaves an earlier one as it was."""
+        path = Path(path)
+        part = path.with_name(f".{path.name}.part")
+        part.write_text(self.model_dump_json(by_alias=True, exclude_none=True, indent=2))
+        os.replace(part, path)
 
     @classmethod
     def load(cls, path: str | Path) -> "Design":

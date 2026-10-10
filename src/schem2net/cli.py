@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from enum import StrEnum
@@ -10,9 +11,9 @@ from typing import Annotated
 import numpy as np
 import typer
 
+from schem2net import __version__, fills, kicad_sch, library, pdf, pipeline, report, svg
 from schem2net import diff as revisions
 from schem2net import export as exporters
-from schem2net import fills, kicad_sch, library, pdf, pipeline, report, svg
 from schem2net.bench import corpus as corpora
 from schem2net.bench import designators as designator_examples
 from schem2net.bench import font, roundtrip, runner
@@ -21,6 +22,34 @@ from schem2net.bench.score import Counts
 from schem2net.ir import LOW_CONFIDENCE, Design
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
+
+
+def _version(shown: bool) -> None:
+    if shown:
+        typer.echo(f"schem2net {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _options(
+    version: Annotated[
+        bool, typer.Option("--version", callback=_version, is_eager=True, help="Show the version.")
+    ] = False,
+) -> None:
+    """Recover netlists from vector schematic PDFs."""
+
+
+def main() -> None:
+    """The command line, with input it cannot read told in a line rather than a traceback."""
+    try:
+        app()
+    except pdf.InputError as e:
+        typer.echo(f"schem2net: {e}", err=True)
+        raise SystemExit(1) from None
+    except (FileNotFoundError, IsADirectoryError) as e:
+        typer.echo(f"schem2net: {e.filename or e}: no such file", err=True)
+        raise SystemExit(1) from None
+
 
 BenchDir = Annotated[Path, typer.Option(help="Directory holding the corpus manifests.")]
 RegionOption = Annotated[
@@ -38,7 +67,8 @@ def extract(
 ) -> None:
     """Extract a netlist from a schematic PDF and write it as JSON."""
     design = pipeline.extract(file, region=_region(region))
-    output = output or file.with_suffix(".ir.json")
+    _refuse(design)
+    output = output or file.with_name(_stem(file) + ".ir.json")
     design.save(output)
     typer.echo(f"{output}: {len(design.components)} components, {len(design.nets)} nets")
     _say(design)
@@ -67,9 +97,10 @@ def export(
 ) -> None:
     """Write a KiCad netlist, a bill of materials or a SPICE netlist."""
     design = _load(file, _region(region))
+    _refuse(design)
     text = WRITERS[to](design)
-    output = output or file.with_name(file.name.split(".")[0] + SUFFIXES[to])
-    output.write_text(text)
+    output = output or file.with_name(_stem(file) + SUFFIXES[to])
+    _write(output, text)
     typer.echo(output)
     _say(design)
 
@@ -85,8 +116,9 @@ def schematic(
     PDF is not used, since it has no drawing to place.
     """
     extraction = pipeline.run(file, embedded=False)
-    output = output or file.with_name(file.stem + "-kicad")
-    root = kicad_sch.write(extraction, output, file.stem)
+    _refuse(extraction.design)
+    output = output or file.with_name(_stem(file) + "-kicad")
+    root = kicad_sch.write(extraction, output, _stem(file))
     typer.echo(root)
     _say(extraction.design)
 
@@ -109,11 +141,10 @@ def _load(file: Path, region: pipeline.Region | None = None) -> Design:
 SKIPPED = {"board_page": "a board drawing", "table_page": "a table", "raster_page": "scanned"}
 
 
-def _say(design: Design) -> None:
-    """Tell the reader what could not be read, and what to check; exit with an error
-    when nothing could be."""
-    issues = design.issues
-    for issue in issues:
+def _refuse(design: Design) -> None:
+    """Exit with an error, before anything is written, when nothing could be read: an
+    earlier output of the same name is left as it was."""
+    for issue in design.issues:
         if issue.kind == "no_profile":
             typer.echo(
                 f"{design.source.file}: not drawn by a tool schem2net reads (the PDF says: "
@@ -122,6 +153,26 @@ def _say(design: Design) -> None:
                 err=True,
             )
             raise typer.Exit(2)
+
+
+def _stem(file: Path) -> str:
+    """The name to give outputs: board.rev2.pdf and board.rev2.ir.json give board.rev2."""
+    for suffix in (".ir.json", ".pdf", ".json"):
+        if file.name.lower().endswith(suffix):
+            return file.name[: -len(suffix)]
+    return file.stem
+
+
+def _write(path: Path, text: str) -> None:
+    """Write the whole file or nothing, so a run that fails leaves an earlier one as it was."""
+    part = path.with_name(f".{path.name}.part")
+    part.write_text(text)
+    os.replace(part, path)
+
+
+def _say(design: Design) -> None:
+    """Tell the reader what could not be read, and what to check."""
+    issues = design.issues
     for issue in issues:
         if issue.kind == "generator_guessed":
             typer.echo(
@@ -144,7 +195,14 @@ def _say(design: Design) -> None:
 
 
 def _region(text: str | None) -> pipeline.Region | None:
-    return pipeline.Region.parse(text) if text else None
+    if not text:
+        return None
+    try:
+        return pipeline.Region.parse(text)
+    except ValueError:
+        raise typer.BadParameter(
+            f'"{text}": give PAGE:X0,Y0,X1,Y1 in mm, as 2:10,20,150,100', param_hint="--region"
+        ) from None
 
 
 @app.command("report")
@@ -157,15 +215,16 @@ def report_(
     ] = True,
 ) -> None:
     """Write an HTML page showing the extracted nets over the schematic."""
-    output = output or file.with_suffix(".html")
+    output = output or file.with_name(_stem(file) + ".html")
     extraction = pipeline.run(file, region=_region(region))
+    _refuse(extraction.design)
     pictures = {}
     if pdf_under and not region:
         for result in extraction.pages:
             if result.scene is not None:
                 data = base64.b64encode(pdf.page_png(file, result.page.number)).decode()
                 pictures[result.page.number] = f"data:image/png;base64,{data}"
-    output.write_text(report.render(extraction, pictures))
+    _write(output, report.render(extraction, pictures))
     typer.echo(output)
     _say(extraction.design)
 
@@ -178,7 +237,7 @@ def serve_mcp(
     try:
         from schem2net import mcp_server
     except ImportError:
-        typer.echo('The MCP server needs: pip install "schem2net[mcp]"', err=True)
+        typer.echo('The MCP server needs the mcp package: install "schem2net[mcp]"', err=True)
         raise typer.Exit(1) from None
     mcp_server.build(_load(file)).run()
 

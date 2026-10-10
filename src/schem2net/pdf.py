@@ -20,8 +20,16 @@ WORD_GAP = 2.0  # font sizes between words of one text object that are separate 
 Matrix = tuple[float, float, float, float, float, float]
 
 
+class InputError(Exception):
+    """Input that cannot be read as asked: not a PDF, locked with a password, or a page
+    the PDF does not have."""
+
+
 def read(file: str | FilePath) -> Document:
-    pdf = pdfium.PdfDocument(file)
+    try:
+        pdf = pdfium.PdfDocument(file)
+    except pdfium.PdfiumError as e:
+        raise InputError(f"{file}: not a PDF that can be read ({e})") from None
     try:
         pages = [_read_page(pdf[i], i + 1) for i in range(len(pdf))]
         return Document(pages=pages, metadata=pdf.get_metadata_dict(skip_empty=True))

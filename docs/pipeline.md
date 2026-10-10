@@ -404,6 +404,8 @@ cap the confidence of the nets involved:
 | `generator_guessed` | the PDF does not say what drew it and its colours fit no profile: read as each generator whose roles were learned, keeping the reading that joined the most pins | |
 | `power_nets_merged` | two power names on one net, such as GND and 3V3 | capped at 0.4 |
 | `duplicate_pin` | a pin number used twice in one unit of a part | capped at 0.6 |
+| `duplicate_designator` | one designator, and unit, on two parts drawn apart that share pin numbers: a copied block, or a misread. Pieces that touch are one part, and parts with no number in common are units whose letters are not shown | capped at 0.6 |
+| `unannotated_part` | a designator not yet numbered, as R? or U?A: the part is left out | |
 | `dangling_wire` | a wire end touching nothing, no no-connect flag, and no pin drawn with no line | 0.6 |
 | `unconnected_pin` | a pin on no net, without a no-connect flag | |
 | `connected_no_connect` | a pin flagged no-connect that is connected | |

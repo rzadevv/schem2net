@@ -105,6 +105,8 @@ ISSUE_TEXT = {
     "unattached_label": "label on no wire or pin",
     "designator_without_part": "designator with no part found",
     "duplicate_pin": "pin number used twice in one part",
+    "duplicate_designator": "one designator on two parts",
+    "unannotated_part": "part not yet numbered, left out",
     "power_nets_merged": "two power nets joined",
     "unconnected_pin": "pin on no net, without a no-connect flag",
     "connected_no_connect": "pin flagged no-connect but connected",
@@ -119,6 +121,8 @@ ISSUE_TEXT = {
 ORDER = [
     "generator_guessed",
     "power_nets_merged",
+    "duplicate_designator",
+    "unannotated_part",
     "low_confidence_net",
     "pin_number_guessed",
     "duplicate_pin",

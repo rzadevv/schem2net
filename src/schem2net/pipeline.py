@@ -55,6 +55,8 @@ class Region:
         """From "PAGE:X0,Y0,X1,Y1", for example "2:10,20,150,100"."""
         page, _, box = text.partition(":")
         x0, y0, x1, y1 = (float(v) for v in box.split(","))
+        if int(page) < 1:
+            raise ValueError("pages are numbered from 1")
         return cls(int(page), (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
 
     def holds(self, box: tuple[float, float, float, float]) -> bool:
@@ -87,6 +89,8 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     file = Path(file)
     doc = pdf.read(file)
     if region:
+        if region.page > len(doc.pages):
+            raise pdf.InputError(f"{file}: no page {region.page}; it has {len(doc.pages)}")
         page = doc.pages[region.page - 1]
         page.paths = [p for p in page.paths if region.holds(p.bbox)]
         page.texts = [t for t in page.texts if region.holds(t.bbox)]

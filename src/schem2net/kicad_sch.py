@@ -12,6 +12,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from schem2net import geometry
+from schem2net.export import unique_names
 from schem2net.geometry import GridIndex, UnionFind
 from schem2net.ir import Net
 from schem2net.pipeline import Extraction, PageResult
@@ -338,15 +339,8 @@ def _pin_nets(nets: list[Net]) -> dict[tuple[str, str], Net]:
 def _label_names(nets: list[Net]) -> dict[str, tuple[str, bool]]:
     """A unique label name for every net, and whether its wiring should show it:
     named nets and nets spanning pages do; others only label pins no wire reaches."""
-    names, taken = {}, set()
-    for net in nets:
-        base = net.name or f"N{net.id[1:]}"
-        name, k = base, 2
-        while name in taken:
-            name, k = f"{base}_{k}", k + 1
-        taken.add(name)
-        names[net.id] = (name, bool(net.name) or len(net.pages) > 1)
-    return names
+    unique = unique_names(nets, lambda net: net.name or f"N{net.id[1:]}")
+    return {net.id: (unique[net.id], bool(net.name) or len(net.pages) > 1) for net in nets}
 
 
 def _snapped(wires: list, wire_net: list, tips: list) -> tuple[list, list]:

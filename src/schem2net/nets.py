@@ -4,6 +4,7 @@ Every join is recorded with its kind. A net's confidence is the weight of its
 weakest join, so a net held together by one guess is marked as such.
 """
 
+import re
 from collections import Counter, defaultdict
 from typing import NamedTuple
 
@@ -42,6 +43,9 @@ LONE_PIN_CONFIDENCE = 0.5
 # Consistency checks: a net that fails one is capped at this confidence.
 MERGED_POWER_CONFIDENCE = 0.4  # two power names on one net: a short somewhere
 DUPLICATE_PIN_CONFIDENCE = 0.6  # a pin number used twice in one part
+DUPLICATE_REF_CONFIDENCE = 0.6  # one designator on two parts: a copy, or a misread
+PIECE_GAP = 0.5  # mm; parts of one designator this close are pieces of one drawing
+UNANNOTATED = re.compile(r"^[A-Za-z]{1,4}\?+[A-Z]?$")  # R?, U?A: a part not yet numbered
 
 
 class Result(NamedTuple):
@@ -82,6 +86,12 @@ class Netlister:
         named = {s.ref for s in symbols if s.ref}
         bodies = [s.body for s in symbols if s.body]
         for text in scene.fields:
+            if UNANNOTATED.match(text.text.strip()):
+                c = geometry.center(text.bbox)
+                self.issues.append(
+                    Issue(kind="unannotated_part", page=page, at=c, detail=text.text.strip())
+                )
+                continue
             match = split_ref(text.text)
             if not is_common_ref(text.text) or match.group(1) + match.group(2) in named:
                 continue
@@ -162,6 +172,9 @@ class Netlister:
                 points.append((pin.at, node))
                 pin_lines.append((pin.line, node))
 
+        pin_index = GridIndex()
+        for k, (line, _) in enumerate(pin_lines):
+            pin_index.add(k, geometry.bbox_of(line))
         for li, label in enumerate(scene.labels):
             node = ("l", page, li)
             key = name_key(label.text)
@@ -178,7 +191,7 @@ class Netlister:
                 if bus and label.outline:
                     crossings.append((node, label.outline[0], ("label", scene.path, key), bus))
             if label.kind == "bus":
-                target = _under_label(label, buses, bus_index, [], ("b", page))
+                target = _under_label(label, buses, bus_index, [], None, ("b", page))
                 if target:
                     self.join(node, target, "label")
                     if bus and bus.vector:
@@ -187,7 +200,7 @@ class Netlister:
                 tips = [(v, node) for v in _label_tips(label)]
                 (bus_points if bus else points).extend(tips)
             else:
-                target = _under_label(label, wires, wire_index, pin_lines, ("w", page))
+                target = _under_label(label, wires, wire_index, pin_lines, pin_index, ("w", page))
                 if target:
                     self.join(node, target, "label")
                     if target[0] == "w":
@@ -236,9 +249,6 @@ class Netlister:
                     self.join(node, other, "direct")
 
         # A power port placed over the end of a pin, rather than at its tip.
-        pin_index = GridIndex()
-        for k, (line, _) in enumerate(pin_lines):
-            pin_index.add(k, geometry.bbox_of(line))
         for p, node in points:
             if node in ports:
                 for k in pin_index.near(p, TOL):
@@ -404,7 +414,40 @@ class Netlister:
                 issues.append(Issue(kind="unconnected_pin", severity="info", **where))
             elif not alone and node in self.no_connect:
                 issues.append(Issue(kind="connected_no_connect", **where))
+        # One designator, and unit, on two parts drawn apart with pin numbers in common:
+        # each such pin of one is read as joined to the nets of both. Pieces that touch,
+        # as a jumper read in parts, are one drawing; drawings without a number in
+        # common are units of one part whose letters are not shown.
+        drawn_as: dict[tuple, dict[int, list]] = defaultdict(dict)
+        for node, page, symbol, pin in self.pins:
+            drawn_as[symbol.ref, symbol.unit].setdefault(id(symbol), []).append(
+                (node, page, pin, symbol)
+            )
+        doubled = set()
+        for (ref, unit), parts in drawn_as.items():
+            found = list(parts.values())
+            numbers = [
+                {p.number for k in group for _, _, p, _ in found[k] if p.number}
+                for group in _apart([f[0] for f in found])
+            ]
+            if not any(a & b for i, a in enumerate(numbers) for b in numbers[:i]):
+                continue
+            doubled.add(ref)
+            drawn = [d for found in parts.values() for d in found]
+            issues.append(
+                Issue(
+                    kind="duplicate_designator",
+                    severity="error",
+                    page=drawn[0][1],
+                    detail=ref + (unit or ""),
+                    pins=sorted({(ref, p.number) for _, _, p, _ in drawn if p.number}),
+                )
+            )
+            for node, _, _, _ in drawn:
+                caps[find(node)] = min(caps[find(node)], DUPLICATE_REF_CONFIDENCE)
         for ref, numbers in self._pin_numbers.items():
+            if ref in doubled:
+                continue
             for number, drawn in numbers.items():
                 units = Counter(unit for _, unit in drawn)
                 if any(n > 1 for n in units.values()):
@@ -473,6 +516,7 @@ def _under_label(
     wires: list[Segment],
     wire_index: GridIndex,
     pin_lines: list[tuple[Segment, tuple]],
+    pin_index: GridIndex | None,
     node_of: tuple,
 ) -> tuple | None:
     """The wire or pin a label without an outline sits on: parallel, just below its baseline."""
@@ -480,10 +524,11 @@ def _under_label(
     vertical = round(label.angle) % 180 == 90
     region = (x0 - LABEL_GAP, y0 - LABEL_GAP, x1 + LABEL_GAP, y1 + LABEL_GAP)
     candidates = [(wires[j], (*node_of, j)) for j in wire_index.within(region)]
+    near = sorted(pin_index.within(region)) if pin_index else []
     candidates += [
-        (line, node)
-        for line, node in pin_lines
-        if geometry.bbox_gap(region, geometry.bbox_of(line)) == 0
+        pin_lines[k]
+        for k in near
+        if geometry.bbox_gap(region, geometry.bbox_of(pin_lines[k][0])) == 0
     ]
 
     best = None
@@ -500,6 +545,21 @@ def _under_label(
         if -0.2 <= gap <= LABEL_GAP and overlaps and (best is None or gap < best[0]):
             best = (gap, node)
     return best[1] if best else None
+
+
+def _apart(parts: list[tuple]) -> list[set[int]]:
+    """Parts, each (node, page, pin, symbol), grouped into drawings: those on one page
+    whose boxes touch are one."""
+    groups = UnionFind()
+    for i, (_, page, _, symbol) in enumerate(parts):
+        groups.find(i)
+        for j, (_, other_page, _, other) in enumerate(parts[:i]):
+            if page == other_page and geometry.bbox_gap(symbol.bbox, other.bbox) <= PIECE_GAP:
+                groups.union(i, j)
+    found: dict = defaultdict(set)
+    for i in range(len(parts)):
+        found[groups.find(i)].add(i)
+    return list(found.values())
 
 
 def _doubtful(pin, symbol) -> bool:

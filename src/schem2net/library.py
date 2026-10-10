@@ -14,7 +14,7 @@ import gzip
 import json
 import os
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -50,7 +50,7 @@ def index(root: Path) -> Library:
     libraries: dict[str, list[Path]] = defaultdict(list)
     found = [
         Path(folder) / name
-        for folder, _, names in os.walk(root, followlinks=True)
+        for folder, _, names in os.walk(root)
         for name in names
         if name.endswith(".kicad_sym")
     ]
@@ -80,7 +80,7 @@ def index_eagle(root: Path) -> Library:
     out: Library = defaultdict(list)
     found = sorted(
         Path(folder) / name
-        for folder, _, names in os.walk(root, followlinks=True)
+        for folder, _, names in os.walk(root)
         for name in names
         if name.lower().endswith(".lbr")
     )
@@ -305,7 +305,7 @@ def resolve(
             pin.number = first
             for number in numbers:
                 if number != first:
-                    symbol.pins.append(type(pin)(pin.shape, pin.line, number, "library"))
+                    symbol.pins.append(replace(pin, number=number, how="library"))
                     gained += 1
     return gained
 

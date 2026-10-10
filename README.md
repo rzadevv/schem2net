@@ -56,9 +56,9 @@ them that point at something wrong.
 | Corpus | Split | Silent errors | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
 |---|---|---|---|---|---|---|
 | A, KiCad | Dev | 0.4% | 0.84 | 4.4 | 0.61 | 0.74 |
-| A, KiCad | Test | 1.1% | 0.58 | 3.7 | 0.71 | 0.56 |
-| B, Altium, drawing only | Dev | 0.3% | 0.92 | 12.5 | 0.48 | 0.83 |
-| B, Altium, drawing only | Test | 2.8% | 0.57 | 6.4 | 0.58 | 0.46 |
+| A, KiCad | Test | 0.9% | 0.66 | 3.8 | 0.72 | 0.67 |
+| B, Altium, drawing only | Dev | 0.3% | 0.93 | 12.7 | 0.49 | 0.83 |
+| B, Altium, drawing only | Test | 2.7% | 0.59 | 6.5 | 0.59 | 0.46 |
 | C, Eagle | Dev | 1.0% | 0.70 | 12.7 | 0.77 | 0.67 |
 | C, Eagle | Test | 1.0% | 0.70 | 14.4 | 0.81 | 0.71 |
 | D, Olimex, held out | Dev | 0.8% | 0.84 | 12.5 | 0.83 | 0.50 |
@@ -70,9 +70,13 @@ them that point at something wrong.
 
 ## Install
 
+schem2net is not on PyPI yet. Install it from GitHub:
+
 ```sh
-uv sync
+uv tool install git+https://github.com/rzadevv/schem2net
 ```
+
+or, in a checkout, `uv sync`.
 
 ## Usage
 
@@ -119,7 +123,7 @@ found when it was not printed beside it.
 ## MCP server
 
 ```sh
-pip install "schem2net[mcp]"
+uv tool install "schem2net[mcp] @ git+https://github.com/rzadevv/schem2net"
 schem2net serve-mcp board.pdf
 ```
 

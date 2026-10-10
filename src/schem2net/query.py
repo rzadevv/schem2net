@@ -63,7 +63,7 @@ class Query:
                     comp = self.components.get(ref)
                     if not comp or len(comp.pins) != 2 or not _passive(ref):
                         continue
-                    other = next(p.num for p in comp.pins if p.num != num)
+                    other = next((p.num for p in comp.pins if p.num != num), None)
                     far = self.net_of_pin.get((ref, other))
                     if far and far.id not in seen:
                         seen.add(far.id)

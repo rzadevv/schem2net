@@ -156,7 +156,7 @@ def test_spice_netlist():
 
 
 def test_spice_values():
-    values = ["10k", "4.7uF", "1MΩ", "4R7", "2k2", "0R", "22pF"]
+    values = ["10k", "4.7uF", "1MΩ", "4R7", "2k2", "0R", "22pF", "100pF 50V"]
     assert [export._spice_value(v) for v in values] == [
         "10k",
         "4.7u",
@@ -165,6 +165,7 @@ def test_spice_values():
         "2.2k",
         "0",
         "22p",
+        "100p",
     ]
 
 
@@ -196,7 +197,7 @@ def test_a_pdf_no_profile_reads_fails_loudly(capsys):
         issues=[Issue(kind="no_profile", severity="error", detail="Microsoft: Print To PDF")],
     )
     with pytest.raises(typer.Exit) as stop:
-        cli._say(design)
+        cli._refuse(design)
     assert stop.value.exit_code == 2
     assert "Microsoft: Print To PDF" in capsys.readouterr().err
 
@@ -206,3 +207,78 @@ def test_the_report_lists_what_to_check_with_its_pins():
     design = Design(source=Source(file="x.pdf"), issues=[issue])
     html = report.render(Extraction(design, []))
     assert "To check (1)" in html and "pin numbers not shown, guessed" in html and "D1" in html
+
+
+def test_a_run_that_reads_nothing_leaves_an_earlier_output_as_it_was(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+
+    from schem2net import cli, pipeline
+
+    pdf = tmp_path / "board.rev2.pdf"
+    pdf.write_bytes(b"%PDF")
+    earlier = tmp_path / "board.rev2.ir.json"
+    earlier.write_text("earlier")
+    nothing = Design(source=Source(file=str(pdf)), issues=[Issue(kind="no_profile")])
+    monkeypatch.setattr(pipeline, "extract", lambda *a, **k: nothing)
+    result = CliRunner().invoke(cli.app, ["extract", str(pdf)])
+    assert result.exit_code == 2 and earlier.read_text() == "earlier"
+
+    monkeypatch.setattr(pipeline, "extract", lambda *a, **k: DESIGN)
+    result = CliRunner().invoke(cli.app, ["export", str(pdf), "--to", "bom"])
+    assert result.exit_code == 0 and (tmp_path / "board.rev2.bom.csv").exists()
+
+
+def test_input_that_cannot_be_read_is_told_plainly(tmp_path):
+    from schem2net import pdf, pipeline
+
+    not_pdf = tmp_path / "notes.pdf"
+    not_pdf.write_text("hello")
+    with pytest.raises(pdf.InputError):
+        pdf.read(not_pdf)
+    for bad in ("garbage", "0:0,0,10,10", "1:0,0,10"):
+        with pytest.raises(ValueError):
+            pipeline.Region.parse(bad)
+
+
+def test_nets_of_one_name_are_written_apart():
+    design = Design(
+        source=Source(file="x.pdf"),
+        components=[
+            part("R1", "10k", "1", "2"),
+            part("R2", "1k", "1", "2"),
+            part("R3", "1k", "1", "2"),
+        ],
+        nets=[
+            Net(id="n1", name="+3V3", pins=[("R1", "1")]),
+            Net(id="n2", name="3V3", pins=[("R1", "2")]),
+            Net(id="n3", name="AGND", pins=[("R2", "1")]),
+            Net(id="n4", name="GND", pins=[("R2", "2")]),
+            Net(id="n5", name="LED", pins=[("R3", "1")]),
+            Net(id="n6", name="LED", pins=[("R3", "2")]),
+        ],
+    )
+    tree = sexpr.parse(export.kicad_netlist(design))
+    names = [n[2][1] for n in tree[4][1:]]
+    assert len(names) == len(set(names)) and "LED_2" in names
+
+    spice = export.spice_netlist(design)
+    assert "RR1 3V3 3V3_2 10k" in spice
+    assert "RR2 AGND 0 1k" in spice
+
+
+def test_bom_values_are_not_taken_for_formulas():
+    design = Design(
+        source=Source(file="x.pdf"),
+        components=[part("R1", '=HYPERLINK("http://x")'), part("R2", "-12V"), part("R3", "+cmd")],
+    )
+    bom = export.bom_csv(design)
+    assert "'=HYPERLINK" in bom and ",-12V," in bom and "'+cmd" in bom
+
+
+def test_trace_passes_a_part_whose_pins_share_a_number():
+    design = Design(
+        source=Source(file="x.pdf"),
+        components=[part("R3", "10k", "1", "1")],
+        nets=[Net(id="n1", name="A", pins=[("R3", "1")])],
+    )
+    assert Query(design).trace("R3.1")

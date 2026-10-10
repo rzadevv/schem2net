@@ -1590,3 +1590,19 @@ def test_pages_joined_only_by_a_hidden_ground_name_are_doubted():
     assert netlist(True, True)[0].confidence < 0.8
     assert netlist(False, True)[0].confidence < 0.8
     assert netlist(False, False)[0].confidence >= 0.8
+
+
+def test_one_designator_on_two_parts_is_reported():
+    def resistor(x):
+        r = symbols.Symbol([], (x, 0, x + 2, 4), [symbols.Pin(x, ((x + 1, 1), (x + 1, 0)), "1")])
+        r.ref = "R5"
+        return r
+
+    scene = Scene(page=1)
+    scene.fields.append(Text(0, "R?", (20, 0, 22, 1), 1.0, 0.0, (0, 0, 0)))
+    netlister = Netlister()
+    netlister.add_page(scene, [resistor(0), resistor(10)])
+    issues = {i.kind: i for i in netlister.result().issues}
+    assert issues["duplicate_designator"].pins == [("R5", "1")]
+    assert issues["unannotated_part"].detail == "R?"
+    assert "duplicate_pin" not in issues

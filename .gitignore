@@ -5,6 +5,8 @@ __pycache__/
 .ruff_cache/
 .hypothesis/
 dist/
+.coverage
+htmlcov/
 
 bench/build/
 bench/cache/
