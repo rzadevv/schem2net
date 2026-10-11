@@ -212,6 +212,9 @@ all marked. So each wrong pin is also asked whether anything flags it: a net of
 low confidence, or an issue naming the pin, such as a pin number the drawing does
 not show and the extraction guessed.
 
+A pin kept without a number (`?1`) cannot be told from the truth's pins, so it is
+left out before nets are compared; the true pin counts as not found.
+
 A pin read by its name, because its number is hidden, counts as the pin of that
 name when the name is unique on its part. kicad-cli writes a pin's function as its
 name and number, as in `D_1` for pin 1 named D, so the name alone counts as well.

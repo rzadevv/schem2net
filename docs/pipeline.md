@@ -426,7 +426,7 @@ cap the confidence of the nets involved:
 | `connected_no_connect` | a pin flagged no-connect that is connected | |
 | `designator_without_part` | a designator that no part claimed | |
 | `unattached_label` | a net label on no wire or pin | |
-| `unnumbered_pin` | a pin whose number was not found | |
+| `unnumbered_pin` | a pin whose number was not found. It stays on its net under a mark, `?1`, `?2` and so on within its part: the drawing shows what it connects to, though not which pad it is. The KiCad and SPICE exports leave such pins out | |
 | `pin_number_guessed` | numbers the drawing does not show, guessed where they matter: which end of a diode is 1, the ends of a three-pin part, the order of a two-pin part other than a resistor, capacitor, inductor, fuse or ferrite | |
 
 Each pin in the output says how its number was found when it was not printed

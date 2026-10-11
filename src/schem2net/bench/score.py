@@ -12,7 +12,7 @@ from dataclasses import dataclass, fields
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from schem2net.ir import LOW_CONFIDENCE, Component, Design, PinRef
+from schem2net.ir import LOW_CONFIDENCE, Component, Design, PinRef, unnumbered
 
 # Two-pin parts whose pins are interchangeable; swapping them is not an error.
 SYMMETRIC_SYMBOLS = {
@@ -104,7 +104,13 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     scored = [n for n in truth.nets if len(set(n.pins)) >= 2]
     true_nets = [set(n.pins) for n in scored]
     power = [bool(POWER_NET.match(_short_name(n.name))) for n in scored]
-    nonempty = [n for n in predicted.nets if n.pins]
+    # Pins kept without a number cannot be judged: the truth knows every pin by its own.
+    known = [[p for p in n.pins if not unnumbered(p[1])] for n in predicted.nets]
+    nonempty = [
+        n.model_copy(update={"pins": pins})
+        for n, pins in zip(predicted.nets, known, strict=True)
+        if pins
+    ]
     # A pin drawn with its name and no number is known by that name, when the name
     # is unique on its part.
     aliases = _pin_aliases(truth)

@@ -8,6 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA = "schem2net/ir@0.1"
 LOW_CONFIDENCE = 0.8  # nets below this deserve a look
+# A pin drawn with no number readable is kept under a number of this form, ?1, ?2 and so
+# on within its part: the drawing shows what it connects to, though not which pad it is.
+UNNUMBERED = "?"
 
 PinRef = tuple[str, str]  # (refdes, pin number), the same key KiCad netlists use
 
@@ -25,6 +28,11 @@ class Pin(BaseModel):
     name: str | None = None
     at: tuple[float, float] | None = None
     how: str | None = None  # how the number was found, where it was not printed beside it
+
+
+def unnumbered(num: str) -> bool:
+    """Whether a pin number stands in for one the drawing does not show."""
+    return num.startswith(UNNUMBERED)
 
 
 class Component(BaseModel):

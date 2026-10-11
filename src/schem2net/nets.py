@@ -11,7 +11,7 @@ from typing import NamedTuple
 from schem2net import buses as busnames
 from schem2net import geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
-from schem2net.ir import Component, Evidence, Issue, Net
+from schem2net.ir import UNNUMBERED, Component, Evidence, Issue, Net
 from schem2net.ir import Pin as PinOut
 from schem2net.primitives import Point
 from schem2net.refdes import REFDES, TWO_TERMINAL_PREFIXES, is_common_ref, split_ref
@@ -372,12 +372,25 @@ class Netlister:
             if symbol.unit and symbol.unit not in comp.units:
                 comp.units.append(symbol.unit)
             if pin.number is None:
-                issues.append(Issue(kind="unnumbered_pin", page=page, at=pin.at, detail=symbol.ref))
-                continue
-            self._pin_numbers[symbol.ref][pin.number].append((node, (page, symbol.unit)))
-            comp.pins.append(PinOut(num=pin.number, at=pin.at, how=pin.how))
+                # The pin and what it connects to are drawn, its number is not: it stays
+                # on its net under a mark, so the connection is not lost with the number.
+                number = f"{UNNUMBERED}{sum(p.how == 'unnumbered' for p in comp.pins) + 1}"
+                issues.append(
+                    Issue(
+                        kind="unnumbered_pin",
+                        page=page,
+                        at=pin.at,
+                        detail=symbol.ref,
+                        pins=[(symbol.ref, number)],
+                    )
+                )
+                comp.pins.append(PinOut(num=number, at=pin.at, how="unnumbered"))
+            else:
+                number = pin.number
+                self._pin_numbers[symbol.ref][number].append((node, (page, symbol.unit)))
+                comp.pins.append(PinOut(num=number, at=pin.at, how=pin.how))
             root = find(node)
-            members[root].add((symbol.ref, pin.number))
+            members[root].add((symbol.ref, number))
             pages[root].add(page)
 
         # Numbers the drawing does not show, guessed where libraries disagree.
@@ -462,7 +475,9 @@ class Netlister:
                 continue  # an unconnected pin, reported below
             confidence = min((WEIGHTS[k] for k in kinds[root]), default=1.0)
             confidence = min(confidence, caps[root])
-            if len(pins) < 2:
+            # One pin known by its number, whatever unnumbered ones share its net, is as
+            # doubtful as a pin alone: what it joins has no pad to check it against.
+            if sum(not n.startswith(UNNUMBERED) for _, n in pins) < 2:
                 confidence = min(confidence, LONE_PIN_CONFIDENCE)
             seen = [name for name, _ in names[root].most_common()]
             net = Net(

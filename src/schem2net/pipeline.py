@@ -17,7 +17,7 @@ from schem2net import (
     strokes,
     symbols,
 )
-from schem2net.ir import Design, Issue, Source
+from schem2net.ir import Design, Issue, Source, unnumbered
 from schem2net.nets import Netlister
 from schem2net.primitives import Document, Page
 from schem2net.scene import Scene
@@ -139,7 +139,9 @@ def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | Non
         if not roles.learned(generator):
             continue
         trial = _extract(black, design.model_copy(deep=True), generator, True, region)
-        joined = sum(len(net.pins) for net in trial.design.nets if len(net.pins) >= 2)
+        # Pins known by their numbers: a wrong generator's reading finds few of those.
+        known = [[p for p in net.pins if not unnumbered(p[1])] for net in trial.design.nets]
+        joined = sum(len(pins) for pins in known if len(pins) >= 2)
         if joined > most:
             best, most = trial, joined
     if best:

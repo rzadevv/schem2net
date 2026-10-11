@@ -6,7 +6,7 @@ import re
 from collections import defaultdict
 
 from schem2net import __version__, sexpr
-from schem2net.ir import Design, Net
+from schem2net.ir import Design, Net, unnumbered
 
 
 def kicad_netlist(design: Design) -> str:
@@ -27,12 +27,17 @@ def kicad_netlist(design: Design) -> str:
 
     names = {(c.ref, p.num): p.name for c in design.components for p in c.pins if p.name}
     # KiCad's board editor knows nets by name: two nets of one name would be joined.
+    # A pin whose number the drawing does not show has no pad to go to on a board.
+    drawn = [
+        net.model_copy(update={"pins": pins})
+        for net in design.nets
+        if (pins := [p for p in net.pins if not unnumbered(p[1])])
+    ]
     unique = unique_names(
-        [n for n in design.nets if n.pins],
-        lambda net: net.name or f"Net-({net.pins[0][0]}-Pad{net.pins[0][1]})",
+        drawn, lambda net: net.name or f"Net-({net.pins[0][0]}-Pad{net.pins[0][1]})"
     )
     nets = ["nets"]
-    for code, net in enumerate((n for n in design.nets if n.pins), 1):
+    for code, net in enumerate(drawn, 1):
         name = unique[net.id]
         nodes = [
             [
@@ -127,7 +132,7 @@ def spice_netlist(design: Design) -> str:
         elif net.name.strip().upper() in GROUND_NAMES:
             lines.append(f"* {net.name} is a ground of its own, not node 0")
     for comp in sorted(design.components, key=lambda c: _natural(c.ref)):
-        pins = sorted({p.num for p in comp.pins}, key=_natural)
+        pins = sorted({p.num for p in comp.pins if not unnumbered(p.num)}, key=_natural)
         nodes = [node_of.get((comp.ref, p), f"NC_{comp.ref}_{p}") for p in pins]
         if not pins:
             lines.append(f"* {comp.ref} {comp.value or ''}: no pin numbers found".rstrip())

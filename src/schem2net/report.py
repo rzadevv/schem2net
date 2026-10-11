@@ -199,12 +199,9 @@ def _review(design, extraction: Extraction) -> list[dict]:
                     where.setdefault((symbol.ref, pin.number), (result.page.number, pin.at))
     todo = []
     for issue in design.issues:
-        if issue.pins:
-            spots = [where[tuple(p)] for p in issue.pins if tuple(p) in where]
-        elif issue.page is not None and issue.at:
+        spots = [where[tuple(p)] for p in issue.pins if tuple(p) in where]
+        if not spots and issue.page is not None and issue.at:
             spots = [(issue.page, issue.at)]
-        else:
-            spots = []
         what = issue.detail or ", ".join(f"{r}.{n}" for r, n in issue.pins)
         if not what and issue.page is not None:
             what = f"page {issue.page}"

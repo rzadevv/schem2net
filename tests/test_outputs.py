@@ -313,3 +313,29 @@ def test_a_bench_worse_than_its_baseline_is_told():
         "pin_accuracy",
         "silent_error_rate",
     ]
+
+
+def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():
+    """The drawing shows what the pin connects to, though not which pad it is."""
+    led = symbols.Symbol([], (0, 0, 4, 4), [symbols.Pin(0, ((2, 2), (2, 0)))], ref="D1")
+    r = symbols.Symbol([], (0, -6, 4, -2), [symbols.Pin(1, ((2, -2), (2, 0)), "1")], ref="R1")
+    netlister = Netlister()
+    netlister.add_page(SceneBuilder().scene, [led, r])
+    found = netlister.result()
+    (net,) = found.nets
+    assert net.pins == [("D1", "?1"), ("R1", "1")]
+    (issue,) = [i for i in found.issues if i.kind == "unnumbered_pin"]
+    assert issue.pins == [("D1", "?1")]
+
+    design = Design(source=Source(file="x.pdf"), components=found.components, nets=found.nets)
+    assert "?1" not in export.kicad_netlist(design) + export.spice_netlist(design)
+
+    from schem2net.bench.score import score
+
+    truth = Design(
+        source=Source(file="x.pdf"),
+        components=[part("D1", "~", "1"), part("R1", "~", "1")],
+        nets=[Net(id="n1", pins=[("D1", "1"), ("R1", "1")])],
+    )
+    counts = score(design, truth)
+    assert (counts.pins_correct, counts.pins_missed) == (1, 1)

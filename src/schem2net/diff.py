@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 
 from schem2net.bench.score import match_nets
-from schem2net.ir import Design, Net
+from schem2net.ir import Design, Net, unnumbered
 
 PinRef = tuple[str, str]
 
@@ -73,7 +73,9 @@ def render(change: Diff) -> str:
 
 
 def _pins(net: Net, parts: set[str]) -> set[PinRef]:
-    return {p for p in net.pins if p[0] in parts}
+    """The net's pins on parts both revisions have. Pins kept without a number are left
+    out: their marks are counted afresh in each revision."""
+    return {p for p in net.pins if p[0] in parts and not unnumbered(p[1])}
 
 
 def _first(pins: set[PinRef]) -> str:
