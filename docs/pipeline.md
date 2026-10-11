@@ -218,7 +218,10 @@ Eagle writes most text with its vector font, as strokes, so `strokes.py` reads
 it back: strokes drawn one after another in one style are cut into lines and
 letters, and each letter is matched against a table of known shapes, in a frame
 set by its line's baseline and height. A curve drawn as one polyline stays in
-one letter. Eagle 9 has a second vector font with rounder letters; the table
+one letter. A run taller than wide is taken for text turned on its side; short
+upright texts drawn in turn one under another, as pin numbers down a connector,
+look the same, so a run that spells nothing turned is read level by level, and a
+letter alone is read upright first. Eagle 9 has a second vector font with rounder letters; the table
 holds both. Text in a proportional font, and all text from some PDF printers,
 arrives as filled outlines instead, one path per string; `fills.py` splits each
 into letters by where the outlines overlap and compares a coarse raster of each

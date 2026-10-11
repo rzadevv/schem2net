@@ -87,6 +87,59 @@ def test_stroke_text_is_read():
     assert len(used) == len(paths)
 
 
+def test_pin_numbers_set_one_under_another_are_read_upright():
+    """Numbers down a connector are drawn in turn, from the bottom up. Together they
+    are taller than wide, as a text turned on its side is; so is a digit alone."""
+    paths, seq = [], 0
+    for k, number in enumerate(("1", "2", "3", "4", "10", "11")):
+        drawn = _drawn(number, 10, 60 - 2.54 * k, 1.4, seq)
+        paths += drawn
+        seq += len(drawn)
+    texts, _ = strokes.read(paths, "eagle")
+    assert sorted(t.text for t in texts) == ["1", "10", "11", "2", "3", "4"]
+    assert all(round(t.angle) == 0 for t in texts)
+
+    (alone,) = strokes.read(_drawn("6", 10, 20, 1.4, 0), "eagle")[0]
+    assert alone.text == "6" and round(alone.angle) == 0
+
+
+def test_a_letter_of_short_strokes_stays_in_its_word():
+    """An S is many short strokes, so the jump from its foot to the top of the C after
+    it is far against them; it still lands on the S's line, right after it."""
+    s_then_c = [
+        ((69.3, 87.0), (69.1, 86.8)),
+        ((69.1, 86.8), (68.7, 86.8)),
+        ((68.7, 86.8), (68.5, 87.0)),
+        ((68.5, 87.0), (68.5, 87.2)),
+        ((68.5, 87.2), (68.7, 87.3)),
+        ((68.7, 87.3), (69.1, 87.3)),
+        ((69.1, 87.3), (69.3, 87.5)),
+        ((69.3, 87.5), (69.3, 87.7)),
+        ((69.3, 87.7), (69.1, 87.9)),
+        ((69.1, 87.9), (68.7, 87.9)),
+        ((68.7, 87.9), (68.5, 87.7)),
+        ((70.5, 87.0), (70.3, 86.8)),  # the C starts at its top right
+        ((70.3, 86.8), (69.9, 86.8)),
+        ((69.9, 86.8), (69.7, 87.0)),
+        ((69.7, 87.0), (69.7, 87.7)),
+        ((69.7, 87.7), (69.9, 87.9)),
+        ((69.9, 87.9), (70.3, 87.9)),
+    ]
+    paths = [
+        Path(k, [list(line)], 0.12, (80, 80, 80), None, seq=k) for k, line in enumerate(s_then_c)
+    ]
+    assert len(strokes._runs(paths)) == 1
+
+    # A text turned on its side is not carried on by one set beside it, level with it.
+    def turned(word, x):
+        return [
+            replace(p, subpaths=[[(x + y, 40.0 - px) for px, y in p.subpaths[0]]])
+            for p in _drawn(word, 0, 0, 1.4, 0)
+        ]
+
+    assert not strokes._next_letter(turned("R10", 50.0), turned("R11", 52.54))
+
+
 def test_stroke_text_drawn_as_polylines_is_read():
     # Eagle 9 draws a curve as one polyline of many short pieces.
     paths = _drawn("DOG", 10, 20, 1.8, 0, joined=True, shape=1)

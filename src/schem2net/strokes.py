@@ -28,6 +28,11 @@ MIN_WIDTH = 0.05  # mm; hairlines are fills and artwork
 JUMP = 6  # a jump this many times the usual stroke length starts another text
 MAX_MATCH = 0.12  # glyph distance, in text heights, still taken as a match
 SPACE = 0.5  # a gap this many text heights wide between glyphs is a space
+NEXT_LETTER = 0.6  # text heights at most from a letter to the next one of its word
+LEVEL = 0.1  # text heights two letters' feet may differ by on one line
+UPRIGHT = 1.6  # a letter, or a line of them, is at most this much taller than wide
+TALLER = 1.2  # the next letter is at most this much taller than the one before
+PEN_DOWN = 0.02  # mm between the end of a stroke and the start of the next of one pen line
 SCALES = (1.0, 1.15, 0.87, 1.3, 0.77)  # tried in this order
 BY_SIZE = {c: c.upper() for c in "cosvwxz"}  # small letters drawn as their capitals, smaller
 MAX_ASPECT_GAP = 0.35  # radians between a glyph's shape and a candidate's
@@ -54,16 +59,33 @@ def read(paths: list[Path], font: str) -> tuple[list[Text], set[int]]:
     """Texts found among the strokes, and the seq of every stroke they use."""
     shapes = _font(font)
     texts, used = [], set()
+
+    def spelt(line: Line) -> bool:
+        chars = [match(normalise(g, line), shapes) for g in line.glyphs]
+        if not line.glyphs or sum(c is not None for c in chars) < 0.8 * len(chars):
+            return False
+        # Outlines and arrows read as strings of signs; text is mostly letters.
+        if sum(bool(c and c.isalnum()) for c in chars) < 0.5 * len(chars):
+            return False
+        texts.extend(_text(part, letters, run) for part, letters in _values_apart(line, chars))
+        used.update(s.seq for g in line.glyphs for s in g.strokes)
+        return True
+
     for run in _runs(_strokes(paths)):
         for line in _lines(run):
-            chars = [match(normalise(g, line), shapes) for g in line.glyphs]
-            if not line.glyphs or sum(c is not None for c in chars) < 0.8 * len(chars):
+            # One letter alone is taller than wide when upright, whichever way its
+            # strokes were drawn: read so first.
+            alone = not line.horizontal and len(line.glyphs) == 1
+            if alone and any([spelt(level) for level in _lines(run, upright=True)]):
                 continue
-            # Outlines and arrows read as strings of signs; text is mostly letters.
-            if sum(bool(c and c.isalnum()) for c in chars) < 0.5 * len(chars):
+            if spelt(line) or line.horizontal:
                 continue
-            texts += [_text(part, letters, run) for part, letters in _values_apart(line, chars)]
-            used |= {s.seq for g in line.glyphs for s in g.strokes}
+            # Short upright texts set one under another, as pin numbers down a
+            # connector, are taller together than wide and look like one turned text.
+            # Where that spells nothing, each level is read as a line of its own.
+            for glyph in line.glyphs:
+                for level in _lines(glyph.strokes, upright=True):
+                    spelt(level)
     return texts, used
 
 
@@ -226,13 +248,51 @@ def _runs(strokes: list[Path]) -> list[list[Path]]:
                 piece = []
             piece.append(s)
         out.append(piece)
-    return out
+    # A letter of short strokes, as S is, makes the jump to the next letter look far.
+    joined = out[:1]
+    for piece in out[1:]:
+        last = joined[-1]
+        if last[-1].seq + 1 >= piece[0].seq and _next_letter(last, piece):
+            joined[-1] = last + piece
+        else:
+            joined.append(piece)
+    return joined
 
 
-def _lines(run: list[Path]) -> list[Line]:
+def _next_letter(a: list[Path], b: list[Path]) -> bool:
+    """Whether b carries on a's line of text: level with a's last letter, no taller, and
+    right after it, along the page or, for text turned on its side, up it. The last
+    letter is known by its last line of the pen, which for a letter of short strokes is
+    all of it. Texts turned on their sides and set side by side, as the pad numbers
+    along a part's edge are, are level too, but each is a line as tall as it is long."""
+    tail = [a[-1]]
+    for stroke in reversed(a[:-1]):
+        if geometry.distance(stroke.subpaths[0][-1], tail[0].subpaths[0][0]) > PEN_DOWN:
+            break
+        tail.insert(0, stroke)
+    ax0, ay0, ax1, ay1 = geometry.bbox_of([p for s in tail for p in s.subpaths[0]])
+    bx0, by0, bx1, by1 = geometry.bbox_of([p for s in b for p in s.subpaths[0]])
+    wide, tall = ax1 - ax0, ay1 - ay0
+    if (
+        tall <= UPRIGHT * wide
+        and by1 - by0 <= TALLER * tall
+        and abs(ay1 - by1) <= LEVEL * tall
+        and -LEVEL * tall <= bx0 - ax1 <= NEXT_LETTER * tall
+    ):
+        return True
+    return (
+        wide <= UPRIGHT * tall
+        and bx1 - bx0 <= TALLER * wide
+        and abs(ax1 - bx1) <= LEVEL * wide
+        and -LEVEL * wide <= ay0 - by1 <= NEXT_LETTER * wide
+    )
+
+
+def _lines(run: list[Path], upright: bool = False) -> list[Line]:
     x0, y0, x1, y1 = geometry.bbox_of([p for s in run for p in s.subpaths[0]])
     first, last = run[0].subpaths[0][0], run[-1].subpaths[0][0]
     horizontal = not (abs(last[1] - first[1]) > abs(last[0] - first[0]) and y1 - y0 > x1 - x0)
+    horizontal = horizontal or upright
     k, sign = (0, 1) if horizontal else (1, -1)  # turned text reads up: y decreases
 
     # A polyline is one pen stroke: its pieces stay in one glyph.
