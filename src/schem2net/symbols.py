@@ -36,6 +36,7 @@ MIN_BOX = 1.0  # mm; narrower pinless pieces are lines, not boxes
 ENTER_DEPTH = 2.54  # mm a pin crossing into a box ends inside its edge
 DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
 DRAWN_TOGETHER_SEQ = 3  # drawing steps between a body and pins drawn with it
+BETWEEN_MAX = 60  # shapes drawn between two of a piece's own, when looking for its other pieces
 
 
 @dataclass(slots=True)
@@ -503,6 +504,10 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
                 interleaved = k < len(seqs) and seqs[k] < hi
                 if interleaved and geometry.bbox_gap(a.bbox, b.bbox) <= PIECE_GAP:
                     joined.union(id(a), id(b))
+    else:
+        woven = _woven(symbols, scene)
+        for a, b in woven:
+            joined.union(id(a), id(b))
     # Small pinless bits drawn right after or before a neighbour and almost touching it
     # are more of it: the separate bars of a ground sign under its stem.
     small = [s for s in symbols if not s.pins and id(s) in spans and _size(s.bbox) < BIT_SIZE]
@@ -519,7 +524,50 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
     groups: dict[int, list[Symbol]] = {}
     for s in symbols:
         groups.setdefault(joined.find(id(s)), []).append(s)
-    return [_combine(parts) for parts in groups.values()]
+    if profile.drawn_by_part:
+        return [_combine(parts) for parts in groups.values()]
+    whole = {id(s) for pair in woven for s in pair}
+    wires = GridIndex()
+    for k, seg in enumerate(scene.wires):
+        wires.add(k, geometry.bbox_of(seg))
+    out = []
+    for parts in groups.values():
+        symbol = _combine(parts)
+        if len(parts) > 1 and any(id(p) in whole for p in parts):
+            # Lines taken for pins of a piece that end within the whole drawing, on no
+            # wire, are drawing: an arrow's stem, the lead of a body diode.
+            own = {pin.shape for pin in symbol.pins}
+            body = _union([scene.shapes[i].bbox for i in symbol.shapes if i not in own])
+            symbol.pins = [
+                pin
+                for pin in symbol.pins
+                if not _inside(pin.at, body) or _on_wire(pin.at, scene.wires, wires)
+            ]
+        out.append(symbol)
+    return out
+
+
+def _woven(symbols: list[Symbol], scene: Scene) -> list[tuple[Symbol, Symbol]]:
+    """Pieces of one part where drawing goes layer by layer: between two shapes of a
+    piece, only shapes of pieces close to it were drawn, as a MOSFET's gate, channel
+    and arrow are drawn in turn. Pins drawn in a pass of their own, after every body,
+    have the rest of the page between them and their body, so nothing is joined."""
+    order = sorted(
+        (scene.shapes[i].seq, k) for k, s in enumerate(symbols) if not s.power for i in s.shapes
+    )
+    places: dict[int, list[int]] = {}
+    for at, (_, k) in enumerate(order):
+        places.setdefault(k, []).append(at)
+    pairs = []
+    for k, at in places.items():
+        piece = symbols[k]
+        for lo, hi in zip(at, at[1:], strict=False):
+            if not 1 < hi - lo <= BETWEEN_MAX:
+                continue
+            between = {order[j][1] for j in range(lo + 1, hi)}
+            if all(geometry.bbox_gap(piece.bbox, symbols[j].bbox) <= PIECE_GAP for j in between):
+                pairs += [(piece, symbols[j]) for j in between]
+    return pairs
 
 
 def _enters(piece: Symbol, box: Symbol) -> bool:

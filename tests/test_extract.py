@@ -1606,3 +1606,91 @@ def test_one_designator_on_two_parts_is_reported():
     assert issues["duplicate_designator"].pins == [("R5", "1")]
     assert issues["unannotated_part"].detail == "R?"
     assert "duplicate_pin" not in issues
+
+
+def test_pieces_drawn_in_turn_are_one_part_where_drawing_goes_by_layer():
+    """A MOSFET's gate, channel and arrow are drawn in turn, a shape of one between
+    shapes of another. Pins drawn in a pass of their own have the page between."""
+
+    def scene_of(seqs):
+        scene = Scene(page=1)
+        for k, (seq, x) in enumerate(seqs):
+            scene.shapes.append(Shape(k, [(x, 0), (x, 1)], 0.1, (x, 0, x, 1), seq))
+        return scene
+
+    def piece(*ids, x0, x1):
+        return symbols.Symbol(list(ids), (x0, 0, x1, 1))
+
+    # Gate (shapes 0 and 3) and channel (1 and 2), a millimetre apart, drawn in turn.
+    scene = scene_of([(10, 0), (11, 1), (12, 1), (13, 0)])
+    gate, channel = piece(0, 3, x0=0, x1=0), piece(1, 2, x0=1, x1=1)
+    assert symbols._woven([gate, channel], scene) == [(gate, channel)]
+
+    # A body and its pin with a far part's body drawn between them: two parts.
+    scene = scene_of([(10, 0), (11, 50), (12, 0)])
+    near, far = piece(0, 2, x0=0, x1=0), piece(1, x0=50, x1=50)
+    assert symbols._woven([near, far], scene) == []
+
+
+def test_eagle_mosfet_drawn_in_turn_is_one_part_with_gate_source_and_drain():
+    """Eagle draws a MOSFET's pins, then its gate, channel, body diode and arrow, each
+    piece apart from the next. The arrow's stem and the diode's lead end inside the
+    drawing and are no pins; the slants of the diode and the arrow make it no bipolar."""
+    b = SceneBuilder()
+    for points in (
+        [(22.4, 30.0), (24.9, 30.0)],  # gate pin
+        [(30.0, 32.6), (30.0, 30.0)],  # source pin
+        [(30.0, 22.4), (30.0, 24.9)],  # drain pin
+        [(24.9, 30.0), (24.9, 24.9)],  # gate bar
+        [(25.5, 26.8), (25.5, 28.3)],  # channel, in three
+        [(25.5, 28.8), (25.5, 29.4)],
+        [(25.5, 29.4), (25.5, 30.0)],
+        [(25.5, 24.9), (25.5, 25.7)],
+        [(25.5, 25.7), (25.5, 26.4)],
+        [(25.5, 29.4), (27.5, 29.4)],
+        [(27.5, 29.4), (27.5, 27.5)],
+        [(27.5, 27.5), (26.2, 27.5)],  # arrow's stem
+        [(30.0, 28.2), (30.0, 29.4)],  # diode's lead
+        [(30.0, 29.4), (27.5, 29.4)],
+        [(25.5, 25.7), (30.0, 25.7)],
+        [(30.0, 25.7), (30.0, 26.9)],
+        [(30.0, 26.9), (30.8, 26.9)],
+        [(30.0, 26.9), (29.2, 26.9)],
+        [(30.0, 24.9), (30.0, 25.7)],
+        [(30.0, 30.0), (30.0, 29.4)],
+        [(29.2, 28.2), (30.0, 26.9)],  # diode triangle
+        [(30.0, 26.9), (30.8, 28.2)],
+        [(30.8, 28.2), (29.2, 28.2)],
+        [(25.5, 27.5), (26.2, 27.2), (26.2, 27.7), (25.5, 27.5)],  # arrowhead
+    ):
+        b.shape(*points, width=0.16, color=(201, 13, 12))
+    b.scene.wires += [
+        ((22.4, 30.0), (19.9, 30.0)),
+        ((30.0, 32.6), (30.0, 35.1)),
+        ((30.0, 22.4), (30.0, 19.8)),
+    ]
+    b.field("Q1", 32.6, 25.8)
+
+    (part,) = symbols.find(b.scene, profile.load("eagle"))
+    assert part.ref == "Q1"
+    assert {p.number: p.at for p in part.pins} == {
+        "G": (22.4, 30.0),
+        "S": (30.0, 32.6),
+        "D": (30.0, 22.4),
+    }
+
+
+def test_a_lone_text_by_one_pin_is_not_a_pad_number():
+    """A part that shows pad numbers shows them on its pins alike: Q1 beside a
+    transistor's base, with nothing by its other pins, is the designator."""
+    eagle = profile.load("eagle")
+    pins = [symbols.Pin(k, ((10, y), (5, y))) for k, y in enumerate((10, 15, 20))]
+    part = symbols.Symbol([], (5, 8, 14, 22), pins)
+
+    def text(word, y):
+        return Text(0, word, (6, y - 1.5, 8, y - 0.3), 1.2, 0.0, (128, 128, 128))
+
+    name = text("Q1", 10)
+    assert not fields._numbers_a_pin(part, name, eagle, fields._Texts([name]))
+    numbers = [text("1", 10), text("2", 15), text("3", 20)]
+    assert fields._numbers_a_pin(part, numbers[0], eagle, fields._Texts(numbers))

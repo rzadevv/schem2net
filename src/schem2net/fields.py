@@ -559,7 +559,7 @@ def _assign_refs(
                     cost += LATER_FIELD_COST
             if prefix in TWO_TERMINAL_PREFIXES and len(symbol.pins) > MANY_PINS:
                 cost += MANY_PINS_COST
-            if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile):
+            if profile.designators_outside and _belongs_to_a_pin(symbol, text, profile, texts):
                 cost += INSIDE_BODY_COST
             if id(text) in values:
                 cost += VALUE_FIRST_COST
@@ -871,7 +871,14 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
             return []
         emitter = best[1]
         other = b if emitter is a else a
-        slants = any(not geometry.is_axis_aligned(tuple(s.points), 0.01) for s in lines)
+        # A bipolar transistor's emitter and collector leave its base bar on slants. A
+        # MOSFET has slants too, in its arrowhead and body diode, but none on its gate.
+        bars = _bars_ahead(control, lines, [s for s in body if s.filled and s.closed])
+        slants = any(
+            not geometry.is_axis_aligned(tuple(s.points), 0.01)
+            and any(geometry.distance_to_segment(p, bar) <= 0.1 for p in s.points for bar in bars)
+            for s in lines
+        )
         names = ("B", "E", "C") if slants else ("G", "S", "D")
         return list(zip((control, emitter, other), names, strict=True))
     return []
@@ -880,6 +887,11 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
 def _leads_to_bar(pin: Pin, lines: list[Shape], pads: list[Shape]) -> bool:
     """Carried on inwards, perhaps along a lead, the pin meets a bar square to it, as a
     transistor's base or gate does, in its middle or at its end."""
+    return bool(_bars_ahead(pin, lines, pads))
+
+
+def _bars_ahead(pin: Pin, lines: list[Shape], pads: list[Shape]) -> list[tuple[Point, ...]]:
+    """The bars square to the pin that it meets when carried on inwards."""
     (x, y), (dx, dy) = pin.line[0], geometry.unit(pin.line[1], pin.line[0])
     ahead = [(x + dx * t / 10, y + dy * t / 10) for t in range(int(BAR_REACH * 10) + 1)]
     bars = [tuple(s.points) for s in lines if abs(_cos(s.points, pin.line)) < 0.1]
@@ -888,7 +900,7 @@ def _leads_to_bar(pin: Pin, lines: list[Shape], pads: list[Shape]) -> bool:
     bars = [b for b in bars if not all(_on_any(p, edges) for p in b)]
     # Nor is the bridge of a solder jumper, which runs from one pad into another.
     bars = [b for b in bars if not _bridges(b, pads)]
-    return any(geometry.distance_to_segment(q, bar) <= 0.1 for q in ahead for bar in bars)
+    return [bar for bar in bars if any(geometry.distance_to_segment(q, bar) <= 0.1 for q in ahead)]
 
 
 def _in_any(p: Point, pads: list[Shape]) -> bool:
@@ -1134,19 +1146,31 @@ def _within_outline(symbol: Symbol, text: Text) -> bool:
     return x0 < cx < x1 and y0 < cy < y1
 
 
-def _belongs_to_a_pin(symbol: Symbol, text: Text, profile: Profile) -> bool:
+def _belongs_to_a_pin(symbol: Symbol, text: Text, profile: Profile, texts: _Texts) -> bool:
     """Where designators sit outside the box: a text inside it is a pin name, one by a
     pin outside it a pad number. Two-pin parts are left out, as their designator can
     come near the pin ends."""
     if len(symbol.pins) <= 2:
         return False
-    return _within_outline(symbol, text) or _numbers_a_pin(symbol, text, profile)
+    return _within_outline(symbol, text) or _numbers_a_pin(symbol, text, profile, texts)
 
 
-def _numbers_a_pin(symbol: Symbol, text: Text, profile: Profile) -> bool:
-    """True if the text sits where a pin of the part has its number."""
+def _numbers_a_pin(symbol: Symbol, text: Text, profile: Profile, texts: _Texts) -> bool:
+    """True if the text sits where a pin of the part has its number, and another pin
+    has a text where its own goes: a part that shows pad numbers shows them on its pins
+    alike, so a lone text by one pin of a transistor is its designator."""
     above = profile.pin_numbers_above
-    return any(_number_gap(text.bbox, pin.line, above) is not None for pin in symbol.pins)
+    mine = [p for p in symbol.pins if _number_gap(text.bbox, p.line, above) is not None]
+    if not mine:
+        return False
+    around = (symbol.bbox[0] - 5, symbol.bbox[1] - 5, symbol.bbox[2] + 5, symbol.bbox[3] + 5)
+    others = [texts.texts[i] for i in texts.index.within(around) if texts.texts[i] is not text]
+    return any(
+        _number_gap(other.bbox, pin.line, above) is not None
+        for pin in symbol.pins
+        if pin not in mine
+        for other in others
+    )
 
 
 def _number_gap(

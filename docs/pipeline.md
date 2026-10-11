@@ -63,7 +63,12 @@ Symbols are groups of graphics that touch, except through a pin's free end.
 Two one-pin pieces facing each other on one axis are joined, which covers
 capacitor plates. Where parts are drawn one at a time, as in EasyEDA, pieces drawn
 interleaved and close together are one part: a MOSFET's gate stands apart from its
-channel. Eagle draws by layer, so there neighbours' drawings interleave.
+channel. Eagle draws by layer, so there neighbours' drawings interleave: its pins
+may come in a pass of their own, with the rest of the page between a body and its
+pins. There only pieces drawn in turn are joined: where, between two shapes of one
+piece, nothing was drawn but shapes of pieces close to it.
+In a part joined so, a line taken for a pin that ends inside the drawing, on no wire,
+is drawing: an arrow's stem, the lead of a body diode.
 
 Designators are paired with symbols one to one, nearest first overall. A value
 can look like a designator: "L298" by a driver's box. Resistors, capacitors,
@@ -97,8 +102,9 @@ unnumbered pins is then numbered from its marks, counting up from a single one.
 Transistors often hide their numbers, and their pins are then known by role: the
 base or gate is the pin square to the other two, leading to the middle of a bar;
 the emitter or source is the one nearer the arrowhead along the drawing, where a
-body diode, which joins both, is not taken for the arrow; a bipolar transistor
-leaves its bar on slants. A potentiometer or a three-way jumper with hidden numbers
+body diode, which joins both, is not taken for the arrow; a bipolar transistor's
+emitter and collector leave its bar on slants, while the slants of a MOSFET's
+arrowhead and diode stand off its gate. A potentiometer or a three-way jumper with hidden numbers
 has two ends facing apart and a wiper or common pad square to them: that is pin 2,
 and a potentiometer's ends count as a two-pin part's do. A solder jumper's ends lie
 in pads alike, and which is 1 depends on how it was turned. Read by position they
@@ -245,7 +251,9 @@ across the pin, past the end away from the wire.
 
 Eagle's libraries place a part's name above its box, so a text inside the box,
 however much it looks like a designator (A0, U3), is taken as a pin name first, and
-one beside a pin outside it as a pad number. Eagle draws layer by layer, values
+one beside a pin outside it as a pad number, where another pin has a text in that
+place too: a part shows its pad numbers on its pins alike, so Q1 by a transistor's
+base is its name. Eagle draws layer by layer, values
 before names, so a text that looks like a designator but is drawn among values (A20
 among 10k and 3.3V, with no other designator around it) is taken for a value when a
 name sits as near. Drawn among values, a long word laid along a wire, such as a

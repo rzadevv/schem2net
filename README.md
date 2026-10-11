@@ -39,8 +39,8 @@ and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
 | A, KiCad | Test | 9 | 2,863 | 0.94 | 0.92 |
 | B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
 | B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
-| C, Eagle | Dev | 96 | 7,038 | 0.76 | 0.72 |
-| C, Eagle | Test | 42 | 2,903 | 0.66 | 0.61 |
+| C, Eagle | Dev | 96 | 7,038 | 0.78 | 0.75 |
+| C, Eagle | Test | 42 | 2,903 | 0.68 | 0.64 |
 | D, Olimex | Dev | 23 | 11,565 | 0.80 | 0.75 |
 | D, Olimex | Test | 24 | 9,286 | 0.75 | 0.65 |
 | E, EasyEDA | Dev | 18 | 2,487 | 0.73 | 0.72 |
@@ -61,10 +61,10 @@ share of them that point at something wrong.
 | A, KiCad | Test | 0.9% | 3.2% | 0.66 | 3.8 | 0.72 | 0.67 |
 | B, Altium, drawing only | Dev | 0.3% | 8.9% | 0.93 | 12.7 | 0.49 | 0.83 |
 | B, Altium, drawing only | Test | 2.7% | 5.3% | 0.58 | 6.5 | 0.59 | 0.46 |
-| C, Eagle | Dev | 1.0% | 20.8% | 0.69 | 12.7 | 0.77 | 0.67 |
-| C, Eagle | Test | 1.0% | 30.9% | 0.70 | 14.4 | 0.81 | 0.71 |
-| D, Olimex | Dev | 0.8% | 15.3% | 0.84 | 12.7 | 0.83 | 0.48 |
-| D, Olimex | Test | 1.0% | 20.2% | 0.78 | 12.9 | 0.88 | 0.46 |
+| C, Eagle | Dev | 1.0% | 18.7% | 0.70 | 12.3 | 0.68 | 0.67 |
+| C, Eagle | Test | 0.9% | 28.6% | 0.73 | 14.9 | 0.71 | 0.74 |
+| D, Olimex | Dev | 0.8% | 15.2% | 0.85 | 12.7 | 0.83 | 0.48 |
+| D, Olimex | Test | 1.0% | 20.2% | 0.76 | 12.7 | 0.87 | 0.46 |
 | E, EasyEDA | Dev | 2.7% | 16.9% | 0.73 | 11.9 | 0.88 | 0.50 |
 | E, EasyEDA | Test | 1.5% | 42.6% | 0.77 | 11.8 | 0.87 | 0.58 |
 | F, OrCAD | Dev | 0.6% | 3.3% | 0.88 | 9.0 | 0.75 | 0.61 |
