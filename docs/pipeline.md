@@ -256,7 +256,8 @@ Eagle's libraries place a part's name above its box, so a text inside the box,
 however much it looks like a designator (A0, U3), is taken as a pin name first, and
 one beside a pin outside it as a pad number, where another pin has a text in that
 place too: a part shows its pad numbers on its pins alike, so Q1 by a transistor's
-base is its name. Eagle draws layer by layer, values
+base is its name. For the same reason a number by one pin only of a two-pin part is
+not its pad number: 33 printed over a resistor's end is its value. Eagle draws layer by layer, values
 before names, so a text that looks like a designator but is drawn among values (A20
 among 10k and 3.3V, with no other designator around it) is taken for a value when a
 name sits as near. Drawn among values, a long word laid along a wire, such as a

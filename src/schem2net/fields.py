@@ -758,6 +758,17 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
             named.add(i)
             used.add(t)
 
+    # A part that shows pad numbers shows them on its pins alike: a number by one pin
+    # only of a two-pin part is its value, as 33 printed over a resistor's end is.
+    count: dict[str, list[int]] = {}
+    for i, (_, symbol) in enumerate(owned):
+        count.setdefault(symbol.ref, []).append(i)
+    for mine in count.values():
+        read = [i for i in mine if i in named]
+        if len(mine) == 2 and len(read) == 1:
+            pins[read[0]].number = pins[read[0]].how = None
+            named.discard(read[0])
+
     rest = [k for k in range(len(numbers)) if k not in used]
     used |= {rest[k] for k in _number_rows(symbols, [numbers[k] for k in rest])}
 

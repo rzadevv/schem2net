@@ -1694,3 +1694,22 @@ def test_a_lone_text_by_one_pin_is_not_a_pad_number():
     assert not fields._numbers_a_pin(part, name, eagle, fields._Texts([name]))
     numbers = [text("1", 10), text("2", 15), text("3", 20)]
     assert fields._numbers_a_pin(part, numbers[0], eagle, fields._Texts(numbers))
+
+
+def test_a_number_by_one_pin_of_a_two_pin_part_is_not_its_pad_number():
+    """33 printed over a resistor's end is its value. A part that shows pad numbers
+    shows them on both its pins."""
+    eagle = profile.load("eagle")
+
+    def resistor(numbers):
+        scene = Scene(page=1)
+        pins = [symbols.Pin(0, ((14, 10), (11, 10))), symbols.Pin(1, ((16, 10), (19, 10)))]
+        part = symbols.Symbol([], (11, 9, 19, 11), pins, ref="R1")
+        for word, x in numbers:
+            box = (x, 8.2, x + 1.6, 9.6)
+            scene.pin_numbers.append(Text(0, word, box, 1.4, 0.0, (128, 128, 128)))
+        fields._number_pins([part], scene, eagle, set())
+        return sorted(p.number for p in part.pins)
+
+    assert resistor([("33", 17)]) == ["1", "2"]
+    assert resistor([("A", 11.5), ("B", 17)]) == ["A", "B"]
