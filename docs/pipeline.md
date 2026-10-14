@@ -282,7 +282,7 @@ names one pin at most. A pin name is set a fixed distance in from the pin's end,
 measured to where the text is placed, so a narrow last letter, as in INT1, leaves
 a little more room to its ink. Net labels are the
 names inside an outline that meets a wire, or, in older designs, names laid
-along a wire just above it; a part value over a passing wire is not one. Many Eagle symbols draw no pin
+along a wire just above it, though an underscore or a letter's tail may reach below the wire; a part value over a passing wire is not one. Many Eagle symbols draw no pin
 lines: a wire ending on a part's outline is a pin there, numbered by the text
 beside it. Eagle hides the pad numbers of small parts, so a designator or a
 value such as 10k beside a pin is never taken for its number. A connector's box

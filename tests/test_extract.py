@@ -1761,3 +1761,17 @@ def test_easyeda_part_is_named_by_the_text_drawn_right_before_it():
     b.shape((30, 0), (31, 0))  # a shape drawn between the name and the part
     b.scene.shapes[0].seq, b.scene.shapes[1].seq = 4, 3
     assert fields._designators_by_order([connector], b.scene, easyeda) == {}
+
+
+def test_a_label_with_an_underscore_still_sits_on_its_wire():
+    """LCD_D1's underscore reaches below the baseline, past the wire it is laid on."""
+    from schem2net.geometry import GridIndex
+    from schem2net.scene import _on_wire
+
+    wires = [((-1.0, 10.0), (12.0, 10.0))]
+    index = GridIndex()
+    index.add(0, geometry.bbox_of(wires[0]))
+    label = Text(0, "LCD_D1", (0, 7.8, 9, 10.2), 2.4, 0.0, (128, 128, 128))
+    assert _on_wire(label, wires, index)
+    across = Text(0, "LCD_D1", (0, 8.8, 9, 11.2), 2.4, 0.0, (128, 128, 128))
+    assert not _on_wire(across, wires, index)  # a text the wire runs through the middle of

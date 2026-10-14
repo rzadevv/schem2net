@@ -15,6 +15,7 @@ from schem2net.refdes import PART_VALUE, is_common_ref
 
 LABEL_OUTLINE_MAX_HEIGHT = 4.0  # mm, across the text direction
 LABEL_RISE = 0.6  # text heights between a label laid on a wire and the wire
+DESCENT = 0.25  # text heights a tail or an underscore reaches below the baseline
 LABEL_UNDER = 0.9  # share of the label's length the wire runs under
 ANCHOR_REACH = 1.5  # mm between a label's anchor dot and its name, or its wire's end
 LABEL_END = 0.5  # mm between a wire's open end and the label set at it
@@ -733,6 +734,8 @@ def _on_wire(
     x0, y0, x1, y1 = text.bbox
     vertical = round(text.angle) % 180 == 90
     rise = LABEL_RISE * text.size
+    # An underscore or a letter's tail reaches below the baseline, past the wire.
+    drop = -DESCENT * text.size
     for k in index.within((x0 - rise, y0 - rise, x1 + rise, y1 + rise)):
         (ax, ay), (bx, by) = wires[k]
         if vertical and abs(ax - bx) < 1e-3:  # turned text: its baseline is its right side
@@ -742,7 +745,7 @@ def _on_wire(
         else:
             continue
         under = min(hi, max(a, b)) - max(lo, min(a, b))
-        if 0 <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
+        if drop <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
             return True
         # Ending at the text from either side, not running on under it.
         near = [
@@ -751,7 +754,7 @@ def _on_wire(
             if min(abs((e[1] if vertical else e[0]) - v) for v in (lo, hi)) <= LABEL_END
         ]
         open_end = meets is None or not any(meets(e) for e in near)
-        if 0 <= gap <= rise and near and under <= LABEL_END and open_end:
+        if drop <= gap <= rise and near and under <= LABEL_END and open_end:
             return True
     return False
 
