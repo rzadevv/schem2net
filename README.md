@@ -57,7 +57,7 @@ share of them that point at something wrong.
 
 | Corpus | Split | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
 |---|---|---|---|---|---|---|---|
-| A, KiCad | Dev | 0.4% | 5.9% | 0.84 | 4.4 | 0.61 | 0.74 |
+| A, KiCad | Dev | 0.4% | 5.9% | 0.81 | 4.1 | 0.58 | 0.74 |
 | A, KiCad | Test | 0.9% | 3.2% | 0.66 | 3.8 | 0.72 | 0.67 |
 | B, Altium, drawing only | Dev | 0.3% | 8.9% | 0.93 | 12.7 | 0.49 | 0.83 |
 | B, Altium, drawing only | Test | 2.7% | 5.3% | 0.58 | 6.5 | 0.59 | 0.46 |

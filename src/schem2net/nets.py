@@ -75,6 +75,8 @@ class Netlister:
         self.sheet_buses: list[tuple[int, str, str, busnames.Bus]] = []
         # Bus labels on child pages: (path, name) -> (page, bus)
         self.label_buses: dict[tuple[str, str], list[tuple[int, busnames.Bus]]] = defaultdict(list)
+        # Nodes that name a group bus, with the bus they name: (page, node, bus)
+        self.group_names: list[tuple[int, tuple, busnames.Bus]] = []
 
     def join(self, a: tuple, b: tuple, kind: str) -> None:
         self.uf.union(a, b)
@@ -186,6 +188,8 @@ class Netlister:
                 self.join(node, ("local", page, key), "local_name")
                 self.local_names[page].add(key)
             bus = busnames.parse(label.text)
+            if bus and not bus.vector:
+                self.group_names.append((page, node, bus))
             if label.kind == "hier" and scene.path:
                 self.join(node, ("hier", scene.path, key), "hier_name")
                 if bus and label.outline:
@@ -224,6 +228,8 @@ class Netlister:
                 if not bus:
                     points.append((pin.at, node))
                     continue
+                if not bus.vector:
+                    self.group_names.append((page, node, bus))
                 bus_points.append((pin.at, node))
                 crossings.append((node, pin.at, ("sheet", child, key), bus))
 
@@ -324,6 +330,25 @@ class Netlister:
                     above = up.get(member, bus.prefix + bus.separator + member)
                     below = down.get(member, child_bus.prefix + child_bus.separator + member)
                     self.join(("local", page, above), ("local", child_page, below), "bus")
+
+        # One bus named twice, as DPHY0_C{DPHY} and DPHY0_P{DPHY} where it runs between
+        # two sheets that call it each its own way: members of one name are one net.
+        on_bus: dict[tuple, list[tuple[int, busnames.Bus]]] = defaultdict(list)
+        for page, node, bus in self.group_names:
+            on_bus[self.uf.find(node)].append((page, bus))
+        for named in on_bus.values():
+            buses = {(page, bus.prefix): (page, bus) for page, bus in named}
+            if len({prefix for _, prefix in buses}) < 2:
+                continue
+            members = [
+                (page, busnames.member_nets(bus, names(page, bus))) for page, bus in buses.values()
+            ]
+            (first_page, first), *rest = members
+            for page, nets in rest:
+                for member in first.keys() & nets.keys():
+                    self.join(
+                        ("local", first_page, first[member]), ("local", page, nets[member]), "bus"
+                    )
 
     def result(self) -> Result:
         self._join_bus_members()

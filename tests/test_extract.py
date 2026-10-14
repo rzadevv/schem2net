@@ -1713,3 +1713,32 @@ def test_a_number_by_one_pin_of_a_two_pin_part_is_not_its_pad_number():
 
     assert resistor([("33", 17)]) == ["1", "2"]
     assert resistor([("A", 11.5), ("B", 17)]) == ["A", "B"]
+
+
+def test_a_sheet_whose_name_is_not_printed_is_named_by_its_pins():
+    """Its box and pins are drawn; the child page whose hierarchical labels share its
+    pins' names is the one it stands for."""
+    from schem2net.pipeline import _name_sheets
+
+    root = Scene(page=1, path="/")
+    root.sheets = [Sheet("", (0, 0, 20, 20), [SheetPin("SDA", (0, 5)), SheetPin("SCL", (0, 10))])]
+    power, bus = Scene(page=2, path="/Power/"), Scene(page=3, path="/I2C/")
+    power.labels = [Label("VIN", "hier", (0, 0, 1, 1), 0.0)]
+    bus.labels = [Label("SDA", "hier", (0, 0, 1, 1), 0.0), Label("SCL", "hier", (0, 2, 1, 3), 0.0)]
+    _name_sheets([root, power, bus])
+    assert root.sheets[0].name == "I2C"
+
+
+def test_members_of_one_bus_named_twice_are_one_net():
+    """DPHY0_C{DPHY} and DPHY0_P{DPHY} on the bus between two sheets name the same bus:
+    DPHY0_C.C_N and DPHY0_P.C_N are one net."""
+    netlister = Netlister()
+    netlister.local_names[2] = {"DPHY0_C.C_N"}
+    netlister.local_names[3] = {"DPHY0_P.C_N"}
+    names = [("l", 1, 0), ("l", 1, 1)]
+    netlister.join(*names, "label")  # both labels on one bus
+    for node, text in zip(names, ("DPHY0_C{DPHY}", "DPHY0_P{DPHY}"), strict=True):
+        netlister.group_names.append((1, node, buses.parse(text)))
+    netlister._join_bus_members()
+    find = netlister.uf.find
+    assert find(("local", 1, "DPHY0_C.C_N")) == find(("local", 1, "DPHY0_P.C_N"))

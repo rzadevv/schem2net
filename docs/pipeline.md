@@ -126,14 +126,18 @@ of the same name on the child page. KiCad sets a name against its flag by its
 width at full size, but draws subscripts small, so a name with a subscript ends
 short of its flag by what the subscript lost; sheet pins and hierarchical
 labels allow for that gap. A hierarchical label of a bus is written in the bus
-colour, beside its flag.
+colour, beside its flag. A design may leave its sheets' names and files unprinted;
+a box with sheet pins on its edge is then a sheet still, and it stands for the page
+one level down whose hierarchical labels share most names with its pins.
 
 Buses join their member nets. A vector bus `D[0..7]` is matched by position
 where it crosses into a sheet, so `D[8..15]` on the parent can feed `D[0..7]`
 on the child. A group bus `I2C{SCL SDA}` is matched by member name. When a
 group names an alias defined outside the drawing, its members are taken from
 the labels that use its prefix on any sheet: a sheet that only passes the bus on
-to another names none of them itself.
+to another names none of them itself. One bus can carry two group names, as
+DPHY0_C{DPHY} and DPHY0_P{DPHY} where it runs between two sheets that call it
+each their own way; members of one name under either are one net.
 
 ## Part libraries
 

@@ -20,7 +20,7 @@ from schem2net import (
 from schem2net.ir import Design, Issue, Source, unnumbered
 from schem2net.nets import Netlister
 from schem2net.primitives import Document, Page
-from schem2net.scene import Scene
+from schem2net.scene import Scene, name_key
 from schem2net.symbols import Symbol
 
 PROFILES = {"kicad", "altium", "eagle", "easyeda", "orcad"}
@@ -187,6 +187,7 @@ def _extract(
             )
 
     read = [result for result in pages if result.scene is not None]
+    _name_sheets([result.scene for result in read])
     fields.whole_names([result.symbols for result in read])
     if rules.pin_library:
         parts = library.load(rules.pin_library)
@@ -239,3 +240,29 @@ def _read_page(
         # A wire grid fits at half the true scale too; the pins' pitch tells which.
         result.page = grid.rescale(result.page, 1 / pitch)
         _read(result, page_rules, pages)
+
+
+def _name_sheets(scenes: list[Scene]) -> None:
+    """Name each sheet whose name is not printed after the child page it stands for:
+    of the pages one level below its own, the one whose hierarchical labels share most
+    names with its pins."""
+    labels = {
+        page.path: {name_key(lb.text) for lb in page.labels if lb.kind == "hier"}
+        for page in scenes
+        if page.path
+    }
+    for page in scenes:
+        named = {name_key(sheet.name) for sheet in page.sheets if sheet.name}
+        for sheet in page.sheets:
+            if sheet.name or not page.path:
+                continue
+            pins = {name_key(pin.name) for pin in sheet.pins}
+            children = [
+                (len(pins & names), path[len(page.path) : -1])
+                for path, names in labels.items()
+                if path.startswith(page.path) and path.count("/") == page.path.count("/") + 1
+            ]
+            shared, child = max(children, default=(0, ""))
+            if shared and name_key(child) not in named:
+                sheet.name = child
+                named.add(name_key(child))

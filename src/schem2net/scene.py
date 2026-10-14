@@ -504,23 +504,38 @@ def _find_sheets(
         if not names:
             continue
         sheet = Sheet(names[0].text, box)
-        taken = [names[0]]
-        for pin_outline in pin_outlines:
-            pin_box = geometry.bbox_of(pin_outline)
-            at = _on_edge(pin_box, box)
-            if at is None:
-                continue
-            # Its name is level with it, inside the box.
-            level = [t for t in scene.fields + bus_texts if _level(t.bbox, pin_box, at, box)]
-            text = min(level, key=lambda t: geometry.bbox_gap(t.bbox, pin_box), default=None)
-            if text and geometry.bbox_gap(text.bbox, pin_box) < SHEET_PIN_GAP + text.shrink:
-                sheet.pins.append(SheetPin(text.text, at))
-                taken.append(text)
-        scene.fields = [t for t in scene.fields if not any(t is u for u in taken)]
-        bus_texts[:] = [t for t in bus_texts if not any(t is u for u in taken)]
-        scene.sheets.append(sheet)
+        _take_pins(sheet, [names[0]], scene, pin_outlines, bus_texts)
         used.add(id(outline))
+    # A sheet whose name and file are not printed is still a box with sheet pins on its
+    # edge; which page it stands for is told later, by the names of its pins.
+    for box, outline in boxes:
+        unnamed = Sheet("", box)
+        if id(outline) not in used and _take_pins(unnamed, [], scene, pin_outlines, bus_texts):
+            used.add(id(outline))
     return used
+
+
+def _take_pins(sheet, taken, scene, pin_outlines, bus_texts) -> bool:
+    """Give the sheet the pins on its box's edge, each named by the text level with it
+    inside the box, and keep it on the page if it has any or was named."""
+    box = sheet.bbox
+    for pin_outline in pin_outlines:
+        pin_box = geometry.bbox_of(pin_outline)
+        at = _on_edge(pin_box, box)
+        if at is None:
+            continue
+        # Its name is level with it, inside the box.
+        level = [t for t in scene.fields + bus_texts if _level(t.bbox, pin_box, at, box)]
+        text = min(level, key=lambda t: geometry.bbox_gap(t.bbox, pin_box), default=None)
+        if text and geometry.bbox_gap(text.bbox, pin_box) < SHEET_PIN_GAP + text.shrink:
+            sheet.pins.append(SheetPin(text.text, at))
+            taken.append(text)
+    if not sheet.name and not sheet.pins:
+        return False
+    scene.fields = [t for t in scene.fields if not any(t is u for u in taken)]
+    bus_texts[:] = [t for t in bus_texts if not any(t is u for u in taken)]
+    scene.sheets.append(sheet)
+    return True
 
 
 def _outlines_from_lines(paths: list[Path]) -> list[list[Point]]:
