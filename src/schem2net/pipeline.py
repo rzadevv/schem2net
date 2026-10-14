@@ -142,6 +142,12 @@ def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | Non
         # Pins known by their numbers: a wrong generator's reading finds few of those.
         known = [[p for p in net.pins if not unnumbered(p[1])] for net in trial.design.nets]
         joined = sum(len(pins) for pins in known if len(pins) >= 2)
+        # It also leaves designators naming parts it did not find: each costs the pins
+        # such a part has, on average, in that reading.
+        parts = trial.design.components
+        per_part = sum(len(c.pins) for c in parts) / max(len(parts), 1)
+        lost = sum(i.kind == "designator_without_part" for i in trial.design.issues)
+        joined -= per_part * lost
         if joined > most:
             best, most = trial, joined
     if best:

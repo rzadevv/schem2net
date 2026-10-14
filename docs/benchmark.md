@@ -104,7 +104,7 @@ accuracy. So `build-roles` reproduces the OrCAD trees but not the others.
 To see how pages printed in black fare, recolour a dev PDF's ink to black and
 read it again. With models learned without the board in question, dev pages
 keep this share of their colour pin accuracy: Eagle 98%, KiCad 78%, Altium
-50%, OrCAD 47%. Before, a black page read as nothing. Altium loses most on text:
+50%, OrCAD 48%. Before, a black page read as nothing. Altium loses most on text:
 net labels and pin names look much alike without their colours. An OrCAD PDF does
 not say what drew it, so in black it is read as each generator in turn; two of
 corpus F's 30 designs are then taken for another one.

@@ -339,3 +339,29 @@ def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():
     )
     counts = score(design, truth)
     assert (counts.pins_correct, counts.pins_missed) == (1, 1)
+
+
+def test_a_reading_that_leaves_designators_without_parts_loses_the_guess(monkeypatch):
+    """Read as the wrong generator, a page may join as many pins, but leaves many
+    designators naming parts it did not find."""
+    from schem2net import pipeline, roles
+    from schem2net.primitives import Document
+
+    def reading(joined, lost):
+        parts = [part(f"R{k}", "~", "1", "2") for k in range(joined // 2)]
+        nets = [Net(id=f"n{k}", pins=[(f"R{k}", "1"), (f"R{k}", "2")]) for k in range(joined // 2)]
+        issues = [Issue(kind="designator_without_part")] * lost
+        return Design(source=Source(file="x"), components=parts, nets=nets, issues=issues)
+
+    readings = {"eagle": reading(40, 20), "orcad": reading(38, 0)}
+
+    def extract(doc, design, generator, printed, region):
+        design = readings.get(generator, reading(0, 0))
+        design.source.generator = generator
+        return Extraction(design, [])
+
+    monkeypatch.setattr(pipeline, "_extract", extract)
+    monkeypatch.setattr(roles, "learned", lambda g: True)
+    doc = Document(pages=[Page(1, 10, 10)], metadata={})
+    found = pipeline._read_as_any(doc, Design(source=Source(file="x")), None)
+    assert found.design.source.generator == "orcad"

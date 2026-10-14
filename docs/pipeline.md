@@ -384,8 +384,9 @@ KiCad page.
 
 A PDF printed in black through a PDF printer says nothing of what drew it, and
 neither do its colours. It is read as each generator whose roles were learned,
-and the reading that joins the most pins into nets is kept; reading as the wrong
-generator finds few parts and fewer connections. So is a PDF in a colour theme of
+and the reading that joins the most pins into nets is kept, less the pins of the
+parts whose designators it left without a part; reading as the wrong generator
+finds few parts and fewer connections, and leaves many designators unplaced. So is a PDF in a colour theme of
 the designer's own that no profile fits: its ink is taken as black first. The
 design then carries a `generator_guessed` issue naming the generator taken.
 
