@@ -1742,3 +1742,22 @@ def test_members_of_one_bus_named_twice_are_one_net():
     netlister._join_bus_members()
     find = netlister.uf.find
     assert find(("local", 1, "DPHY0_C.C_N")) == find(("local", 1, "DPHY0_P.C_N"))
+
+
+def test_easyeda_part_is_named_by_the_text_drawn_right_before_it():
+    """EasyEDA draws a part's value, its designator, then the part: MOUSE, drawn just
+    before the connector, names it whatever its form."""
+    easyeda = profile.load("easyeda")
+    navy = (0, 0, 128)
+    b = SceneBuilder()
+    b.scene.fields.append(Text(0, "MINI-DIN-6", (0, 0, 8, 1.2), 1.2, 0.0, navy, 1))
+    b.scene.fields.append(Text(1, "MOUSE", (0, 2, 6, 3.2), 1.2, 0.0, navy, 2))
+    b.seq = 2
+    b.shape((10, 0), (20, 0), (20, 10), (10, 10), (10, 0))
+    connector = symbols.Symbol([0], (10, 0, 20, 10), [symbols.Pin(0, ((10, 5), (8, 5)), "1")])
+    ordered = fields._designators_by_order([connector], b.scene, easyeda)
+    assert ordered[id(connector)].text == "MOUSE"
+
+    b.shape((30, 0), (31, 0))  # a shape drawn between the name and the part
+    b.scene.shapes[0].seq, b.scene.shapes[1].seq = 4, 3
+    assert fields._designators_by_order([connector], b.scene, easyeda) == {}

@@ -6,6 +6,7 @@ value, and pins get their numbers.
 
 from __future__ import annotations
 
+import bisect
 import heapq
 import itertools
 import re
@@ -100,8 +101,9 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
             symbol.anchors = _anchors(symbol, scene, tips)
     values = _values_by_order(scene, profile)
     likely = designators.likelihood(scene, symbols, runs, profile)
+    ordered = _designators_by_order(symbols, scene, profile)
     named_by = _assign_refs(
-        symbols, texts, runs, profile, values, _among_values(scene, profile), likely
+        symbols, texts, runs, profile, values, _among_values(scene, profile), likely, ordered
     )
     _number_pins(symbols, scene, profile, {id(texts.texts[i]) for i in texts.used})
     _assign_values(symbols, texts, runs, profile.pin_name_gap, profile, named_by, values)
@@ -494,6 +496,7 @@ def _assign_refs(
     values: set[int],
     among_values: set[int],
     likely: dict[int, float] | None = None,
+    ordered: dict | None = None,
 ) -> dict[int, int]:
     """Returns, by part id, the index of the text that names it.
 
@@ -542,8 +545,11 @@ def _assign_refs(
             # designator of the usual form beside it: LCD_CON, not a net name by U1.
             surely = p is not None and p >= SURE_DESIGNATOR and gap > 0
             surely = surely and not match and not _usual_nearby(symbol)
+            # Where each part is drawn right after its designator, that text names it
+            # whatever its form: MOUSE, KEYBOARD.
+            first = first or (ordered or {}).get(id(symbol)) is text
             if not match and not (
-                _name_like(text.text) and (surely or (first and not _own_ref(symbol)))
+                _name_like(text.text) and (surely or (first and not (runs and _own_ref(symbol))))
             ):
                 continue
             cost = gap
@@ -623,6 +629,33 @@ def _name_by_function(
         parts[si].ref = texts.texts[ti].text
         named.add(si)
         texts.used.add(ti)
+
+
+def _designators_by_order(symbols: list[Symbol], scene: Scene, profile: Profile) -> dict:
+    """By part id, the text in the designators' colour drawn right before the part's
+    drawing, with nothing drawn between, where the generator draws each part's value,
+    then its designator, then the part."""
+    if not profile.value_before_designator:
+        return {}
+    drawn = sorted(s.seq for s in scene.shapes)
+    named = sorted(
+        (t.seq, k) for k, t in enumerate(scene.fields) if profile.is_("designator", t.color)
+    )
+    seqs = [seq for seq, _ in named]
+    out = {}
+    for part in symbols:
+        if not part.pins or part.power or not part.shapes:
+            continue
+        start = min(scene.shapes[i].seq for i in part.shapes)
+        k = bisect.bisect_left(seqs, start) - 1
+        if k < 0:
+            continue
+        seq, i = named[k]
+        j = bisect.bisect_right(drawn, seq)
+        if j < len(drawn) and drawn[j] < start:
+            continue  # other drawing came between
+        out[id(part)] = scene.fields[i]
+    return out
 
 
 def _values_by_order(scene: Scene, profile: Profile) -> set[int]:

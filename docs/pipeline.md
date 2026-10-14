@@ -307,7 +307,9 @@ bars drawn in turn, joined into one symbol.
 EasyEDA draws each part whole: its value, then its designator, then its drawing,
 with each pin's name, number and line in turn; EasyEDA Pro writes the designator
 after the drawing. So of two navy texts drawn back to back the first is the value,
-however much it looks like a designator ("Z80" over "U1"), and a pin whose ends both
+however much it looks like a designator ("Z80" over "U1"), the navy text drawn right
+before a part, with nothing drawn between, names it whatever its form (MOUSE,
+KEYBOARD), and a pin whose ends both
 meet other lines tip to tip belongs to the part drawn with it. A part's units are
 numbered after a dot, as in U3.1. A section frame drawn next to a part inside it
 is not that part's box: a box's pins connect outside it, and a part whose pins all
