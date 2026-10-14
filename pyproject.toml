@@ -4,6 +4,7 @@ dynamic = ["version"]
 description = "Recover netlists from vector schematic PDFs."
 readme = "README.md"
 license = "Apache-2.0"
+authors = [{ name = "Rza Mirzayev" }]
 requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.26",
@@ -12,6 +13,9 @@ dependencies = [
     "scipy>=1.11",
     "typer>=0.12",
 ]
+
+[project.urls]
+Repository = "https://github.com/rzadevv/schem2net"
 
 [project.scripts]
 schem2net = "schem2net.cli:main"
