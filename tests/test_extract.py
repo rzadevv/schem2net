@@ -1775,3 +1775,16 @@ def test_a_label_with_an_underscore_still_sits_on_its_wire():
     assert _on_wire(label, wires, index)
     across = Text(0, "LCD_D1", (0, 8.8, 9, 11.2), 2.4, 0.0, (128, 128, 128))
     assert not _on_wire(across, wires, index)  # a text the wire runs through the middle of
+
+
+def test_orcad_names_differing_in_case_or_sheet_list_are_one_net():
+    """Allegro takes net names in capitals, and an off-page name may carry the list of
+    sheets it goes to in the same text: RESETSTATz and RESETSTATZ [2,3] are one net."""
+    from schem2net.scene import drop_sheet_references
+
+    scene = Scene(page=1)
+    scene.labels = [Label("RESETSTATZ [2,3]", "local", (0, 0, 9, 1), 0.0)]
+    drop_sheet_references(scene, sheets=3)
+    assert scene.labels[0].text == "RESETSTATZ"
+    assert Netlister(case_blind=True)._key("RESETSTATz") == "RESETSTATZ"
+    assert Netlister()._key("RESETSTATz") == "RESETSTATz"

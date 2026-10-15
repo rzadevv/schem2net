@@ -107,6 +107,15 @@ def drop_sheet_references(scene: Scene, sheets: int) -> None:
         other = found and int(found.group(1)) != scene.page and 1 <= int(found.group(1)) <= sheets
         if other and found.start() > 0:
             label.text = label.text[: found.start()]
+        # The list of sheets may be written in the same text, after the name.
+        listed = SHEET_LIST.search(label.text)
+        if (
+            listed
+            and listed.end() == len(label.text.rstrip())
+            and listed.start() > 0
+            and all(1 <= int(n) <= sheets for n in listed.group(1).split(","))
+        ):
+            label.text = label.text[: listed.start()].rstrip()
     scene.labels = [
         label
         for label in scene.labels

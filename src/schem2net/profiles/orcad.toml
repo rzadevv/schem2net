@@ -13,6 +13,7 @@ note = [[128, 0, 0]]  # title block and free text
 
 [labels]
 span_pages = true  # a net alias joins its name throughout the schematic
+case_blind = true  # Allegro takes net names in capitals: RESETSTATz is RESETSTATZ
 sheet_reference = true  # off-page names may list the pages the net is on: [2,10,11]
 
 [order]

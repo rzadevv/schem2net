@@ -175,7 +175,9 @@ def _extract(
     design.source.generator = generator
     pages = [PageResult(page) for page in doc.pages]
     rules = profile.load(generator)
-    netlister = Netlister(rules.labels_span_pages, rules.colors.get("designator", frozenset()))
+    netlister = Netlister(
+        rules.labels_span_pages, rules.colors.get("designator", frozenset()), rules.names_case_blind
+    )
     for result in pages:
         try:
             _read_page(result, design, rules, printed, region, len(doc.pages))

@@ -56,9 +56,15 @@ class Result(NamedTuple):
 
 
 class Netlister:
-    def __init__(self, labels_span_pages: bool = False, designators: frozenset = frozenset()):
+    def __init__(
+        self,
+        labels_span_pages: bool = False,
+        designators: frozenset = frozenset(),
+        case_blind: bool = False,
+    ):
         # Net labels with one name are one net on every page, unless sheets are nested.
         self.labels_span_pages = labels_span_pages
+        self.case_blind = case_blind
         self.designators = designators  # the designators' own colours, where they have one
         self.nested = False
         self.no_connect: set[tuple] = set()  # pins flagged as left unconnected on purpose
@@ -77,6 +83,11 @@ class Netlister:
         self.label_buses: dict[tuple[str, str], list[tuple[int, busnames.Bus]]] = defaultdict(list)
         # Nodes that name a group bus, with the bus they name: (page, node, bus)
         self.group_names: list[tuple[int, tuple, busnames.Bus]] = []
+
+    def _key(self, name: str) -> str:
+        """A net name as names are matched: in capitals too where case tells nothing."""
+        key = name_key(name)
+        return key.upper() if self.case_blind else key
 
     def join(self, a: tuple, b: tuple, kind: str) -> None:
         self.uf.union(a, b)
@@ -155,7 +166,7 @@ class Netlister:
             if symbol.power:
                 node = ("s", page, si)
                 self.names[node] = symbol.power
-                key = name_key(symbol.power)
+                key = self._key(symbol.power)
                 if symbol.power_hidden:
                     self.hidden_pages[key].add(page)
                     self.join(node, ("hidden", page, key), "global_name")
@@ -179,7 +190,7 @@ class Netlister:
             pin_index.add(k, geometry.bbox_of(line))
         for li, label in enumerate(scene.labels):
             node = ("l", page, li)
-            key = name_key(label.text)
+            key = self._key(label.text)
             self.names[node] = label.text
             if label.kind == "global":
                 self.printed_pages[key].add(page)
@@ -221,7 +232,7 @@ class Netlister:
             child = scene.path + name_key(sheet.name) + "/"
             for k, pin in enumerate(sheet.pins):
                 node = ("sp", page, si, k)
-                key = name_key(pin.name)
+                key = self._key(pin.name)
                 self.names[node] = pin.name
                 self.join(node, ("hier", child, key), "hier_name")
                 bus = busnames.parse(pin.name)
@@ -436,7 +447,7 @@ class Netlister:
         power: dict[tuple, set[str]] = defaultdict(set)
         for node, name in self.names.items():
             if node[0] == "s":
-                power[find(node)].add(name_key(name))
+                power[find(node)].add(self._key(name))
         for root, found in power.items():
             if len(found) > 1:
                 caps[root] = min(caps[root], MERGED_POWER_CONFIDENCE)

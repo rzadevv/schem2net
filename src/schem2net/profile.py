@@ -41,6 +41,7 @@ class Profile:
     designators_in_pin_colour: bool = False
     designators_outside: bool = False  # the libraries place designators outside the body
     labels_span_pages: bool = False
+    names_case_blind: bool = False  # net names differing only in case are one net
     labels_in_outlines: bool = False
     labels_on_wires: bool = False  # a field-coloured name laid along a wire is its label
     labels_show_sheet: bool = False  # "NAME/2": the sheet the net goes on to
@@ -99,6 +100,7 @@ def load(name: str) -> Profile:
         designators_in_pin_colour=order.get("designators_in_pin_colour", False),
         designators_outside=order.get("designators_outside", False),
         labels_span_pages=labels.get("span_pages", False),
+        names_case_blind=labels.get("case_blind", False),
         labels_in_outlines=labels.get("in_outlines", False),
         labels_on_wires=labels.get("on_wires", False),
         labels_show_sheet=labels.get("sheet_reference", False),
