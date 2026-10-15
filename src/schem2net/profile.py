@@ -46,6 +46,7 @@ class Profile:
     labels_on_wires: bool = False  # a field-coloured name laid along a wire is its label
     labels_show_sheet: bool = False  # "NAME/2": the sheet the net goes on to
     text_font: str | None = None
+    texts_by_shape: bool = True  # texts in colours of no role take a role learned from shape
     not_power_nets: frozenset[str] = frozenset()
     power_names_in_labels: bool = False
     label_name_gap: float | None = None  # mm from a flag to its name in the label colour
@@ -105,6 +106,7 @@ def load(name: str) -> Profile:
         labels_on_wires=labels.get("on_wires", False),
         labels_show_sheet=labels.get("sheet_reference", False),
         text_font=text.get("font"),
+        texts_by_shape=text.get("by_shape", True),
         not_power_nets=frozenset(power.get("not_nets", [])),
         power_names_in_labels=power.get("names_in_labels", False),
         label_name_gap=power.get("label_gap"),

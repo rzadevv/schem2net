@@ -365,3 +365,17 @@ def test_a_reading_that_leaves_designators_without_parts_loses_the_guess(monkeyp
     doc = Document(pages=[Page(1, 10, 10)], metadata={})
     found = pipeline._read_as_any(doc, Design(source=Source(file="x")), None)
     assert found.design.source.generator == "orcad"
+
+
+def test_a_page_with_no_line_in_the_wire_colour_is_known_by_it():
+    """Wires drawn blue in a theme of the designer's own leave no line in the wire
+    colour: such a page is read by shape too, and the better reading kept."""
+    from schem2net import pipeline, profile
+    from schem2net.primitives import Path as Line
+
+    easyeda = profile.load("easyeda")
+    page = Page(1, 100, 100)
+    page.paths = [Line(0, [[(0, 0), (10, 0)]], 0.2, (0, 0, 255), None)]
+    assert not pipeline._in_colour(page, easyeda, "wire")
+    page.paths.append(Line(1, [[(0, 5), (10, 5)]], 0.2, (0, 135, 0), None))
+    assert pipeline._in_colour(page, easyeda, "wire")

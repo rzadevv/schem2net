@@ -396,6 +396,13 @@ finds few parts and fewer connections, and leaves many designators unplaced. So 
 the designer's own that no profile fits: its ink is taken as black first. The
 design then carries a `generator_guessed` issue naming the generator taken.
 
+A theme can also move a role to another colour altogether: wires drawn blue, which
+the profile gives to flags. A page with not one line in the generator's wire colour
+is read twice, as it is and as a page in black, roles from shapes, and the reading
+that joins more pins is kept, less the pins of the parts whose designators it left
+without one. EasyEDA's learned text roles are kept to pages read by shape; on its
+colour pages they misjudge more texts than they mend.
+
 Designers can change the colour theme, so a label may come in a colour the
 profile does not know. Such texts get their role from the same text model, with
 everything in a known colour kept as it is: a string the PDF splits into pieces

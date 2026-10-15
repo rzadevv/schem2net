@@ -139,15 +139,8 @@ def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | Non
         if not roles.learned(generator):
             continue
         trial = _extract(black, design.model_copy(deep=True), generator, True, region)
-        # Pins known by their numbers: a wrong generator's reading finds few of those.
-        known = [[p for p in net.pins if not unnumbered(p[1])] for net in trial.design.nets]
-        joined = sum(len(pins) for pins in known if len(pins) >= 2)
-        # It also leaves designators naming parts it did not find: each costs the pins
-        # such a part has, on average, in that reading.
-        parts = trial.design.components
-        per_part = sum(len(c.pins) for c in parts) / max(len(parts), 1)
-        lost = sum(i.kind == "designator_without_part" for i in trial.design.issues)
-        joined -= per_part * lost
+        d = trial.design
+        joined = _reading_score(d.nets, d.components, d.issues)
         if joined > most:
             best, most = trial, joined
     if best:
@@ -155,6 +148,22 @@ def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | Non
             Issue(kind="generator_guessed", detail=best.design.source.generator)
         )
     return best
+
+
+def _reading_score(nets, components, issues) -> float:
+    """How much a reading joins, to choose between readings: pins known by their numbers
+    on nets of two or more, less the pins of the parts whose designators it left without
+    a part. A wrong reading finds few parts, fewer connections, and leaves designators."""
+    known = [[p for p in net.pins if not unnumbered(p[1])] for net in nets]
+    joined = sum(len(pins) for pins in known if len(pins) >= 2)
+    per_part = sum(len(c.pins) for c in components) / max(len(components), 1)
+    lost = sum(i.kind == "designator_without_part" for i in issues)
+    return joined - per_part * lost
+
+
+def _in_colour(page: Page, rules: profile.Profile, role: str) -> bool:
+    """Whether any line of the page is in the role's colour."""
+    return any(rules.is_(role, path.stroke) for path in page.paths if path.stroke)
 
 
 def _in_black(page: Page) -> Page:
@@ -225,12 +234,33 @@ def _read_page(
     if kind != "vector":
         design.issues.append(Issue(kind=f"{kind}_page", page=result.page.number))
         return
+    # A drawing with not one line in the generator's wire colour may be in a theme of the
+    # designer's own, wires blue say, or have no wires at all: it is read both as it is
+    # and as a page in black, roles from shapes, and the reading that joins more is kept.
+    if not _in_colour(result.page, rules, "wire") and roles.learned(rules.name):
+        readings = []
+        for page in (result.page, _in_black(result.page)):
+            trial = PageResult(page)
+            _read_drawing(trial, rules, printed, pages)
+            netlister = Netlister()
+            netlister.add_page(trial.scene, trial.symbols)
+            found = netlister.result()
+            readings.append((_reading_score(found.nets, found.components, found.issues), trial))
+        best = max(readings, key=lambda r: r[0])[1]
+        result.page, result.scene, result.symbols = best.page, best.scene, best.symbols
+        return
+    _read_drawing(result, rules, printed, pages)
+
+
+def _read_drawing(result: PageResult, rules: profile.Profile, printed: bool, pages: int) -> None:
+    """The page's scene and symbols, roles taken from its colours, or from its shapes
+    where it is in black."""
     page_rules = rules
     if roles.colourless(result.page):  # printed in black: roles from shapes
         result.page = roles.recolour(result.page, rules)
         # Designators and the texts beside them are told apart by colour no more.
         page_rules = replace(rules, colors={**rules.colors, "designator": frozenset()})
-    else:  # texts in colours of the designer's own: roles from what they sit on
+    elif rules.texts_by_shape:  # texts in colours of the designer's own: from what they sit on
         result.page = roles.name_unknown_texts(result.page, rules)
     if rules.lines_in_pieces:  # once roles are known, as the models see lines apart
         result.page = ingest.joined_lines(result.page, rules)

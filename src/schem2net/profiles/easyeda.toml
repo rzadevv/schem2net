@@ -36,3 +36,6 @@ scale = 1.3889  # the export writes one EasyEDA unit, 10 mil, as one PDF point
 
 [wires]
 grid = [2.54, 1.27]  # mm, for pages printed rather than exported: 10 mil units
+
+[text]
+by_shape = false  # learned text roles do not yet beat EasyEDA's colours; pages read by shape still use them

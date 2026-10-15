@@ -99,7 +99,7 @@ dependencies; the trees are written to `profiles/roles.npz`.
 The KiCad, Altium and Eagle trees in that file were learned before the PDF reader
 last changed, and are kept. Learned again now, they change the reading of a few
 colour pages, on the dev splits for the worse: corpus B's loses 0.3 points of pin
-accuracy. So `build-roles` reproduces the OrCAD trees but not the others.
+accuracy. So `build-roles` reproduces the OrCAD and EasyEDA trees but not the others.
 
 To see how pages printed in black fare, recolour a dev PDF's ink to black and
 read it again. With models learned without the board in question, dev pages
@@ -133,7 +133,7 @@ Four files in `profiles/` are learned from the dev splits, never from test:
 
 | File | Learned from | Made by |
 |---|---|---|
-| `roles.npz` | colour pages of A, B, C and F | `schem2net build-roles` |
+| `roles.npz` | colour pages of A, B, C, E and F | `schem2net build-roles` |
 | `designators.npz` | A to E, with their truth netlists | `schem2net build-designators` |
 | `eagle_font.json`, `eagle_fills.json` | C, with its `.sch` files | `schem2net build-font c` |
 

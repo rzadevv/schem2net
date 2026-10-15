@@ -418,7 +418,7 @@ def build_roles(
     from schem2net.bench import corpus as corpora
     from schem2net.bench import roles as role_examples
 
-    generators = {"a": "kicad", "b": "altium", "c": "eagle", "f": "orcad"}
+    generators = {"a": "kicad", "b": "altium", "c": "eagle", "e": "easyeda", "f": "orcad"}
     jobs = []
     for name, generator in generators.items():
         try:
