@@ -76,8 +76,10 @@ inductors and fuses have few pins, so their prefixes cost more by a part of many
 Where the designator is drawn first, as in KiCad, the first text after a part names
 it whatever its form, GPIO1-1 or USB-Serial/JTAG1: when it lies clear of the part,
 when the part's own texts hold no usual designator, and never ahead of one at the
-same distance, for a pin name may be drawn first too. A lone letter never names a
-part.
+same distance, for a pin name may be drawn first too. Any other word the designator
+model gives some chance competes as well, at the cost of its doubt, so LCD_CON beside
+its connector wins over LCD_D1, a net name of the usual form the model is sure names
+no part. A lone letter never names a part.
 
 A learned model also weighs every text (see the benchmark notes): how likely it is a
 designator, from what it says, where it sits and what was drawn around it. A text

@@ -1788,3 +1788,18 @@ def test_orcad_names_differing_in_case_or_sheet_list_are_one_net():
     assert scene.labels[0].text == "RESETSTATZ"
     assert Netlister(case_blind=True)._key("RESETSTATz") == "RESETSTATZ"
     assert Netlister()._key("RESETSTATz") == "RESETSTATz"
+
+
+def test_a_word_the_model_gives_some_chance_can_name_a_part():
+    """LCD_CON beside its connector names it, against LCD_D1, a net name of the usual
+    form the model is sure is no designator."""
+    eagle = profile.load("eagle")
+    grey = (128, 128, 128)
+    pins = [symbols.Pin(k, ((10, 10 + k), (8, 10 + k)), str(k + 1)) for k in range(4)]
+    part = symbols.Symbol([], (8, 9.5, 14, 14), pins, body=(10, 9.5, 14, 14))
+    name = Text(0, "LCD_CON", (10, 7.8, 16, 9.1), 1.3, 0.0, grey, 1)
+    net = Text(1, "LCD_D1", (16.7, 11, 22, 12.3), 1.3, 0.0, grey, 2)
+    texts = fields._Texts([name, net])
+    likely = {id(name): 0.14, id(net): 0.0}
+    fields._assign_refs([part], texts, None, eagle, set(), set(), likely)
+    assert part.ref == "LCD_CON"

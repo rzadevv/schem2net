@@ -55,6 +55,7 @@ VALUE_FIRST_COST = REF_SEARCH  # "Z80" drawn right before "U1" is the value
 UNLIKELY_COST = REF_SEARCH  # for a text the learned model is sure is no designator
 SURE_DESIGNATOR = 0.9  # the model's certainty that admits a name of no usual form
 UNUSUAL_FORM_COST = 1.0  # mm; a name of no usual form gives way at the same distance
+WORD_FLOOR = 0.1  # the model's belief below which a word of no usual form names no part
 AMONG_VALUES_COST = 2.5  # mm; "A20" drawn among values is likely one too
 FUNCTION_NAME_GAP = 5.0  # mm from a part to a name such as I2C or PWR
 LAYER_NEIGHBOURS = 6  # texts drawn either side of a name, among which other names are
@@ -548,8 +549,12 @@ def _assign_refs(
             # Where each part is drawn right after its designator, that text names it
             # whatever its form: MOUSE, KEYBOARD.
             first = first or (ordered or {}).get(id(symbol)) is text
+            # Any other word the model gives some chance competes too, at the cost of its
+            # doubt: LCD_CON beside its connector, against LCD_D1, a net name there.
+            weighed = p is not None and p >= WORD_FLOOR and gap > 0
             if not match and not (
-                _name_like(text.text) and (surely or (first and not (runs and _own_ref(symbol))))
+                _name_like(text.text)
+                and (surely or weighed or (first and not (runs and _own_ref(symbol))))
             ):
                 continue
             cost = gap
