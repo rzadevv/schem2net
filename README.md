@@ -31,7 +31,7 @@ Early development.
 - Other generators are not supported yet.
 
 Figures are for each corpus's test split, whose boards the learned models never
-saw, and its holdout, read once with the final code; both with KiCad's and
+saw, and its holdout, read once at commit 0cf46ce; both with KiCad's and
 SparkFun's part libraries indexed (see `docs/benchmark.md`). In brackets, a 95%
 interval from a bootstrap over the boards: with three to forty boards a split, a
 few points either way is noise.
@@ -46,9 +46,9 @@ few points either way is noise.
 | C, Eagle | Holdout | 21 | 1,185 | 0.81 (0.78–0.85) | 0.81 (0.77–0.87) |
 | D, Olimex | Test | 20 | 6,057 | 0.85 (0.81–0.90) | 0.81 (0.75–0.88) |
 | D, Olimex | Holdout | 7 | 1,911 | 0.86 (0.74–0.91) | 0.88 (0.69–0.94) |
-| E, EasyEDA | Test | 14 | 1,027 | 0.62 (0.47–0.76) | 0.50 (0.27–0.87) |
+| E, EasyEDA | Test | 14 | 1,027 | 0.64 (0.50–0.76) | 0.50 (0.27–0.87) |
 | E, EasyEDA | Holdout | 3 | 193 | 0.78 (0.61–0.86) | 0.78 (0.00–0.87) |
-| F, OrCAD | Test | 8 | 10,702 | 0.95 (0.93–0.96) | 0.97 (0.95–0.97) |
+| F, OrCAD | Test | 8 | 10,702 | 0.95 (0.93–0.96) | 0.97 (0.95–0.98) |
 | F, OrCAD | Holdout | 5 | 434 | 0.97 (0.96–1.00) | 0.92 (0.89–1.00) |
 
 Accuracy says how much is right; what a user also needs is to know where the rest
@@ -62,15 +62,15 @@ share of them that point at something wrong.
 |---|---|---|---|---|---|---|---|
 | A, KiCad | Test | 0.2% (0.0–0.5) | 1.6% | 0.97 | 9.4 | 0.68 | 0.83 |
 | A, KiCad | Holdout | 0.4% (0.0–0.7) | 10.8% | 0.87 | 6.9 | 0.72 | 0.82 |
-| B, Altium, drawing only | Test | 2.2% (0.0–3.4) | 9.4% | 0.54 | 7.3 | 0.67 | 0.75 |
+| B, Altium, drawing only | Test | 2.2% (0.0–3.4) | 9.4% | 0.54 | 7.9 | 0.70 | 0.75 |
 | B, Altium, drawing only | Holdout | 0.4% (0.0–1.2) | 6.7% | 0.96 | 17.9 | 0.64 | 0.67 |
-| C, Eagle | Test | 0.8% (0.2–1.5) | 16.7% | 0.74 | 11.6 | 0.66 | 0.85 |
+| C, Eagle | Test | 0.7% (0.1–1.4) | 16.7% | 0.77 | 14.6 | 0.60 | 0.87 |
 | C, Eagle | Holdout | 0.8% (0.4–1.5) | 16.3% | 0.69 | 14.3 | 0.51 | 0.71 |
-| D, Olimex | Test | 0.4% (0.1–0.7) | 10.8% | 0.89 | 10.5 | 0.89 | 0.65 |
+| D, Olimex | Test | 0.3% (0.1–0.7) | 10.9% | 0.91 | 12.0 | 0.78 | 0.80 |
 | D, Olimex | Holdout | 0.1% (0.0–0.2) | 13.0% | 0.95 | 7.5 | 0.76 | 0.86 |
-| E, EasyEDA | Test | 0.3% (0.0–0.7) | 29.6% | 0.96 | 12.3 | 0.80 | 0.86 |
+| E, EasyEDA | Test | 0.3% (0.0–0.7) | 28.0% | 0.96 | 14.6 | 0.71 | 0.86 |
 | E, EasyEDA | Holdout | 1.0% (0.0–11.1) | 13.5% | 0.88 | 16.6 | 0.88 | 0.67 |
-| F, OrCAD | Test | 0.5% (0.2–1.0) | 2.6% | 0.77 | 4.9 | 0.63 | 0.38 |
+| F, OrCAD | Test | 0.5% (0.1–1.0) | 2.5% | 0.77 | 5.1 | 0.65 | 0.38 |
 | F, OrCAD | Holdout | 0.0% (0.0–0.0) | 2.8% | 1.00 | 5.8 | 0.32 | 1.00 |
 
 ## Install
