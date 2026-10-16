@@ -23,9 +23,10 @@ class PdfBuilder:
         raw.FPDFPath_BezierTo(path, *c1, *c2, *end)
         self._stroke(path, width, (0, 0, 0))
 
-    def text(self, content, x, y, size=10.0):
+    def text(self, content, x, y, size=10.0, color=(0, 0, 0)):
         font = raw.FPDFText_LoadStandardFont(self.pdf.raw, b"Helvetica")
         obj = raw.FPDFPageObj_CreateTextObj(self.pdf.raw, font, size)
+        raw.FPDFPageObj_SetFillColor(obj, *color, 255)
         encoded = (content + "\x00").encode("utf-16-le")
         buffer = ctypes.create_string_buffer(encoded, len(encoded))
         raw.FPDFText_SetText(obj, ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ushort)))
@@ -43,6 +44,43 @@ class PdfBuilder:
         raw.FPDFPageObj_SetStrokeWidth(path, width)
         raw.FPDFPageObj_SetStrokeColor(path, *color, 255)
         raw.FPDFPage_InsertObject(self.page.raw, path)
+
+
+MM = 72 / 25.4
+KICAD_INK = {
+    "symbol": (132, 0, 0),
+    "wire": (0, 150, 0),
+    "field": (0, 100, 100),
+    "pin_number": (169, 0, 0),
+    "local_label": (15, 15, 15),
+}
+
+
+def resistor_page(ink):
+    """Three resistors in a row at KiCad's sizes, each role in its ink: the top ends wired
+    together under the label VIN, the first two bottom ends too, the third left open."""
+    b = PdfBuilder(400, 300)
+
+    def line(*points, role, width=0.152):
+        b.line(*[(x * MM, 300 - y * MM) for x, y in points], width=width * MM, color=ink[role])
+
+    def text(content, x, y, role):
+        # Helvetica at 1.778 mm draws R1 1.27 mm high, KiCad's usual text.
+        b.text(content, x * MM, 300 - y * MM, size=1.778 * MM, color=ink[role])
+
+    for i, x in enumerate((30.48, 50.8, 71.12)):
+        body = [(x - 1, 30.48), (x + 1, 30.48), (x + 1, 35.48), (x - 1, 35.48), (x - 1, 30.48)]
+        line(*body, role="symbol", width=0.254)
+        line((x, 30.48), (x, 27.94), role="symbol")
+        line((x, 35.48), (x, 38.02), role="symbol")
+        text("1", x - 1.2, 29.6, "pin_number")
+        text("2", x - 1.2, 37.3, "pin_number")
+        text(f"R{i + 1}", x + 2, 32.48, "field")
+        text(("1k", "2k2", "4k7")[i], x + 2, 34.48, "field")
+    line((30.48, 27.94), (71.12, 27.94), role="wire")
+    line((30.48, 38.02), (50.8, 38.02), role="wire")
+    text("VIN", 35, 27.6, "local_label")
+    return b
 
 
 @pytest.fixture

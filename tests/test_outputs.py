@@ -388,3 +388,37 @@ def test_a_page_with_no_line_in_the_wire_colour_is_known_by_it():
     assert not pipeline._in_colour(page, easyeda, "wire")
     page.paths.append(Line(1, [[(0, 5), (10, 5)]], 0.2, (0, 135, 0), None))
     assert pipeline._in_colour(page, easyeda, "wire")
+
+
+def _joined(design):
+    return sorted(sorted({ref for ref, _ in net.pins}) for net in design.nets)
+
+
+def test_a_pdf_in_black_that_names_no_maker_is_read_as_the_best_guess(tmp_path, monkeypatch):
+    from schem2net import pipeline
+
+    from .conftest import KICAD_INK, resistor_page
+
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))  # no part library
+    black = dict.fromkeys(KICAD_INK, (0, 0, 0))
+    design = pipeline.extract(resistor_page(black).save(tmp_path / "black.pdf"))
+    assert any(i.kind == "generator_guessed" for i in design.issues)
+    assert _joined(design) == [["R1", "R2"], ["R1", "R2", "R3"]]
+
+
+def test_a_kicad_page_with_wires_in_a_colour_of_its_own_is_read_by_shape(tmp_path, monkeypatch):
+    from schem2net import pdf, pipeline, roles
+
+    from .conftest import KICAD_INK, resistor_page
+
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    file = resistor_page({**KICAD_INK, "wire": (0, 0, 255)}).save(tmp_path / "blue.pdf")
+
+    def read():
+        doc = pdf.read(file)
+        found = pipeline._extract(doc, Design(source=Source(file="x")), "kicad", False, None)
+        return _joined(found.design)
+
+    assert read() == [["R1", "R2"], ["R1", "R2", "R3"]]
+    monkeypatch.setattr(roles, "learned", lambda generator: False)
+    assert read() == []  # read in its colours alone, the blue lines are no wires
