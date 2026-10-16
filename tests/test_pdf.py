@@ -90,3 +90,12 @@ def test_page_picture_is_a_png_as_wide_as_the_page_reads(tmp_path, pdf_builder):
     width, height = struct.unpack(">II", png[16:24])
     assert width > height
     assert width == pytest.approx(792 * MM * pdf.PICTURE_DENSITY, rel=0.01)
+
+
+def test_a_page_pdfium_cannot_load_is_an_input_error(tmp_path, pdf_builder):
+    b = pdf_builder()
+    b.line((72, 72), (144, 72))
+    file = b.save(tmp_path / "a.pdf")
+    file.write_bytes(file.read_bytes().replace(b"/Type/Page>>", b"/Type/Pagx>>"))
+    with pytest.raises(pdf.InputError):
+        pdf.read(file)

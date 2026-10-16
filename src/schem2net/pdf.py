@@ -33,6 +33,8 @@ def read(file: str | FilePath) -> Document:
     try:
         pages = [_read_page(pdf[i], i + 1) for i in range(len(pdf))]
         return Document(pages=pages, metadata=pdf.get_metadata_dict(skip_empty=True))
+    except pdfium.PdfiumError as e:
+        raise InputError(f"{file}: a page that cannot be read ({e})") from None
     finally:
         pdf.close()
 
