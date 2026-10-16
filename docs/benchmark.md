@@ -163,7 +163,7 @@ corpus's groups, or two where it has fewer than 14, are the `holdout`; the next
 fill `test` to the corpus's share of designs (a tenth for A, a third for B, C and
 F, half for D and E); the rest are `dev`. Tune on `dev`. Report `test`. The holdout
 is read once, with the final code, and only with `SCHEM2NET_HOLDOUT=1` set; `all`
-means dev and test.
+means dev and test. The holdout was first read on 2026-10-16, at commit 0cf46ce.
 
 Before October 2026 projects were split by a hash of their names. That put
 revisions of one board on both sides (corpus D's A20-OLinuXino-MICRO rev D and

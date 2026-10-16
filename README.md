@@ -31,18 +31,25 @@ Early development.
 - Other generators are not supported yet.
 
 Figures are for each corpus's test split, whose boards the learned models never
-saw, read with KiCad's and SparkFun's part libraries indexed (see
-`docs/benchmark.md`). In brackets, a 95% interval from a bootstrap over the
-boards: with six to forty boards a split, a few points either way is noise.
+saw, and its holdout, read once with the final code; both with KiCad's and
+SparkFun's part libraries indexed (see `docs/benchmark.md`). In brackets, a 95%
+interval from a bootstrap over the boards: with three to forty boards a split, a
+few points either way is noise.
 
-| Corpus | Designs | Pins | Pin accuracy | Connection F1 |
-|---|---|---|---|---|
-| A, KiCad | 6 | 1,154 | 0.93 (0.88–1.00) | 0.90 (0.85–1.00) |
-| B, Altium, drawing only | 12 | 3,887 | 0.86 (0.76–0.90) | 0.91 (0.86–0.94) |
-| C, Eagle | 39 | 2,824 | 0.80 (0.76–0.84) | 0.76 (0.70–0.82) |
-| D, Olimex | 20 | 6,057 | 0.85 (0.81–0.90) | 0.81 (0.75–0.88) |
-| E, EasyEDA | 14 | 1,027 | 0.62 (0.47–0.76) | 0.50 (0.27–0.87) |
-| F, OrCAD | 8 | 10,702 | 0.95 (0.93–0.96) | 0.97 (0.95–0.97) |
+| Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
+|---|---|---|---|---|---|
+| A, KiCad | Test | 6 | 1,154 | 0.93 (0.88–1.00) | 0.90 (0.85–1.00) |
+| A, KiCad | Holdout | 11 | 3,924 | 0.86 (0.83–0.94) | 0.88 (0.69–0.94) |
+| B, Altium, drawing only | Test | 12 | 3,887 | 0.86 (0.76–0.90) | 0.91 (0.86–0.94) |
+| B, Altium, drawing only | Holdout | 6 | 1,646 | 0.84 (0.78–0.90) | 0.82 (0.79–0.88) |
+| C, Eagle | Test | 39 | 2,824 | 0.80 (0.76–0.84) | 0.76 (0.70–0.82) |
+| C, Eagle | Holdout | 21 | 1,185 | 0.81 (0.78–0.85) | 0.81 (0.77–0.87) |
+| D, Olimex | Test | 20 | 6,057 | 0.85 (0.81–0.90) | 0.81 (0.75–0.88) |
+| D, Olimex | Holdout | 7 | 1,911 | 0.86 (0.74–0.91) | 0.88 (0.69–0.94) |
+| E, EasyEDA | Test | 14 | 1,027 | 0.62 (0.47–0.76) | 0.50 (0.27–0.87) |
+| E, EasyEDA | Holdout | 3 | 193 | 0.78 (0.61–0.86) | 0.78 (0.00–0.87) |
+| F, OrCAD | Test | 8 | 10,702 | 0.95 (0.93–0.96) | 0.97 (0.95–0.97) |
+| F, OrCAD | Holdout | 5 | 434 | 0.97 (0.96–1.00) | 0.92 (0.89–1.00) |
 
 Accuracy says how much is right; what a user also needs is to know where the rest
 is. Silent errors are pins on a wrong net that nothing flags. Pins not found are on
@@ -51,14 +58,20 @@ hides; most of the accuracy lost on corpora C to E is here. Review items are the
 doubtful nets and the issues naming pins, each one thing to check; precision is the
 share of them that point at something wrong.
 
-| Corpus | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
-|---|---|---|---|---|---|---|
-| A, KiCad | 0.2% (0.0–0.5) | 1.6% | 0.97 | 9.4 | 0.68 | 0.83 |
-| B, Altium, drawing only | 2.2% (0.0–3.4) | 9.4% | 0.54 | 7.3 | 0.67 | 0.75 |
-| C, Eagle | 0.8% (0.2–1.5) | 16.7% | 0.74 | 11.6 | 0.66 | 0.85 |
-| D, Olimex | 0.4% (0.1–0.7) | 10.8% | 0.89 | 10.5 | 0.89 | 0.65 |
-| E, EasyEDA | 0.3% (0.0–0.7) | 29.6% | 0.96 | 12.3 | 0.80 | 0.86 |
-| F, OrCAD | 0.5% (0.2–1.0) | 2.6% | 0.77 | 4.9 | 0.63 | 0.38 |
+| Corpus | Split | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
+|---|---|---|---|---|---|---|---|
+| A, KiCad | Test | 0.2% (0.0–0.5) | 1.6% | 0.97 | 9.4 | 0.68 | 0.83 |
+| A, KiCad | Holdout | 0.4% (0.0–0.7) | 10.8% | 0.87 | 6.9 | 0.72 | 0.82 |
+| B, Altium, drawing only | Test | 2.2% (0.0–3.4) | 9.4% | 0.54 | 7.3 | 0.67 | 0.75 |
+| B, Altium, drawing only | Holdout | 0.4% (0.0–1.2) | 6.7% | 0.96 | 17.9 | 0.64 | 0.67 |
+| C, Eagle | Test | 0.8% (0.2–1.5) | 16.7% | 0.74 | 11.6 | 0.66 | 0.85 |
+| C, Eagle | Holdout | 0.8% (0.4–1.5) | 16.3% | 0.69 | 14.3 | 0.51 | 0.71 |
+| D, Olimex | Test | 0.4% (0.1–0.7) | 10.8% | 0.89 | 10.5 | 0.89 | 0.65 |
+| D, Olimex | Holdout | 0.1% (0.0–0.2) | 13.0% | 0.95 | 7.5 | 0.76 | 0.86 |
+| E, EasyEDA | Test | 0.3% (0.0–0.7) | 29.6% | 0.96 | 12.3 | 0.80 | 0.86 |
+| E, EasyEDA | Holdout | 1.0% (0.0–11.1) | 13.5% | 0.88 | 16.6 | 0.88 | 0.67 |
+| F, OrCAD | Test | 0.5% (0.2–1.0) | 2.6% | 0.77 | 4.9 | 0.63 | 0.38 |
+| F, OrCAD | Holdout | 0.0% (0.0–0.0) | 2.8% | 1.00 | 5.8 | 0.32 | 1.00 |
 
 ## Install
 
