@@ -11,7 +11,7 @@ from typing import Annotated
 
 import typer
 
-from schem2net import __version__, fills, kicad_sch, library, pdf, pipeline, report, svg
+from schem2net import __version__, kicad_sch, library, pdf, pipeline, report, svg
 from schem2net import export as exporters
 from schem2net.ir import LOW_CONFIDENCE, Design
 
@@ -387,6 +387,7 @@ def build_font(
     corpus: CorpusName = "c",
     bench_dir: BenchDir = Path("bench"),
     out_dir: Annotated[Path, typer.Option("-o", "--out-dir")] = Path("src/schem2net/profiles"),
+    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
     """Learn Eagle's glyph shapes, stroked and outlined, from a corpus (dev split)."""
     from schem2net.bench import corpus as corpora
@@ -394,27 +395,18 @@ def build_font(
 
     loaded = corpora.load(corpus, bench_dir)
     dirs = [loaded.build_dir(p) for p in loaded.projects if loaded.in_split(p, "dev")]
-    cache = bench_dir / "out" / f"font-samples-{corpus}.json"
-    if cache.exists():
-        saved = json.loads(cache.read_text())
-        found = [(c, [tuple(map(tuple, seg)) for seg in s]) for c, s in saved["strokes"]]
-        filled = [(c, fills.from_json(s)) for c, s in saved["fills"]]
-    else:
-        jobs = [(d / "schematic.sch", d / "schematic.pdf") for d in dirs]
-        with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
-            got = list(pool.map(font.samples_of, jobs))
-        found = [s for stroked, _ in got for s in stroked]
-        filled = [s for _, outlined in got for s in outlined]
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        saved = {"strokes": found, "fills": [(c, fills.to_json(s)) for c, s in filled]}
-        cache.write_text(json.dumps(saved))
+    jobs = [(d / "schematic.sch", d / "schematic.pdf") for d in dirs]
+    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
+        got = list(pool.map(font.samples_of, jobs))
+    found = [s for stroked, _ in got for s in stroked]
+    filled = [s for _, outlined in got for s in outlined]
     table = font.build(found)
     # Then glyphs too rare to place by position, from lines missing only them.
     shapes = [
         (e["char"], [tuple(map(tuple, seg)) for seg in sh]) for e in table for sh in e["shapes"]
     ]
     jobs = [(d / "schematic.sch", d / "schematic.pdf", shapes) for d in dirs]
-    with ProcessPoolExecutor(max_workers=3) as pool:
+    with ProcessPoolExecutor(max_workers=workers) as pool:
         found += [s for got in pool.map(font.gap_samples_of, jobs) for s in got]
     table = font.build(found)
     font.write(table, out_dir / "eagle_font.json")
@@ -432,6 +424,7 @@ def build_roles(
     output: Annotated[Path, typer.Option("-o", "--output")] = Path(
         "src/schem2net/profiles/roles.npz"
     ),
+    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
     """Learn path and text roles from the colour pages of each corpus's dev split, for
     reading pages printed in black. Needs scikit-learn (the dev dependencies)."""
@@ -453,7 +446,7 @@ def build_roles(
             if loaded.in_split(p, "dev")
         ]
     examples: dict[str, list] = {}
-    with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
+    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
         for (generator, _), pages in zip(jobs, pool.map(role_examples.rows, jobs), strict=True):
             examples.setdefault(generator, []).append(pages)
     with output.open("wb") as f:
