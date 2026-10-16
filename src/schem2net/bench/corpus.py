@@ -17,10 +17,12 @@ import tomllib
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
 from schem2net import bookmarks, eagle, easyeda, export, kicad
 from schem2net.bench.score import score
+from schem2net.geometry import UnionFind
 
 IMAGE = "schem2net-kicad:10.0.6"
 KICAD_DEMOS = "/usr/share/kicad/demos"
@@ -45,6 +47,7 @@ class Project:
     repo: str | None = None
     commit: str | None = None
     license: str | None = None
+    group: str | None = None  # projects that share a group share a split; by default, a repo
 
 
 @dataclass(frozen=True)
@@ -55,9 +58,59 @@ class Corpus:
     projects: list[Project]
 
     def split(self, project: Project) -> str:
-        """Fixed dev/test assignment derived from the project name."""
-        digest = hashlib.sha256(project.name.encode()).digest()
-        return "test" if digest[0] < 256 * self.test_share else "dev"
+        """dev, test or holdout, fixed by the project's group; copy for a design whose
+        true netlist an earlier one has too, which is scored nowhere."""
+        return self.splits[project.name]
+
+    def in_split(self, project: Project, split: str) -> bool:
+        """Whether a built project is in a split; all is dev and test."""
+        if split == "holdout" and os.environ.get("SCHEM2NET_HOLDOUT") != "1":
+            raise ValueError("the holdout is read once, at the end, with SCHEM2NET_HOLDOUT=1")
+        wanted = ("dev", "test") if split == "all" else (split,)
+        return self.is_built(project) and self.split(project) in wanted
+
+    @cached_property
+    def splits(self) -> dict[str, str]:
+        """Revisions of one board must not be on both sides: projects are split by group,
+        built designs with the same true nets but one are left out, and designs sharing
+        nine tenths of their nets are put in one group."""
+        projects = sorted(self.projects, key=lambda p: p.name)
+        nets = {p.name: _true_nets(self.build_dir(p)) for p in projects if self.is_built(p)}
+        out, kept = {}, {}
+        for name, found in nets.items():
+            if found in kept.values():
+                out[name] = "copy"
+            else:
+                kept[name] = found
+        groups = UnionFind()
+        for p in projects:
+            groups.union(p.name, ("group", _group(p)))
+        names = list(kept)
+        for i, a in enumerate(names):
+            for b in names[i + 1 :]:
+                if _jaccard(kept[a], kept[b]) >= SAME_DESIGN:
+                    groups.union(a, b)
+        members: dict = {}
+        for p in projects:
+            members.setdefault(groups.find(p.name), []).append(p)
+        # Each group goes by the first name of the groups it joined.
+        keys = {root: min(_group(p) for p in group) for root, group in members.items()}
+        ranked = sorted(keys, key=lambda root: _digest(keys[root]))
+        held = HOLDOUT_SMALL if len(ranked) < HOLDOUT_FEWER else round(HOLDOUT * len(ranked))
+        # Groups in the order of their hashes fill test to its share of the designs, so a
+        # corpus of few groups still gets one.
+        sizes = {root: sum(p.name not in out for p in members[root]) for root in ranked}
+        room = self.test_share * sum(sizes[root] for root in ranked[held:])
+        for rank, root in enumerate(ranked):
+            if rank < held:
+                split = "holdout"
+            elif sizes[root] / 2 <= room:
+                split, room = "test", room - sizes[root]
+            else:
+                split = "dev"
+            for p in members[root]:
+                out.setdefault(p.name, split)
+        return out
 
     def build_dir(self, project: Project) -> Path:
         return self.root / "build" / self.name / project.name
@@ -65,6 +118,31 @@ class Corpus:
     def is_built(self, project: Project) -> bool:
         out = self.build_dir(project)
         return (out / "schematic.pdf").exists() and (out / "truth.net").exists()
+
+
+# Designs sharing this share of their true nets are revisions of one board.
+SAME_DESIGN = 0.9
+# The holdout: this share of a corpus's groups, or two where it has fewer than 14.
+HOLDOUT, HOLDOUT_FEWER, HOLDOUT_SMALL = 0.15, 14, 2
+
+
+def _group(project: Project) -> str:
+    if project.group or project.repo:
+        return project.group or project.repo
+    return "kicad-demos/" + project.schematic.rsplit("/", 1)[0]  # a KiCad demo, by its folder
+
+
+def _digest(key: str) -> bytes:
+    return hashlib.sha256(key.encode()).digest()
+
+
+def _true_nets(out: Path) -> frozenset:
+    nets = kicad.read_netlist(out / "truth.net").nets
+    return frozenset(frozenset(n.pins) for n in nets if len(set(n.pins)) >= 2)
+
+
+def _jaccard(a: frozenset, b: frozenset) -> float:
+    return len(a & b) / len(a | b) if a or b else 1.0
 
 
 def load(name: str, root: Path = Path("bench")) -> Corpus:

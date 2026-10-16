@@ -23,11 +23,7 @@ def run(
 ) -> list[tuple[str, Any]]:
     """Each design's name and what judge makes of its prediction and truth, by default
     its Counts."""
-    projects = [
-        p
-        for p in corpus.projects
-        if corpus.is_built(p) and (split == "all" or corpus.split(p) == split)
-    ]
+    projects = [p for p in corpus.projects if corpus.in_split(p, split)]
     if sample is not None and sample < len(projects):
         projects = random.Random(0).sample(projects, sample)
 

@@ -26,8 +26,7 @@ boards. Where they do not, the board has usually moved on or is unfinished,
 so the board is only used when a PDF carries no netlist.
 
 A PDF and a board were kept as a pair only when at least 95% of the board's
-designators appear in the PDF's text. One board per project, so revisions of
-one design do not end up on both sides of the split.
+designators appear in the PDF's text. One revision per board.
 
 Because the truth comes from the PDF, reading it back scores 1.0. Corpus B is
 meant for `--drawing-only`, which ignores the embedded netlist and measures
@@ -154,16 +153,26 @@ so corpus D shows what is read without the maker's library.
 
 ## Splits
 
-Each project is assigned to `dev` or `test` by a hash of its name, so the
-split cannot drift. Corpus A holds out 10%, corpora B, C and F a third, D and E
-half. Tune on `dev`. Report `test`.
+Projects are split by group, so that revisions and sibling boards of one design
+cannot sit on both sides. A project's group is its repository, a KiCad demo's its
+folder, unless the manifest names one: corpus B's two team repositories hold a
+board per folder, each a group of its own, and boards of one family kept in
+repositories of their own (ROHM's BU9000x kits, SparkFun's two Qwiic shields for
+Teensy) share one. Two built designs that share nine tenths of their true nets are
+put in one group too. A design whose true nets an earlier one has already, such as
+a revision whose drawing did not change, is a copy and scored nowhere.
 
-Test figures are not untouched. Rules are judged on dev, but test was benched
-after many changes, and a test board that got worse sent us looking for the
-cause. The splits are kept, as the learned models were trained on the dev
-boards: splitting again would put boards they have seen into test. Take test
-figures as a check on dev, not a blind estimate; with nine to forty designs a
-split, a few points either way is noise.
+Groups are taken in the order of a hash of their names. The first 15% of a
+corpus's groups, or two where it has fewer than 14, are the `holdout`; the next
+fill `test` to the corpus's share of designs (a tenth for A, a third for B, C and
+F, half for D and E); the rest are `dev`. Tune on `dev`. Report `test`. The holdout
+is read once, with the final code, and only with `SCHEM2NET_HOLDOUT=1` set; `all`
+means dev and test.
+
+Before October 2026 projects were split by a hash of their names. That put
+revisions of one board on both sides (corpus D's A20-OLinuXino-MICRO rev D and
+rev E2 have the same nets), and test was benched after many changes. Figures
+from before then are not comparable with these.
 
 ```sh
 schem2net bench a --split dev

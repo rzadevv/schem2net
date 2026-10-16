@@ -290,7 +290,7 @@ def build_corpus(corpus: CorpusName = "a", bench_dir: BenchDir = Path("bench")) 
 @app.command(hidden=True)
 def bench(
     corpus: CorpusName = "a",
-    split: Annotated[str, typer.Option(help="dev, test or all.")] = "dev",
+    split: Annotated[str, typer.Option(help="dev, test, holdout, or all: dev and test.")] = "dev",
     sample: Annotated[int | None, typer.Option(help="Score a fixed random sample.")] = None,
     bench_dir: BenchDir = Path("bench"),
     json_out: Annotated[Path | None, typer.Option("--json", help="Write metrics as JSON.")] = None,
@@ -393,11 +393,7 @@ def build_font(
     from schem2net.bench import font
 
     loaded = corpora.load(corpus, bench_dir)
-    dirs = [
-        loaded.build_dir(p)
-        for p in loaded.projects
-        if loaded.is_built(p) and loaded.split(p) == "dev"
-    ]
+    dirs = [loaded.build_dir(p) for p in loaded.projects if loaded.in_split(p, "dev")]
     cache = bench_dir / "out" / f"font-samples-{corpus}.json"
     if cache.exists():
         saved = json.loads(cache.read_text())
@@ -454,7 +450,7 @@ def build_roles(
         jobs += [
             (generator, loaded.build_dir(p) / "schematic.pdf")
             for p in loaded.projects
-            if loaded.is_built(p) and loaded.split(p) == "dev"
+            if loaded.in_split(p, "dev")
         ]
     examples: dict[str, list] = {}
     with ProcessPoolExecutor(max_workers=3) as pool:  # each holds whole PDFs in memory
@@ -487,11 +483,7 @@ def build_designators(
             loaded = corpora.load(name, bench_dir)
         except FileNotFoundError:
             continue
-        designs += [
-            loaded.build_dir(p)
-            for p in loaded.projects
-            if loaded.is_built(p) and loaded.split(p) == "dev"
-        ]
+        designs += [loaded.build_dir(p) for p in loaded.projects if loaded.in_split(p, "dev")]
     with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
         examples = [e for found in pool.map(designator_examples.rows, designs) for e in found]
     designator_examples.save(designator_examples.train(examples), output)
@@ -504,7 +496,7 @@ def build_designators(
 @app.command("bench-schematic", hidden=True)
 def bench_schematic(
     corpus: CorpusName = "a",
-    split: Annotated[str, typer.Option(help="dev, test or all.")] = "dev",
+    split: Annotated[str, typer.Option(help="dev, test, holdout, or all: dev and test.")] = "dev",
     bench_dir: BenchDir = Path("bench"),
     work: Annotated[Path, typer.Option(help="Where to write the projects.")] = Path("bench/out"),
 ) -> None:
@@ -513,11 +505,7 @@ def bench_schematic(
     from schem2net.bench import roundtrip
 
     loaded = corpora.load(corpus, bench_dir)
-    projects = [
-        p
-        for p in loaded.projects
-        if loaded.is_built(p) and (split == "all" or loaded.split(p) == split)
-    ]
+    projects = [p for p in loaded.projects if loaded.in_split(p, split)]
     exact, clean, errors = 0, 0, Counter()
     for project in sorted(projects, key=lambda p: p.name):
         pdf_file = loaded.build_dir(project) / "schematic.pdf"
