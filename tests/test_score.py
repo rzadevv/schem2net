@@ -2,7 +2,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from schem2net.bench.score import Counts, compare, score, summary
+from schem2net.bench.score import Counts, compare, intervals, score, summary
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 
 
@@ -264,3 +264,9 @@ def test_a_change_on_every_design_has_a_tight_interval():
     assert high == pytest.approx(0.05)
     _, _, change, low, high = compare(before, before)["pin_accuracy"]
     assert change == low == high == 0
+
+
+def test_an_interval_holds_the_pooled_figure():
+    designs = [Counts(designs=1, pins=100, pins_correct=70 + 3 * i) for i in range(10)]
+    low, high = intervals(designs)["pin_accuracy"]
+    assert low < summary(designs)["pin_accuracy"] < high

@@ -253,10 +253,8 @@ def compare(
 ) -> dict[str, tuple[float, float, float, float, float]]:
     """Each metric before and after, the change, and a 95% interval of the change from a
     bootstrap over designs: the same designs, paired, are drawn for both runs."""
-    n = len(before)
-    weights = np.random.default_rng(seed).multinomial(n, np.full(n, 1 / n), size=resamples)
     first, second = summary(before), summary(after)
-    drawn = [(summary(before, w), summary(after, w)) for w in weights]
+    drawn = [(summary(before, w), summary(after, w)) for w in _draws(len(before), resamples, seed)]
     out = {}
     for name in first:
         if first[name] is None or second[name] is None:
@@ -265,6 +263,25 @@ def compare(
         low, high = np.percentile(changes, [2.5, 97.5])
         out[name] = (first[name], second[name], second[name] - first[name], low, high)
     return out
+
+
+def intervals(
+    designs: list[Counts], resamples: int = 2000, seed: int = 0
+) -> dict[str, tuple[float, float]]:
+    """A 95% interval of each metric from a bootstrap over designs."""
+    drawn = [summary(designs, w) for w in _draws(len(designs), resamples, seed)]
+    out = {}
+    for name in drawn[0]:
+        values = [d[name] for d in drawn if d[name] is not None]
+        if values:
+            low, high = np.percentile(values, [2.5, 97.5])
+            out[name] = (float(low), float(high))
+    return out
+
+
+def _draws(n: int, resamples: int, seed: int) -> np.ndarray:
+    """How often each of n designs is drawn, in each resample."""
+    return np.random.default_rng(seed).multinomial(n, np.full(n, 1 / n), size=resamples)
 
 
 def _pin_aliases(truth: Design) -> dict[PinRef, PinRef]:

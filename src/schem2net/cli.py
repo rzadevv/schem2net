@@ -306,7 +306,7 @@ def bench(
     from schem2net.bench import corpus as corpora
     from schem2net.bench import explain as explained
     from schem2net.bench import runner
-    from schem2net.bench.score import Counts, score, summary
+    from schem2net.bench.score import Counts, intervals, score, summary
 
     extract = partial(pipeline.extract, embedded=not drawing_only)
     results = runner.run(
@@ -340,6 +340,7 @@ def bench(
             "corpus": corpus,
             "split": split,
             "total": summary([counts for _, counts in results]),
+            "intervals": intervals([counts for _, counts in results]),
             "designs": {name: asdict(counts) for name, counts in results},
         }
         json_out.write_text(json.dumps(report, indent=2))

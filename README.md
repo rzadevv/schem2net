@@ -30,23 +30,19 @@ Early development.
   most pins, and is marked as guessed.
 - Other generators are not supported yet.
 
-Dev figures are read with learned models that never saw the design in question,
-and KiCad's and SparkFun's part libraries indexed (see `docs/benchmark.md`).
+Figures are for each corpus's test split, whose boards the learned models never
+saw, read with KiCad's and SparkFun's part libraries indexed (see
+`docs/benchmark.md`). In brackets, a 95% interval from a bootstrap over the
+boards: with six to forty boards a split, a few points either way is noise.
 
-| Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
-|---|---|---|---|---|---|
-| A, KiCad | Dev | 57 | 25,608 | 0.92 | 0.96 |
-| A, KiCad | Test | 9 | 2,863 | 0.94 | 0.92 |
-| B, Altium, drawing only | Dev | 30 | 6,677 | 0.88 | 0.90 |
-| B, Altium, drawing only | Test | 13 | 3,819 | 0.88 | 0.89 |
-| C, Eagle | Dev | 96 | 7,038 | 0.84 | 0.83 |
-| C, Eagle | Test | 42 | 2,903 | 0.78 | 0.77 |
-| D, Olimex | Dev | 23 | 11,565 | 0.83 | 0.77 |
-| D, Olimex | Test | 24 | 9,286 | 0.79 | 0.67 |
-| E, EasyEDA | Dev | 18 | 2,487 | 0.74 | 0.72 |
-| E, EasyEDA | Test | 12 | 1,669 | 0.68 | 0.43 |
-| F, OrCAD | Dev | 18 | 13,444 | 0.93 | 0.97 |
-| F, OrCAD | Test | 12 | 5,680 | 0.93 | 0.95 |
+| Corpus | Designs | Pins | Pin accuracy | Connection F1 |
+|---|---|---|---|---|
+| A, KiCad | 6 | 1,154 | 0.93 (0.88–1.00) | 0.90 (0.85–1.00) |
+| B, Altium, drawing only | 12 | 3,887 | 0.86 (0.76–0.90) | 0.91 (0.86–0.94) |
+| C, Eagle | 39 | 2,824 | 0.80 (0.76–0.84) | 0.76 (0.70–0.82) |
+| D, Olimex | 20 | 6,057 | 0.85 (0.81–0.90) | 0.81 (0.75–0.88) |
+| E, EasyEDA | 14 | 1,027 | 0.62 (0.47–0.76) | 0.50 (0.27–0.87) |
+| F, OrCAD | 8 | 10,702 | 0.95 (0.93–0.96) | 0.97 (0.95–0.97) |
 
 Accuracy says how much is right; what a user also needs is to know where the rest
 is. Silent errors are pins on a wrong net that nothing flags. Pins not found are on
@@ -55,20 +51,14 @@ hides; most of the accuracy lost on corpora C to E is here. Review items are the
 doubtful nets and the issues naming pins, each one thing to check; precision is the
 share of them that point at something wrong.
 
-| Corpus | Split | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
-|---|---|---|---|---|---|---|---|
-| A, KiCad | Dev | 0.4% | 5.9% | 0.81 | 4.1 | 0.58 | 0.74 |
-| A, KiCad | Test | 0.9% | 3.2% | 0.66 | 3.8 | 0.72 | 0.67 |
-| B, Altium, drawing only | Dev | 0.3% | 8.9% | 0.93 | 12.7 | 0.49 | 0.83 |
-| B, Altium, drawing only | Test | 2.7% | 5.3% | 0.58 | 6.5 | 0.59 | 0.46 |
-| C, Eagle | Dev | 0.7% | 13.2% | 0.74 | 10.6 | 0.62 | 0.81 |
-| C, Eagle | Test | 0.6% | 19.3% | 0.76 | 12.8 | 0.65 | 0.79 |
-| D, Olimex | Dev | 0.7% | 13.0% | 0.82 | 11.4 | 0.77 | 0.48 |
-| D, Olimex | Test | 1.0% | 17.0% | 0.74 | 12.3 | 0.83 | 0.50 |
-| E, EasyEDA | Dev | 2.7% | 15.5% | 0.74 | 11.7 | 0.86 | 0.56 |
-| E, EasyEDA | Test | 1.7% | 20.7% | 0.86 | 14.6 | 0.86 | 0.58 |
-| F, OrCAD | Dev | 0.5% | 3.1% | 0.85 | 7.0 | 0.65 | 0.61 |
-| F, OrCAD | Test | 0.7% | 3.6% | 0.79 | 5.9 | 0.70 | 0.67 |
+| Corpus | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
+|---|---|---|---|---|---|---|
+| A, KiCad | 0.2% (0.0–0.5) | 1.6% | 0.97 | 9.4 | 0.68 | 0.83 |
+| B, Altium, drawing only | 2.2% (0.0–3.4) | 9.4% | 0.54 | 7.3 | 0.67 | 0.75 |
+| C, Eagle | 0.8% (0.2–1.5) | 16.7% | 0.74 | 11.6 | 0.66 | 0.85 |
+| D, Olimex | 0.4% (0.1–0.7) | 10.8% | 0.89 | 10.5 | 0.89 | 0.65 |
+| E, EasyEDA | 0.3% (0.0–0.7) | 29.6% | 0.96 | 12.3 | 0.80 | 0.86 |
+| F, OrCAD | 0.5% (0.2–1.0) | 2.6% | 0.77 | 4.9 | 0.63 | 0.38 |
 
 ## Install
 

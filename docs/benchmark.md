@@ -117,11 +117,9 @@ naming both a capacitor and a transistor's pin, is left out, as its label is not
 known. The truth is used for nothing else, and test boards are never read. One
 model is learned per generator and written to `profiles/designators.npz`.
 
-Dev results in the README are measured with models learned without the board being
-read: the dev designs are split in four by a hash of their names, and each quarter is
-read with the model learned from the other three. `schem2net bench` on the dev split
-reads with the stored model, which has seen those designs, so its dev figures run a
-little high; test figures are not affected.
+`schem2net bench` on the dev split reads with the stored models, which have seen
+those designs, so its dev figures run a little high; the README gives test figures,
+which are not affected.
 
 ## Learned files
 
@@ -195,13 +193,15 @@ part is missing, its number differs, it is kept unnumbered, it is listed on no n
 or not found at all. It then gives the share of wrong nets and pins by confidence,
 and how well doubt ranks wrong pins above right ones (AUROC).
 
-CI builds corpus A and compares its dev split with `bench/baseline_a_dev.json`.
-CI has no part library indexed, so the baseline is read without one
+CI builds corpora A and E and compares their dev splits with
+`bench/baseline_a_dev.json` and `bench/baseline_e_dev.json`.
+CI has no part library indexed, so the baselines are read without one
 (`XDG_CACHE_HOME` pointing at an empty folder) and with the stored models. A change
 meant to move these figures writes the baseline again:
 
 ```sh
 XDG_CACHE_HOME=$(mktemp -d) schem2net bench a --split dev --json bench/baseline_a_dev.json
+XDG_CACHE_HOME=$(mktemp -d) schem2net bench e --split dev --json bench/baseline_e_dev.json
 ```
 
 ## Metrics
