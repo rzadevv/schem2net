@@ -1,6 +1,7 @@
 """Stages 5-8 on small hand-built scenes that follow KiCad's drawing conventions."""
 
 import math
+from dataclasses import replace
 
 import pytest
 
@@ -1846,3 +1847,47 @@ def test_a_designator_written_with_its_value_is_split_in_any_reading_direction(a
     ref, value = _designator_apart(text, easyeda)
     assert (ref.text, value.text) == ("R22", "10k")
     assert _along(ref.bbox, angle)[1] <= _along(value.bbox, angle)[0] + 1e-9
+
+
+def _numbered(pins, words, rules):
+    """Pin numbers read for the pins of one part from (word, box, angle) texts."""
+    part = symbols.Symbol([], geometry.bbox_of([p for pin in pins for p in pin.line]), pins)
+    part.ref = "J1"
+    scene = Scene(page=1)
+    for word, box, angle in words:
+        scene.pin_numbers.append(Text(0, word, box, 1.0, angle, (0, 0, 0)))
+    fields._number_pins([part], scene, rules, set())
+    return [p.number for p in pins]
+
+
+def test_a_number_between_two_pins_goes_where_it_leaves_none_unpaired():
+    """Nearest first, 2 would take pin A, the only pin 1 can reach, and leave B bare."""
+    rules = replace(profile.load("kicad"), pin_numbers_above=False)
+    a = symbols.Pin(0, ((10, 10), (5, 10)))
+    b = symbols.Pin(1, ((10, 11.5), (5, 11.5)))
+    c = symbols.Pin(2, ((10, 20), (5, 20)))
+    one = ("1", (6, 8.4, 7, 9.4), 0.0)  # above A, 0.6 off
+    two = ("2", (6, 10.3, 7, 10.8), 0.0)  # between: 0.3 below A, 0.7 above B
+    three = ("3", (6, 18.4, 7, 19.4), 0.0)
+    assert _numbered([a, b, c], [one, two, three], rules) == ["1", "2", "3"]
+
+
+def test_upright_numbers_beside_vertical_pins_are_read():
+    pins = [symbols.Pin(0, ((10, 10), (10, 15))), symbols.Pin(1, ((20, 10), (20, 15)))]
+    words = [("7", (8.6, 12, 9.6, 13), 0.0), ("8", (18.6, 12, 19.6, 13), 0.0)]
+    assert _numbered(pins, words, profile.load("kicad")) == ["7", "8"]
+
+
+def test_a_header_row_missing_a_number_is_filled_from_its_progression():
+    """Odd numbers down one side of a two-row header, even down the other; 5 unread."""
+    left = [symbols.Pin(k, ((10, 10 + 2.54 * k), (5, 10 + 2.54 * k))) for k in range(5)]
+    right = [symbols.Pin(5 + k, ((20, 10 + 2.54 * k), (25, 10 + 2.54 * k))) for k in range(5)]
+    words = []
+    for k in range(5):
+        y = 10 + 2.54 * k
+        if k != 2:
+            words.append((str(2 * k + 1), (6, y - 1.6, 7, y - 0.6), 0.0))
+        words.append((str(2 * k + 2), (23, y - 1.6, 24, y - 0.6), 0.0))
+    found = _numbered(left + right, words, profile.load("kicad"))
+    assert found == ["1", "3", "5", "7", "9", "2", "4", "6", "8", "10"]
+    assert left[2].how == "row"

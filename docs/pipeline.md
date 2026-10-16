@@ -101,6 +101,10 @@ A pin number usually sits beside its pin; some libraries centre it on the pin's
 line instead. Card sockets and headers may mark only the first pin of each row,
 past its end or as pin 1 beside it, or the first and last: an evenly spaced row of
 unnumbered pins is then numbered from its marks, counting up from a single one.
+Where four in five pins of an evenly spaced row read numbers that count along it,
+by one or by two as down each side of a two-row header, the rest are numbered from
+that count, and a pin read otherwise takes its place in it when a text of that
+number lies beside it.
 Transistors often hide their numbers, and their pins are then known by role, G, S
 and D or B, E and C: the
 base or gate is the pin square to the other two, leading to the middle of a bar;

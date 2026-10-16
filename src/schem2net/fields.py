@@ -65,6 +65,10 @@ CORNER_GAP = 0.1  # mm between lines that meet in a drawing
 MIN_GROUND_BASE = 0.5  # mm; a ground triangle's base is a grid step or so wide
 ROW_HEAD_REACH = 2.0  # pitches past a row's end pin within which its first number sits
 MIN_ROW = 3  # pins in a row numbered from its head
+# A row's numbers follow a progression, a + k * step, when this share of its pins do;
+# the rest are then filled from it. Steps of two are the rows of a two-row header.
+ROW_FIT = 0.8
+ROW_STEPS = (1, -1, 2, -2)
 ARROW_SIZE = 4.0  # mm; a transistor's arrowhead is smaller than this
 BAR_REACH = 3.0  # mm from a transistor's base or gate pin to its bar
 MEET = 0.15  # mm between lines that meet in a symbol's drawing
@@ -696,7 +700,8 @@ def _among_values(scene: Scene, profile: Profile) -> set[int]:
 
 
 def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int]]:
-    """Optimal one-to-one pairing, solved separately for each cluster of rivals."""
+    """Optimal one-to-one pairing of (cost, row, column) candidates, solved separately
+    for each cluster of rivals; a row left unpaired costs more than any pair."""
     clusters = UnionFind()
     for _, si, ti in candidates:
         clusters.union(("s", si), ("t", ti))
@@ -779,24 +784,24 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
     for t, text in enumerate(numbers):
         vertical_text = round(text.angle) % 180 == 90
         for i in index.near(geometry.center(text.bbox), PIN_NUMBER_GAP + 1):
-            if geometry.is_horizontal(pins[i].line) == vertical_text:
-                continue
             if _inside_body(owned[i][1], text):
                 continue  # a pin name
             gap = _number_gap(
                 text.bbox, pins[i].line, profile.pin_numbers_above, profile.pin_numbers_overhang
             )
             if gap is not None:
-                options.append((gap, t, i))
+                # A number usually reads along its pin; one turned across it costs more.
+                across = geometry.is_horizontal(pins[i].line) == vertical_text
+                options.append((gap + OTHER_SIDE_COST * across, i, t))
 
-    # Each number names one pin and each pin has one number: closest pairs first.
+    # Each number names one pin and each pin has one number: the pairing of least total
+    # gap, so a number between two pins goes where it leaves no other unpaired.
     named, used = set(), set()
-    for _, t, i in sorted(options):
-        if t not in used and i not in named:
-            pins[i].number = PAD_COUNT.sub("", numbers[t].text)  # "A6*2": pin A6, two pads
-            pins[i].how = "read"
-            named.add(i)
-            used.add(t)
+    for i, t in _best_pairs(options):
+        pins[i].number = PAD_COUNT.sub("", numbers[t].text)  # "A6*2": pin A6, two pads
+        pins[i].how = "read"
+        named.add(i)
+        used.add(t)
 
     # A part that shows pad numbers shows them on its pins alike: a number by one pin
     # only of a two-pin part is its value, as 33 printed over a resistor's end is.
@@ -1065,6 +1070,9 @@ def _number_rows(symbols: list[Symbol], numbers: list[Text]) -> set[int]:
             continue
         for row in _rows(symbol.pins):
             numbered = [p for p in row if p.number]
+            if len(numbered) >= 2:
+                _fill_row(row, symbol, numbers, used)
+                continue
             if numbered:
                 # Only an end pin numbered, and as the first: its mark sits beside it.
                 end = numbered[0]
@@ -1110,6 +1118,53 @@ def _row_mark(row: list[Pin], numbers: list[Text], used: set[int]) -> int | None
         if 0 < ahead <= ROW_HEAD_REACH * pitch and t0 <= hi and lo <= t1:
             marks.append((ahead, k))
     return min(marks)[1] if marks else None
+
+
+def _row_fit(row: list[Pin]) -> tuple[int, int, int] | None:
+    """The progression a + k * step most of a row's numbers follow, as (a, step, how
+    many follow it), tried through each pair of numbered pins; None for no pair."""
+    known = [(k, int(p.number)) for k, p in enumerate(row) if p.number and p.number.isdigit()]
+    best = None
+    for (i, x), (j, y) in itertools.combinations(known, 2):
+        step, off = divmod(y - x, j - i)
+        if off or step not in ROW_STEPS:
+            continue
+        a = x - step * i
+        fits = sum(n == a + step * k for k, n in known)
+        if best is None or fits > best[2]:
+            best = (a, step, fits)
+    return best
+
+
+def _fill_row(row: list[Pin], symbol: Symbol, numbers: list[Text], used: set[int]) -> None:
+    """Number the pins of a row whose numbers mostly follow a progression: a pin read with
+    none takes its place in it, and one read otherwise takes it where an unused text of
+    that number lies beside it."""
+    fit = _row_fit(row)
+    if fit is None or fit[2] < MIN_ROW or fit[2] < ROW_FIT * len(row):
+        return
+    a, step, _ = fit
+    taken = {p.number for p in symbol.pins if p.number}
+    for k, pin in enumerate(row):
+        want = str(a + step * k)
+        if pin.number == want or a + step * k < 1 or want in taken:
+            continue
+        if pin.number is None:
+            pin.number, pin.how = want, "row"
+            taken.add(want)
+            continue
+        beside = [
+            t
+            for t, text in enumerate(numbers)
+            if t not in used
+            and text.text == want
+            and geometry.distance_to_segment(geometry.center(text.bbox), pin.line) <= PIN_NUMBER_GAP
+        ]
+        if beside:
+            taken.discard(pin.number)
+            pin.number = want
+            taken.add(want)
+            used.add(beside[0])
 
 
 def _rows(pins: list[Pin]) -> list[list[Pin]]:
