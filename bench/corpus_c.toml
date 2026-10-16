@@ -12,6 +12,7 @@ repo = "https://github.com/sparkfun/2D_Barcode_Scanner_Breakout"
 commit = "48ebad3c15ad8d460de12fe02c37d454afe2dee3"
 eagle = "Hardware/2DBarcodeScanner.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/f/7/b/6/d/2D_Barcode_Scanner_Breakout-Schematic.pdf"
+sha256 = "2efbbbfa12f59328d6d4a26dc60204514982cea8ed7900a1c6bbc9202e6f242a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -20,6 +21,7 @@ repo = "https://github.com/sparkfun/74HC4051_8-Channel_Mux_Breakout"
 commit = "f3d0fca34704de27647f0e038ad6e51ee9acfb32"
 eagle = "Hardware/SparkFun-74HC4051-8-Channel-Mux-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun-74HC4051-8-Channel-Mux-Breakout.pdf"
+sha256 = "4eece6984bd55a06656497a8646fe42b9a75755eb913c8fa9814b01d82985d48"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -28,6 +30,7 @@ repo = "https://github.com/sparkfun/ADXL335_Breakout"
 commit = "b909917a4058fdcf0a6774bd118a3a759ccdd286"
 eagle = "Hardware/ADXL335_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/ADXL335_Breakout.pdf"
+sha256 = "052e348edb65e3fc414b63041ac07ae3cd86e9953d12131f29859ec55066e2d0"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -36,6 +39,7 @@ repo = "https://github.com/sparkfun/ADXL362_Breakout"
 commit = "a86b4ee533ffbfb155e21086a12cb769c809b64d"
 eagle = "Hardware/ADXL362_BOB.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/ADXL362%20BOB%20v01.pdf"
+sha256 = "e42e40f266c5f3fd332e19af70a50f3979f141f1ae4196a505d0120a2667911b"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -44,6 +48,7 @@ repo = "https://github.com/sparkfun/AT42QT1010_Capacitive_Touch_Breakout"
 commit = "3a317e3f714c984de2a233c0ed1f0972a60808c1"
 eagle = "Hardware/AT42QT1010_Capacitive_Touch_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/8/4/0/c/0/AT42QT101X_Capacitive_Touch_Breakout.pdf"
+sha256 = "27a4f57542f5d6dc08877a5cbd05c36a18b0139670c8dbded057a9e1ddd42878"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -52,6 +57,7 @@ repo = "https://github.com/sparkfun/ATX_Power_Connector_Breakout"
 commit = "ff4ff1e45c1deabb39c24222e9cc4090d285f16a"
 eagle = "Hardware/ATX_Power_Connector_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/e/b/6/d/4/SparkFun_ATX_Power_Connector_Breakout_Schematic.pdf"
+sha256 = "af0babd7b3a0ab4c79643930efe5b67ea022b084edc8b701d9ee81e425e7db37"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -60,6 +66,7 @@ repo = "https://github.com/sparkfun/Ardumoto-Motor_Driver_Shield"
 commit = "d3d378dbd3cb1878b0a692185f2dee1c71ec5f50"
 eagle = "Hardware/SparkFun_Ardumoto.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Robotics/SparkFun_Ardumoto_v20.pdf"
+sha256 = "8b93b58f238fd5f3f68cfcf3fe3987c9b6a36b68dd3ff6726094c50c52b57f9f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -68,6 +75,7 @@ repo = "https://github.com/sparkfun/Audio_Jack_Breakout"
 commit = "f0329895d5650231a612e34d667e27eaddbd1ccb"
 eagle = "Hardware/SparkFun_Audio_Jack_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Prototyping/SparkFun_Audio_Jack_Breakout.pdf"
+sha256 = "3347e333c061abcb08a5d7d40037ead9663871cc613c4f22202da033dcf2cfa1"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -76,6 +84,7 @@ repo = "https://github.com/sparkfun/Cherry_MX_Switch_Breakout"
 commit = "2c18456830a0e9f1442532f3535c8ba92c5f3765"
 eagle = "Hardware/SparkFun-Cherry-MX-Switch-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun-Cherry-MX-Switch-Breakout.pdf"
+sha256 = "4746db1a3ac3577f7a258e522d7b9350c9e74344fecdc204a0b4e324096cfa12"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -84,6 +93,7 @@ repo = "https://github.com/sparkfun/Current_Sensor_Breakout-ACS723"
 commit = "a4825e5f43d7c520d60205013f9d4470d5c636f1"
 eagle = "Hardware/SparkFun_ACS723_Current_Sensor_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/f/4/a/1/SparkFun_ACS723_Current_Sensor_Breakout.pdf"
+sha256 = "bde7b8d16d04a3b627d1137acf444eb605428ab3622695c38d504c0916817654"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -92,6 +102,7 @@ repo = "https://github.com/sparkfun/Current_Sensor_Breakout-ACS723-Low_Current"
 commit = "488fe5b5eb2522a6f247e3b2412d76999805a0b3"
 eagle = "Hardware/ACS723_Low_Current_Sensor.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/3/c/8/7/ACS723_Low_Current_Sensor.pdf"
+sha256 = "4b4b5508a4b3ae3211a7aa7e4b2d8d30991c303567415ad3d19ddec3f17f7f13"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -100,6 +111,7 @@ repo = "https://github.com/sparkfun/ESP8266_WiFi_Shield"
 commit = "c551bd3124e6f7ccdc8770694a7301cf8de55559"
 eagle = "Hardware/SparkFun-ESP8266-WiFi-Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/SparkFun-ESP8266-WiFi-Shield-v10.pdf"
+sha256 = "a4a15b0190c9acc974de19b2b9d3d56d37a7e630ca93913b018d2fe76c046cc6"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -108,6 +120,7 @@ repo = "https://github.com/sparkfun/Energy_Harvester_Breakout-LTC3588"
 commit = "dce88a2877baae1e6fec6e3e8de956076216cf90"
 eagle = "Hardware/SparkFun_Energy_Harvester_Breakout-LTC3588.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/7/e/2/6/energy_harvester-v12.pdf"
+sha256 = "4a50cd538f411d6f2168a4d5505c8bd32042bc3dc72c0fe13f96b5bc121070dd"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -116,6 +129,7 @@ repo = "https://github.com/sparkfun/FT232RL_USB_Breakout"
 commit = "4369f532c0bd06f8b7366bb23263989d4752bffe"
 eagle = "Hardware/FT232R-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/FT232R-Breakout_v37.pdf"
+sha256 = "bf835eb08387109a03d1d3e029936056b53b2e293e5587f012f522b1260cc3cb"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -124,6 +138,7 @@ repo = "https://github.com/sparkfun/FTDI_Basic_Breakout-5V"
 commit = "8f524dd79f716601bb23a443ef8535156834dca1"
 eagle = "Hardware/FTDI Basic-5V.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/f/0/c/d/7/FTDI_Basic-v24-5V.pdf"
+sha256 = "626057f92df98ccbc1227d734bc9552af979efb2956834b6c1c1e214e4a84e62"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -132,6 +147,7 @@ repo = "https://github.com/sparkfun/Full_Bridge_Motor_Driver_Breakout-L298N"
 commit = "8b81b873540e59a232a5abee3694d54799e0bcac"
 eagle = "Hardware/SparkFun_Full_Bridge_Motor_Driver_Breakout-L298N.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun_Full_Bridge_Motor_Driver_Breakout-L298N.pdf"
+sha256 = "28c71a232a5cfb9ea6157148cc90b8811c39dbabac9f0df326c6b4691be2a405"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -140,6 +156,7 @@ repo = "https://github.com/sparkfun/HMC6343_Breakout"
 commit = "175639e8a6de9a6e78d4e312d4555a5446bbdab8"
 eagle = "Hardware/SparkFun_HMC6343_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Magneto/HMC6343%20Breakout-v10.pdf"
+sha256 = "ed17a226ed2d5ab838d00a9452b93d6c21c0f9a12e2f1f987f89182c908a9f69"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -148,6 +165,7 @@ repo = "https://github.com/sparkfun/ISL29125_Breakout"
 commit = "62c8eba3ab9c588d4bfba5dfd08126b9aae0c5fd"
 eagle = "Hardware/SparkFun_ISL29125_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/LightImaging/ISL29125%20Breakout-v10.pdf"
+sha256 = "94a58b59cdc293166e0f6fd51daa054e21b332f3e74a214a276f3349c67fd9ac"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -156,6 +174,7 @@ repo = "https://github.com/sparkfun/LIS3DH_Breakout"
 commit = "c94244317535460eeb41527bb28ead6db3cc7c12"
 eagle = "Hardware/SparkFun_LIS3DH-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/SparkFun_LIS3DH-Breakout.pdf"
+sha256 = "b3aeca54182e0f0d7c79f3da6594241e4233c43d2d64d5687f9eb320311d2c79"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -164,6 +183,7 @@ repo = "https://github.com/sparkfun/LP55231_Breakout"
 commit = "8b965bdd2d9bf6f0738ad0e173574141c543f69f"
 eagle = "Hardware/LP55231_breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/LP55231_breakout.pdf"
+sha256 = "c9af4d5e771cde4017fccf90bc5f083d3c53734f67b4afecf99317751d970b75"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -172,6 +192,7 @@ repo = "https://github.com/sparkfun/LSM9DS1_Breakout"
 commit = "f6f446785e7b84c9c0337efa93dc794b745047b9"
 eagle = "Hardware/SparkFun-LSM9DS1-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/IMU/SparkFun-LSM9DS1-Breakout_v10.pdf"
+sha256 = "c407a5757bc26e184145d22d8916c141da5f679fbcd9db0479544ed22ab06539"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -180,6 +201,7 @@ repo = "https://github.com/sparkfun/LTE_Cat_M1_Shield"
 commit = "c8f7a2d402df13d1b446599c275bb8ee2efd46da"
 eagle = "Hardware/lte_cat_m1_shield_sara-r4.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/7/b/c/3/lte_cat_m1_shield_schematic_v11.pdf"
+sha256 = "3428251b3a9acc6e4545ba2ee923fd67713aa343559dd038f9b812189db4fc4b"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -188,6 +210,7 @@ repo = "https://github.com/sparkfun/MAX31855K_Thermocouple_Breakout"
 commit = "e4b43fe7314ae1f30c60e8e646906618842b9ce8"
 eagle = "Hardware/SparkFun_Thermocouple_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Temp/SparkFun_Thermocouple_Breakout_v10.pdf"
+sha256 = "514a09774053f53dcd27ad5da92f175edc9819ab19bc77541336d19645e1027e"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -196,6 +219,7 @@ repo = "https://github.com/sparkfun/MAX3232_Breakout"
 commit = "2ceb7038eb632e4c638f97bced79576ecec5fb0b"
 eagle = "Hardware/SparkFun_MAX3232_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/MAX3232_Breakout_v11.pdf"
+sha256 = "ac2cfd931286f8b71d34150bbb8c96d444b5f1d2734424a98b1807a88a08e964"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -204,6 +228,7 @@ repo = "https://github.com/sparkfun/MCP4725_Breakout"
 commit = "669e8aeca5987b5b91f3b7a623907a0f53e6e9fd"
 eagle = "Hardware/MCP4725_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/c/2/2/f/MCP4725_Breakout_v14-Schematic.pdf"
+sha256 = "bab1456d12d399602d93aa18d0e17f1eac669647fbbda25d71b3d3aec7e93751"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -212,6 +237,7 @@ repo = "https://github.com/sparkfun/MEMS_Mic_Breakout-ADMP401"
 commit = "8a5590e127323c1e9abbe63150ca44e2452364e7"
 eagle = "Hardware/SparkFun_ADMP401-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/3/7/5/e/SparkFun_Analog_MEMS_Microphone_Breakout_ICS40180_Schematic.pdf"
+sha256 = "4da5c4c3b304697faa24f124a03c37d9ee25717f81db7680196b967317ee8fbc"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -220,6 +246,7 @@ repo = "https://github.com/sparkfun/MP3_Player_Shield"
 commit = "9a672ba92e5ef6f57960a8e4276fd6d03ad97634"
 eagle = "hardware/SparkFunMP3Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/MP3%20Shield_v15.pdf"
+sha256 = "6a428f31ac4b21bc2a40ed3f811d2823ea0e08fc02fa040115cff07d4a740923"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -228,6 +255,7 @@ repo = "https://github.com/sparkfun/MPL3115A2_Breakout"
 commit = "599471963333bedaaf85e87412cd0e377edf0102"
 eagle = "hardware/MPL3115A2_breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Pressure/MPL3115A2_breakout.pdf"
+sha256 = "a5d2a72362b19df51c707ff4011b3224068e0df9759ef764a28738eeed39e352"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -236,6 +264,7 @@ repo = "https://github.com/sparkfun/MPU-6050_Breakout"
 commit = "b44970f5f1c3fa00e20a8ec7de29b02b293b55dc"
 eagle = "Hardware/Triple_Axis_Accelerometer_-_Gyro_Breakout_-_MPU-6050.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/IMU/Triple_Axis_Accelerometer-Gyro_Breakout_-_MPU-6050_v12.pdf"
+sha256 = "97eed8f422870e8a93f66596de52827a9309bbe2de844628bbbd2223d8364ce8"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -244,6 +273,7 @@ repo = "https://github.com/sparkfun/MS5803-14BA_Breakout"
 commit = "72df645027948e28c481936ee51f0d65e52e5803"
 eagle = "Hardware/SparkFun_MS5803-14BA_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Weather/MS5803-14BA_Breakout_v10.pdf"
+sha256 = "6303bae9a83704def17048f35aa09a68ffc2daa237fed4d057d6836c1bc6868a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -252,6 +282,7 @@ repo = "https://github.com/sparkfun/MagJack_Breakout"
 commit = "9afe8d1997268330868b6dd9cc5fb229242f9900"
 eagle = "Hardware/MagJack_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/MagJack_Breakout_v12.pdf"
+sha256 = "b27a8d86e0970f1c651bd2a7501c8eb89eaf0c84ea5984a83f378509cab02eab"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -260,6 +291,7 @@ repo = "https://github.com/sparkfun/MicroMod_Qwiic_Carrier"
 commit = "bbb4ac75f00a761199289365bdb9cd31a8206a5c"
 eagle = "Hardware/Single/MM-Qwiic-Carrier-Single.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/9/7/b/3/c/MM_qwiic_carrier_single_schematic.pdf"
+sha256 = "e511a7f8f3fcb9b476e2f6a70962e5a52670cdcfbb478c2e063821d3fcd1d1db"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -268,6 +300,7 @@ repo = "https://github.com/sparkfun/Micro_Bit_Breakout"
 commit = "110dad7cb60e01f6741e7a1534d5250b799786f1"
 eagle = "Hardware/Micro_Bit_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/a/f/a/5/a/Micro_Bit_Breakout.pdf"
+sha256 = "0abaca18451f2448105bc07a09c1bfcf3516babee6b28b757f8c8a741b2d679a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -276,6 +309,7 @@ repo = "https://github.com/sparkfun/Micro_OLED_Breakout"
 commit = "76b5e50891220664d31d4e3998f6228faa650df8"
 eagle = "Hardware/SparkFun_Micro-OLED_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/LCD/Monochrome/Micro-OLED-Breakout.pdf"
+sha256 = "895b371898fa7b9d701658178b6c873c2bf066a8abca0b95e8889a3d15b5e3d5"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -284,6 +318,7 @@ repo = "https://github.com/sparkfun/Mini_GPS_Shield"
 commit = "064804403d841b499b11d9b52f82429a66efb738"
 eagle = "Hardware/SparkFun_Mini_GPS_Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/SparkFun_Mini_GPS_Shield.pdf"
+sha256 = "6f6d9a4445b7fa782cfd7e96d8471b1bee14b80baef4c2554989eb7a08f4cb2a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -292,6 +327,7 @@ repo = "https://github.com/sparkfun/Music_Instrument_Shield"
 commit = "04fc9cdf5facfae5bd8aac69dfbd2412e32b4c9e"
 eagle = "Hardware/SparkFun_Music_Instrument_Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/MIDI%20Music%20Shield-v13.pdf"
+sha256 = "563cda946ba650be55f154c724e5dd082edb3c9b837873acba664f12f8a2eb45"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -300,6 +336,7 @@ repo = "https://github.com/sparkfun/Noisy_Cricket-1.5W_Stereo_Amplifier_Breakout
 commit = "9f8b84db609e5972854aa0c8288220094aebeb9d"
 eagle = "Hardware/SparkFun_Noisy_Cricket.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/2/4/6/4/SparkFun_Noisy_Cricket.pdf"
+sha256 = "0b2fe99a7fd65d049deb50ad8188eb161a32ef45f56487f9f5e463baf5f91928"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -308,6 +345,7 @@ repo = "https://github.com/sparkfun/OpAmp_Breakout-LMV358"
 commit = "be0653238c99eca95831979e239ba82bcb926f10"
 eagle = "Hardware/SparkFun_OpAmp_Breakout-LMV358.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun_OpAmp_Breakout-LMV358.pdf"
+sha256 = "68b33416bff6d62d5507c8ea1cde7cfb178a04d5abad80742a83660ce62dd4bd"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -316,6 +354,7 @@ repo = "https://github.com/sparkfun/Opto_Isolator_Breakout"
 commit = "5839357ed6eb03c9b6c7b98027e3b57cda86b911"
 eagle = "Hardware/SparkFun_Opto_Isolator_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/e/4/5/e/Optoisolator-v12.pdf"
+sha256 = "4c984d5e4794668b87ea624d10b6a12917dc4eb068b358f7a99226c56f93843b"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -324,6 +363,7 @@ repo = "https://github.com/sparkfun/PCA9306_Level_Translator_Breakout"
 commit = "b5afaa3ab7a400cf809e8b15eb9294222163e37e"
 eagle = "Hardware/SparkFun_Level_Translator_PCA9306.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/0/1/7/0/9/SparkFun_Level_Translator_PCA9306.pdf"
+sha256 = "02836db86d3c7e3e897a3615b78079fcbbf988188243ed639411d3909b079d2a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -332,6 +372,7 @@ repo = "https://github.com/sparkfun/Photo_Interrupter_Breakout"
 commit = "da9b2fa3c6b752bb3f9e93b833cb379e9cb2bf0b"
 eagle = "Hardware/PhotoInterrupter-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Infrared/PhotoInterrupter-Breakout-2.2.pdf"
+sha256 = "19d112090f71e3b0e40a5471513b0f54092cea0dcd7be9324375de13ee3f71df"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -340,6 +381,7 @@ repo = "https://github.com/sparkfun/Photon_IMU_Shield"
 commit = "ab938eed62efcc0a5827469e087cf8922ef0d5bb"
 eagle = "Hardware/Photon-IMU-Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/IoT/Photon-IMU-Shield-v10.pdf"
+sha256 = "6855b11cf78779bd510c6b9d5c2c1ef2f16bc16549feff11ac36c533ccf32c5c"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -348,6 +390,7 @@ repo = "https://github.com/sparkfun/Photon_Proto_Shield"
 commit = "fffc9d0effeb960bad86b8da11868a2548dc4561"
 eagle = "Hardware/Photon_Proto_Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/IoT/Photon_Proto_Shield_v10.pdf"
+sha256 = "199b8182d8193ab94b673874573638ee7ec32dbab0dab5533d597611b44129d3"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -356,6 +399,7 @@ repo = "https://github.com/sparkfun/QwiicBus_EndPoint"
 commit = "8fc4ecef143374cbf4f067815523c82b772396ce"
 eagle = "Hardware/SparkFun_QwiicBus_Endpoint.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/b/8/9/5/a/SparkFun_QwiicBus_Endpoint-Schematic.pdf"
+sha256 = "99d1bdaf4031b94bfa19dba5d82a6b9bca71334c13ba1f0c646ea90e4ef8fb91"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -364,6 +408,7 @@ repo = "https://github.com/sparkfun/Qwiic_Accelerometer_MMA8452Q"
 commit = "d2cdf604b0659b39c4f6c4b99ba02e5181f8d8eb"
 eagle = "Hardware/Qwiic_Accelerometer-MMA8452Q.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/f/5/1/8/8/Qwiic_Accelerometer-MMA8452Q.pdf"
+sha256 = "560d531e275931b2200ed2d8e7767cd9534d34c6006977b36a88edcb35584c63"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -372,6 +417,7 @@ repo = "https://github.com/sparkfun/Qwiic_Adapter"
 commit = "03f9e4dc6aac7330a78a75264c8746a7f0d2866b"
 eagle = "Hardware/SparkFun Qwiic Adapter.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/4/7/e/6/SparkFun_Qwiic_Adapter.pdf"
+sha256 = "aec5df7aeebcf0dfdc0a7199263d9bfdfd955eeebf1e262e6574de8dc2df736d"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -380,6 +426,7 @@ repo = "https://github.com/sparkfun/Qwiic_Air_Quality_Sensor_SGP40"
 commit = "8823fdc5f15da5aa993bc0cbbd39024420a7d48b"
 eagle = "Hardware/SGP40 Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/d/0/b/9/Qwiic_SGP40-Schematic.pdf"
+sha256 = "0433774dc0bef3314a7d8cf676f5118434539641536d03d83f621194dd239511"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -388,6 +435,7 @@ repo = "https://github.com/sparkfun/Qwiic_Alphanumeric_Display_Breakout"
 commit = "2bd85e46282ff49d0aa283dd6bf2537445b0c9c4"
 eagle = "Hardware/Qwiic_Alphanumeric_Display.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/7/2/8/a/Qwiic_Alphanumeric_Display.pdf"
+sha256 = "5c4e48ac6440fb41b75c8300400d8333ac9341029d89ca975d50df0ba18591f2"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -396,6 +444,7 @@ repo = "https://github.com/sparkfun/Qwiic_Button"
 commit = "8188e66c371ccba33ce16f5ad5e996c70de63900"
 eagle = "Hardware/Qwiic_Button.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/8/b/a/2/f/Qwiic_Button.pdf"
+sha256 = "c240769be4c4f2020d0b81685099c286aad4bce6eeb61db574efce533bc3cdd1"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -404,6 +453,7 @@ repo = "https://github.com/sparkfun/Qwiic_Capacitive_Touch_Slider_CAP1203"
 commit = "e903d939634a7a5f80faa5d24eaf73cbf16eea09"
 eagle = "Hardware/CAP1203.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/8/c/6/9/SparkFun_Capacitive_Touch_Slider_Qwiic.pdf"
+sha256 = "576c14ea4d884227637560be8a858e24c6637b6f8e01bfd9cb16a06d380f0fb0"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -412,6 +462,7 @@ repo = "https://github.com/sparkfun/Qwiic_Distance_VL53L1X"
 commit = "7799bbc4adec7295c2724d7270c0a66795591635"
 eagle = "Hardware/Qwiic Distance Sensor - VL53L1X.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/5/c/e/2/Qwiic_Distance_Sensor_-_VL53L1X.pdf"
+sha256 = "8c498618433b76ec9143671f449dcc0937280b9cd62b13db3ad74b411c1161ed"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -420,6 +471,7 @@ repo = "https://github.com/sparkfun/Qwiic_Dual_Solid_State_Relay"
 commit = "cbf2950450fc0d7fc1af0bd0eba90680e28b85ad"
 eagle = "Hardware/Qwiic Solid State Relay.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/8/4/0/a/Qwiic_Dual_Solid_State_Relay_Schematic.pdf"
+sha256 = "b9e68ec446a860ecfeba5419d7a0b26ccf11b6cda81cb17c2c40ea37e12a7dba"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -428,6 +480,7 @@ repo = "https://github.com/sparkfun/Qwiic_EEPROM_Breakout"
 commit = "2643fccfadcff198a5ff1045f0bd650f0c1c1a5a"
 eagle = "Hardware/Qwiic EEPROM.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/a/1/b/f/Qwiic_EEPROM_Schematic.pdf"
+sha256 = "49135ca64e4ffb7b00a54ceab0b0f36db34b5fa0a716ee1704a38515b329f210"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -436,6 +489,7 @@ repo = "https://github.com/sparkfun/Qwiic_Environmental_Sensor_BME688"
 commit = "2a95984a95ca4042bfa0cb928c89330ef5f6c605"
 eagle = "Hardware/Qwiic_BME688.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/1/2/c/0/1/qwiic_bme688_schematic.pdf"
+sha256 = "a007f04adb123753d684ca463d98cf14c81ba40d0f4f058f4e29efa6b5128aaa"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -444,6 +498,7 @@ repo = "https://github.com/sparkfun/Qwiic_FM_Transceiver_Si4721"
 commit = "564b1e7a4e833c762f682101a8d2319fe58a30b0"
 eagle = "Hardware/Qwiic_FM_Transceiver_Si4721.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/e/b/c/1/Qwiic_FM_Transceiver_Si4721.pdf"
+sha256 = "b704b647fe81fd41b55be6ef0424d321b7a6cea76279d7ccd9cff6c2a69b87ac"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -452,6 +507,7 @@ repo = "https://github.com/sparkfun/Qwiic_Flex_Glove_Controller"
 commit = "73664e727e662458afbe961fac6260d5bbf57f74"
 eagle = "Hardware/Qwiic Flex Glove Controller.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/b/9/4/7/SparkFun_Qwiic_Flex_Glove_Controller.pdf"
+sha256 = "71f02260ab2e1b9ff480fd5fbe77e7426bf322705b963120e8de89f7982c2f3e"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -460,6 +516,7 @@ repo = "https://github.com/sparkfun/Qwiic_GPIO"
 commit = "520a4cf66525662419a169ac57a014dd77e412de"
 eagle = "Hardware/Qwiic_GPIO.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/e/4/6/c/SparkFun_Qwiic_GPIO_Schematic.pdf"
+sha256 = "3718c48faa794731e0d692ff368eff2886f60c6cf85db9e109293bc362d6e2f2"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -468,6 +525,7 @@ repo = "https://github.com/sparkfun/Qwiic_GPS-RTK"
 commit = "2f96e48932e352fe3201de90ec7dd825a8275b3c"
 eagle = "Hardware/Qwiic GPS-RTK - ublox NEO-M8P.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/f/f/5/c/8/Qwiic_GPS-RTK_-_ublox_NEO-M8P.pdf"
+sha256 = "c658532e054b2ca33ff187cd1df610e9e27559309ece9bce43858c1af4aa80fa"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -476,6 +534,7 @@ repo = "https://github.com/sparkfun/Qwiic_GRIDEye"
 commit = "24e66e0c4217ec0edf2f361d8016b533c30f7ccd"
 eagle = "Hardware/Qwiic_Grideye.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/4/4/3/5/d/SparkFun_Grid-EYE_Infrared_Array_Breakout.pdf"
+sha256 = "9b0d367463b8b910e659390db1fd167c09f82cdf7f10bcdcd9646ff1bc6332b2"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -484,6 +543,7 @@ repo = "https://github.com/sparkfun/Qwiic_Haptic_Driver_DA7280"
 commit = "ac630821d991a89d011fd73b88e6a55ecad9677f"
 eagle = "Hardware/Qwiic_Haptic_Driver_DA7280.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/f/2/5/3/SparkFun_Qwiic_Haptic_Motor_Driver_DA7280_Schematic.pdf"
+sha256 = "05b1321d0daa6b60f48b8f12d9ffaf80137ce6cddfd19795ad486c825cc582d2"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -492,6 +552,7 @@ repo = "https://github.com/sparkfun/Qwiic_Human_Presence_Sensor_Breakout_AK9753"
 commit = "0640c2d5ef47fa5c3a4e75f9ebf3833a15a43a04"
 eagle = "Hardware/AK9753 Human Movement Sensor.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/8/c/3/2/AK9753_Human_Movement_Sensor.pdf"
+sha256 = "a500b5238801bfa77391be5a9e65e73558cde38123e3946ce236fd90367e8ae3"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -500,6 +561,7 @@ repo = "https://github.com/sparkfun/Qwiic_IR_Array_MLX90640"
 commit = "0b52eb6cbc6c97dc2a4942b533b047a7e4f79f77"
 eagle = "Hardware/sparkfun-mlx90640-qwiic-breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/1/d/e/8/7/sparkfun-mlx90640-qwiic-breakout-110.pdf"
+sha256 = "04abbd7900214ea98aa7a657b919a93746ac7cab2b216aa981e77d19600317b3"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -508,6 +570,7 @@ repo = "https://github.com/sparkfun/Qwiic_Joystick"
 commit = "de68739647f5b3a922038a8e68c99f77afe78f39"
 eagle = "Hardware/Qwiic Joystick_Eagle/Qwiic Joystick.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/4/a/6/8/Qwiic_Joystick.pdf"
+sha256 = "f104d221b31fd009891e145e21a586e6a2d4a2d522eae0b416bfa0f036054aa1"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -516,6 +579,7 @@ repo = "https://github.com/sparkfun/Qwiic_KX13X"
 commit = "55bc7c6c0eca6dca769e3a8d90da9c1b791cbca2"
 eagle = "Hardware/Qwiic_KX13X.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/f/0/9/c/1/Qwiic_KX13X-Schematic.pdf"
+sha256 = "008b43bf4be545e9d7c10644afb968c4f14591b07d8a15d8dc5e8ffe8c320075"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -524,6 +588,7 @@ repo = "https://github.com/sparkfun/Qwiic_Keypad"
 commit = "79ca98fc8a3651aa9964ea5cb48968e96004a338"
 eagle = "Hardware/Qwiic_keypad.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/2/f/a/4/Qwiic_Keypad_Schematic.pdf"
+sha256 = "54f705ff3f4b95b3556d3190ec70139e3fa1611a906da685955c5f11cfe6f28d"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -532,6 +597,7 @@ repo = "https://github.com/sparkfun/Qwiic_Magnetometer_MLX90393"
 commit = "f1b8460e55f5edb08e80d06ad6c6e3765dccc4c0"
 eagle = "Hardware/Qwiic_MLX90393_Magnetometer.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/b/b/3/5/a/Qwiic_MLX90393_Magnetometer.pdf"
+sha256 = "25b6c59697d874f71a7240feaad38376581a1b17429d83b214c4de5a7bb45c17"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -540,6 +606,7 @@ repo = "https://github.com/sparkfun/Qwiic_Micro_OLED"
 commit = "90c144e8779203f983fa8535b9fb109817c94e13"
 eagle = "Hardware/Qwiic_OLED_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/c/7/4/c/Qwiic_OLED_Breakout_Schematic_v11.pdf"
+sha256 = "e640a9a9cfd438550ba2d4cd7a64b12284c8cc91b6f11c79637388b7705a99c0"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -548,6 +615,7 @@ repo = "https://github.com/sparkfun/Qwiic_Motor_Driver"
 commit = "a44350da5d4e617367bbc40100f4e3fe357c8bc7"
 eagle = "Hardware/SparkFun_Qwiic_Motor_Driver.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/9/4/6/2/6/SparkFun_Qwiic_Motor_Driver_Schematic.pdf"
+sha256 = "c76164cf136ba5392b6a215e8eeaeec6eced1934c8dd3124586288c11fc645bd"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -556,6 +624,7 @@ repo = "https://github.com/sparkfun/Qwiic_MultiPort"
 commit = "bb0af57b72311cc8a38b859f978a387f4190a078"
 eagle = "Hardware/Qwiic_MultiPort.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/d/6/c/3/SparkFun_Qwiic_MultiPort_Schematic.pdf"
+sha256 = "73d6f3ce06b43a1483d3904478a5b9ab9402bf10e6281f2c76627864f096bf4f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -564,6 +633,7 @@ repo = "https://github.com/sparkfun/Qwiic_Mux_TCA9548A"
 commit = "5f1e44bd72012911e0cdbca28fbb848afd1cbaaf"
 eagle = "Hardware/Qwiic Mux.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/2/f/c/6/Qwiic_Mux_Schematic.pdf"
+sha256 = "5c2b4bf097b59026588f45b3e4310af3df03f2863f0df1c2b419969213b8943f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -572,6 +642,7 @@ repo = "https://github.com/sparkfun/Qwiic_OpenLog"
 commit = "1d8b6e44495efb476bb991847acbf9008f55b063"
 eagle = "Hardware/Qwiic-OpenLog.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Boards/OpenLog_v15.pdf"
+sha256 = "3ea7e98163c5a35b471110a5bf1d7c702e0676f5ea8934da6b1dacd1f1151541"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -580,6 +651,7 @@ repo = "https://github.com/sparkfun/Qwiic_Pi_SHIM"
 commit = "095c0e48cb4c9248ca8158f78ce8b28fcf513069"
 eagle = "Hardware/Qwiic Pi SHIM.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/8/b/0/f/0/Qwiic_Pi_SHIM_Schematic.pdf"
+sha256 = "dd4f5c4e62dc6ed2d2f526a1e92614cf790a51c4c4f8f19f3dd3fa757df262d2"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -588,6 +660,7 @@ repo = "https://github.com/sparkfun/Qwiic_Quad_Relay"
 commit = "be35d3c945a85d48b611499fd82f4b59cee42c68"
 eagle = "Hardware/Qwiic_Quad_Relay.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/5/4/9/f/6/Qwiic_Quad_Relay_Schematic-v20.pdf"
+sha256 = "de62c755fe39d08bda92ff5a36b7a6ed903a8895b6debc0b4ef9362734337812"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -596,6 +669,7 @@ repo = "https://github.com/sparkfun/Qwiic_RTC_Module"
 commit = "5405a6007d2e7da4f44f99ac6ce445181ad8dbbc"
 eagle = "Hardware/RTC-Module.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/5/7/0/4/6/SparkFun-Qwiic-RTC-Module.pdf"
+sha256 = "60e9975c55b3380610724a89bf3bd91c35933dc24bccb2f1930bf8b68f9d1254"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -604,6 +678,7 @@ repo = "https://github.com/sparkfun/Qwiic_Scale"
 commit = "16887df36681525da5fcc14670a7e01a85b40429"
 eagle = "Hardware/Qwiic_Scale.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/a/5/9/d/Qwiic_Scale.pdf"
+sha256 = "563713f0e512c22afca3f9dc1efa7d3645e55688b8d8944faf0e906ed9d80dee"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -613,6 +688,7 @@ group = "sparkfun/Qwiic_Shield_for_Teensy"
 commit = "60a86ba70840a9843358b8a94539f0bafb7e8d15"
 eagle = "Hardware/Qwiic_Shield_for_Teensy.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/1/2/9/6/Qwiic_Shield_for_Teensy_SCHEMATIC.pdf"
+sha256 = "fcc5a2986f6fea406d1b2f8b21587281e10c2d50cd649b36ce94af405935932c"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -622,6 +698,7 @@ group = "sparkfun/Qwiic_Shield_for_Teensy"
 commit = "02723c3fdd64ea28e176dfccc9ae82cd8c25285b"
 eagle = "Hardware/Qwiic_Shield_for_Teensy_Extended.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/1/2/9/6/Qwiic_Shield_for_Teensy_Extended_SCHEMATIC.pdf"
+sha256 = "90e84148d33e1c463ec7564ed580d606c58c71b679e791e1adbdbf588af2d109"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -630,6 +707,7 @@ repo = "https://github.com/sparkfun/Qwiic_Shield_for_Thing_Plus"
 commit = "eddb3b6d450e8bb8ab7cdbc42ce849bd07bf18d3"
 eagle = "Hardware/Qwiic_Shield_for_Thing_Plus.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/b/0/d/1/4/Qwiic_Shield_Thing_Plus.pdf"
+sha256 = "247961cb3882b2c3c64dcce4eab82259a47236ae166985b035e78b9f36aeafc2"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -638,6 +716,7 @@ repo = "https://github.com/sparkfun/Qwiic_Spectral_Sensor_AS7265x"
 commit = "5ac9bae08f3a3c0e6617b7f1b3bf02a0c72b84ef"
 eagle = "Hardware/Qwiic_Spectral_Sensor-AS7265x.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/b/0/3/e/Qwiic_Spectral_Sensor-AS7265x.pdf"
+sha256 = "8bdd676b1ec679ceee7b3f4d17c84bb5c19c1a96ae23d96ba4204a4712551502"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -646,6 +725,7 @@ repo = "https://github.com/sparkfun/Qwiic_Spectral_Sensor_AS726X"
 commit = "e4bbb392de2abb1074f51b85ce3d1e824d76613d"
 eagle = "Hardware/Qwiic_Spectral_Sensor-AS726x.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/a/e/7/7/a/Qwiic_Spectral_Sensor-AS726x_v10.pdf"
+sha256 = "8d30962d85993b62d3fd17f0e1a65a6e63262e8aa0f0a8d2ead7978de87a757f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -654,6 +734,7 @@ repo = "https://github.com/sparkfun/Qwiic_Thermocouple_Amplifer"
 commit = "1789cec32d04aa73820a8af2b08e54bc9c01bb92"
 eagle = "Hardware/SparkFun_Qwiic_Thermocouple_Amplifier_PCC/SparkFun_Qwiic_Thermocouple_Amplifier_PCC.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/2/a/9/c/SparkFun_Qwiic_Thermocouple_Amplifier_PCC_Schematic.pdf"
+sha256 = "94afb2f6065dd4a2516426761eddccfef47cc01f1a8ef981a5af502472eca273"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -662,6 +743,7 @@ repo = "https://github.com/sparkfun/Qwiic_Transparent_OLED_HUD"
 commit = "d935a59b6fd5a479d8091a41228f02f475127c4d"
 eagle = "Hardware/QwiicHUD.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/e/8/e/f/b/SparkFun_Qwiic_OLED_HUD.pdf"
+sha256 = "54ad743faa011489999a39df08a78e397bfd64e7607964270de9413a8f99eec5"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -670,6 +752,7 @@ repo = "https://github.com/sparkfun/Qwiic_Twist"
 commit = "148cb8e78eab9d68ea71a0d1679a52bf729119f8"
 eagle = "Hardware/Qwiic Twist.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/1/8/1/7/6/Qwiic_Twist_Schematic.pdf"
+sha256 = "664ef3e1000e7471661fad9effc52e62a23f059e7e1fe8e15dab2b8cf9fb37c0"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -678,6 +761,7 @@ repo = "https://github.com/sparkfun/RFID_Reader_Breakout"
 commit = "485b316b8b8424b8b346ae21ffa89d8f49e07334"
 eagle = "hardware/RFID_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/ID/RFID_Breakout_v2.pdf"
+sha256 = "351a38e714c481cc78ec76b989a7c1f5743b1e5ed9ed5a9fdb2c9e06841ef7cd"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -686,6 +770,7 @@ repo = "https://github.com/sparkfun/RFM69HCW_Breakout"
 commit = "138c0f17825d79416fd14d0ca249b5ce043b3a55"
 eagle = "hardware/RFM69HCW_BOB.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Wireless/General/RFM69HCW_BOB.pdf"
+sha256 = "3bb4198b3a17dbd21665041f36bff4217b6c30727a3e4713bd48c65009104f74"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -694,6 +779,7 @@ repo = "https://github.com/sparkfun/RS-485_Breakout"
 commit = "f935a58545d7c8349fc77e76ef60ffe8573419c0"
 eagle = "Hardware/RS485_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/RS485_Breakout_v10.pdf"
+sha256 = "6a0f361bdbb75968035f467ed09c4345e65b663636ffb9aab1a43cc37e16a068"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -702,6 +788,7 @@ repo = "https://github.com/sparkfun/Rotary_Switch_Breakout"
 commit = "93597d85a1a09a20ca7acc237a5db2e4701f1980"
 eagle = "Hardware/Rotary_Switch_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/Rotary_Switch_Breakout.pdf"
+sha256 = "173ddd7c6d7b3be35ee1b561993b2b991bcc52c7418fa3faa9e0251541afba2a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -710,6 +797,7 @@ repo = "https://github.com/sparkfun/SD-MMC_Breakout"
 commit = "ed02ed217984444814770baacd415f57695a1d3c"
 eagle = "Hardware/SD_MMC Breakout-v20.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/SD_MMC%20Breakout-v20a.pdf"
+sha256 = "09108563d1af0a40dc0382300228720726b6d030ef78bfe0d437d91c297b7f9d"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -718,6 +806,7 @@ repo = "https://github.com/sparkfun/SHT15_Breakout"
 commit = "87e9ad6e067fc8aeb16fe60c05b70d71153b6f28"
 eagle = "Hardware/SHT1x-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Pressure/SHT1x-Breakout-v14.pdf"
+sha256 = "2e3f45227778932d954f08397a157a5b39b4e5b8e92a93644bcb9734e575928a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -726,6 +815,7 @@ repo = "https://github.com/sparkfun/SIM_Card_Breakout"
 commit = "c11a40b1066c3ce977212668e8ab413fb79ca4e4"
 eagle = "Hardware/Sim_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/Sim_Breakout.pdf"
+sha256 = "9855f94900afefb919bdc8bfd32f18a5a105a069b2a1e60f49ae2e5e0152d4ce"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -734,6 +824,7 @@ repo = "https://github.com/sparkfun/Serial_Basic_Breakout-CH340C"
 commit = "3dc9f615f47b4e6cc5d50c5159db8020a766870d"
 eagle = "Hardware/Serial-Basic-CH340C.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/5/2/5/4/2/Serial-Basic-CH340C-and-USBC.pdf"
+sha256 = "b2bce1c497ca45cc64487a79d18fe3579a63be2554b0745f1fe89c26678b5148"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -742,6 +833,7 @@ repo = "https://github.com/sparkfun/Si7021_Breakout"
 commit = "3b62d537da323a9aee480897cc5b1fd58fbdcb2a"
 eagle = "Hardware/SparkFun_Si7021_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Weather/SparkFun_Si7021_Breakout.pdf"
+sha256 = "9da2961eb74a3dfbe0a9e6d7915c4959b48feffe5fe85cc9a3ff4d8420c63b44"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -750,6 +842,7 @@ repo = "https://github.com/sparkfun/SparkFun-Fuse-Breakout-Board"
 commit = "5dfcd0144e995fc9ea9b8d25a409c9429df4c5ed"
 eagle = "Hardware/SparkFun Fuse Breakout Board.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/9/6/0/5/SparkFun_Fuse_Breakout_Board-Schematic.pdf"
+sha256 = "aca569f184376e422c2e15c854e87584d17be310da9c804367aea7372d42ac8c"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -758,6 +851,7 @@ repo = "https://github.com/sparkfun/SparkFun_Air_Velocity_Sensor_FS3000_Qwiic"
 commit = "fa15371c149270a6bedaa97e21085b6313376865"
 eagle = "Hardware/SparkFun_Qwiic_FS3000.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/7/7/2/0/SparkFun_Qwiic_FS3000_1X1.pdf"
+sha256 = "80e4de7836e6c8ff44d3fbfa4621d309db77688657f6273a4edcbfad44d30036"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -766,6 +860,7 @@ repo = "https://github.com/sparkfun/SparkFun_Audio_Codec_Breakout_WM8960"
 commit = "1657fe53b7154518bdd9ad54b5810272ddb1a50f"
 eagle = "Hardware/Stereo_Audio_Codec_Breakout_WM8960.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/5/f/c/f/Stereo_Audio_Codec_Breakout_WM8960_v10_Schematic.pdf"
+sha256 = "b7b3144891dc70fcd404001eac8f39eda585c4b0852a02dff81e38731061fa8c"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -774,6 +869,7 @@ repo = "https://github.com/sparkfun/SparkFun_BME280_Breakout_Board"
 commit = "d0c0d26f558a1a9456d34707d2015322559264de"
 eagle = "Hardware/SparkFun_BME280_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Weather/SparkFun_BME280_Breakout_v10.pdf"
+sha256 = "6e72a5e66d00129b00a64b8a856d11891bbf971aec7735724386d90dce2e72c9"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -782,6 +878,7 @@ repo = "https://github.com/sparkfun/SparkFun_Cryptographic_Co-Processor_Breakout
 commit = "15daf16f88f406587da28e356ad43c16106a45a0"
 eagle = "Hardware/SparkFun_Cryptographic_Co-processor_ATECC508A.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/3/3/1/d/4/SparkFun_Qwiic_Cryptographic__ATECC508A_Schematic.pdf"
+sha256 = "04cac270da262b254e62a626eb245ceb21ffe9500350f72a1b4b194279cbdfd3"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -790,6 +887,7 @@ repo = "https://github.com/sparkfun/SparkFun_Digi_XBee_Regulated_Qwiic"
 commit = "e64e2e230e75a5dd553f1d73e0da5847ceb132a9"
 eagle = "Hardware/SparkFun_Digi_XBee_Regulated_Qwiic.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/0/c/f/f/22032-SparkFun_Digi_XBee_Regulated_Qwiic-Schematic.pdf"
+sha256 = "982053f54c7f790e494e4754f0cf38f88d462ea6137667d18492ac794316764a"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -798,6 +896,7 @@ repo = "https://github.com/sparkfun/SparkFun_ESLOV_to_Qwiic_Bridge"
 commit = "1f4584cb983ac5f8825e6abce2ed3f80ca97adb2"
 eagle = "Hardware/SparkFun_ESLOV_to_Qwiic_Bridge.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/6/1/0/f/SparkFun_ESLOV_to_Qwiic_Bridge.pdf"
+sha256 = "b41e6293e24f7842526cf30310c4f5ecd34f6eadd792e90beb16fcc43ecba70d"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -806,6 +905,7 @@ repo = "https://github.com/sparkfun/SparkFun_ESP32_Thing_Plus_DMX_to_LED_Shield"
 commit = "f1cc4490764cce058b1f2b7143e9322ff29fc7d1"
 eagle = "Hardware/SparkFun ESP32 Thing Plus DMX to LED Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/1/c/c/d/SparkFun_ESP32_Thing_Plus_DMX_to_LED_Shield.pdf"
+sha256 = "21438111abfdca4455bc17d160c6bb8876f2b6ae5f30159e19502dce591d306f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -814,6 +914,7 @@ repo = "https://github.com/sparkfun/SparkFun_Environmental_Sensor_Breakout_BME68
 commit = "7cba7ff2272990ce5b9737c3927a66c913bdef61"
 eagle = "Hardware/Qwiic Environmental BME680.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/1/1/6/8/Environmental_Sensor_Breakout_BME680.pdf"
+sha256 = "8751f5810f36ff8db1fd065087afabaf959c2b3d84eb0a77c0eaf5f72b991327"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -822,6 +923,7 @@ repo = "https://github.com/sparkfun/SparkFun_GNSS_Combo_Breakout-ZED-F9P_NEO-D9S
 commit = "92ddc484ae851a24b16f331fdbe40f64cf27ebbe"
 eagle = "Hardware/ZED-F9P_NEO-D9S_Combo.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/d/0/4/0/Schematic.pdf"
+sha256 = "847b41aae5ac9c985b397883dff4637aeb5e4d9499d5ff2d0b2fa8d731cbef1f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -830,6 +932,7 @@ repo = "https://github.com/sparkfun/SparkFun_GPS_Breakout_XA1110_Qwiic"
 commit = "bcc7f14012f900f573a1291731bc1d7a366607c9"
 eagle = "Hardware/Qwiic GPS - Titan X1.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/4/e/b/c/c/Qwiic_GPS_-_Titan_X1_v10.pdf"
+sha256 = "82826f91cec112a8c23bcde9bfe9857d248c4f0fdbb66685c60c6d59fdd5aeab"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -838,6 +941,7 @@ repo = "https://github.com/sparkfun/SparkFun_High_Precision_Temperature_Sensor_T
 commit = "1c8fcf9da6830e476ebb477ff0a58641b5b5a104"
 eagle = "Hardware/Sparkfun_TMP117_Qwiic.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/0/f/c/a/SparkFun_TMP117_Qwiic_Schematic_v1.pdf"
+sha256 = "7e86520802455809a57b198a9246bdd17c3d956c838e6a1cf2657e40fc00381c"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -846,6 +950,7 @@ repo = "https://github.com/sparkfun/SparkFun_LTE_GNSS_Breakout_SARA-R510M8S"
 commit = "0a1bc1fc8cca7402814b0cb56270b7de09cbd46d"
 eagle = "Hardware/SparkFun_LTE_GNSS_Breakout_SARA-R510M8S.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/1/5/f/a/e/SparkFun_LTE_GNSS_Breakout_SARA-R5_Schematic.pdf"
+sha256 = "572dcf2be16d51356d9955ff6e5faf0809de622cc07935f678bf7b2f6487eb89"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -854,6 +959,7 @@ repo = "https://github.com/sparkfun/SparkFun_PIR_Breakout"
 commit = "8f20902764dbd058dedbecb93f44bc2a9b6acd0f"
 eagle = "Hardware/SparkFun_PIR_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/a/b/3/8/7/SparkFun_PIR_Breakout-Schematic.pdf"
+sha256 = "afb65cf23c85e79d7c3e177914b70e20aff49e1de8297e206695204258f79a8f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -862,6 +968,7 @@ repo = "https://github.com/sparkfun/SparkFun_Photodetector_Breakout_MAX30101_Qwi
 commit = "09b8439ec0c72a999c7ef83918f2e77201eda626"
 eagle = "Hardware/SparkFun_MAX30101_Qwiic.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/e/a/e/d/f/SparkFun_MAX30101_Qwiic_Schematic.pdf"
+sha256 = "aeeab1178a91ef0a5dc1af3f036b3d4e162218cb8a2ffc41860331bb9306c1e4"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -870,6 +977,7 @@ repo = "https://github.com/sparkfun/SparkFun_Pulsed_Radar_Breakout_A111"
 commit = "b785ceddff2768419c88e5d0687ead96bd1e6a56"
 eagle = "Hardware/A111_Pulsed_Radar_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/4/a/8/a/b/SparkFun_A111_Pulsed_Radar_Sensor_Breakout_Schematic_V1_1.pdf"
+sha256 = "71f2878ef0e5b38e2a1a9a2654b60ff21dd9e0e827abd3300c5e268db982f079"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -878,6 +986,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_6DoF_BMI270"
 commit = "647ee6b8d39abb2d523180813e3d355794fee199"
 eagle = "Hardware/Qwiic 1x1/SparkFun_Qwiic_6DoF_BMI270.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/a/3/d/f/SparkFun_Qwiic_6DoF_BMI270-Schematic.pdf"
+sha256 = "8eaf1966cd092786071e3d4066301de762d835fdca32abcb288977805834535d"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -886,6 +995,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_6DoF_ISM330DHCX"
 commit = "324b03cc4fc5affbbec53e07a60ecd3c2040d676"
 eagle = "Hardware/Qwiic/SparkFun_6DoF_ISM330DHCX.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/e/8/9/c/3/SparkFun_6DoF_ISM330DHCX_Schematic.pdf"
+sha256 = "210f1514ab1df5bfdcb753035e4aa72aac421d0eb837b93f1b323282af571e9b"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -894,6 +1004,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_9DoF-ISM330DHCX-MMC5983MA"
 commit = "601f0d1173cfc097a71fc4dcdba33a6380a54e0f"
 eagle = "Hardware/SparkFun_9DoF_ISM330DHCX-MMC5983MA.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/b/0/e/4/9/SparkFun_9DoF_ISM330DHCX-MMC5983MA.pdf"
+sha256 = "8a102d7bd46d82fc7c9afad5c58900e25d9d3420a8d6225966bb81264a37d956"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -902,6 +1013,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_9DoF_IMU_Breakout"
 commit = "59feb5b63549d33e2bb29330e17603e909738d43"
 eagle = "Hardware/SparkFun_IMU_Breakout_ICM-20948.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/7/8/f/8/15335_9DoF_Schematic.pdf"
+sha256 = "8cba63c7ceeffdc4de860cb79470fd15d2a0a9f1aa24ee2cd8eef8dad217d328"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -910,6 +1022,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_ADXL313"
 commit = "42bca98366b878bae42b6392718e53e56b599bd4"
 eagle = "Hardware/SparkFun_Qwiic_ADXL313.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/9/b/0/1/5/SparkFun_Qwiic_ADXL313.pdf"
+sha256 = "fc63f80c138d80dd5acafdce8d5c703eff8d52010a7611a4f991947f01f0a2c7"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -918,6 +1031,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_Accelerometer_BMA400"
 commit = "f541ac236448d9c2d1d7faa6ab0fac864504902d"
 eagle = "Hardware/Qwiic 1x1/SparkFun_Qwiic_Accelerometer_BMA400.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/0/2/5/5/b/SparkFun_Triple_Axis_Accelerometer_Breakout_-_BMA400__Qwiic_.pdf"
+sha256 = "88494cf3c2d8c5a02984bbc506f597f590f783b39905eb26c828ba3d58b5da45"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -926,6 +1040,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_LED_Stick"
 commit = "c1384482958eabba723107f6664df900f1174d6d"
 eagle = "Hardware/Qwiic LED Stick.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/b/c/9/c/1/Qwiic_LED_Stick_-_Schematic.pdf"
+sha256 = "e1640564faa51797e7b2dbf685f46fea17cb92ec66736b07e48f643268e031c1"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -934,6 +1049,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_Micro_SAMD21E"
 commit = "f9bbdf17348430cfa096b66d87ff7b674f92c42c"
 eagle = "Hardware/SparkFun_Qwiic_Micro_SAMD21E.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/4/f/a/1/4/SparkFun_Qwiic_Micro-SAMD21_Schematic.pdf"
+sha256 = "4a85ae6fc76f587e26e54e2bca491d416ec50826b06e955b39381f9cf87db5ae"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -942,6 +1058,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_Pocket_Dev_Board_ESP32_C6"
 commit = "ac9767e516ed3a63ea0e844dab2cc98f9211bb9b"
 eagle = "Hardware/Qwiic_Pocket_Dev_ESP32_C6.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/4/0/a/9/Qwiic_Pocket_Dev_ESP32_C6.pdf"
+sha256 = "f5280b3673dcb92f75a16de75f16088fd9a8579c804eaeafb49a4e92285dade3"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -950,6 +1067,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_Power_Switch"
 commit = "2c183e8acffc127bcfb2ef6cd8bfc8866f09fe7c"
 eagle = "Hardware/Qwiic Power Switch.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/e/5/4/7/Schematic.pdf"
+sha256 = "dc2d9156f26bd9e2909fd0e8e01e8d4bd48c72ddf8671330c90be2a375ad90b8"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -958,6 +1076,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_Pressure_Sensor_BMP581"
 commit = "71a322aef741fe8200dafe76c7d4f40b3a0f9627"
 eagle = "Hardware/Qwiic 1x1/SparkFun_Pressure_Sensor_BMP581_Qwiic.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/0/8/a/7/a/SparkFun_Pressure_Sensor_BMP581_Qwiic-Schematic.pdf"
+sha256 = "6d29a30bdbcdb479576dec403f333c4aae515669e151dd403a3b375e92b8ef21"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -966,6 +1085,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_RFID_ID-XXLA"
 commit = "777907715d2f2e18895e06ac3d5d56cb1f634734"
 eagle = "Hardware/Qwiic RFID - IDXXLA.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/1/2/6/f/9/Qwiic_RFID_-_IDXXLA-Sch_v10_commit_ef1acfd.pdf"
+sha256 = "419f3c2f0e059951e7952fc38a175d5e42551d7c8c19332ac9a6a12c4aff3038"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -974,6 +1094,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_RFID_Tag_ST25DV64KC"
 commit = "d8418bf8f6af6fbd758b479a745f793772e28e5a"
 eagle = "Hardware/Qwiic_RFID_Tag.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/a/a/7/b/Qwiic_RFID_Tag.pdf"
+sha256 = "5c97ebdb748a912653ddc067ee77286ef6203654cdebe7a40d4129376f3d7f3e"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -982,6 +1103,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_dToF_Imager-TMF882X"
 commit = "9a61a9a3802b5b55334b010f91acde8422aa801d"
 eagle = "Hardware/TMF8820/SparkFun_dToF-TMF8820.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/2/a/c/3/f/SparkFun_dToF-TMF8820_Schematic.pdf"
+sha256 = "9bb6436939e247ab8d83a095062b95c6c085924df24cb710cbd3412247fbd829"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -990,6 +1112,7 @@ repo = "https://github.com/sparkfun/SparkFun_Qwiic_pHAT_Extension"
 commit = "65cd2674ce8cfaf0fff982e91a8c938133784a90"
 eagle = "Hardware/SparkFun_Qwiic_pHAT_Extension.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/5/2/a/1/9/SparkFun_Qwiic_pHAT_Extension_Raspberry_Pi_400_Schematic.pdf"
+sha256 = "c1ba42cd579a6d726588aa21c8c70eeadb943e908f8eb29160c38b76a414b378"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -998,6 +1121,7 @@ repo = "https://github.com/sparkfun/SparkFun_Tsunami_Super_WAV_Trigger_Qwiic"
 commit = "fd6d7a668cea5c74cc46d54bbc412ebfe94ee260"
 eagle = "Hardware/SparkFun_Tsunami_Qwiic.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/f/d/8/2/1/SparkFun_Tsunami_Qwiic_SCHEMATIC-v21.pdf"
+sha256 = "06a393536d73815ecceb82f0f23352f758e145d145c969c9fb5970a0efb8541d"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1006,6 +1130,7 @@ repo = "https://github.com/sparkfun/SparkFun_Ultrasonic_Distance_Sensor-Qwiic"
 commit = "cc095946ec6af1ab446bc70706e2b697bbc701c2"
 eagle = "Hardware/SparkFun_Ultrasonic_Sensor.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/0/5/9/0/SparkFun_Ultrasonic_Sensor_Schematic.pdf"
+sha256 = "0a41e6fca3bc95d3723fb3fddeb943ffd760fc0b214042e8c60b9c3f2aeb0a05"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1014,6 +1139,7 @@ repo = "https://github.com/sparkfun/Spectrum_Shield"
 commit = "415dbadc76af4909902b382a3e98be77a9b26695"
 eagle = "Hardware/Spectrum_Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/Spectrum_Shield_v16.pdf"
+sha256 = "eed73d0d8af590d832c4c64a33b622d4b8ab5c520f7102c37aaab0bba50c6f4c"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1022,6 +1148,7 @@ repo = "https://github.com/sparkfun/THAT_1206_Breakout"
 commit = "893444584e87029ffe3cbcda66454c870ab8d048"
 eagle = "Hardware/THAT_1206_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/THAT_1206_Breakout_Board.pdf"
+sha256 = "9a35d90483a78094c460262525794a461508b9c1dedc0ef666fae8b6e3ed7d69"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1030,6 +1157,7 @@ repo = "https://github.com/sparkfun/Teensy_Arduino_Shield_Adapter"
 commit = "dce650c27c4a5d1faef37d047430d1c5d8e21c00"
 eagle = "Hardware/SparkFun_Teensy_Adapter.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/7/9/4/f/b/SparkFun_Teensy_Adapter.pdf"
+sha256 = "6e7cb93d8f39de3f7bb7e1b341959451e094a3ab91dc1c1a8db466241604359f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1038,6 +1166,7 @@ repo = "https://github.com/sparkfun/Temperature_Sensor_TMP102_Qwiic"
 commit = "896df29602825f7368d7c533a1cda594b629c07a"
 eagle = "Hardware/SparkFun_TMP102_Qwiic.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/d/1/6/7/4/SparkFun_TMP102_Qwiic-Schematic.pdf"
+sha256 = "efdbf92722545c645b8adb430616d6571ef89b66224b1e72cc47e95026ed1c93"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1046,6 +1175,7 @@ repo = "https://github.com/sparkfun/ToF_Range_Finder_Breakout-VL6180"
 commit = "818e280b3d483f1d5c5e5f00ea2d25e2ced1bdf9"
 eagle = "Hardware/SparkFun_VL6180_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Sensors/Proximity/VL6180_Breakout_v10.pdf"
+sha256 = "215d21b545c90e98b06bc2edf127a6777e1d8c8979a27ef8ac0aee718816fe78"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1054,6 +1184,7 @@ repo = "https://github.com/sparkfun/USB-C-Breakout"
 commit = "3ba323b8a051d6f4672e8ba8883e5a11f7e75076"
 eagle = "Hardware/USB-C-Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/6/1/7/9/8/USB-C-Breakout_Schematic.pdf"
+sha256 = "8a84022e7a31ee1bebcc8066f27d481deeafc678ab071c6d9623b4092a9ed1e1"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1062,6 +1193,7 @@ repo = "https://github.com/sparkfun/USB_microB_Plug_Breakout"
 commit = "36dc3921cb0c3b076f169bc257947942006901fc"
 eagle = "Hardware/SparkFun_USB_MicroB_Plug_Breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun_USB_MicroB_Plug_Breakout_v12.pdf"
+sha256 = "706308d49c0773a8e63e955636c1ff048b3f417b6cb0423cf4305c00efb13795"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1070,6 +1202,7 @@ repo = "https://github.com/sparkfun/Vernier_Interface_Shield"
 commit = "688333ca7bf8bfe39828b2505cca309123b325ec"
 eagle = "Hardware/SparkFun_Vernier_Interface_Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/datasheets/Dev/Arduino/Shields/Vernier_Interface_Shield_v12.pdf"
+sha256 = "c0ecdbeedf1c68ec180899d4716cd4bfe5c1d2f6e8c643bb561be64a0ef33357"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1078,6 +1211,7 @@ repo = "https://github.com/sparkfun/Weather_Shield"
 commit = "bcb9c7838c64ac094fe61772af8a252494f5caea"
 eagle = "Hardware/Weather Shield_V12.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/1/1/4/d/6/Weather_Shield_V12.pdf"
+sha256 = "de667e50bf25b1c834910ecb5e373b807922df93b5da92ebc53ca6c81ed30400"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1086,6 +1220,7 @@ repo = "https://github.com/sparkfun/WiFi_Shield-DA16200"
 commit = "58bcfb76ddd68a6289cd152019471a2afb9082fb"
 eagle = "Hardware/SparkFun WiFi Shield - DA16200.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/c/2/2/4/a/18567-WiFiShield-DA16200_Schematic.pdf"
+sha256 = "807b4a813beeb8ad815bdce280373cc9c9e3aa3fd22bc902339fb25e501a439f"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1094,6 +1229,7 @@ repo = "https://github.com/sparkfun/Wireless_Motor_Driver_Shield"
 commit = "9e1d905ae6d11a4b8002ef5235314d26409c5b17"
 eagle = "hardware/Wireless_Motor_Driver_Shield.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/parts/1/2/2/4/3/Wireless_Motor_Driver_Shield.pdf"
+sha256 = "4caadc455c0876981525839e13b155df38a7366172f30017413ad4bebad4ee25"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1102,6 +1238,7 @@ repo = "https://github.com/sparkfun/nRF52832_Breakout"
 commit = "5bb074faddfa6c3f8c84bc3f9275e7bf2f174426"
 eagle = "Hardware/sparkfun-nrf52832-breakout.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/5/4/9/sparkfun-nrf52832-breakout-schematic-v10.pdf"
+sha256 = "a51623de802900aff85d4b0f5bcc69c0ab897ed6f1820277f299fa992ed09b42"
 license = "CC-BY-SA-4.0"
 
 [[project]]
@@ -1110,4 +1247,5 @@ repo = "https://github.com/sparkfun/nRF52840_Breakout_MDBT50Q"
 commit = "6c5adaa14dac9ce4c3fc99354011cb9172e05439"
 eagle = "Hardware/nrf52840-breakout-mdbt50q.sch"
 pdf_url = "https://cdn.sparkfun.com/assets/learn_tutorials/8/2/0/nrf52840-breakout-mdbt50q-v10.pdf"
+sha256 = "c63a7b163ff7dcc266464526dcd810b91b2005d356b12eea26787820e76bc85e"
 license = "CC-BY-SA-4.0"

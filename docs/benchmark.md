@@ -34,6 +34,8 @@ extraction from the drawing.
 
 Corpus C pairs the schematic PDF on a SparkFun product page with the `.sch`
 in the board's repository, taken at the last commit before the PDF was made.
+No commit pins a product page's PDF, so the manifest keeps its sha256 and a build
+fails when a download differs.
 `eagle.py` reads the netlist from the `.sch`, mapping each pin to the pad of
 its package, which is what the PDF numbers. A pin on several pads is printed
 with its first pad and a count, as in `1*56`, so the truth holds it as that

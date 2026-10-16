@@ -44,6 +44,7 @@ class Project:
     eagle: str | None = None  # an Eagle schematic in the repo
     easyeda: str | None = None  # an EasyEDA (Std) schematic in the repo
     pdf_url: str | None = None  # where its published PDF is
+    sha256: str | None = None  # of the PDF at pdf_url, which no commit pins
     repo: str | None = None
     commit: str | None = None
     license: str | None = None
@@ -189,6 +190,9 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
         except subprocess.CalledProcessError as e:
             failed.append(project.name)
             log(f"failed {project.name}: {(e.stderr or e.stdout or '').strip()}")
+        except ValueError as e:
+            failed.append(project.name)
+            log(f"failed {project.name}: {e}")
     return failed
 
 
@@ -219,6 +223,10 @@ def _build_from_eagle(project: Project, cache: Path, out: Path) -> None:
         request = urllib.request.Request(project.pdf_url, headers={"User-Agent": "schem2net"})
         with urllib.request.urlopen(request, timeout=120) as response:
             (out / "schematic.pdf").write_bytes(response.read())
+        found = hashlib.sha256((out / "schematic.pdf").read_bytes()).hexdigest()
+        if found != project.sha256:
+            (out / "schematic.pdf").unlink()
+            raise ValueError(f"{project.pdf_url} has sha256 {found}, not {project.sha256}")
     truth = eagle.read(source) if project.eagle else easyeda.read(source)
     (out / "truth.net").write_text(export.kicad_netlist(truth))
 
