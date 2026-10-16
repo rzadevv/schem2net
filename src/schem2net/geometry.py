@@ -80,6 +80,25 @@ def center(box: BBox) -> Point:
     return (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
 
 
+def reading_frame(angle: float) -> tuple[Point, Point]:
+    """Unit vectors along a text's reading direction and across it, towards its
+    baseline, on a page whose y runs down: at 90 degrees text reads upwards, at 180
+    right to left and upside down."""
+    a = math.radians(round(angle))
+    c, s = round(math.cos(a), 12), round(math.sin(a), 12)
+    return (c, -s), (s, c)
+
+
+def dot(p: Point, axis: Point) -> float:
+    return p[0] * axis[0] + p[1] * axis[1]
+
+
+def extent(box: BBox, axis: Point) -> tuple[float, float]:
+    """The span of a box along a unit vector."""
+    xs, ys = (axis[0] * box[0], axis[0] * box[2]), (axis[1] * box[1], axis[1] * box[3])
+    return min(xs) + min(ys), max(xs) + max(ys)
+
+
 class GridIndex:
     """Buckets integer ids by the grid cells their boxes cover."""
 

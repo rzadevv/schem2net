@@ -30,6 +30,7 @@ max_width = 1.0  # mm; pins and bodies are drawn alike, and printing may thicken
 min_length = 0.5  # mm
 numbers_above = true  # above horizontal pins, left of vertical ones
 flags_on_tips = true  # net port flags may sit straight on a pin's tip, with no wire
+numbers_have_digits = true  # pads are numbered; a sign or word by a pin names it
 
 [page]
 scale = 1.3889  # the export writes one EasyEDA unit, 10 mil, as one PDF point

@@ -135,7 +135,7 @@ def _designator_apart(text: Text, profile: Profile) -> list[Text]:
         return [text]
     if round(text.angle) % 90:
         return [text]
-    (ux, uy), _ = _frame(text.angle)
+    (ux, uy), _ = geometry.reading_frame(text.angle)
     lo, hi = _along(text.bbox, text.angle)
     cut = lo + (len(first) + 0.5) / len(text.text) * (hi - lo)
     x0, y0, x1, y1 = text.bbox
@@ -664,7 +664,7 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
         box = boxes[min(near)[1]]
         tx, ty = geometry.center(text.bbox)
         fx, fy = geometry.center(box)
-        if _frame(text.angle)[0][0]:  # reading along x
+        if geometry.reading_frame(text.angle)[0][0]:  # reading along x
             yield text, (box[0] if fx < tx else box[2], ty)
         else:
             yield text, (fx, box[1] if fy < ty else box[3])
@@ -672,7 +672,7 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
 
 def _on_line(text: Text, point: Point) -> bool:
     lo, hi = _across(text.bbox, text.angle)
-    return lo <= _dot(point, _frame(text.angle)[1]) <= hi
+    return lo <= geometry.dot(point, geometry.reading_frame(text.angle)[1]) <= hi
 
 
 def values_run(texts: list[Text], reach: int = 6) -> set[int]:
@@ -743,7 +743,7 @@ def _on_wire(
     ends where the text starts or stops, as a label set at a wire's open end: an end
     that `meets` nothing drawn, as a pin's end would."""
     x0, y0, x1, y1 = text.bbox
-    along, across = _frame(text.angle)
+    along, across = geometry.reading_frame(text.angle)
     lo, hi = _along(text.bbox, text.angle)
     base = _across(text.bbox, text.angle)[1]  # the baseline, on the far side across
     rise = LABEL_RISE * text.size
@@ -751,15 +751,17 @@ def _on_wire(
     drop = -DESCENT * text.size
     for k in index.within((x0 - rise, y0 - rise, x1 + rise, y1 + rise)):
         ends = wires[k]
-        if abs(_dot(ends[0], across) - _dot(ends[1], across)) >= 1e-3:
+        if abs(geometry.dot(ends[0], across) - geometry.dot(ends[1], across)) >= 1e-3:
             continue  # not along the text
-        gap = _dot(ends[0], across) - base
-        a, b = (_dot(e, along) for e in ends)
+        gap = geometry.dot(ends[0], across) - base
+        a, b = (geometry.dot(e, along) for e in ends)
         under = min(hi, max(a, b)) - max(lo, min(a, b))
         if drop <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
             return True
         # Ending at the text from either side, not running on under it.
-        near = [e for e in ends if min(abs(_dot(e, along) - v) for v in (lo, hi)) <= LABEL_END]
+        near = [
+            e for e in ends if min(abs(geometry.dot(e, along) - v) for v in (lo, hi)) <= LABEL_END
+        ]
         open_end = meets is None or not any(meets(e) for e in near)
         if drop <= gap <= rise and near and under <= LABEL_END and open_end:
             return True
@@ -869,32 +871,13 @@ def _whole_value(word: str) -> bool:
     return bool(PART_VALUE.match(word)) and any(c.isalpha() for c in word)
 
 
-def _frame(angle: float) -> tuple[Point, Point]:
-    """Unit vectors along a text's reading direction and across it, towards its
-    baseline, on a page whose y runs down: at 90 degrees text reads upwards, at 180
-    right to left and upside down."""
-    a = math.radians(round(angle))
-    c, s = round(math.cos(a), 12), round(math.sin(a), 12)
-    return (c, -s), (s, c)
-
-
-def _dot(p: Point, axis: Point) -> float:
-    return p[0] * axis[0] + p[1] * axis[1]
-
-
-def _extent(box: BBox, axis: Point) -> tuple[float, float]:
-    """The span of a box along a unit vector."""
-    xs, ys = (axis[0] * box[0], axis[0] * box[2]), (axis[1] * box[1], axis[1] * box[3])
-    return min(xs) + min(ys), max(xs) + max(ys)
-
-
 def _along(box: BBox, angle: float) -> tuple[float, float]:
     """Extent of a box in the reading direction of its text."""
-    return _extent(box, _frame(angle)[0])
+    return geometry.extent(box, geometry.reading_frame(angle)[0])
 
 
 def _across(box: BBox, angle: float) -> tuple[float, float]:
-    return _extent(box, _frame(angle)[1])
+    return geometry.extent(box, geometry.reading_frame(angle)[1])
 
 
 def unique_paths(paths: list[Path]) -> list[Path]:

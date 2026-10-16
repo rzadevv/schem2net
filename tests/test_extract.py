@@ -17,7 +17,6 @@ from schem2net.scene import (
     SheetPin,
     _along,
     _designator_apart,
-    _frame,
     _join_runs,
     drop_sheet_references,
     values_run,
@@ -1824,7 +1823,7 @@ def test_a_word_the_model_gives_some_chance_can_name_a_part():
 
 def _turned(text, along, across, angle, seq, color=(0, 0, 0)):
     """A text spanning `along` in its reading direction and `across` the other way."""
-    u, v = _frame(angle)
+    u, v = geometry.reading_frame(angle)
     corners = [
         (t * u[0] + w * v[0], t * u[1] + w * v[1]) for t in along for w in across
     ]  # fmt: skip
@@ -1891,3 +1890,24 @@ def test_a_header_row_missing_a_number_is_filled_from_its_progression():
     found = _numbered(left + right, words, profile.load("kicad"))
     assert found == ["1", "3", "5", "7", "9", "2", "4", "6", "8", "10"]
     assert left[2].how == "row"
+
+
+@pytest.mark.parametrize(("angle", "wire_y"), [(0, 11.4), (180, 9.9)])
+def test_a_label_sits_on_the_wire_at_its_baseline_however_turned(angle, wire_y):
+    """Upside down, a label's baseline is its top edge, and its wire runs above it."""
+    from schem2net.nets import _under_label
+
+    label = Label("SDA", "local", (10, 10, 20, 11.27), angle)
+    wires = [((9, wire_y), (21, wire_y)), ((9, 21.4 - wire_y), (21, 21.4 - wire_y))]
+    index = geometry.GridIndex()
+    for k, w in enumerate(wires):
+        index.add(k, geometry.bbox_of(w))
+    assert _under_label(label, wires, index, [], None, ("w", 1)) == ("w", 1, 0)
+
+
+def test_easyeda_reads_a_sign_by_a_pin_as_no_number():
+    """EasyEDA numbers its pads; a + by an LED's pin names it."""
+    pins = [symbols.Pin(0, ((14, 10), (11, 10))), symbols.Pin(1, ((16, 10), (19, 10)))]
+    words = [("+", (11.5, 8.2, 13.1, 9.6), 0.0), ("-", (17, 8.2, 18.6, 9.6), 0.0)]
+    assert "+" not in _numbered(pins, words, profile.load("easyeda"))
+    assert _numbered(pins, words, profile.load("kicad")) == ["+", "-"]

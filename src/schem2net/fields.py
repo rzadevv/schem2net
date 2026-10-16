@@ -773,7 +773,11 @@ def whole_names(pages: list[list[Symbol]]) -> None:
 def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: set[int]) -> None:
     """Pin numbers from the texts beside pins, leaving out texts already taken as
     designators or net names (`taken` holds their ids)."""
-    numbers = [t for t in scene.pin_numbers if id(t) not in taken and not _is_value(t.text)]
+    texts = [t for t in scene.pin_numbers if id(t) not in taken and not _is_value(t.text)]
+    # Where pads are always numbered, a sign or a word by a pin is its name.
+    numbered = not profile.pin_numbers_have_digits
+    numbers = [t for t in texts if numbered or any(c.isdigit() for c in t.text)]
+    words = [t for t in texts if not (numbered or any(c.isdigit() for c in t.text))]
     owned = [(p, s) for s in symbols if s.ref for p in s.pins]
     pins = [p for p, _ in owned]
     index = GridIndex()
@@ -847,7 +851,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
             pin.number = str(number)
             pin.how = "polarity" if len(part_pins) == 2 and tips else "position"
 
-    unused = [t for k, t in enumerate(numbers) if k not in used]
+    unused = [t for k, t in enumerate(numbers) if k not in used] + words
     # Texts in a colour both roles share are in both lists; each names one pin at most.
     seen = {id(t) for t in unused}
     _name_pins(

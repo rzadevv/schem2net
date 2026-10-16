@@ -573,6 +573,9 @@ def _under_label(
     """The wire or pin a label without an outline sits on: parallel, just below its baseline."""
     x0, y0, x1, y1 = label.bbox
     vertical = round(label.angle) % 180 == 90
+    along, across = geometry.reading_frame(label.angle)
+    lo, hi = geometry.extent(label.bbox, along)
+    base = geometry.extent(label.bbox, across)[1]  # its baseline, on the far side across
     region = (x0 - LABEL_GAP, y0 - LABEL_GAP, x1 + LABEL_GAP, y1 + LABEL_GAP)
     candidates = [(wires[j], (*node_of, j)) for j in wire_index.within(region)]
     near = sorted(pin_index.within(region)) if pin_index else []
@@ -586,12 +589,8 @@ def _under_label(
     for seg, node in candidates:
         if geometry.is_horizontal(seg) == vertical:
             continue
-        if vertical:
-            gap = seg[0][0] - x1
-            lo, hi, a, b = y0, y1, seg[0][1], seg[1][1]
-        else:
-            gap = seg[0][1] - y1
-            lo, hi, a, b = x0, x1, seg[0][0], seg[1][0]
+        gap = geometry.dot(seg[0], across) - base
+        a, b = geometry.dot(seg[0], along), geometry.dot(seg[1], along)
         overlaps = min(a, b) <= hi + 0.5 and max(a, b) >= lo - 0.5
         if -0.2 <= gap <= LABEL_GAP and overlaps and (best is None or gap < best[0]):
             best = (gap, node)

@@ -98,7 +98,8 @@ beside 2.2nF, are two parts' values however close they are drawn, and a line of
 Eagle's stroke text that reads as such values side by side is split per part.
 
 A pin number usually sits beside its pin; some libraries centre it on the pin's
-line instead. Card sockets and headers may mark only the first pin of each row,
+line instead. EasyEDA numbers every pad, so there a sign or a word beside a pin,
+as an LED's +, names it; KiCad and Eagle pads may be named so, and keep it. Card sockets and headers may mark only the first pin of each row,
 past its end or as pin 1 beside it, or the first and last: an evenly spaced row of
 unnumbered pins is then numbered from its marks, counting up from a single one.
 Where four in five pins of an evenly spaced row read numbers that count along it,
