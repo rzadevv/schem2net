@@ -1,4 +1,5 @@
 import ctypes
+import re
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
@@ -33,10 +34,12 @@ class PdfBuilder:
         raw.FPDFPageObj_Transform(obj, 1, 0, 0, 1, x, y)
         raw.FPDFPage_InsertObject(self.page.raw, obj)
 
-    def save(self, path, rotation=0):
+    def save(self, path, rotation=0, creator=None):
         raw.FPDFPage_GenerateContent(self.page.raw)
         self.page.set_rotation(rotation)
         self.pdf.save(path)
+        if creator:
+            _set_creator(path, creator)
         return path
 
     def _stroke(self, path, width, color):
@@ -44,6 +47,23 @@ class PdfBuilder:
         raw.FPDFPageObj_SetStrokeWidth(path, width)
         raw.FPDFPageObj_SetStrokeColor(path, *color, 255)
         raw.FPDFPage_InsertObject(self.page.raw, path)
+
+
+def _set_creator(path, creator):
+    """Name the program that made the PDF, in an update appended to the file: PDFium
+    writes no document information of its own."""
+    data = path.read_bytes().rstrip(b"\n") + b"\n"
+    root = re.findall(rb"/Root (\d+ \d+ R)", data)[-1]
+    size = int(re.findall(rb"/Size (\d+)", data)[-1])
+    prev = int(re.findall(rb"startxref\s+(\d+)", data)[-1])
+    info = b"%d 0 obj\n<< /Creator (%s) >>\nendobj\n" % (size, creator.encode())
+    xref = len(data) + len(info)
+    tail = (
+        b"xref\n0 1\n0000000000 65535 f \n%d 1\n%010d 00000 n \n" % (size, len(data))
+        + b"trailer\n<< /Root %s /Info %d 0 R /Size %d /Prev %d >>\n" % (root, size, size + 1, prev)
+        + b"startxref\n%d\n%%%%EOF\n" % xref
+    )
+    path.write_bytes(data + info + tail)
 
 
 MM = 72 / 25.4
