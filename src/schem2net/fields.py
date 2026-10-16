@@ -72,6 +72,8 @@ MEET = 0.15  # mm between lines that meet in a symbol's drawing
 # A tolerance, voltage, power or current rating; "1A" may name a pad, "1.5A" does not.
 RATING = re.compile(r"^\d+([./]\d+)?\s*(%|[mkuμµ]?[VW])$|^\d+[./]\d+\s*[muμµ]?A$")
 PAD_COUNT = re.compile(r"\*\d+$")  # Eagle writes a pin on several pads as "A6*2"
+# Pins labelled by these are known by a name, not by a pad number.
+NAMED = ("name", "role")
 
 
 def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs | None) -> None:
@@ -857,6 +859,10 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
             continue
         roles = _transistor_roles(parts, scene)
         how = "role"
+        package = _package(parts[0].value, profile.pin_roles)
+        if roles and package:  # a package whose pads the profile knows by role
+            roles = [(pin, package[role]) for pin, role in roles if role in package]
+            how = "package"
         middle = _middle_pin(part_pins) if not roles else None
         own = {p.shape for p in part_pins}
         body = [scene.shapes[i] for s in parts for i in s.shapes if i not in own]
@@ -875,6 +881,22 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
         for pin, role in roles:
             pin.number = role
             pin.how = how
+
+
+def _package(value: str | None, packages: dict[str, dict[str, str]]) -> dict[str, str] | None:
+    """The pads by role of the first package named in a part's value, if any."""
+    value = (value or "").casefold()
+    return next((pads for name, pads in packages.items() if name.casefold() in value), None)
+
+
+def names_apart(symbols: list[Symbol]) -> None:
+    """A pin known by the name drawn beside it, or by a transistor's role, shows no pad
+    number: the name is kept as its name and its number left unknown, for a netlist
+    that a board is read with must not give it a pad that may not exist."""
+    for symbol in symbols:
+        for pin in symbol.pins:
+            if pin.how in NAMED:
+                pin.name, pin.number, pin.how = pin.number, None, None
 
 
 def _middle_pin(pins: list[Pin]) -> Pin | None:

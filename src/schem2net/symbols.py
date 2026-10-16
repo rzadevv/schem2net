@@ -49,6 +49,7 @@ class Pin:
     # where the drawing shows none, the diode's "polarity", a transistor's "role" or
     # the pin's "position".
     how: str | None = None
+    name: str | None = None  # drawn beside a pin that shows no pad number, or its role
 
     @property
     def at(self) -> Point:

@@ -99,3 +99,14 @@ def test_a_page_pdfium_cannot_load_is_an_input_error(tmp_path, pdf_builder):
     file.write_bytes(file.read_bytes().replace(b"/Type/Page>>", b"/Type/Pagx>>"))
     with pytest.raises(pdf.InputError):
         pdf.read(file)
+
+
+def test_a_dashed_line_is_never_a_wire(tmp_path, pdf_builder):
+    from schem2net import profile, scene
+
+    b = pdf_builder()
+    b.line((72, 72), (144, 72), width=0.5, color=(0, 150, 0), dash=[3, 2])
+    b.line((72, 100), (144, 100), width=0.5, color=(0, 150, 0))
+    page = pdf.read(b.save(tmp_path / "a.pdf")).pages[0]
+    assert [p.dashed for p in page.paths] == [True, False]
+    assert len(scene.build(page, profile.load("kicad")).wires) == 1

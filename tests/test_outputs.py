@@ -364,7 +364,7 @@ def test_a_reading_that_leaves_designators_without_parts_loses_the_guess(monkeyp
 
     readings = {"eagle": reading(40, 20), "orcad": reading(38, 0)}
 
-    def extract(doc, design, generator, printed, region):
+    def extract(doc, design, generator, printed, *rest):
         design = readings.get(generator, reading(0, 0))
         design.source.generator = generator
         return Extraction(design, [])
@@ -394,12 +394,11 @@ def _joined(design):
     return sorted(sorted({ref for ref, _ in net.pins}) for net in design.nets)
 
 
-def test_a_pdf_in_black_that_names_no_maker_is_read_as_the_best_guess(tmp_path, monkeypatch):
+def test_a_pdf_in_black_that_names_no_maker_is_read_as_the_best_guess(tmp_path):
     from schem2net import pipeline
 
     from .conftest import KICAD_INK, resistor_page
 
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))  # no part library
     black = dict.fromkeys(KICAD_INK, (0, 0, 0))
     design = pipeline.extract(resistor_page(black).save(tmp_path / "black.pdf"))
     assert any(i.kind == "generator_guessed" for i in design.issues)
@@ -411,7 +410,6 @@ def test_a_kicad_page_with_wires_in_a_colour_of_its_own_is_read_by_shape(tmp_pat
 
     from .conftest import KICAD_INK, resistor_page
 
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     file = resistor_page({**KICAD_INK, "wire": (0, 0, 255)}).save(tmp_path / "blue.pdf")
 
     def read():
@@ -422,3 +420,40 @@ def test_a_kicad_page_with_wires_in_a_colour_of_its_own_is_read_by_shape(tmp_pat
     assert read() == [["R1", "R2"], ["R1", "R2", "R3"]]
     monkeypatch.setattr(roles, "learned", lambda generator: False)
     assert read() == []  # read in its colours alone, the blue lines are no wires
+
+
+def test_a_transistor_known_by_roles_alone_gives_a_board_no_pads():
+    from schem2net import fields
+    from schem2net.scene import Scene
+
+    pins = [
+        symbols.Pin(k, ((0, k), (1, k)), number=role, how="role") for k, role in enumerate("GSD")
+    ]
+    transistor = symbols.Symbol([], (0, 0, 1, 3), pins, ref="Q1")
+    fields.names_apart([transistor])
+    netlister = Netlister()
+    netlister.add_page(Scene(page=1), [transistor])
+    found = netlister.result()
+    design = Design(source=Source(file="x.pdf"), components=found.components, nets=found.nets)
+    assert '"Q1"' not in export.kicad_netlist(design).split("(nets", 1)[1]
+    assert {p.name for p in design.components[0].pins} == {"G", "S", "D"}
+
+
+def test_exit_codes_tell_what_was_read(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+
+    from schem2net import cli, pipeline
+
+    pdf = tmp_path / "board.pdf"
+    pdf.write_bytes(b"%PDF")
+
+    def code(design, *flags):
+        monkeypatch.setattr(pipeline, "extract", lambda *a, **k: design)
+        return CliRunner().invoke(cli.app, ["extract", str(pdf), *flags]).exit_code
+
+    source = Source(file=str(pdf))
+    failed = DESIGN.model_copy(update={"issues": [Issue(kind="page_failed", page=2)]})
+    assert code(DESIGN) == 0
+    assert code(Design(source=source, issues=[Issue(kind="no_profile")])) == 2
+    assert code(Design(source=source, issues=[Issue(kind="board_page", page=1)])) == 3
+    assert code(failed) == 0 and code(failed, "--strict") == 3

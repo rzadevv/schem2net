@@ -131,19 +131,20 @@ def _designator_apart(text: Text, profile: Profile) -> list[Text]:
     such as "R22 0": where designators have a colour of their own, a text in it that
     starts with one is split after it, its box shared by the letters of each."""
     first, _, rest = text.text.partition(" ")
-    angle = round(text.angle) % 360
     if not (rest.strip() and profile.is_("designator", text.color) and is_common_ref(first)):
         return [text]
-    if angle not in (0, 90):
+    if round(text.angle) % 90:
         return [text]
-    share = (len(first) + 0.5) / len(text.text)
+    (ux, uy), _ = _frame(text.angle)
+    lo, hi = _along(text.bbox, text.angle)
+    cut = lo + (len(first) + 0.5) / len(text.text) * (hi - lo)
     x0, y0, x1, y1 = text.bbox
-    if angle == 0:  # left to right
-        cut = x0 + share * (x1 - x0)
-        boxes = (x0, y0, cut, y1), (cut, y0, x1, y1)
-    else:  # bottom to top
-        cut = y1 - share * (y1 - y0)
-        boxes = (x0, cut, x1, y1), (x0, y0, x1, cut)
+    if ux:  # the reading direction is along x, one way or the other
+        a, b = sorted((ux * lo, ux * cut)), sorted((ux * cut, ux * hi))
+        boxes = (a[0], y0, a[1], y1), (b[0], y0, b[1], y1)
+    else:
+        a, b = sorted((uy * lo, uy * cut)), sorted((uy * cut, uy * hi))
+        boxes = (x0, a[0], x1, a[1]), (x0, b[0], x1, b[1])
     return [
         replace(text, text=first, bbox=boxes[0]),
         replace(text, text=rest.strip(), bbox=boxes[1]),
@@ -176,6 +177,8 @@ def build(page: Page, profile: Profile) -> Scene:
 
     anchors: list[Point] = []  # marks where a net label meets its wire
     for path in paths:
+        if path.dashed:
+            continue  # a note's or a frame's line: never a wire, a bus or a pin
         color = path.stroke or path.fill
         if path.seq in dot_like or (profile.is_("wire", color) and _is_dot_or_ring(path)):
             scene.junctions.append(geometry.center(path.bbox))
@@ -661,16 +664,15 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
         box = boxes[min(near)[1]]
         tx, ty = geometry.center(text.bbox)
         fx, fy = geometry.center(box)
-        if round(text.angle) % 180 == 90:
-            yield text, (fx, box[1] if fy < ty else box[3])
-        else:
+        if _frame(text.angle)[0][0]:  # reading along x
             yield text, (box[0] if fx < tx else box[2], ty)
+        else:
+            yield text, (fx, box[1] if fy < ty else box[3])
 
 
 def _on_line(text: Text, point: Point) -> bool:
     lo, hi = _across(text.bbox, text.angle)
-    across = point[0] if round(text.angle) % 180 == 90 else point[1]
-    return lo <= across <= hi
+    return lo <= _dot(point, _frame(text.angle)[1]) <= hi
 
 
 def values_run(texts: list[Text], reach: int = 6) -> set[int]:
@@ -741,27 +743,23 @@ def _on_wire(
     ends where the text starts or stops, as a label set at a wire's open end: an end
     that `meets` nothing drawn, as a pin's end would."""
     x0, y0, x1, y1 = text.bbox
-    vertical = round(text.angle) % 180 == 90
+    along, across = _frame(text.angle)
+    lo, hi = _along(text.bbox, text.angle)
+    base = _across(text.bbox, text.angle)[1]  # the baseline, on the far side across
     rise = LABEL_RISE * text.size
     # An underscore or a letter's tail reaches below the baseline, past the wire.
     drop = -DESCENT * text.size
     for k in index.within((x0 - rise, y0 - rise, x1 + rise, y1 + rise)):
-        (ax, ay), (bx, by) = wires[k]
-        if vertical and abs(ax - bx) < 1e-3:  # turned text: its baseline is its right side
-            gap, lo, hi, a, b = ax - x1, y0, y1, ay, by
-        elif not vertical and abs(ay - by) < 1e-3:
-            gap, lo, hi, a, b = ay - y1, x0, x1, ax, bx
-        else:
-            continue
+        ends = wires[k]
+        if abs(_dot(ends[0], across) - _dot(ends[1], across)) >= 1e-3:
+            continue  # not along the text
+        gap = _dot(ends[0], across) - base
+        a, b = (_dot(e, along) for e in ends)
         under = min(hi, max(a, b)) - max(lo, min(a, b))
         if drop <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
             return True
         # Ending at the text from either side, not running on under it.
-        near = [
-            e
-            for e in wires[k]
-            if min(abs((e[1] if vertical else e[0]) - v) for v in (lo, hi)) <= LABEL_END
-        ]
+        near = [e for e in ends if min(abs(_dot(e, along) - v) for v in (lo, hi)) <= LABEL_END]
         open_end = meets is None or not any(meets(e) for e in near)
         if drop <= gap <= rise and near and under <= LABEL_END and open_end:
             return True
@@ -871,17 +869,32 @@ def _whole_value(word: str) -> bool:
     return bool(PART_VALUE.match(word)) and any(c.isalpha() for c in word)
 
 
+def _frame(angle: float) -> tuple[Point, Point]:
+    """Unit vectors along a text's reading direction and across it, towards its
+    baseline, on a page whose y runs down: at 90 degrees text reads upwards, at 180
+    right to left and upside down."""
+    a = math.radians(round(angle))
+    c, s = round(math.cos(a), 12), round(math.sin(a), 12)
+    return (c, -s), (s, c)
+
+
+def _dot(p: Point, axis: Point) -> float:
+    return p[0] * axis[0] + p[1] * axis[1]
+
+
+def _extent(box: BBox, axis: Point) -> tuple[float, float]:
+    """The span of a box along a unit vector."""
+    xs, ys = (axis[0] * box[0], axis[0] * box[2]), (axis[1] * box[1], axis[1] * box[3])
+    return min(xs) + min(ys), max(xs) + max(ys)
+
+
 def _along(box: BBox, angle: float) -> tuple[float, float]:
     """Extent of a box in the reading direction of its text."""
-    if round(angle) % 180 == 90:
-        return -box[3], -box[1]  # text reading upwards
-    return box[0], box[2]
+    return _extent(box, _frame(angle)[0])
 
 
 def _across(box: BBox, angle: float) -> tuple[float, float]:
-    if round(angle) % 180 == 90:
-        return box[0], box[2]
-    return box[1], box[3]
+    return _extent(box, _frame(angle)[1])
 
 
 def unique_paths(paths: list[Path]) -> list[Path]:

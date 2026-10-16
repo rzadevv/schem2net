@@ -155,6 +155,7 @@ def _read_path(obj, matrix: Matrix, id: int) -> Path | None:
         stroke=_color(raw.FPDFPageObj_GetStrokeColor, obj) if stroked.value else None,
         fill=_color(raw.FPDFPageObj_GetFillColor, obj) if fill_mode.value else None,
         curved=curved,
+        dashed=bool(stroked.value and raw.FPDFPageObj_GetDashCount(obj) > 0),
     )
 
 

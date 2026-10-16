@@ -4,6 +4,7 @@
 
 [colors]
 wire = [[0, 128, 0], [13, 171, 118]]
+bus = [[0, 0, 128]]  # drawn thick; wires join a bus by their names
 symbol = [[128, 0, 0], [201, 13, 12]]  # parts, pins and supply symbols
 # Names and values, pin names, labels; some boards give text layers black.
 field = [[128, 128, 128], [80, 80, 80], [0, 0, 0]]

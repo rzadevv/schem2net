@@ -51,6 +51,17 @@ RegionOption = Annotated[
     typer.Option(help='Read only part of a page: "PAGE:X0,Y0,X1,Y1" in mm from its top left.'),
 ]
 CorpusName = Annotated[str, typer.Argument(help="Corpus name, e.g. a.")]
+LibraryOption = Annotated[
+    Path | None,
+    typer.Option(
+        "--library",
+        envvar="SCHEM2NET_LIBRARY",
+        help="Folder of part library indexes written by index-library; none is read without.",
+    ),
+]
+StrictOption = Annotated[
+    bool, typer.Option(help="Fail, writing nothing, when any page could not be read.")
+]
 
 
 @app.command()
@@ -58,10 +69,12 @@ def extract(
     file: Path,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
     region: RegionOption = None,
+    library_dir: LibraryOption = None,
+    strict: StrictOption = False,
 ) -> None:
     """Extract a netlist from a schematic PDF and write it as JSON."""
-    design = pipeline.extract(file, region=_region(region))
-    _refuse(design)
+    design = pipeline.extract(file, region=_region(region), library_dir=library_dir)
+    _refuse(design, strict)
     output = output or file.with_name(_stem(file) + ".ir.json")
     design.save(output)
     typer.echo(f"{output}: {len(design.components)} components, {len(design.nets)} nets")
@@ -88,10 +101,12 @@ def export(
     to: Annotated[Format, typer.Option(help="Output format.")] = Format.kicad_net,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
     region: RegionOption = None,
+    library_dir: LibraryOption = None,
+    strict: StrictOption = False,
 ) -> None:
     """Write a KiCad netlist, a bill of materials or a SPICE netlist."""
-    design = _load(file, _region(region))
-    _refuse(design)
+    design = _load(file, _region(region), library_dir)
+    _refuse(design, strict)
     text = WRITERS[to](design)
     output = output or file.with_name(_stem(file) + SUFFIXES[to])
     _write(output, text)
@@ -103,14 +118,16 @@ def export(
 def schematic(
     file: Annotated[Path, typer.Argument(help="A schematic PDF.")],
     output: Annotated[Path | None, typer.Option("-o", "--output", help="Project folder.")] = None,
+    library_dir: LibraryOption = None,
+    strict: StrictOption = False,
 ) -> None:
     """Write an editable KiCad project, one sheet per PDF page.
 
     Parts and wires go where the PDF drew them; the netlist carried in an Altium
     PDF is not used, since it has no drawing to place.
     """
-    extraction = pipeline.run(file, embedded=False)
-    _refuse(extraction.design)
+    extraction = pipeline.run(file, embedded=False, library_dir=library_dir)
+    _refuse(extraction.design, strict)
     output = output or file.with_name(_stem(file) + "-kicad")
     root = kicad_sch.write(extraction, output, _stem(file))
     typer.echo(root)
@@ -121,25 +138,41 @@ def schematic(
 def diff_(
     old: Annotated[Path, typer.Argument(help="Earlier revision: a PDF or JSON from extract.")],
     new: Annotated[Path, typer.Argument(help="Later revision.")],
+    library_dir: LibraryOption = None,
 ) -> None:
     """List parts added, removed or changed in value, and pins that moved between nets."""
     from schem2net import diff as revisions
 
-    typer.echo(revisions.render(revisions.diff(_load(old), _load(new))), nl=False)
+    typer.echo(
+        revisions.render(
+            revisions.diff(_load(old, None, library_dir), _load(new, None, library_dir))
+        ),
+        nl=False,
+    )
 
 
-def _load(file: Path, region: pipeline.Region | None = None) -> Design:
+def _load(
+    file: Path, region: pipeline.Region | None = None, library_dir: Path | None = None
+) -> Design:
     if file.suffix.lower() == ".pdf":
-        return pipeline.extract(file, region=region)
+        return pipeline.extract(file, region=region, library_dir=library_dir)
     return Design.load(file)
 
 
 SKIPPED = {"board_page": "a board drawing", "table_page": "a table", "raster_page": "scanned"}
 
 
-def _refuse(design: Design) -> None:
+def _refuse(design: Design, strict: bool = False) -> None:
     """Exit with an error, before anything is written, when nothing could be read: an
-    earlier output of the same name is left as it was."""
+    earlier output of the same name is left as it was. A PDF of no known tool exits 2;
+    one in which no part was found, or with `strict` a page could not be read, exits 3."""
+    failed = strict and any(i.kind == "page_failed" for i in design.issues)
+    unknown = any(i.kind == "no_profile" for i in design.issues)
+    if (not design.components and not unknown) or failed:
+        _say(design)
+        why = "a page could not be read" if failed else "no part was found on any page"
+        typer.echo(f"{design.source.file}: {why}. Nothing was written.", err=True)
+        raise typer.Exit(3)
     for issue in design.issues:
         if issue.kind == "no_profile":
             typer.echo(
@@ -211,11 +244,13 @@ def report_(
     pdf_under: Annotated[
         bool, typer.Option("--pdf/--no-pdf", help="Draw the nets over the pages as printed.")
     ] = True,
+    library_dir: LibraryOption = None,
+    strict: StrictOption = False,
 ) -> None:
     """Write an HTML page showing the extracted nets over the schematic."""
     output = output or file.with_name(_stem(file) + ".html")
-    extraction = pipeline.run(file, region=_region(region))
-    _refuse(extraction.design)
+    extraction = pipeline.run(file, region=_region(region), library_dir=library_dir)
+    _refuse(extraction.design, strict)
     pictures = {}
     if pdf_under and not region:
         read = [result.page.number for result in extraction.pages if result.scene is not None]
@@ -229,6 +264,7 @@ def report_(
 @app.command("serve-mcp")
 def serve_mcp(
     file: Annotated[Path, typer.Argument(help="A schematic PDF, or JSON written by extract.")],
+    library_dir: LibraryOption = None,
 ) -> None:
     """Serve a design to agents over MCP (stdio)."""
     try:
@@ -236,7 +272,7 @@ def serve_mcp(
     except ImportError:
         typer.echo('The MCP server needs the mcp package: install "schem2net[mcp]"', err=True)
         raise typer.Exit(1) from None
-    mcp_server.build(_load(file)).run()
+    mcp_server.build(_load(file, None, library_dir)).run()
 
 
 @app.command()
@@ -259,16 +295,18 @@ def index_library(
     folder: Annotated[
         Path, typer.Argument(help="Symbol libraries: KiCad .kicad_sym, Eagle .lbr, or folders.")
     ],
+    output: Annotated[Path, typer.Option("-o", "--output", help="Folder to write the indexes to.")],
 ) -> None:
     """Index part libraries, from which the pins a PDF leaves unnumbered and the pins
     stacked under one drawn pin are numbered. KiCad installs its own, as in
     /usr/share/kicad/symbols, or get https://gitlab.com/kicad/libraries/kicad-symbols;
     Eagle libraries come from the part makers, such as SparkFun's on GitHub. Each kind
-    found replaces the index of that kind."""
+    found replaces the index of that kind in the output folder, which extract and the
+    other commands then read with --library."""
     found = {"kicad": library.index(folder), "eagle": library.index_eagle(folder)}
     for kind, parts in found.items():
         if parts:
-            path = library.default_path(kind)
+            path = library.path(output, kind)
             library.save(parts, path)
             typer.echo(f"{path}: {sum(len(v) for v in parts.values())} {kind} symbols")
     if not any(found.values()):
@@ -298,6 +336,7 @@ def bench(
         bool, typer.Option(help="Ignore netlists carried in the PDF, such as Altium bookmarks.")
     ] = False,
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
+    library_dir: LibraryOption = None,
     explain: Annotated[
         bool, typer.Option(help="Show where the pins went, and error by confidence.")
     ] = False,
@@ -308,7 +347,7 @@ def bench(
     from schem2net.bench import runner
     from schem2net.bench.score import Counts, intervals, score, summary
 
-    extract = partial(pipeline.extract, embedded=not drawing_only)
+    extract = partial(pipeline.extract, embedded=not drawing_only, library_dir=library_dir)
     results = runner.run(
         corpora.load(corpus, bench_dir),
         split=split,

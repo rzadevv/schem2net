@@ -101,7 +101,8 @@ A pin number usually sits beside its pin; some libraries centre it on the pin's
 line instead. Card sockets and headers may mark only the first pin of each row,
 past its end or as pin 1 beside it, or the first and last: an evenly spaced row of
 unnumbered pins is then numbered from its marks, counting up from a single one.
-Transistors often hide their numbers, and their pins are then known by role: the
+Transistors often hide their numbers, and their pins are then known by role, G, S
+and D or B, E and C: the
 base or gate is the pin square to the other two, leading to the middle of a bar;
 the emitter or source is the one nearer the arrowhead along the drawing, where a
 body diode, which joins both, is not taken for the arrow; a bipolar transistor's
@@ -146,8 +147,9 @@ each their own way; members of one name under either are one net.
 ICs are often drawn with pin names and hidden numbers, and pins of one name are
 stacked: an FPGA's hundred ground balls lie under one drawn pin, which shows one
 number at most. KiCad's own symbol libraries hold every pin. `schem2net
-index-library DIR` reads them, as KiCad installs them or from their repository,
-into a file in the user's cache; without it, nothing changes. A design read with
+index-library DIR -o FOLDER` reads them, as KiCad installs them or from their
+repository, into a folder that a reading is pointed at with `--library`; without it,
+nothing changes. A design read with
 an index names it, and the start of its hash, in `source.library`, as the same PDF
 can read differently with another index or none.
 
@@ -445,11 +447,15 @@ cap the confidence of the nets involved:
 | `unnumbered_pin` | a pin whose number was not found. It stays on its net under a mark, `?1`, `?2` and so on within its part: the drawing shows what it connects to, though not which pad it is. The KiCad and SPICE exports leave such pins out | |
 | `pin_number_guessed` | numbers the drawing does not show, guessed where they matter: which end of a diode is 1, the ends of a three-pin part, the order of a two-pin part other than a resistor, capacitor, inductor, fuse or ferrite | |
 
+A pin known only by the name drawn beside it, or by a transistor's role, shows no
+pad: a board read with the netlist has no pad VCC or G. It is kept unnumbered (`?1`),
+with that name, unless a library symbol numbers it, or the profile gives the pads by
+role of a package the part's value names (`package`).
+
 Each pin in the output says how its number was found when it was not printed
-beside it: counted along a row from its marks (`row`), its name (`name`), a
-library symbol (`library`), the generator's pad names for a diode (`pad names`),
-or guessed from the drawing: the diode's triangle (`polarity`), a transistor's
-terminals (`role`), the pin's place (`position`). Guesses are right most of the
+beside it: counted along a row from its marks (`row`), a library symbol
+(`library`), the generator's pad names for a diode (`pad names`), or guessed from
+the drawing: the diode's triangle (`polarity`), the pin's place (`position`). Guesses are right most of the
 time, so only those whose kind goes wrong often are reported, each issue naming
 the pins it puts in doubt. On the dev boards, a diode's end guessed from its
 triangle was wrong three times in four in EasyEDA, whose libraries number diodes

@@ -13,10 +13,12 @@ class PdfBuilder:
         self.pdf = pdfium.PdfDocument.new()
         self.page = self.pdf.new_page(width, height)
 
-    def line(self, *points, width=1.0, color=(0, 0, 0)):
+    def line(self, *points, width=1.0, color=(0, 0, 0), dash=None):
         path = raw.FPDFPageObj_CreateNewPath(*points[0])
         for x, y in points[1:]:
             raw.FPDFPath_LineTo(path, x, y)
+        if dash:
+            raw.FPDFPageObj_SetDashArray(path, (ctypes.c_float * len(dash))(*dash), len(dash), 0)
         self._stroke(path, width, color)
 
     def curve(self, start, c1, c2, end, width=1.0):

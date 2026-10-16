@@ -64,8 +64,13 @@ class Region:
         return x0 <= box[0] and y0 <= box[1] and box[2] <= x1 and box[3] <= y1
 
 
-def extract(file: str | Path, embedded: bool = True, region: Region | None = None) -> Design:
-    return run(file, embedded, region).design
+def extract(
+    file: str | Path,
+    embedded: bool = True,
+    region: Region | None = None,
+    library_dir: Path | None = None,
+) -> Design:
+    return run(file, embedded, region, library_dir).design
 
 
 def _sha256(file: Path) -> str:
@@ -86,10 +91,16 @@ def _read(result: PageResult, rules: profile.Profile, pages: int) -> None:
     result.symbols = symbols.find(result.scene, rules)
 
 
-def run(file: str | Path, embedded: bool = True, region: Region | None = None) -> Extraction:
+def run(
+    file: str | Path,
+    embedded: bool = True,
+    region: Region | None = None,
+    library_dir: Path | None = None,
+) -> Extraction:
     """Extract a design. With `embedded`, a netlist carried in the file is used as is.
 
-    With a region, only what lies wholly inside it is read, from the drawing.
+    With a region, only what lies wholly inside it is read, from the drawing. Part
+    libraries are read from `library_dir`, a folder made by index-library, if given.
     """
     file = Path(file)
     doc = pdf.read(file)
@@ -120,16 +131,18 @@ def run(file: str | Path, embedded: bool = True, region: Region | None = None) -
     if carried:
         return Extraction(carried, pages)
     if generator not in PROFILES:
-        read = _read_as_any(doc, design, region)
+        read = _read_as_any(doc, design, region, library_dir)
         if read:
             return read
         made = generator if generator != "unknown" else _producer(doc) or "an unknown tool"
         design.issues.append(Issue(kind="no_profile", severity="error", detail=made))
         return Extraction(design, pages)
-    return _extract(doc, design, generator, printed, region)
+    return _extract(doc, design, generator, printed, region, library_dir)
 
 
-def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | None:
+def _read_as_any(
+    doc, design: Design, region: Region | None, library_dir: Path | None = None
+) -> Extraction | None:
     """A PDF that says nothing of what drew it, in colours no profile knows, such as one
     printed in black: its ink taken as black, read as each generator whose roles were
     learned, keeping the reading that joins the most pins. None if none joins any."""
@@ -138,7 +151,7 @@ def _read_as_any(doc, design: Design, region: Region | None) -> Extraction | Non
     for generator in sorted(PROFILES):
         if not roles.learned(generator):
             continue
-        trial = _extract(black, design.model_copy(deep=True), generator, True, region)
+        trial = _extract(black, design.model_copy(deep=True), generator, True, region, library_dir)
         d = trial.design
         joined = _reading_score(d.nets, d.components, d.issues)
         if joined > most:
@@ -178,7 +191,12 @@ def _in_black(page: Page) -> Page:
 
 
 def _extract(
-    doc, design: Design, generator: str, printed: bool, region: Region | None
+    doc,
+    design: Design,
+    generator: str,
+    printed: bool,
+    region: Region | None,
+    library_dir: Path | None = None,
 ) -> Extraction:
     """Read every page with the generator's profile."""
     design.source.generator = generator
@@ -201,12 +219,13 @@ def _extract(
     _name_sheets([result.scene for result in read])
     fields.whole_names([result.symbols for result in read])
     if rules.pin_library:
-        parts = library.load(rules.pin_library)
-        design.source.library = library.fingerprint(rules.pin_library)
+        parts = library.load(library_dir, rules.pin_library)
+        design.source.library = library.fingerprint(library_dir, rules.pin_library)
         for result in read:
             by_name = rules.pin_library in library.BY_NAME
             library.resolve(result.symbols, parts, by_name, result.scene.fields)
     for result in read:
+        fields.names_apart(result.symbols)
         netlister.add_page(result.scene, result.symbols)
     found = netlister.result()
     design.components = found.components

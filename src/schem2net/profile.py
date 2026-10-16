@@ -24,6 +24,9 @@ class Profile:
     pin_name_gap: float = 1.5  # mm between a pin's inner end and its name
     diode_pin_one_is_anode: bool = False
     diode_pin_names: tuple[str, ...] = ()  # cathode and anode pads, where named so
+    # A transistor's pads by role, for each package a part's value may name, as
+    # SOT23 = { G = "1", S = "2", D = "3" }; none known yet.
+    pin_roles: dict[str, dict[str, str]] = field(default_factory=dict)
     pin_library: str | None = None  # symbol library that numbers the pins left unnumbered
     fields_follow_symbol: bool = False
     pins_after_fields: bool = False  # each symbol's pins are drawn after its texts
@@ -84,6 +87,7 @@ def load(name: str) -> Profile:
         pin_name_gap=pins.get("name_gap", 1.5),
         diode_pin_one_is_anode=pins.get("diode_one_is_anode", False),
         diode_pin_names=tuple(pins.get("diode_names", ())),
+        pin_roles=pins.get("roles", {}),
         pin_library=pins.get("library"),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
         pins_after_fields=order.get("pins_after_fields", False),

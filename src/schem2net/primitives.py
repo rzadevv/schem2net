@@ -20,6 +20,7 @@ class Path:
     fill: Color | None
     curved: bool = False
     seq: int = 0  # position in the page's drawing order
+    dashed: bool = False  # stroked with a dash pattern, as notes and frames are
 
     @property
     def bbox(self) -> BBox:

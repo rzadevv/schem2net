@@ -123,7 +123,17 @@ def align(predicted: Design, truth: Design) -> Aligned:
     true_nets = [set(n.pins) for n in scored]
     power = [bool(POWER_NET.match(_short_name(n.name))) for n in scored]
     # Pins kept without a number cannot be judged: the truth knows every pin by its own.
-    known = [[p for p in n.pins if not unnumbered(p[1])] for n in predicted.nets]
+    # One drawn with its name is known by that name.
+    names = {
+        (c.ref, p.num): (c.ref, p.name)
+        for c in predicted.components
+        for p in c.pins
+        if p.name and unnumbered(p.num)
+    }
+    known = [
+        [names.get(tuple(p), p) for p in n.pins if not unnumbered(p[1]) or tuple(p) in names]
+        for n in predicted.nets
+    ]
     nonempty = [
         n.model_copy(update={"pins": pins})
         for n, pins in zip(predicted.nets, known, strict=True)
@@ -188,8 +198,9 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     c.values_correct = sum(_same_value(true_refs[r].value, pred_refs[r].value) for r in known)
     true_pins = {p for n in truth.nets for p in n.pins}
     true_pins |= {(comp.ref, pin.num) for comp in truth.components for pin in comp.pins}
+    numbered = {found.aliases.get(tuple(p), tuple(p)) for n in predicted.nets for p in n.pins}
     c.pins_extra = sum(
-        pin[0] in true_refs and pin not in true_pins for pin in set().union(*pred_nets)
+        p[0] in true_refs and not unnumbered(p[1]) and p not in true_pins for p in numbered
     )
 
     matched_true = {p: t for t, p in match.items()}

@@ -27,8 +27,7 @@ def _netlist(design):
     }
 
 
-def test_a_kicad_page_reads_as_its_netlist(tmp_path, monkeypatch):
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))  # no part library
+def test_a_kicad_page_reads_as_its_netlist(tmp_path):
     file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
     expected = json.loads((Path(__file__).parent / "data" / "kicad_resistors.json").read_text())
     assert _netlist(pipeline.extract(file)) == expected
@@ -43,7 +42,7 @@ def test_a_reading_is_the_same_whatever_the_hash_seed(tmp_path):
     code += "for f in sys.argv[1:]: print(pipeline.extract(f).model_dump_json())"
     outputs = []
     for seed in ("1", "2"):
-        env = {**os.environ, "PYTHONHASHSEED": seed, "XDG_CACHE_HOME": str(tmp_path)}
+        env = {**os.environ, "PYTHONHASHSEED": seed}
         run = subprocess.run(
             [sys.executable, "-c", code, *map(str, files)],
             env=env, capture_output=True, text=True, check=True,

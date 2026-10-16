@@ -81,16 +81,23 @@ schem2net report board.pdf                     # nets drawn over the schematic, 
 schem2net schematic board.pdf                  # editable KiCad project, board-kicad/
 schem2net diff old.pdf new.pdf                 # parts and connections that changed
 schem2net extract board.pdf --region 2:10,20,150,100   # only part of page 2, in mm
-schem2net index-library /usr/share/kicad/symbols      # once: KiCad's symbol libraries
+schem2net index-library /usr/share/kicad/symbols -o ~/parts   # once: index libraries
+schem2net extract board.pdf --library ~/parts  # read with them
 ```
 
 `index-library` lets PDFs be read with the pin numbers they hide: an IC drawn
 with pin names only, or many pins stacked under one drawn pin, is numbered from
-its library symbol when its value names one. Point it at KiCad's installed
+its library symbol when its value names one. Every command reading a PDF takes
+the folder with `--library`, or from `SCHEM2NET_LIBRARY`; without it no library is
+read, so a PDF reads the same on every machine. Point it at KiCad's installed
 symbols or at a copy of https://gitlab.com/kicad/libraries/kicad-symbols. For
 Eagle PDFs, point it at the maker's .lbr files, such as
 https://github.com/sparkfun/SparkFun-Eagle-Libraries; Eagle parts take only pin
 names from them, as their pads depend on the package.
+
+A command exits with 2 for a PDF no supported tool drew and with 3 when no part was
+found on any page, writing nothing either way; with `--strict`, also when any page
+could not be read.
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports
 into the PCB editor; footprints are not in the PDF, so assign them in KiCad.

@@ -184,3 +184,11 @@ def test_eagle_devices_are_indexed_by_the_values_eagle_prints(tmp_path):
         ("8", "V+", 16),
         ("4", "GND", 16),
     ]
+
+
+def test_no_index_is_read_unless_its_folder_is_given(tmp_path):
+    pins = [library.LibPin("1", "A", 0, (0.0, 0.0), False)]
+    library.save({"r": [("Device:R", pins)]}, library.path(tmp_path, "kicad"))
+    assert library.load(tmp_path, "kicad") == {"r": [("Device:R", pins)]}
+    assert library.load(None, "kicad") == {} and library.fingerprint(None, "kicad") is None
+    assert library.fingerprint(tmp_path, "kicad").startswith("kicad-symbols.json.gz ")

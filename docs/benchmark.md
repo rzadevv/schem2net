@@ -139,7 +139,8 @@ measurements fall under those licences is not settled here.
 
 ## Part library
 
-Results are read with part libraries indexed (`schem2net index-library`): KiCad's,
+Results are read with part libraries indexed (`schem2net index-library`, then
+`bench --library`): KiCad's,
 from the kicad-symbols repository at commit e1bb0a65 (2026-10-04), and
 SparkFun's Eagle libraries, from SparkFun-Eagle-Libraries at commit 2354dae
 (2024-08-23). Libraries carried by the corpus projects are never read: a part from
@@ -195,13 +196,13 @@ and how well doubt ranks wrong pins above right ones (AUROC).
 
 CI builds corpora A and E and compares their dev splits with
 `bench/baseline_a_dev.json` and `bench/baseline_e_dev.json`.
-CI has no part library indexed, so the baselines are read without one
-(`XDG_CACHE_HOME` pointing at an empty folder) and with the stored models. A change
+CI has no part library, so the baselines are read without one and with the stored
+models. A change
 meant to move these figures writes the baseline again:
 
 ```sh
-XDG_CACHE_HOME=$(mktemp -d) schem2net bench a --split dev --json bench/baseline_a_dev.json
-XDG_CACHE_HOME=$(mktemp -d) schem2net bench e --split dev --json bench/baseline_e_dev.json
+schem2net bench a --split dev --json bench/baseline_a_dev.json
+schem2net bench e --split dev --json bench/baseline_e_dev.json
 ```
 
 ## Metrics
@@ -241,9 +242,8 @@ low confidence, or an issue naming the pin, such as a pin number the drawing doe
 not show and the extraction guessed.
 
 A pin kept without a number (`?1`) cannot be told from the truth's pins, so it is
-left out before nets are compared; the true pin counts as not found.
-
-A pin read by its name, because its number is hidden, counts as the pin of that
+left out before nets are compared; the true pin counts as not found. One kept with
+the name drawn beside it, because its number is hidden, counts as the pin of that
 name when the name is unique on its part. kicad-cli writes a pin's function as its
 name and number, as in `D_1` for pin 1 named D, so the name alone counts as well.
 A name is also taken as it is drawn, without the markup that puts a bar over it:

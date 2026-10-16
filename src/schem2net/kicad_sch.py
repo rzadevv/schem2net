@@ -14,7 +14,7 @@ from pathlib import Path
 from schem2net import geometry
 from schem2net.export import unique_names
 from schem2net.geometry import GridIndex, UnionFind
-from schem2net.ir import Net
+from schem2net.ir import Component, Net, unnumbered
 from schem2net.pipeline import Extraction, PageResult
 from schem2net.scene import Scene
 from schem2net.symbols import Symbol
@@ -36,7 +36,7 @@ def write(extraction: Extraction, out_dir: Path, name: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     root_id = _uuid()
     pages = [p for p in extraction.pages if p.scene is not None]
-    nets = _pin_nets(extraction.design.nets)
+    nets = _pin_nets(extraction.design.nets, extraction.design.components)
     labels = _label_names(extraction.design.nets)
     drawn = _drawn(pages)
 
@@ -104,10 +104,10 @@ def _page(
 
     net_of = {pin: net.id for pin, net in nets.items()}
     tips = [
-        (p.at, net_of.get((symbol.ref, p.number)))
+        (p.at, net_of.get((symbol.ref, _shown(p))))
         for symbol in parts
         for p in symbol.pins
-        if p.number
+        if _shown(p)
     ]
     wire_net = [wire_nets.get((page.page.number, i)) for i in range(len(scene.wires))]
     snapped, tees = _snapped(scene.wires, wire_net, tips)
@@ -126,13 +126,13 @@ def _page(
     # is a pin drawn in several units, so that every unit shows the same net.
     for symbol in parts:
         for pin in symbol.pins:
-            net = nets.get((symbol.ref, pin.number or ""))
+            net = nets.get((symbol.ref, _shown(pin) or ""))
             if net is None or (net.id not in carried and len(net.pins) < 2):
                 continue
             shared = symbol.unit and any(
                 other is not symbol
                 and other.unit
-                and any(p.number == pin.number for p in other.pins)
+                and any(_shown(p) == _shown(pin) for p in other.pins)
                 for other, _ in drawn[symbol.ref]
             )
             if _key(pin.at) not in ends or shared:
@@ -182,7 +182,7 @@ def _unit_graphics(ref: str, unit: int, symbol: Symbol, scene: Scene) -> list:
         pts = ["pts", *(_lib_xy(p, origin) for p in shape.points)]
         out.append(["polyline", pts, _stroke(), ["fill", ["type", "none"]]])
     for pin in symbol.pins:
-        if pin.number is None:
+        if not _shown(pin):
             continue
         inner, outer = pin.line
         length = ((inner[0] - outer[0]) ** 2 + (inner[1] - outer[1]) ** 2) ** 0.5
@@ -195,7 +195,7 @@ def _unit_graphics(ref: str, unit: int, symbol: Symbol, scene: Scene) -> list:
                 ["at", x, y, str(_angle(outer, inner))],
                 ["length", _n(length)],
                 ["name", Q("~"), FONT],
-                ["number", Q(pin.number), FONT],
+                ["number", Q(_shown(pin)), FONT],
             ]
         )
     return out
@@ -204,7 +204,7 @@ def _unit_graphics(ref: str, unit: int, symbol: Symbol, scene: Scene) -> list:
 def _placed(symbol: Symbol, unit: int, project: str, path: str) -> list:
     x, y = _origin(symbol)
     x0, y0, x1, y1 = symbol.bbox
-    pins = [["pin", Q(p.number), ["uuid", Q(_uuid())]] for p in symbol.pins if p.number]
+    pins = [["pin", Q(_shown(p)), ["uuid", Q(_uuid())]] for p in symbol.pins if _shown(p)]
     return [
         "symbol",
         ["lib_id", Q(f"schem2net:{symbol.ref}")],
@@ -332,8 +332,19 @@ def _drawn(pages: list[PageResult]) -> dict[str, list[tuple[Symbol, Scene]]]:
     return drawn
 
 
-def _pin_nets(nets: list[Net]) -> dict[tuple[str, str], Net]:
-    return {pin: net for net in nets for pin in net.pins}
+def _pin_nets(nets: list[Net], components: list[Component]) -> dict[tuple[str, str], Net]:
+    """The net of each pin, by number, and of a pin with no number by its name."""
+    out = {pin: net for net in nets for pin in net.pins}
+    for comp in components:
+        for pin in comp.pins:
+            if pin.name and unnumbered(pin.num) and (comp.ref, pin.num) in out:
+                out.setdefault((comp.ref, pin.name), out[comp.ref, pin.num])
+    return out
+
+
+def _shown(pin) -> str | None:
+    """What a pin is known by on the drawing: its number, or its name where it has none."""
+    return pin.number or pin.name
 
 
 def _label_names(nets: list[Net]) -> dict[str, tuple[str, bool]]:

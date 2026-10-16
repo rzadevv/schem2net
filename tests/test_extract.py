@@ -2,6 +2,8 @@
 
 import math
 
+import pytest
+
 from schem2net import buses, fields, geometry, nets, profile, symbols
 from schem2net.nets import Netlister
 from schem2net.primitives import Page, Path, Text
@@ -12,6 +14,9 @@ from schem2net.scene import (
     Shape,
     Sheet,
     SheetPin,
+    _along,
+    _designator_apart,
+    _frame,
     _join_runs,
     drop_sheet_references,
     values_run,
@@ -1715,6 +1720,17 @@ def test_a_number_by_one_pin_of_a_two_pin_part_is_not_its_pad_number():
     assert resistor([("A", 11.5), ("B", 17)]) == ["A", "B"]
 
 
+def test_names_and_roles_name_pins_and_number_none():
+    """A transistor's role, or a name drawn by a pin, is no pad: a board read with the
+    netlist has no pad G. The pin keeps it as its name, its number unknown."""
+    named = [symbols.Pin(1, ((0, 0), (0, 1)), number="VCC", how="name")]
+    fields.names_apart([symbols.Symbol([], (0, 0, 1, 1), named, ref="U1")])
+    assert (named[0].number, named[0].name) == (None, "VCC")
+    transistor = [symbols.Pin(2, ((0, 0), (0, 1)), number="G", how="role")]
+    fields.names_apart([symbols.Symbol([], (0, 0, 1, 1), transistor, ref="Q1")])
+    assert (transistor[0].number, transistor[0].name) == (None, "G")
+
+
 def test_a_sheet_whose_name_is_not_printed_is_named_by_its_pins():
     """Its box and pins are drawn; the child page whose hierarchical labels share its
     pins' names is the one it stands for."""
@@ -1803,3 +1819,30 @@ def test_a_word_the_model_gives_some_chance_can_name_a_part():
     likely = {id(name): 0.14, id(net): 0.0}
     fields._assign_refs([part], texts, None, eagle, set(), set(), likely)
     assert part.ref == "LCD_CON"
+
+
+def _turned(text, along, across, angle, seq, color=(0, 0, 0)):
+    """A text spanning `along` in its reading direction and `across` the other way."""
+    u, v = _frame(angle)
+    corners = [
+        (t * u[0] + w * v[0], t * u[1] + w * v[1]) for t in along for w in across
+    ]  # fmt: skip
+    return Text(seq, text, geometry.bbox_of(corners), 1.27, angle, color, seq)
+
+
+@pytest.mark.parametrize("angle", [0, 90, 180, 270])
+def test_text_split_by_the_pdf_is_rejoined_in_any_reading_direction(angle):
+    pieces = [
+        _turned("SD", (10, 12), (5, 6.27), angle, 1),
+        _turned("A", (12.05, 12.9), (5, 6.27), angle, 2),
+    ]
+    assert [t.text for t in _join_runs(pieces)] == ["SDA"]
+
+
+@pytest.mark.parametrize("angle", [0, 90, 180, 270])
+def test_a_designator_written_with_its_value_is_split_in_any_reading_direction(angle):
+    easyeda = profile.load("easyeda")
+    text = _turned("R22 10k", (10, 17), (5, 6.27), angle, 1, color=(0, 0, 128))
+    ref, value = _designator_apart(text, easyeda)
+    assert (ref.text, value.text) == ("R22", "10k")
+    assert _along(ref.bbox, angle)[1] <= _along(value.bbox, angle)[0] + 1e-9

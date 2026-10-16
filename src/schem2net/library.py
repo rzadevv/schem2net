@@ -2,10 +2,10 @@
 
 A PDF often leaves pin numbers out. ICs are drawn with pin names and hidden numbers, and
 pins stacked on one another, such as an FPGA's hundred ground balls under one drawn
-pin, show one number at most. The symbol library has them all. KiCad's libraries are
-indexed once (`schem2net index-library DIR`) into a file in the user's cache; a part
-whose value names a symbol there is checked against the pins drawn before any number
-is taken from it (see `resolve`).
+pin, show one number at most. The symbol library has them all. Libraries are indexed
+once (`schem2net index-library DIR -o FOLDER`) into a folder that a reading is then
+pointed at; a part whose value names a symbol there is checked against the pins drawn
+before any number is taken from it (see `resolve`).
 """
 
 from __future__ import annotations
@@ -195,28 +195,28 @@ def save(library: Library, path: Path) -> None:
         json.dump(rows, f, separators=(",", ":"))
 
 
-def default_path(kind: str = "kicad") -> Path:
-    base = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
-    return Path(base) / "schem2net" / f"{kind}-symbols.json.gz"
+def path(folder: Path, kind: str = "kicad") -> Path:
+    """Where the index of a kind of library is kept in a folder of them."""
+    return Path(folder) / f"{kind}-symbols.json.gz"
 
 
 @cache
-def fingerprint(kind: str = "kicad") -> str | None:
+def fingerprint(folder: Path | None, kind: str = "kicad") -> str | None:
     """Which index a design was read with, as its file name and the start of its hash, so
-    two readings of one PDF that differ can be told apart; None where none is indexed."""
-    path = default_path(kind)
-    if not path.is_file():
+    two readings of one PDF that differ can be told apart; None where none was used."""
+    if folder is None or not path(folder, kind).is_file():
         return None
-    return f"{path.name} {hashlib.sha256(path.read_bytes()).hexdigest()[:12]}"
+    index = path(folder, kind)
+    return f"{index.name} {hashlib.sha256(index.read_bytes()).hexdigest()[:12]}"
 
 
 @cache
-def load(kind: str = "kicad") -> Library:
-    """The indexed library of a kind, or an empty one where none was indexed."""
-    path = default_path(kind)
-    if not path.is_file():
+def load(folder: Path | None, kind: str = "kicad") -> Library:
+    """The indexed library of a kind in a folder, or an empty one where there is none."""
+    if folder is None or not path(folder, kind).is_file():
         return {}
-    with gzip.open(path, "rt", encoding="utf-8") as f:
+    index = path(folder, kind)
+    with gzip.open(index, "rt", encoding="utf-8") as f:
         rows = json.load(f)
     return {
         key: [

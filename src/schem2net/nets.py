@@ -420,7 +420,7 @@ class Netlister:
                         pins=[(symbol.ref, number)],
                     )
                 )
-                comp.pins.append(PinOut(num=number, at=pin.at, how="unnumbered"))
+                comp.pins.append(PinOut(num=number, name=pin.name, at=pin.at, how="unnumbered"))
             else:
                 number = pin.number
                 self._pin_numbers[symbol.ref][number].append((node, (page, symbol.unit)))
