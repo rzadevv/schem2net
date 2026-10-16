@@ -97,11 +97,6 @@ colour is a wire, a text in the label colour a label. No truth netlist is used,
 and test boards are never read. It needs scikit-learn, one of the dev
 dependencies; the trees are written to `profiles/roles.npz`.
 
-The KiCad, Altium and Eagle trees in that file were learned before the PDF reader
-last changed, and are kept. Learned again now, they change the reading of a few
-colour pages, on the dev splits for the worse: corpus B's loses 0.3 points of pin
-accuracy. So `build-roles` reproduces the OrCAD and EasyEDA trees but not the others.
-
 To see how pages printed in black fare, recolour a dev PDF's ink to black and
 read it again. With models learned without the board in question, dev pages
 keep this share of their colour pin accuracy: Eagle 98%, KiCad 78%, Altium
