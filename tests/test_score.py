@@ -2,7 +2,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from schem2net.bench.score import Counts, score
+from schem2net.bench.score import Counts, compare, score, summary
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 
 
@@ -239,3 +239,28 @@ def test_a_pin_left_out_of_every_net_is_counted_as_missed():
     truth = design({"A": [("U1", "1"), ("R1", "1")], "B": [("U1", "2"), ("R2", "1")]})
     found = score(design({"A": [("U1", "1"), ("R1", "1")]}), truth).metrics()
     assert found["missed_pin_rate"] == 0.5 and found["silent_error_rate"] == 0
+
+
+def test_a_pin_number_the_truth_does_not_have_is_extra():
+    """A sign read as a pad number is a pin the part does not have."""
+    led = Component(ref="D1", pins=[Pin(num="1", name="K"), Pin(num="2", name="A")])
+    truth = design({"A": [("D1", "1"), ("R1", "1")], "B": [("D1", "2"), ("R1", "2")]}, [led])
+    predicted = design({"A": [("D1", "+"), ("R1", "1")], "B": [("D1", "A"), ("R1", "2")]})
+    assert score(predicted, truth).pins_extra == 1
+
+
+def test_macro_metrics_weigh_designs_alike():
+    small = Counts(designs=1, pins=2, pins_correct=2)
+    large = Counts(designs=1, pins=98, pins_correct=0)
+    found = summary([small, large])
+    assert found["pin_accuracy"] == 0.02 and found["macro_pin_accuracy"] == 0.5
+
+
+def test_a_change_on_every_design_has_a_tight_interval():
+    before = [Counts(designs=1, pins=100, pins_correct=80 + i) for i in range(10)]
+    after = [Counts(designs=1, pins=100, pins_correct=85 + i) for i in range(10)]
+    first, second, change, low, high = compare(before, after)["pin_accuracy"]
+    assert change == pytest.approx(0.05) and low == pytest.approx(0.05)
+    assert high == pytest.approx(0.05)
+    _, _, change, low, high = compare(before, before)["pin_accuracy"]
+    assert change == low == high == 0

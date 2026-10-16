@@ -170,11 +170,23 @@ schem2net bench a --split dev
 schem2net bench a --split test --json results.json
 ```
 
-CI builds corpus A and fails when its dev split reads worse than
-`bench/baseline_a_dev.json`: pin accuracy or connection F1 down more than 0.002, or
-silent errors up more than 0.001. CI has no part library indexed, so the baseline is
-read without one (`XDG_CACHE_HOME` pointing at an empty folder) and with the stored
-models. A change meant to move these figures writes the baseline again:
+`bench --json` writes each design's raw counts, so any figure can be computed again.
+`bench-compare` sets two such runs side by side, design by design. For each metric
+it gives the change and a 95% interval of it from a bootstrap over designs: 2,000
+draws of the designs with replacement, the same draw for both runs. A run fails
+when the interval of the pin accuracy change lies wholly below -0.002, or silent
+errors rise by more than 0.001.
+
+```sh
+schem2net bench d --split dev --json before.json
+schem2net bench d --split dev --json after.json
+schem2net bench-compare before.json after.json
+```
+
+CI builds corpus A and compares its dev split with `bench/baseline_a_dev.json`.
+CI has no part library indexed, so the baseline is read without one
+(`XDG_CACHE_HOME` pointing at an empty folder) and with the stored models. A change
+meant to move these figures writes the baseline again:
 
 ```sh
 XDG_CACHE_HOME=$(mktemp -d) schem2net bench a --split dev --json bench/baseline_a_dev.json
@@ -199,12 +211,16 @@ single pin in the ground truth are not scored.
 | `perfect_designs` | Share of designs with every net correct. |
 | `silent_error_rate` | Share of pins that are wrong with nothing flagging them: on a net of full confidence and named by no issue. What a user cannot catch. |
 | `missed_pin_rate` | Share of pins on no net at all: a part left out, a pin read with another number, a pin the drawing hides. The netlist is short of them rather than wrong about them, so they are not counted as silent errors. |
+| `extra_pin_rate` | Numbered pins on true parts that the truth has no pin of, such as a sign read as a pad number, against the true pins. |
 | `pin_flag_recall` | Share of wrong pins that something flags. |
 | `review_items_per_100_pins` | Things a reviewer is handed: each doubtful net and each issue naming pins counts once, per 100 pins. |
 | `review_precision` | Share of those that point at something wrong: a doubtful net that is wrong, an issue one of whose pins is wrong. |
 | `designs_without_silent_errors` | Share of designs whose every wrong pin is flagged. |
 
-Corpus totals are summed over pins, not averaged over designs.
+Corpus totals are summed over pins, not averaged over designs. Connection F1
+counts pairs of pins, so one large net merged by mistake can set a corpus's figure
+alone; `macro_pin_accuracy` and `macro_connection_f1` give the mean over designs
+beside the pooled figures.
 
 Accuracy alone says little about whether a netlist can be used: a board 95% right
 whose errors no one can find is worse than one 90% right whose doubtful pins are

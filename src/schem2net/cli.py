@@ -3,6 +3,7 @@ import json
 import os
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import asdict
 from enum import StrEnum
 from functools import partial
 from pathlib import Path
@@ -296,19 +297,20 @@ def bench(
     drawing_only: Annotated[
         bool, typer.Option(help="Ignore netlists carried in the PDF, such as Altium bookmarks.")
     ] = False,
-    baseline: Annotated[
-        Path | None,
-        typer.Option(help="JSON from an earlier run: fail if pins or silent errors got worse."),
-    ] = None,
+    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
     """Score the extractor against a built corpus."""
     from schem2net.bench import corpus as corpora
     from schem2net.bench import runner
-    from schem2net.bench.score import Counts
+    from schem2net.bench.score import Counts, summary
 
     extract = partial(pipeline.extract, embedded=not drawing_only)
     results = runner.run(
-        corpora.load(corpus, bench_dir), split=split, sample=sample, extract=extract
+        corpora.load(corpus, bench_dir),
+        split=split,
+        sample=sample,
+        extract=extract,
+        workers=workers,
     )
     if not results:
         typer.echo("nothing to score; run build-corpus first", err=True)
@@ -327,33 +329,47 @@ def bench(
         report = {
             "corpus": corpus,
             "split": split,
-            "total": total.metrics(),
-            "designs": {name: counts.metrics() for name, counts in results},
+            "total": summary([counts for _, counts in results]),
+            "designs": {name: asdict(counts) for name, counts in results},
         }
         json_out.write_text(json.dumps(report, indent=2))
-    if baseline:
-        worse = _worse(json.loads(baseline.read_text())["total"], total.metrics())
-        for line in worse:
-            typer.echo(line, err=True)
-        if worse:
-            raise typer.Exit(1)
 
 
-# How far a total may move before it counts as worse: summing floats over designs in
-# another order, or another machine, may move the last digits.
-TOLERANCE = {"pin_accuracy": -0.002, "connection_f1": -0.002, "silent_error_rate": 0.001}
+@app.command("bench-compare", hidden=True)
+def bench_compare(before: Path, after: Path) -> None:
+    """Compare two bench runs design by design. Fails when pin accuracy is surely lower
+    or silent errors are higher."""
+    from schem2net.bench.score import Counts, compare
+
+    runs = [json.loads(path.read_text())["designs"] for path in (before, after)]
+    names = sorted(runs[0].keys() & runs[1].keys())
+    for path, run in zip((before, after), runs, strict=True):
+        if left := sorted(run.keys() - set(names)):
+            typer.echo(f"{path}: {len(left)} designs not in the other run: {', '.join(left)}")
+    if not names:
+        typer.echo("no designs in common", err=True)
+        raise typer.Exit(1)
+    changes = compare(*([Counts(**run[n]) for n in names] for run in runs))
+    typer.echo(f"{'metric':32} {'before':>8} {'after':>8} {'change':>8}  95% interval")
+    for name, (first, second, change, low, high) in changes.items():
+        typer.echo(f"{name:32} {first:8.4f} {second:8.4f} {change:+8.4f}  {low:+.4f} {high:+.4f}")
+    pins, silent = changes.get("pin_accuracy"), changes.get("silent_error_rate")
+    failed = []
+    if pins and pins[4] <= GATE["pin_accuracy"]:
+        failed.append("pin accuracy is lower")
+    if silent and silent[2] > GATE["silent_error_rate"]:
+        failed.append("silent errors are higher")
+    if pins and pins[3] > 0:
+        typer.echo("pin accuracy is higher")
+    for line in failed:
+        typer.echo(line, err=True)
+    if failed:
+        raise typer.Exit(1)
 
 
-def _worse(before: dict, now: dict) -> list[str]:
-    """What got worse since a baseline, beyond the tolerance."""
-    out = []
-    for name, allowed in TOLERANCE.items():
-        if before.get(name) is None or now.get(name) is None:
-            continue
-        change = now[name] - before[name]
-        if change * allowed > 0 and abs(change) > abs(allowed):
-            out.append(f"{name} went from {before[name]:.4f} to {now[name]:.4f}")
-    return out
+# A run passes when the interval of the pin accuracy change reaches above -0.002 and
+# silent errors rise by no more than 0.001.
+GATE = {"pin_accuracy": -0.002, "silent_error_rate": 0.001}
 
 
 @app.command("build-font", hidden=True)

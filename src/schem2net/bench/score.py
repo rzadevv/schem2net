@@ -7,7 +7,7 @@ every pin is checked against its matched net. See docs/benchmark.md.
 
 import re
 from collections import Counter
-from dataclasses import dataclass, fields
+from dataclasses import astuple, dataclass, fields
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -62,6 +62,8 @@ class Counts:
     pins_wrong_flagged: int = 0
     pins_missed: int = 0
     pins_missed_flagged: int = 0
+    # Numbered pins on true parts that the truth has no pin of: invented numbers.
+    pins_extra: int = 0
     designs_without_silent_errors: int = 0
     # What a reviewer is handed: each doubtful net, and each issue naming pins, is one
     # thing to check; it is worth checking if something there is wrong.
@@ -88,6 +90,7 @@ class Counts:
             "silent_error_rate": _ratio(self.pins_wrong - self.pins_wrong_flagged, self.pins),
             "pin_flag_recall": _ratio(self.pins_wrong_flagged, self.pins_wrong),
             "missed_pin_rate": _ratio(self.pins_missed, self.pins),
+            "extra_pin_rate": _ratio(self.pins_extra, self.pins),
             "review_items_per_100_pins": _ratio(
                 100 * (self.flagged_nets + self.pin_issues), self.pins
             ),
@@ -156,6 +159,11 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     known = [r for r in common if (true_refs[r].value or "~").strip() not in ("", "~")]
     c.values_known = len(known)
     c.values_correct = sum(_same_value(true_refs[r].value, pred_refs[r].value) for r in known)
+    true_pins = {p for n in truth.nets for p in n.pins}
+    true_pins |= {(comp.ref, pin.num) for comp in truth.components for pin in comp.pins}
+    c.pins_extra = sum(
+        pin[0] in true_refs and pin not in true_pins for pin in set().union(*pred_nets)
+    )
 
     matched_true = {p: t for t, p in match.items()}
     for p, net in enumerate(pred_nets):
@@ -192,6 +200,44 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     c.designs_without_silent_errors = int(c.pins_wrong == c.pins_wrong_flagged)
     c.perfect_designs = int(c.nets_exact == c.nets and c.wrong_nets == 0)
     return c
+
+
+# Metrics also given as the mean over designs, so one large design cannot set them alone.
+MACRO = ("pin_accuracy", "connection_f1")
+
+
+def summary(designs: list[Counts], weights: np.ndarray | None = None) -> dict[str, float | None]:
+    """Metrics over designs, pooled and as MACRO means, each design counted as often as
+    its weight says (once by default)."""
+    if weights is None:
+        weights = np.ones(len(designs), dtype=int)
+    rows = np.array([astuple(d) for d in designs], dtype=np.int64).reshape(len(designs), -1)
+    out = Counts(*(int(v) for v in weights @ rows)).metrics()
+    for name in MACRO:
+        values = [d.metrics()[name] for d in designs]
+        kept = [(w, v) for w, v in zip(weights, values, strict=True) if v is not None and w]
+        total = sum(w for w, _ in kept)
+        out[f"macro_{name}"] = sum(w * v for w, v in kept) / total if total else None
+    return out
+
+
+def compare(
+    before: list[Counts], after: list[Counts], resamples: int = 2000, seed: int = 0
+) -> dict[str, tuple[float, float, float, float, float]]:
+    """Each metric before and after, the change, and a 95% interval of the change from a
+    bootstrap over designs: the same designs, paired, are drawn for both runs."""
+    n = len(before)
+    weights = np.random.default_rng(seed).multinomial(n, np.full(n, 1 / n), size=resamples)
+    first, second = summary(before), summary(after)
+    drawn = [(summary(before, w), summary(after, w)) for w in weights]
+    out = {}
+    for name in first:
+        if first[name] is None or second[name] is None:
+            continue
+        changes = [b[name] - a[name] for a, b in drawn if None not in (a[name], b[name])]
+        low, high = np.percentile(changes, [2.5, 97.5])
+        out[name] = (first[name], second[name], second[name] - first[name], low, high)
+    return out
 
 
 def _pin_aliases(truth: Design) -> dict[PinRef, PinRef]:

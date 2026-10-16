@@ -302,17 +302,26 @@ def test_a_page_the_reader_trips_on_is_reported_and_the_rest_read(monkeypatch):
     assert [(i.page, i.detail) for i in failed] == [(1, "ValueError: odd page")]
 
 
-def test_a_bench_worse_than_its_baseline_is_told():
-    from schem2net.cli import _worse
+def test_bench_compare_fails_when_pins_are_lost(tmp_path):
+    import json
+    from dataclasses import asdict
 
-    before = {"pin_accuracy": 0.90, "connection_f1": 0.90, "silent_error_rate": 0.010}
-    same = {"pin_accuracy": 0.899, "connection_f1": 0.91, "silent_error_rate": 0.0105}
-    assert _worse(before, same) == []
-    worse = {"pin_accuracy": 0.89, "connection_f1": 0.90, "silent_error_rate": 0.02}
-    assert [line.split()[0] for line in _worse(before, worse)] == [
-        "pin_accuracy",
-        "silent_error_rate",
-    ]
+    from typer.testing import CliRunner
+
+    from schem2net import cli
+    from schem2net.bench.score import Counts
+
+    def run(name, correct):
+        designs = {
+            f"d{i}": asdict(Counts(designs=1, pins=100, pins_correct=correct + i)) for i in range(8)
+        }
+        (tmp_path / name).write_text(json.dumps({"designs": designs}))
+        return str(tmp_path / name)
+
+    before, same, worse = run("a.json", 90), run("b.json", 90), run("c.json", 80)
+    assert CliRunner().invoke(cli.app, ["bench-compare", before, same]).exit_code == 0
+    failed = CliRunner().invoke(cli.app, ["bench-compare", before, worse])
+    assert failed.exit_code == 1 and "pin accuracy is lower" in failed.output
 
 
 def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():

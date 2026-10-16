@@ -2,6 +2,8 @@
 
 import random
 from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from pathlib import Path
 
 from schem2net import kicad, pipeline
@@ -15,6 +17,7 @@ def run(
     split: str = "dev",
     sample: int | None = None,
     extract: Callable[[Path], Design] = pipeline.extract,
+    workers: int = 2,
 ) -> list[tuple[str, Counts]]:
     projects = [
         p
@@ -24,10 +27,12 @@ def run(
     if sample is not None and sample < len(projects):
         projects = random.Random(0).sample(projects, sample)
 
-    results = []
-    for project in sorted(projects, key=lambda p: p.name):
-        out = corpus.build_dir(project)
-        truth = kicad.read_netlist(out / "truth.net")
-        predicted = extract(out / "schematic.pdf")
-        results.append((project.name, score(predicted, truth)))
-    return results
+    projects = sorted(projects, key=lambda p: p.name)
+    dirs = [corpus.build_dir(p) for p in projects]
+    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
+        counts = list(pool.map(partial(_score, extract=extract), dirs))
+    return [(p.name, c) for p, c in zip(projects, counts, strict=True)]
+
+
+def _score(out: Path, extract: Callable[[Path], Design]) -> Counts:
+    return score(extract(out / "schematic.pdf"), kicad.read_netlist(out / "truth.net"))
