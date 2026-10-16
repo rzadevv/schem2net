@@ -83,12 +83,21 @@ def center(box: BBox) -> Point:
 class GridIndex:
     """Buckets integer ids by the grid cells their boxes cover."""
 
+    # Boxes over more cells than this, such as a line a broken file runs kilometres off
+    # its page, are kept with their span of cells rather than in each cell.
+    WIDE = 100_000
+
     def __init__(self, cell: float = 2.54):
         self.cell = cell
         self._cells: dict[tuple[int, int], list[int]] = defaultdict(list)
+        self._wide: list[tuple[int, tuple[int, int, int, int]]] = []
 
     def add(self, item: int, box: BBox) -> None:
-        for key in self._keys(box):
+        span = self._span(box)
+        if _cells(span) > self.WIDE:
+            self._wide.append((item, span))
+            return
+        for key in _keys(span):
             self._cells[key].append(item)
 
     def near(self, p: Point, radius: float) -> set[int]:
@@ -96,17 +105,29 @@ class GridIndex:
         return self.within(box)
 
     def within(self, box: BBox) -> set[int]:
-        found: set[int] = set()
-        for key in self._keys(box):
+        x0, y0, x1, y1 = span = self._span(box)
+        found = {
+            item for item, (a, b, c, d) in self._wide if a <= x1 and x0 <= c and b <= y1 and y0 <= d
+        }
+        keys = _keys(span)
+        if _cells(span) > max(self.WIDE, len(self._cells)):
+            keys = [(i, j) for i, j in self._cells if x0 <= i <= x1 and y0 <= j <= y1]
+        for key in keys:
             found.update(self._cells.get(key, ()))
         return found
 
-    def _keys(self, box: BBox) -> Iterator[tuple[int, int]]:
-        x0, y0 = math.floor(box[0] / self.cell), math.floor(box[1] / self.cell)
-        x1, y1 = math.floor(box[2] / self.cell), math.floor(box[3] / self.cell)
-        for i in range(x0, x1 + 1):
-            for j in range(y0, y1 + 1):
-                yield i, j
+    def _span(self, box: BBox) -> tuple[int, int, int, int]:
+        return tuple(math.floor(v / self.cell) for v in box)
+
+
+def _cells(span: tuple[int, int, int, int]) -> int:
+    return max(span[2] - span[0] + 1, 0) * max(span[3] - span[1] + 1, 0)
+
+
+def _keys(span: tuple[int, int, int, int]) -> Iterator[tuple[int, int]]:
+    for i in range(span[0], span[2] + 1):
+        for j in range(span[1], span[3] + 1):
+            yield i, j
 
 
 class UnionFind:

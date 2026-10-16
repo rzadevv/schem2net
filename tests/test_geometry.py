@@ -26,6 +26,26 @@ def test_grid_index_finds_boxes_across_cells():
     assert 7 not in index.near((10, 10), 0.1)
 
 
+boxes = st.tuples(*[st.floats(-20, 20)] * 4).map(
+    lambda b: (min(b[0], b[2]), min(b[1], b[3]), max(b[0], b[2]), max(b[1], b[3]))
+)
+
+
+@given(st.lists(boxes, max_size=20), st.lists(boxes, max_size=10))
+def test_grid_index_finds_the_same_whether_boxes_are_kept_whole_or_in_cells(added, queries):
+    """Boxes over many cells, such as a line a broken file runs far off its page, are
+    kept whole so the index stays small; what a search finds is the same."""
+    cells, whole = GridIndex(cell=1.0), GridIndex(cell=1.0)
+    whole.WIDE = 4
+    for k, box in enumerate(added):
+        cells.add(k, box)
+        whole.add(k, box)
+    for box in queries:
+        assert cells.within(box) == whole.within(box)
+    whole.add(99, (0, 0, 1e9, 1))
+    assert 99 in whole.near((5e8, 0.5), 0.1) and 99 not in whole.near((0, 5), 0.1)
+
+
 @given(st.lists(st.tuples(st.integers(0, 30), st.integers(0, 30)), max_size=60))
 def test_union_find_matches_components(edges):
     uf = UnionFind()
