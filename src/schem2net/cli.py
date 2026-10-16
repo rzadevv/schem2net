@@ -298,11 +298,15 @@ def bench(
         bool, typer.Option(help="Ignore netlists carried in the PDF, such as Altium bookmarks.")
     ] = False,
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
+    explain: Annotated[
+        bool, typer.Option(help="Show where the pins went, and error by confidence.")
+    ] = False,
 ) -> None:
     """Score the extractor against a built corpus."""
     from schem2net.bench import corpus as corpora
+    from schem2net.bench import explain as explained
     from schem2net.bench import runner
-    from schem2net.bench.score import Counts, summary
+    from schem2net.bench.score import Counts, score, summary
 
     extract = partial(pipeline.extract, embedded=not drawing_only)
     results = runner.run(
@@ -311,10 +315,16 @@ def bench(
         sample=sample,
         extract=extract,
         workers=workers,
+        judge=explained.judge if explain else score,
     )
     if not results:
         typer.echo("nothing to score; run build-corpus first", err=True)
         raise typer.Exit(1)
+    if explain:
+        for line in explained.report([(name, found) for name, (_, found) in results]):
+            typer.echo(line)
+        typer.echo()
+        results = [(name, counts) for name, (counts, _) in results]
 
     total = sum((counts for _, counts in results), Counts())
     columns = ["pin_accuracy", "signal_pin_accuracy", "net_exact", "connection_f1"]

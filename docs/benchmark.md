@@ -183,6 +183,12 @@ schem2net bench d --split dev --json after.json
 schem2net bench-compare before.json after.json
 ```
 
+`bench --explain` shows where each true pin went: right, renumbered (on the net
+where another pin of its part belongs), merged, split, or on no net because its
+part is missing, its number differs, it is kept unnumbered, it is listed on no net
+or not found at all. It then gives the share of wrong nets and pins by confidence,
+and how well doubt ranks wrong pins above right ones (AUROC).
+
 CI builds corpus A and compares its dev split with `bench/baseline_a_dev.json`.
 CI has no part library indexed, so the baseline is read without one
 (`XDG_CACHE_HOME` pointing at an empty folder) and with the stored models. A change

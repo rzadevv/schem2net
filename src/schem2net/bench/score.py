@@ -103,7 +103,22 @@ class Counts:
         }
 
 
-def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDENCE) -> Counts:
+@dataclass
+class Aligned:
+    """True and predicted nets as sets of pins, the predicted pins known as the truth
+    knows them and swapped ends of symmetric parts put back, and the match of each
+    true net to a predicted one."""
+
+    true_nets: list[set[PinRef]]
+    power: list[bool]
+    pred_nets: list[set[PinRef]]
+    confidence: list[float]
+    doubted: set[PinRef]
+    aliases: dict[PinRef, PinRef]
+    match: dict[int, int]
+
+
+def align(predicted: Design, truth: Design) -> Aligned:
     scored = [n for n in truth.nets if len(set(n.pins)) >= 2]
     true_nets = [set(n.pins) for n in scored]
     power = [bool(POWER_NET.match(_short_name(n.name))) for n in scored]
@@ -126,6 +141,18 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     match = match_nets([n - loose for n in true_nets], [n - loose for n in pred_nets])
     pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, match, truth.components)
     match = match_nets(true_nets, pred_nets)
+    return Aligned(true_nets, power, pred_nets, confidence, doubted, aliases, match)
+
+
+def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDENCE) -> Counts:
+    found = align(predicted, truth)
+    true_nets, power, pred_nets = found.true_nets, found.power, found.pred_nets
+    confidence, doubted, aliases, match = (
+        found.confidence,
+        found.doubted,
+        found.aliases,
+        found.match,
+    )
 
     true_owner = _owners(true_nets)
     pred_owner = _owners(pred_nets)
