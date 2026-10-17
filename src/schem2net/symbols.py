@@ -8,8 +8,12 @@ on a resistor pin stays a separate symbol.
 
 import bisect
 from dataclasses import dataclass, field
+from functools import cache
+from importlib import resources
 
-from schem2net import fields, geometry
+import numpy as np
+
+from schem2net import designators, fields, geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point
 from schem2net.profile import Profile
@@ -37,6 +41,12 @@ ENTER_DEPTH = 2.54  # mm a pin crossing into a box ends inside its edge
 DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
 DRAWN_TOGETHER_SEQ = 3  # drawing steps between a body and pins drawn with it
 BETWEEN_MAX = 60  # shapes drawn between two of a piece's own, when looking for its other pieces
+
+# A group the rules made stays whole where a learned model links its shapes this surely.
+GROUP_LINK = 0.5
+GROUP_REACH = 1.0  # mm between shapes for a pair the model judges, or
+GROUP_STEPS, GROUP_STEP_REACH = 6, 5.0  # drawing steps apart within this many mm
+GROUPS_FILE = "groups.npz"
 
 
 @dataclass(slots=True)
@@ -83,10 +93,114 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
         symbols = _without_frames(runs.join_pieces(symbols))
     else:  # a frame spans all the drawing: gone first, so no piece joins it
         symbols = _join_drawn_together(_without_frames(symbols), scene, profile)
+    if profile.learned_grouping and (model := _grouping_model(profile.name)):
+        symbols = _split_unlinked(symbols, scene, model)
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene, profile if profile.pinless_at_body_edge else None)
     fields.annotate(symbols, scene, profile, runs)
     return [s for s in symbols if s.ref or s.power]
+
+
+def _split_unlinked(symbols: list[Symbol], scene: Scene, model) -> list[Symbol]:
+    """Each group split where the learned model links none of its shapes across: two
+    parts drawn touching, as a supply sign set on a part's pin, are two."""
+    pins = {p.shape: p.line for s in symbols for p in s.pins}
+    owner = {i: k for k, s in enumerate(symbols) for i in s.shapes}
+    pairs = [(i, j) for i, j in near_pairs(scene) if i in owner and owner[i] == owner.get(j)]
+    linked = UnionFind()
+    if pairs:
+        seqs = [t.seq for t in scene.fields]
+        rows = np.array([pair_features(scene, pins, i, j, seqs) for i, j in pairs])
+        for (i, j), p in zip(pairs, designators.probability(model, rows), strict=True):
+            if p >= GROUP_LINK:
+                linked.union(i, j)
+    out = []
+    for symbol in symbols:
+        pieces: dict[int, list[int]] = {}
+        for i in symbol.shapes:
+            pieces.setdefault(linked.find(i), []).append(i)
+        if len(pieces) == 1:
+            out.append(symbol)
+            continue
+        for shapes in pieces.values():
+            body = [scene.shapes[i].bbox for i in shapes if i not in pins]
+            out.append(
+                Symbol(
+                    sorted(shapes),
+                    _union([scene.shapes[i].bbox for i in shapes]),
+                    [p for p in symbol.pins if p.shape in shapes],
+                    body=_union(body) if body else None,
+                )
+            )
+    return out
+
+
+def near_pairs(scene: Scene) -> list[tuple[int, int]]:
+    """Pairs of shapes the grouping model judges: close together, or drawn a few steps
+    apart and near."""
+    index = GridIndex(cell=2.0)
+    for s in scene.shapes:
+        index.add(s.id, s.bbox)
+    out = set()
+    for s in scene.shapes:
+        x0, y0, x1, y1 = s.bbox
+        for j in index.within(
+            (x0 - GROUP_REACH, y0 - GROUP_REACH, x1 + GROUP_REACH, y1 + GROUP_REACH)
+        ):
+            if j != s.id:
+                out.add((min(s.id, j), max(s.id, j)))
+    by_seq = sorted(scene.shapes, key=lambda s: s.seq)
+    for k, s in enumerate(by_seq):
+        for t in by_seq[k + 1 : k + 1 + GROUP_STEPS]:
+            if geometry.bbox_gap(s.bbox, t.bbox) <= GROUP_STEP_REACH:
+                out.add((min(s.id, t.id), max(s.id, t.id)))
+    return sorted(out)
+
+
+def pair_features(scene: Scene, pins: dict, i: int, j: int, seqs: list[int]) -> list[float]:
+    """What the grouping model sees of two shapes: how close, how they touch, how far
+    apart they were drawn and with how many texts between, and what each is."""
+    a, b = scene.shapes[i], scene.shapes[j]
+    ends_a, ends_b = (a.points[0], a.points[-1]), (b.points[0], b.points[-1])
+    lo, hi = sorted((a.seq, b.seq))
+
+    def tip_on(pin: int, other: Shape) -> bool:
+        line = pins.get(pin)
+        return line is not None and min(geometry.distance(line[1], q) for q in other.points) <= 0.1
+
+    return [
+        min(_reach(a, b), _reach(b, a)),
+        min(geometry.distance(p, q) for p in ends_a for q in ends_b),
+        abs(a.seq - b.seq),
+        sum(lo < s < hi for s in seqs),
+        float(a.color == b.color),
+        min(a.width, b.width) / max(a.width, b.width, 1e-6),
+        geometry.distance(a.bbox[:2], a.bbox[2:]),
+        geometry.distance(b.bbox[:2], b.bbox[2:]),
+        float(a.closed),
+        float(b.closed),
+        float(i in pins),
+        float(j in pins),
+        float(tip_on(i, b) or tip_on(j, a)),
+        len(a.points),
+        len(b.points),
+    ]
+
+
+def _reach(a: Shape, b: Shape) -> float:
+    """How far the points of one shape lie from the other's lines, at the closest."""
+    segs = list(geometry.segments(b.points)) or [(b.points[0], b.points[0])]
+    return min(geometry.distance_to_segment(p, s) for p in a.points for s in segs)
+
+
+@cache
+def _grouping_model(generator: str):
+    path = resources.files("schem2net").joinpath("profiles", GROUPS_FILE)
+    if not path.is_file():
+        return None
+    with path.open("rb") as f:
+        arrays = dict(np.load(f))
+    return designators.Forest(arrays, generator) if f"{generator}.classes" in arrays else None
 
 
 def _text_seqs(scene: Scene, profile: Profile) -> list[int]:

@@ -1911,3 +1911,20 @@ def test_easyeda_reads_a_sign_by_a_pin_as_no_number():
     words = [("+", (11.5, 8.2, 13.1, 9.6), 0.0), ("-", (17, 8.2, 18.6, 9.6), 0.0)]
     assert "+" not in _numbered(pins, words, profile.load("easyeda"))
     assert _numbered(pins, words, profile.load("kicad")) == ["+", "-"]
+
+
+def test_a_group_splits_where_the_learned_model_links_nothing(monkeypatch):
+    """A supply sign set on a part's pin is drawn touching it, but is a part of its own."""
+    b = SceneBuilder()
+    b.shape((0, 0), (4, 0), (4, 4), (0, 4), (0, 0))  # a part's body
+    b.shape((4, 2), (6.54, 2))  # its pin
+    b.shape((6.54, 1), (6.54, 3))  # a supply sign's bar on the pin's tip
+    pin = symbols.Pin(1, ((4, 2), (6.54, 2)))
+    whole = symbols.Symbol([0, 1, 2], (0, 0, 6.54, 4), [pin], body=(0, 0, 4, 4))
+    for p, pieces in ((0.0, 3), (1.0, 1)):
+        monkeypatch.setattr(
+            symbols.designators, "probability", lambda m, rows, p=p: [p] * len(rows)
+        )
+        found = symbols._split_unlinked([whole], b.scene, model=object())
+        assert len(found) == pieces
+        assert sum(len(s.pins) for s in found) == 1

@@ -526,6 +526,35 @@ def build_designators(
     typer.echo(f"{output}: learned from {len(designs)} designs, texts {dict(counts)}")
 
 
+@app.command("build-groups", hidden=True)
+def build_groups(
+    bench_dir: BenchDir = Path("bench"),
+    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
+        "src/schem2net/profiles/groups.npz"
+    ),
+    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
+) -> None:
+    """Learn which shapes of an Eagle page are one part, from the dev split of the Eagle
+    designs of corpora C and D, whose .sch places each symbol. Needs scikit-learn."""
+    import numpy as np
+
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import groups
+
+    designs = []
+    for name in "cd":
+        loaded = corpora.load(name, bench_dir)
+        designs += [
+            loaded.build_dir(p) for p in loaded.projects if p.eagle and loaded.in_split(p, "dev")
+        ]
+    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
+        examples = list(pool.map(groups.rows, designs))
+    with output.open("wb") as f:
+        np.savez_compressed(f, **groups.train(examples))
+    pairs = sum(int((y >= 0).sum()) for _, y in examples)
+    typer.echo(f"{output}: learned from {pairs} pairs of shapes in {len(designs)} designs")
+
+
 @app.command("bench-schematic", hidden=True)
 def bench_schematic(
     corpus: CorpusName = "a",

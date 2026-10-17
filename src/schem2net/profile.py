@@ -25,6 +25,7 @@ class Profile:
     diode_pin_one_is_anode: bool = False
     diode_pin_names: tuple[str, ...] = ()  # cathode and anode pads, where named so
     pin_numbers_have_digits: bool = False  # a text with no digit by a pin is its name
+    learned_grouping: bool = False  # groups split where the learned model links nothing
     # A transistor's pads by role, for each package a part's value may name, as
     # SOT23 = { G = "1", S = "2", D = "3" }; none known yet.
     pin_roles: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -90,6 +91,7 @@ def load(name: str) -> Profile:
         diode_pin_names=tuple(pins.get("diode_names", ())),
         pin_roles=pins.get("roles", {}),
         pin_numbers_have_digits=pins.get("numbers_have_digits", False),
+        learned_grouping=data.get("parts", {}).get("grouping") == "learned",
         pin_library=pins.get("library"),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
         pins_after_fields=order.get("pins_after_fields", False),

@@ -39,3 +39,6 @@ at_body_edge = true  # many symbols draw no pin line; wires end on the outline
 name_gap = 2.6  # mm; pin names sit well inside the outline
 library = "eagle"  # pads of unnumbered pins, once Eagle libraries are indexed
 diode_names = ["C", "A"]  # diode packages name their pads for the cathode and anode
+
+[parts]
+grouping = "learned"  # groups split where the learned model links none of their shapes

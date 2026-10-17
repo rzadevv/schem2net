@@ -11,6 +11,8 @@
 - Eagle buses are read, so wires ending on them are no longer reported dangling.
 - Text turned upside down is read; dashed lines are never wires.
 - Pin numbers are paired with pins as a whole, and rows filled from how they count.
+- Eagle parts drawn touching, such as a supply sign on a pin, are told apart by a
+  learned model.
 - Test results in the README are on new splits that keep revisions of a board
   together, with 95% intervals.
 
