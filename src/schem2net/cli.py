@@ -534,24 +534,27 @@ def build_groups(
     ),
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
-    """Learn which shapes of an Eagle page are one part, from the dev split of the Eagle
-    designs of corpora C and D, whose .sch places each symbol. Needs scikit-learn."""
+    """Learn which shapes of a page are one part, from the dev split of the Eagle designs
+    of corpora C and D and the EasyEDA ones of E, whose sources place each part. Needs
+    scikit-learn."""
     import numpy as np
 
     from schem2net.bench import corpus as corpora
     from schem2net.bench import groups
 
     designs = []
-    for name in "cd":
+    for name in "cde":
         loaded = corpora.load(name, bench_dir)
         designs += [
-            loaded.build_dir(p) for p in loaded.projects if p.eagle and loaded.in_split(p, "dev")
+            loaded.build_dir(p)
+            for p in loaded.projects
+            if (p.eagle or p.easyeda) and loaded.in_split(p, "dev")
         ]
     with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
         examples = list(pool.map(groups.rows, designs))
     with output.open("wb") as f:
         np.savez_compressed(f, **groups.train(examples))
-    pairs = sum(int((y >= 0).sum()) for _, y in examples)
+    pairs = sum(int((y >= 0).sum()) for _, _, y in examples)
     typer.echo(f"{output}: learned from {pairs} pairs of shapes in {len(designs)} designs")
 
 

@@ -40,3 +40,6 @@ grid = [2.54, 1.27]  # mm, for pages printed rather than exported: 10 mil units
 
 [text]
 by_shape = false  # learned text roles do not yet beat EasyEDA's colours; pages read by shape still use them
+
+[parts]
+grouping = "learned"  # groups split where the learned model links none of their shapes

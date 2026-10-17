@@ -130,7 +130,7 @@ Five files in `profiles/` are learned from the dev splits, never from test:
 | `roles.npz` | colour pages of A, B, C, E and F | `schem2net build-roles` |
 | `designators.npz` | A to E, with their truth netlists | `schem2net build-designators` |
 | `eagle_font.json`, `eagle_fills.json` | C, with its `.sch` files | `schem2net build-font c` |
-| `groups.npz` | the Eagle designs of C and D, with their `.sch` files | `schem2net build-groups` |
+| `groups.npz` | the Eagle designs of C and D and the EasyEDA ones of E, with their sources | `schem2net build-groups` |
 
 They hold tree thresholds, leaf values and glyph strokes measured from those
 designs, not the designs. The designs are under their makers' licences, listed in
