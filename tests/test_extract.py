@@ -521,6 +521,14 @@ def test_lists_of_sheets_beside_a_name_are_no_labels():
     assert [label.text for label in page.labels] == ["DDR_CLK", "[12]"]
 
 
+def test_a_bare_list_of_sheets_after_a_name_is_dropped():
+    page = Scene(page=1)
+    for text in ("nRESWARM 4,6", "I2C2_SDA 4", "VDD 33"):
+        page.labels.append(Label(text, "local", (0, 0, 5, 1), 0.0))
+    drop_sheet_references(page, sheets=11)
+    assert [label.text for label in page.labels] == ["nRESWARM", "I2C2_SDA", "VDD 33"]
+
+
 def test_supply_name_anchored_at_one_end_overhangs_its_arrow():
     """Eagle anchors a supply's name at its left end, so a long name overhangs the arrow."""
     red, grey = (128, 0, 0), (80, 80, 80)

@@ -96,6 +96,7 @@ def name_key(text: str) -> str:
 
 SHEET_REFERENCE = re.compile(r"\s*/\s*(\d+)(\.\d+[A-Z])?$")  # "/2" or "/2.3B" after a name
 SHEET_LIST = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")  # "[2,10,11]" written beside a name
+BARE_SHEET_LIST = re.compile(r"\s(\d+(?:\s*,\s*\d+)*)$")  # or after it, "4,6", unbracketed
 
 
 def drop_sheet_references(scene: Scene, sheets: int) -> None:
@@ -108,7 +109,7 @@ def drop_sheet_references(scene: Scene, sheets: int) -> None:
         if other and found.start() > 0:
             label.text = label.text[: found.start()]
         # The list of sheets may be written in the same text, after the name.
-        listed = SHEET_LIST.search(label.text)
+        listed = SHEET_LIST.search(label.text) or BARE_SHEET_LIST.search(label.text)
         if (
             listed
             and listed.end() == len(label.text.rstrip())

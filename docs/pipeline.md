@@ -351,7 +351,7 @@ stem, the wire ending on the middle of the top one. An off-page connector is a p
 of arrows whose wire ends in their mouth; its name, in the net alias colour, sits a
 little way beyond them, and the sheets the net is on may be listed beside it, as in
 `[2,10,11]`, which is no label. A power name may sit as far off, as drawing order
-ties it to its symbol. Allegro takes net names in capitals, so names that differ only in case are one net, and a list of sheets written after a name in the same text, as `RESET [20,21]`, is no part of it. A ground's name is often hidden; Capture's library names its
+ties it to its symbol. Allegro takes net names in capitals, so names that differ only in case are one net, and a list of sheets written after a name in the same text, as `RESET [20,21]` or `RESET 20,21`, is no part of it. A ground's name is often hidden; Capture's library names its
 signs, so a bare triangle is GND_SIGNAL and a chassis rake GND_EARTH, apart from the
 GND of its bars. Capture's pins are a grid step long, so a number centred near a
 pin's outer end may overhang its tip; a long text past the tip, such as a part
