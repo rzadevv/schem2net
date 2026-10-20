@@ -1936,3 +1936,18 @@ def test_a_group_splits_where_the_learned_model_links_nothing(monkeypatch):
         found = symbols._split_unlinked([whole], b.scene, model=object())
         assert len(found) == pieces
         assert sum(len(s.pins) for s in found) == 1
+
+
+def test_a_part_drawn_over_itself_is_one_part_per_name_stacked_by_it():
+    """Alternative connectors for one place: one symbol drawn three times, three names."""
+    b = SceneBuilder()
+    b.shape((0, 0), (4, 0), (4, 8), (0, 8), (0, 0))
+    b.shape((4, 2), (6.54, 2))
+    for shape in b.scene.shapes:
+        shape.copies = 3
+    for k, name in enumerate(("J3", "J2", "J1", "10k")):
+        b.field(name, 0, -6 + 1.5 * k)
+    part = symbols.Symbol([0, 1], (0, 0, 6.54, 8), [symbols.Pin(1, ((4, 2), (6.54, 2)))], ref="J1")
+    found = symbols._drawn_over([part], b.scene, lambda: None)
+    assert sorted(s.ref for s in found) == ["J1", "J2", "J3"]
+    assert all(len(s.pins) == 1 for s in found)

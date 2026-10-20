@@ -75,6 +75,9 @@ each is, and the group is split where it links none of its shapes across: a supp
 sign set on a part's pin is drawn touching it, but is a part of its own. The model
 is learned from the dev designs whose source, an Eagle `.sch` or an EasyEDA `.json`,
 places each part and flag (`schem2net build-groups`).
+A part drawn several times over itself, as alternative parts for one place, with a
+name for each stacked in a column by its own, is one part per name on the same pins,
+where the designator model finds each name likely.
 
 Designators are paired with symbols one to one, nearest first overall. A value
 can look like a designator: "L298" by a driver's box. Resistors, capacitors,

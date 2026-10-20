@@ -7,7 +7,7 @@ on a resistor pin stays a separate symbol.
 """
 
 import bisect
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cache
 from importlib import resources
 
@@ -17,7 +17,7 @@ from schem2net import designators, fields, geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point
 from schem2net.profile import Profile
-from schem2net.refdes import is_common_ref
+from schem2net.refdes import PART_VALUE, is_common_ref
 from schem2net.scene import Scene, Shape
 
 TOUCH = 0.03  # mm, on top of half the stroke widths
@@ -98,7 +98,69 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene, profile if profile.pinless_at_body_edge else None)
     fields.annotate(symbols, scene, profile, runs)
-    return [s for s in symbols if s.ref or s.power]
+    kept = [s for s in symbols if s.ref or s.power]
+    return _drawn_over(kept, scene, lambda: designators.likelihood(scene, kept, runs, profile))
+
+
+def _drawn_over(symbols: list[Symbol], scene: Scene, chances) -> list[Symbol]:
+    """A part drawn several times over itself, as alternative parts for one place, with a
+    name for each stacked by its own: one part per name, on the same pins. A name is a
+    text the designator model, `chances()`, finds likely, or of the usual form where no
+    model was learned."""
+    # A part's value is no name, though a printer that draws everything twice writes
+    # it by its designator.
+    claimed = {s.ref for s in symbols if s.ref} | {s.value for s in symbols if s.value}
+    out, likely = list(symbols), None
+    for symbol in symbols:
+        if not symbol.ref or symbol.power or not symbol.shapes:
+            continue
+        times = min(scene.shapes[i].copies for i in symbol.shapes)
+        own = [t for t in scene.fields if t.text.strip() == symbol.ref]
+        if times < 2 or not own:
+            continue
+        here = min(own, key=lambda t: geometry.bbox_gap(t.bbox, symbol.bbox))
+        stacked = _stacked(here, scene.fields, claimed)
+        if stacked and likely is None:
+            likely = chances() or {}
+        stacked = [
+            t
+            for t in stacked
+            if (likely.get(id(t), 0.0) >= fields.WORD_FLOOR if likely else is_common_ref(t.text))
+        ]
+        for text in stacked[: times - 1]:
+            name = text.text.strip()
+            pins = [replace(p) for p in symbol.pins]
+            out.append(Symbol(symbol.shapes, symbol.bbox, pins, body=symbol.body, ref=name))
+            claimed.add(name)
+    return out
+
+
+def _stacked(text, texts, claimed: set[str]) -> list:
+    """Unclaimed texts of one size and colour written in a column with this one, a line
+    apart, nearest first."""
+    alike = [
+        t
+        for t in texts
+        if t is not text
+        and t.color == text.color
+        and abs(t.size - text.size) <= 0.1 * text.size
+        and abs(t.bbox[0] - text.bbox[0]) <= 0.5
+    ]
+    out, top, bottom = [], text.bbox[1], text.bbox[3]
+    while True:
+        gaps = [
+            (min(g for g in (top - t.bbox[3], t.bbox[1] - bottom) if g >= 0), k)
+            for k, t in enumerate(alike)
+            if t not in out and (top - t.bbox[3] >= 0 or t.bbox[1] - bottom >= 0)
+        ]
+        gap, k = min(gaps, default=(None, None))
+        if gap is None or gap > 1.5 * text.size:
+            break
+        out.append(alike[k])
+        top, bottom = min(top, alike[k].bbox[1]), max(bottom, alike[k].bbox[3])
+    return [
+        t for t in out if t.text.strip() not in claimed and not PART_VALUE.match(t.text.strip())
+    ]
 
 
 def _split_unlinked(symbols: list[Symbol], scene: Scene, model) -> list[Symbol]:

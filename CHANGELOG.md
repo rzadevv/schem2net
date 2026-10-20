@@ -13,6 +13,9 @@
 - Pin numbers are paired with pins as a whole, and rows filled from how they count.
 - Eagle and EasyEDA parts drawn touching, such as a supply sign on a pin, are told
   apart by a learned model.
+- A part drawn over itself with a name for each copy, as alternatives for one place,
+  is read as one part per name.
+- A list of sheets written after a net name without brackets is no part of the name.
 - Test results in the README are on new splits that keep revisions of a board
   together, with 95% intervals.
 

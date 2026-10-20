@@ -39,6 +39,7 @@ class Shape:
     seq: int = 0
     color: Color | None = None
     filled: bool = False
+    copies: int = 1  # times it is drawn, one over another
 
     @property
     def closed(self) -> bool:
@@ -157,6 +158,7 @@ def build(page: Page, profile: Profile) -> Scene:
     outlines: dict[str, list[list[Point]]] = {"global": [], "hier": []}
     pin_outlines: list[list[Point]] = []
 
+    copies = Counter(_path_key(p) for p in page.paths)
     paths = unique_paths(page.paths)
     crosses, scene.no_connects = _no_connect_crosses(paths)
     paths = [p for p in paths if p.seq not in crosses]
@@ -195,6 +197,7 @@ def build(page: Page, profile: Profile) -> Scene:
                 if box[2] - box[0] > 1e-3 or box[3] - box[1] > 1e-3:  # skip zero-length dots
                     shape = Shape(len(scene.shapes), sub, path.width, box, path.seq, color)
                     shape.filled = path.fill is not None
+                    shape.copies = copies[_path_key(path)]
                     scene.shapes.append(shape)
         elif profile.is_("hier_label", path.stroke):
             outlines["hier"].extend(path.subpaths)
@@ -881,14 +884,18 @@ def _across(box: BBox, angle: float) -> tuple[float, float]:
     return geometry.extent(box, geometry.reading_frame(angle)[1])
 
 
+def _path_key(path: Path) -> tuple:
+    return (
+        path.stroke,
+        path.fill,
+        tuple((round(x, 3), round(y, 3)) for sub in path.subpaths for x, y in sub),
+    )
+
+
 def unique_paths(paths: list[Path]) -> list[Path]:
     seen, out = set(), []
     for path in paths:
-        key = (
-            path.stroke,
-            path.fill,
-            tuple((round(x, 3), round(y, 3)) for sub in path.subpaths for x, y in sub),
-        )
+        key = _path_key(path)
         if key not in seen:
             seen.add(key)
             out.append(path)
