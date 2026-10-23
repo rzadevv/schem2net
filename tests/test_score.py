@@ -270,3 +270,13 @@ def test_an_interval_holds_the_pooled_figure():
     designs = [Counts(designs=1, pins=100, pins_correct=70 + 3 * i) for i in range(10)]
     low, high = intervals(designs)["pin_accuracy"]
     assert low < summary(designs)["pin_accuracy"] < high
+
+
+def test_a_group_is_drawn_whole():
+    """Revisions of one board are not independent: the interval is as wide as their group
+    being drawn, or not, together."""
+    designs = [Counts(designs=1, pins=100, pins_correct=c) for c in (90, 90, 90, 50, 70, 80)]
+    apart = intervals(designs)["pin_accuracy"]
+    together = intervals(designs, ["a", "a", "a", "b", "c", "d"])["pin_accuracy"]
+    assert together[1] - together[0] > apart[1] - apart[0]
+    assert intervals(designs, list(range(6))) == intervals(designs)

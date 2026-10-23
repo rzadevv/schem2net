@@ -59,7 +59,7 @@ bench-f: corpus-f
 	uv run schem2net bench f --split dev
 
 font: corpus-c
-	uv run schem2net build-font c
+	uv run schem2net build-models font
 
 roles: corpus corpus-b corpus-c
-	uv run schem2net build-roles
+	uv run schem2net build-models roles

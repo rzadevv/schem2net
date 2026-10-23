@@ -10,6 +10,7 @@
 | D | Olimex schematic PDFs, KiCad and Eagle | The schematic the PDF sits beside |
 | E | EasyEDA schematic PDFs, Std and Pro | The EasyEDA source the PDF sits beside |
 | F | OrCAD Capture schematic PDFs | The Cadence Allegro board the PDF sits beside |
+| G | Newer Olimex and SparkFun boards, KiCad and Eagle, held out whole | The schematic the PDF sits beside |
 
 Manifests (`bench/corpus_*.toml`) store references only: a repository URL and
 commit, or a demo that ships with KiCad.
@@ -80,8 +81,15 @@ Acrobat Distiller, Foxit, Microsoft's), so the PDF does not say what drew it and
 its colours decide. One design, the tutorial, is drawn in colours of its own; its
 ink is taken as black and read with the learned roles.
 
+Corpus G is the holdout read after October 2026: boards of the makers above whose
+repositories none of the other corpora use, each a schematic with the PDF printed from
+it in the same commit, one design per repository. SparkFun's newer boards are drawn in
+KiCad, so G also measures KiCad from a maker that A and D lack. None shares a fifth of
+its true nets with a design of another corpus. The whole corpus is the holdout
+(`holdout_share = 1.0`); no model learns from it and no rule is judged on it.
+
 Eagle draws most text with its own stroke font, and some PDFs carry text as
-filled outlines. `schem2net build-font c` learns the shapes of both kinds of
+filled outlines. `schem2net build-models font` learns the shapes of both kinds of
 letters from the corpus C dev split: the `.sch` sheet is laid over the page by
 the wires both share, each line of text is paired with the `.sch` text of the
 same length placed at that spot (net labels, names and values, symbol text,
@@ -91,7 +99,7 @@ never used.
 
 ## Roles for pages printed in black
 
-`schem2net build-roles` learns what each path and text is from the colour pages
+`schem2net build-models roles` learns what each path and text is from the colour pages
 of every corpus's dev split. The colours are the labels: a path in the wire
 colour is a wire, a text in the label colour a label. No truth netlist is used,
 and test boards are never read. It needs scikit-learn, one of the dev
@@ -107,7 +115,7 @@ corpus F's 30 designs are then taken for another one.
 
 ## Designator model
 
-`schem2net build-designators` learns which texts name parts, from every corpus's
+`schem2net build-models designators` learns which texts name parts, from every corpus's
 dev split. Each design is read as usual up to the point where designators are given
 out; there each text's features are taken (what it says, where it sits against the
 nearest part and the wires, what was drawn just before and after it) and the truth
@@ -117,9 +125,13 @@ naming both a capacitor and a transistor's pin, is left out, as its label is not
 known. The truth is used for nothing else, and test boards are never read. One
 model is learned per generator and written to `profiles/designators.npz`.
 
-`schem2net bench` on the dev split reads with the stored models, which have seen
-those designs, so its dev figures run a little high; the README gives test figures,
-which are not affected.
+The stored models have seen the dev designs, so dev figures read with them run
+high. `schem2net build-models --folds -o bench/out/folds` learns every file once for
+each of four folds of the dev groups, without that fold's designs, and `bench
+--folds bench/out/folds` reads each dev design with the models learned without it.
+Each design is read once for all four folds, with the stored models, so a fold's
+models never see its designs, though the rows they learn from were read with models
+that had. Test figures are not affected: test designs are never learned from.
 
 ## Learned files
 
@@ -127,10 +139,10 @@ Five files in `profiles/` are learned from the dev splits, never from test:
 
 | File | Learned from | Made by |
 |---|---|---|
-| `roles.npz` | colour pages of A, B, C, E and F | `schem2net build-roles` |
-| `designators.npz` | A to E, with their truth netlists | `schem2net build-designators` |
-| `eagle_font.json`, `eagle_fills.json` | C, with its `.sch` files | `schem2net build-font c` |
-| `groups.npz` | the Eagle designs of C and D and the EasyEDA ones of E, with their sources | `schem2net build-groups` |
+| `roles.npz` | colour pages of A, B, C, E and F | `schem2net build-models roles` |
+| `designators.npz` | A to E, with their truth netlists | `schem2net build-models designators` |
+| `eagle_font.json`, `eagle_fills.json` | C, with its `.sch` files | `schem2net build-models font` |
+| `groups.npz` | the Eagle designs of C and D and the EasyEDA ones of E, with their sources | `schem2net build-models groups` |
 
 They hold tree thresholds, leaf values and glyph strokes measured from those
 designs, not the designs. The designs are under their makers' licences, listed in
@@ -162,7 +174,8 @@ a revision whose drawing did not change, is a copy and scored nowhere.
 Groups are taken in the order of a hash of their names. The first 15% of a
 corpus's groups, or two where it has fewer than 14, are the `holdout`; the next
 fill `test` to the corpus's share of designs (a tenth for A, a third for B, C and
-F, half for D and E); the rest are `dev`. Tune on `dev`. Report `test`. The holdout
+F, half for D and E); the rest are `dev`, dealt into four folds by group in the same
+order. Tune on `dev`. Report `test`. The holdout
 is read once, with the final code, and only with `SCHEM2NET_HOLDOUT=1` set; `all`
 means dev and test. The holdout was first read on 2026-10-16, at commit 0cf46ce.
 
@@ -177,11 +190,20 @@ schem2net bench a --split test --json results.json
 ```
 
 `bench --json` writes each design's raw counts, so any figure can be computed again.
-`bench-compare` sets two such runs side by side, design by design. For each metric
-it gives the change and a 95% interval of it from a bootstrap over designs: 2,000
-draws of the designs with replacement, the same draw for both runs. A run fails
-when the interval of the pin accuracy change lies wholly below -0.002, or silent
-errors rise by more than 0.001.
+Revisions of one board are not independent, so intervals come from a bootstrap over
+groups: 2,000 draws of the groups with replacement, each design counted as often as
+its group is drawn. `bench` says how many groups its designs are in, and `bench --json`
+keeps each design's group. `bench-compare` sets two such runs side by side, design by
+design, and gives for each metric the change and a 95% interval of it, the same draws
+for both runs. A run fails when the interval of the pin accuracy change lies wholly
+below -0.002, silent errors rise by more than 0.001, or more pages fail to be read.
+
+A change is kept when, on dev read with folds, the interval of the pin accuracy change
+lies above -0.002 on every corpus and does not reach below 0 on the corpus the change
+was made for, and silent errors do not rise. A corpus of a dozen groups has draws
+holding none of the designs a change reaches, so even a change that only gains can
+show no gain in some. A change that falls short is taken out, not tuned
+until it passes.
 
 ```sh
 schem2net bench d --split dev --json before.json
@@ -197,8 +219,8 @@ and how well doubt ranks wrong pins above right ones (AUROC).
 
 CI builds corpora A and E and compares their dev splits with
 `bench/baseline_a_dev.json` and `bench/baseline_e_dev.json`.
-CI has no part library, so the baselines are read without one and with the stored
-models. A change
+CI has no part library, so the baselines are read without one, and no folds, so with
+the stored models: they guard against regressions, not for judging a change. A change
 meant to move these figures writes the baseline again:
 
 ```sh

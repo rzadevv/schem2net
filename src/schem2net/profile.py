@@ -2,9 +2,40 @@
 
 import tomllib
 from dataclasses import dataclass, field
+from functools import cache
 from importlib import resources
+from pathlib import Path
+
+import numpy as np
 
 from schem2net.primitives import Color
+
+_learned: Path | None = None  # a folder of learned files read in place of the shipped ones
+
+
+def use_learned(folder: Path | None) -> None:
+    """Read every learned file from this folder, as the bench does with models learned
+    without the design it reads; None goes back to the shipped ones."""
+    global _learned
+    _learned = folder
+
+
+def learned_file(name: str):
+    """A learned file of profiles/, or of the folder set with use_learned."""
+    if _learned is not None:
+        return _learned / name
+    return resources.files("schem2net").joinpath("profiles", name)
+
+
+def learned_arrays(path) -> dict[str, np.ndarray]:
+    """The arrays of a learned .npz file; none where it was not learned."""
+    return _arrays(path) if path.is_file() else {}
+
+
+@cache
+def _arrays(path) -> dict[str, np.ndarray]:
+    with path.open("rb") as f:
+        return dict(np.load(f))
 
 
 @dataclass(frozen=True)

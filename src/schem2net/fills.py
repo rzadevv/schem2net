@@ -11,12 +11,12 @@ table of known letters.
 import json
 from dataclasses import dataclass
 from functools import cache
-from importlib import resources
 
 import numpy as np
 
 from schem2net import strokes
 from schem2net.primitives import BBox, Path, Text
+from schem2net.profile import learned_file
 
 MAX_HEIGHT = 5.0  # mm; filled shapes taller than this across the line are not text
 GRID = 12  # raster cells along each side of a letter
@@ -259,10 +259,14 @@ def _text(line: Line, chars: list[str | None]) -> Text:
     return Text(-1, text, box(line), line.height, angle, line.path.fill, line.path.seq)
 
 
-@cache
 def _font(name: str) -> Table:
+    return _table(learned_file(f"{name}_fills.json"))
+
+
+@cache
+def _table(path) -> Table:
     try:
-        text = resources.files("schem2net").joinpath("profiles", f"{name}_fills.json").read_text()
+        text = path.read_text()
     except FileNotFoundError:
         return table_of([])
     return table_of([(e["char"], from_json(s)) for e in json.loads(text) for s in e["shapes"]])

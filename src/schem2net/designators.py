@@ -12,15 +12,14 @@ from __future__ import annotations
 
 import statistics
 from functools import cache
-from importlib import resources
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from schem2net import geometry
 from schem2net.geometry import GridIndex
-from schem2net.primitives import BBox, Text
-from schem2net.profile import Profile
+from schem2net.primitives import Text
+from schem2net.profile import Profile, learned_arrays, learned_file
 from schem2net.refdes import COMMON_PREFIXES, PART_VALUE, REFDES, is_common_ref, split_ref
 from schem2net.roles import Forest
 from schem2net.scene import Scene, values_run
@@ -108,7 +107,7 @@ def features(
         match = REFDES.match(word)
         centre = geometry.center(text.bbox)
 
-        nearby = [parts[k] for k in part_index.within(_grown(text.bbox, NEAR))]
+        nearby = [parts[k] for k in part_index.within(geometry.grown(text.bbox, NEAR))]
         part = min(
             nearby, key=lambda s: geometry.bbox_gap(s.body or s.bbox, text.bbox), default=None
         )
@@ -222,20 +221,14 @@ def _model(generator: str) -> Forest | None:
     return _stored(generator)
 
 
-@cache
 def _stored(generator: str) -> Forest | None:
-    path = resources.files("schem2net").joinpath("profiles", MODEL_FILE)
-    if not path.is_file():
-        return None
-    with path.open("rb") as f:
-        arrays = dict(np.load(f))
-    if f"{generator}.classes" not in arrays:
-        return None
-    return Forest(arrays, generator)
+    return _forest(learned_file(MODEL_FILE), generator)
 
 
-def _grown(box: BBox, by: float) -> BBox:
-    return (box[0] - by, box[1] - by, box[2] + by, box[3] + by)
+@cache
+def _forest(path, generator: str) -> Forest | None:
+    arrays = learned_arrays(path)
+    return Forest(arrays, generator) if f"{generator}.classes" in arrays else None
 
 
 def label(text: Text, refs: set[str]) -> bool:

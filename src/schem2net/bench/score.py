@@ -69,6 +69,7 @@ class Counts:
     # thing to check; it is worth checking if something there is wrong.
     pin_issues: int = 0
     pin_issues_wrong: int = 0
+    pages_failed: int = 0  # pages the reader stopped on with an error
 
     def __add__(self, other: "Counts") -> "Counts":
         return Counts(*(getattr(self, f.name) + getattr(other, f.name) for f in fields(self)))
@@ -166,7 +167,7 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
 
     true_owner = _owners(true_nets)
     pred_owner = _owners(pred_nets)
-    c = Counts(designs=1)
+    c = Counts(designs=1, pages_failed=sum(i.kind == "page_failed" for i in predicted.issues))
 
     for t, net in enumerate(true_nets):
         p = match.get(t)
@@ -260,12 +261,17 @@ def summary(designs: list[Counts], weights: np.ndarray | None = None) -> dict[st
 
 
 def compare(
-    before: list[Counts], after: list[Counts], resamples: int = 2000, seed: int = 0
+    before: list[Counts],
+    after: list[Counts],
+    groups: list[str] | None = None,
+    resamples: int = 2000,
+    seed: int = 0,
 ) -> dict[str, tuple[float, float, float, float, float]]:
     """Each metric before and after, the change, and a 95% interval of the change from a
-    bootstrap over designs: the same designs, paired, are drawn for both runs."""
+    bootstrap over the designs' groups: the same groups, paired, are drawn for both runs."""
     first, second = summary(before), summary(after)
-    drawn = [(summary(before, w), summary(after, w)) for w in _draws(len(before), resamples, seed)]
+    weights = _draws(groups or list(range(len(before))), resamples, seed)
+    drawn = [(summary(before, w), summary(after, w)) for w in weights]
     out = {}
     for name in first:
         if first[name] is None or second[name] is None:
@@ -277,10 +283,11 @@ def compare(
 
 
 def intervals(
-    designs: list[Counts], resamples: int = 2000, seed: int = 0
+    designs: list[Counts], groups: list[str] | None = None, resamples: int = 2000, seed: int = 0
 ) -> dict[str, tuple[float, float]]:
-    """A 95% interval of each metric from a bootstrap over designs."""
-    drawn = [summary(designs, w) for w in _draws(len(designs), resamples, seed)]
+    """A 95% interval of each metric from a bootstrap over the designs' groups."""
+    weights = _draws(groups or list(range(len(designs))), resamples, seed)
+    drawn = [summary(designs, w) for w in weights]
     out = {}
     for name in drawn[0]:
         values = [d[name] for d in drawn if d[name] is not None]
@@ -290,9 +297,14 @@ def intervals(
     return out
 
 
-def _draws(n: int, resamples: int, seed: int) -> np.ndarray:
-    """How often each of n designs is drawn, in each resample."""
-    return np.random.default_rng(seed).multinomial(n, np.full(n, 1 / n), size=resamples)
+def _draws(groups: list, resamples: int, seed: int) -> np.ndarray:
+    """How often each design is drawn, in each resample. Revisions of one board are not
+    independent, so groups are drawn, each design with its group; a design of no group
+    shared is its own."""
+    keys = {key: k for k, key in enumerate(dict.fromkeys(groups))}
+    n = len(keys)
+    drawn = np.random.default_rng(seed).multinomial(n, np.full(n, 1 / n), size=resamples)
+    return drawn[:, [keys[g] for g in groups]]
 
 
 def _pin_aliases(truth: Design) -> dict[PinRef, PinRef]:

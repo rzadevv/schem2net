@@ -11,12 +11,12 @@ import json
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from functools import cache
-from importlib import resources
 
 import numpy as np
 
 from schem2net import geometry
 from schem2net.primitives import BBox, Page, Path, Point, Text
+from schem2net.profile import learned_file
 from schem2net.refdes import PART_VALUE
 
 TRACE_SLACK = 0.4  # text heights a traced letter may reach past its copy's box
@@ -458,9 +458,13 @@ def by_word(text: str, pairs: dict[str, str]) -> str:
     return " ".join(words)
 
 
-@cache
 def _font(name: str) -> list[tuple[str, Shape]]:
-    text = resources.files("schem2net").joinpath("profiles", f"{name}_font.json").read_text()
+    return _glyphs(learned_file(f"{name}_font.json"))
+
+
+@cache
+def _glyphs(path) -> list[tuple[str, Shape]]:
+    text = path.read_text()
     return [
         (entry["char"], [tuple(map(tuple, seg)) for seg in shape])
         for entry in json.loads(text)

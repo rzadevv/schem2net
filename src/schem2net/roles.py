@@ -10,16 +10,16 @@ path and text is. The page is then given the profile's colours and read as usual
 
 from dataclasses import replace
 from functools import cache
-from importlib import resources
 
 import numpy as np
 
 from schem2net import geometry, scene, strokes
 from schem2net.primitives import Page, Path, Text
-from schem2net.profile import Profile
+from schem2net.profile import Profile, learned_arrays, learned_file
 
 # Roles, in the order a colour is matched against them: a colour two roles share
 # goes to the first.
+MODEL_FILE = "roles.npz"
 PATH_ROLES = ("wire", "bus", "pin", "symbol", "hier_label", "sheet_pin", "note")
 TEXT_ROLES = ("local_label", "global_label", "hier_label", "pin_number", "field", "bus", "note")
 LOCAL_LABEL = TEXT_ROLES.index("local_label")
@@ -411,11 +411,14 @@ def learned(generator: str) -> bool:
     return _models(generator) is not None
 
 
-@cache
 def _models(generator: str):
     """The learned models of a generator, or None where none were learned."""
-    with resources.files("schem2net").joinpath("profiles", "roles.npz").open("rb") as f:
-        arrays = dict(np.load(f))
+    return _forests(learned_file(MODEL_FILE), generator)
+
+
+@cache
+def _forests(path, generator: str):
+    arrays = learned_arrays(path)
     if f"{generator}.paths.classes" not in arrays:
         return None
     return tuple(Forest(arrays, f"{generator}.{kind}") for kind in ("paths", "paths2", "texts"))

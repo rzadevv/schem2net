@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import tomllib
 import urllib.request
+import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cached_property
@@ -44,7 +45,8 @@ class Project:
     eagle: str | None = None  # an Eagle schematic in the repo
     easyeda: str | None = None  # an EasyEDA (Std) schematic in the repo
     pdf_url: str | None = None  # where its published PDF is
-    sha256: str | None = None  # of the PDF at pdf_url, which no commit pins
+    zip_url: str | None = None  # a design package holding the PDF and the board, by path
+    sha256: str | None = None  # of the file at pdf_url or zip_url, which no commit pins
     repo: str | None = None
     commit: str | None = None
     license: str | None = None
@@ -57,6 +59,7 @@ class Corpus:
     root: Path  # bench directory
     test_share: float
     projects: list[Project]
+    holdout_share: float | None = None  # of the groups, in place of the usual share
 
     def split(self, project: Project) -> str:
         """dev, test or holdout, fixed by the project's group; copy for a design whose
@@ -70,48 +73,89 @@ class Corpus:
         wanted = ("dev", "test") if split == "all" else (split,)
         return self.is_built(project) and self.split(project) in wanted
 
+    def fold(self, project: Project) -> int:
+        """Which of FOLDS parts of the dev split the project is in, by group: a design is
+        read with models learned from the other parts."""
+        return self._folds[self.groups[project.name]]
+
     @cached_property
-    def splits(self) -> dict[str, str]:
-        """Revisions of one board must not be on both sides: projects are split by group,
-        built designs with the same true nets but one are left out, and designs sharing
-        nine tenths of their nets are put in one group."""
-        projects = sorted(self.projects, key=lambda p: p.name)
-        nets = {p.name: _true_nets(self.build_dir(p)) for p in projects if self.is_built(p)}
-        out, kept = {}, {}
-        for name, found in nets.items():
+    def _designs(self) -> tuple[dict[str, frozenset], set[str]]:
+        """The true nets of each built design but copies, and the copies: designs whose
+        true nets an earlier one has."""
+        kept, copies = {}, set()
+        for p in sorted(self.projects, key=lambda p: p.name):
+            if not self.is_built(p):
+                continue
+            found = _true_nets(self.build_dir(p))
             if found in kept.values():
-                out[name] = "copy"
+                copies.add(p.name)
             else:
-                kept[name] = found
-        groups = UnionFind()
+                kept[p.name] = found
+        return kept, copies
+
+    @cached_property
+    def groups(self) -> dict[str, str]:
+        """Each project's group, named by the first of the groups it joined: projects of
+        one repository, unless the manifest names a group, and built designs sharing nine
+        tenths of their true nets, as revisions of one board do."""
+        projects = sorted(self.projects, key=lambda p: p.name)
+        kept, _ = self._designs
+        found = UnionFind()
         for p in projects:
-            groups.union(p.name, ("group", _group(p)))
+            found.union(p.name, ("group", _group(p)))
         names = list(kept)
         for i, a in enumerate(names):
             for b in names[i + 1 :]:
                 if _jaccard(kept[a], kept[b]) >= SAME_DESIGN:
-                    groups.union(a, b)
+                    found.union(a, b)
         members: dict = {}
         for p in projects:
-            members.setdefault(groups.find(p.name), []).append(p)
-        # Each group goes by the first name of the groups it joined.
-        keys = {root: min(_group(p) for p in group) for root, group in members.items()}
-        ranked = sorted(keys, key=lambda root: _digest(keys[root]))
-        held = HOLDOUT_SMALL if len(ranked) < HOLDOUT_FEWER else round(HOLDOUT * len(ranked))
+            members.setdefault(found.find(p.name), []).append(p)
+        return {p.name: min(_group(q) for q in group) for group in members.values() for p in group}
+
+    def _members(self) -> dict[str, list[Project]]:
+        """Projects by group, groups in the order of their hashes."""
+        members: dict[str, list[Project]] = {}
+        for p in sorted(self.projects, key=lambda p: p.name):
+            members.setdefault(self.groups[p.name], []).append(p)
+        return {key: members[key] for key in sorted(members, key=_digest)}
+
+    @cached_property
+    def splits(self) -> dict[str, str]:
+        """Revisions of one board must not be on both sides: projects are split by group,
+        and built designs with the same true nets but one are left out."""
+        _, copies = self._designs
+        members = self._members()
+        ranked = list(members)
+        if self.holdout_share is not None:
+            held = round(self.holdout_share * len(ranked))
+        elif len(ranked) < HOLDOUT_FEWER:
+            held = HOLDOUT_SMALL
+        else:
+            held = round(HOLDOUT * len(ranked))
         # Groups in the order of their hashes fill test to its share of the designs, so a
         # corpus of few groups still gets one.
-        sizes = {root: sum(p.name not in out for p in members[root]) for root in ranked}
-        room = self.test_share * sum(sizes[root] for root in ranked[held:])
-        for rank, root in enumerate(ranked):
+        sizes = {key: sum(p.name not in copies for p in members[key]) for key in ranked}
+        room = self.test_share * sum(sizes[key] for key in ranked[held:])
+        out = dict.fromkeys(copies, "copy")
+        for rank, key in enumerate(ranked):
             if rank < held:
                 split = "holdout"
-            elif sizes[root] / 2 <= room:
-                split, room = "test", room - sizes[root]
+            elif sizes[key] / 2 <= room:
+                split, room = "test", room - sizes[key]
             else:
                 split = "dev"
-            for p in members[root]:
+            for p in members[key]:
                 out.setdefault(p.name, split)
         return out
+
+    @cached_property
+    def _folds(self) -> dict[str, int]:
+        """Dev groups dealt into FOLDS parts in the order of their hashes, so each part
+        of a corpus gets its share."""
+        members = self._members().items()
+        dev = [key for key, group in members if any(self.splits[p.name] == "dev" for p in group)]
+        return {key: k % FOLDS for k, key in enumerate(dev)}
 
     def build_dir(self, project: Project) -> Path:
         return self.root / "build" / self.name / project.name
@@ -125,11 +169,12 @@ class Corpus:
 SAME_DESIGN = 0.9
 # The holdout: this share of a corpus's groups, or two where it has fewer than 14.
 HOLDOUT, HOLDOUT_FEWER, HOLDOUT_SMALL = 0.15, 14, 2
+FOLDS = 4  # parts of the dev split, for reading each with models learned from the rest
 
 
 def _group(project: Project) -> str:
-    if project.group or project.repo:
-        return project.group or project.repo
+    if project.group or project.repo or project.zip_url:
+        return project.group or project.repo or project.zip_url
     return "kicad-demos/" + project.schematic.rsplit("/", 1)[0]  # a KiCad demo, by its folder
 
 
@@ -149,7 +194,13 @@ def _jaccard(a: frozenset, b: frozenset) -> float:
 def load(name: str, root: Path = Path("bench")) -> Corpus:
     data = tomllib.loads((root / f"corpus_{name}.toml").read_text())
     projects = [Project(**p) for p in data["project"]]
-    return Corpus(name=name, root=root, test_share=data["test_share"], projects=projects)
+    return Corpus(
+        name=name,
+        root=root,
+        test_share=data["test_share"],
+        projects=projects,
+        holdout_share=data.get("holdout_share"),
+    )
 
 
 def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print) -> list[str]:
@@ -197,11 +248,16 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
 
 
 def _build_from_board(project: Project, cache: Path, out: Path, image: str) -> str:
-    repo = cache / re.sub(r"[^A-Za-z0-9]+", "_", project.repo.removeprefix("https://github.com/"))
-    if not repo.exists():
-        _run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout", project.repo, str(repo)])
-    files = repo.with_name(repo.name + "-files") / project.commit
-    pdf, pcb = (_show(repo, project.commit, path, files) for path in (project.pdf, project.pcb))
+    if project.zip_url:
+        pdf, pcb = (_unzipped(project, cache, path) for path in (project.pdf, project.pcb))
+    else:
+        name = re.sub(r"[^A-Za-z0-9]+", "_", project.repo.removeprefix("https://github.com/"))
+        repo = cache / name
+        if not repo.exists():
+            clone = ["git", "clone", "-q", "--filter=blob:none", "--no-checkout"]
+            _run([*clone, project.repo, str(repo)])
+        files = repo.with_name(repo.name + "-files") / project.commit
+        pdf, pcb = (_show(repo, project.commit, path, files) for path in (project.pdf, project.pcb))
     shutil.copyfile(pdf, out / "schematic.pdf")
     mounts = ["-v", f"{pcb.parent.resolve()}:/w", "-v", f"{out.resolve()}:/out"]
     mounts += ["-v", f"{PCB_NETLIST.parent.resolve()}:/tools:ro", "--entrypoint", "python3"]
@@ -245,6 +301,26 @@ def _choose_truth(out: Path) -> str:
     (out / "truth.net").write_text(export.kicad_netlist(carried))
     agreement = score(carried, board).metrics()["pin_accuracy"]
     return f"truth from the PDF's netlist, board agrees on {agreement:.0%} of pins"
+
+
+def _unzipped(project: Project, cache: Path, path: str) -> Path:
+    """One file of a project's design package, fetched once and checked by its sha256."""
+    package = cache / "zips" / f"{project.sha256}.zip"
+    if not package.exists():
+        package.parent.mkdir(parents=True, exist_ok=True)
+        request = urllib.request.Request(project.zip_url, headers={"User-Agent": "schem2net"})
+        with urllib.request.urlopen(request, timeout=300) as response:
+            data = response.read()
+        found = hashlib.sha256(data).hexdigest()
+        if found != project.sha256:
+            raise ValueError(f"{project.zip_url} has sha256 {found}, not {project.sha256}")
+        package.write_bytes(data)
+    out = cache / "zips" / project.sha256 / path
+    if not out.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(package) as archive:
+            out.write_bytes(archive.read(path))
+    return out
 
 
 def _show(repo: Path, commit: str, path: str, dest: Path) -> Path:

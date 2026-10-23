@@ -74,7 +74,7 @@ group, how close they are, how they touch, how far apart they were drawn and wha
 each is, and the group is split where it links none of its shapes across: a supply
 sign set on a part's pin is drawn touching it, but is a part of its own. The model
 is learned from the dev designs whose source, an Eagle `.sch` or an EasyEDA `.json`,
-places each part and flag (`schem2net build-groups`).
+places each part and flag (`schem2net build-models groups`).
 A part drawn several times over itself, as alternative parts for one place, with a
 name for each stacked in a column by its own, is one part per name on the same pins,
 where the designator model finds each name likely.

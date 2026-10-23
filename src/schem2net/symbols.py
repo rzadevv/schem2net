@@ -9,14 +9,13 @@ on a resistor pin stays a separate symbol.
 import bisect
 from dataclasses import dataclass, field, replace
 from functools import cache
-from importlib import resources
 
 import numpy as np
 
 from schem2net import designators, fields, geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point
-from schem2net.profile import Profile
+from schem2net.profile import Profile, learned_arrays, learned_file
 from schem2net.refdes import PART_VALUE, is_common_ref
 from schem2net.scene import Scene, Shape
 
@@ -255,13 +254,13 @@ def _reach(a: Shape, b: Shape) -> float:
     return min(geometry.distance_to_segment(p, s) for p in a.points for s in segs)
 
 
-@cache
 def _grouping_model(generator: str):
-    path = resources.files("schem2net").joinpath("profiles", GROUPS_FILE)
-    if not path.is_file():
-        return None
-    with path.open("rb") as f:
-        arrays = dict(np.load(f))
+    return _forest(learned_file(GROUPS_FILE), generator)
+
+
+@cache
+def _forest(path, generator: str):
+    arrays = learned_arrays(path)
     return designators.Forest(arrays, generator) if f"{generator}.classes" in arrays else None
 
 

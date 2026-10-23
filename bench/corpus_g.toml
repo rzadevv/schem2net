@@ -1,0 +1,198 @@
+# Corpus G: boards published after the other corpora were drawn up, by makers they
+# hold (Olimex in KiCad and Eagle, SparkFun in Eagle and KiCad), each schematic beside
+# the PDF printed from it in one commit. Held out whole: read once, never tuned on.
+# Only references are stored here.
+
+test_share = 0.0
+holdout_share = 1.0
+
+[[project]]
+name = "olimex-bb-lvl-shift"
+repo = "https://github.com/OLIMEX/BB-LVL-SHIFT"
+commit = "2db5b2f6532466fbcc8b10729c9cdbffba34e2a1"
+schematic = "HARDWARE/BB-LVL-SHIFT_Rev.A/BB-LVL-SHIFT_Rev_A.kicad_sch"
+pdf = "HARDWARE/BB-LVL-SHIFT_Rev.A/BB-LVL-SHIFT_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "olimex-uext-lvl-shift"
+repo = "https://github.com/OLIMEX/UEXT-LVL-SHIFT"
+commit = "69cc845f6da0ccc6d6922744a6f71fcdc471d255"
+schematic = "HARDWARE/UEXT-LVL-SHIFT_Rev_A/UEXT-LVL-SHIFT_Rev_A.kicad_sch"
+pdf = "HARDWARE/UEXT-LVL-SHIFT_Rev_A/UEXT-LVL-SHIFT_Rev_A.pdf"
+license = "MIT"
+
+[[project]]
+name = "sparkfun-sparkfun_gnssdo"
+repo = "https://github.com/sparkfun/SparkFun_GNSSDO"
+commit = "ae355fce6102a1ea69501edc98e5d240f0495b3a"
+schematic = "Hardware/GNSSDO/SparkPNT_GPSDO.kicad_sch"
+pdf = "Hardware/GNSSDO/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_gnss_mosaic-g5_p3"
+repo = "https://github.com/sparkfun/SparkFun_GNSS_mosaic-G5_P3"
+commit = "6f2e0ac4974d9063ff131bb33b06c43fc9e02b33"
+schematic = "Hardware/SparkFun_GNSS_mosaic-G5_P3.kicad_sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_gnss_mosaic-x5"
+repo = "https://github.com/sparkfun/SparkFun_GNSS_mosaic-X5"
+commit = "7012dfad10d2b8670f3026c52990f793f65b08f8"
+eagle = "Hardware/SparkFun_GNSS_mosaic-X5.sch"
+pdf = "Hardware/SparkFun_GNSS_mosaic-X5.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_im19_imu_breakout"
+repo = "https://github.com/sparkfun/SparkFun_IM19_IMU_Breakout"
+commit = "737e839d56eea008e9384671d627ffc37a429b53"
+schematic = "Hardware/SparkFun_IM19_IMU_Breakout.kicad_sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-openlog_artemis"
+repo = "https://github.com/sparkfun/OpenLog_Artemis"
+commit = "f9c8e66b7da6f27a4bf9be55016c5b9231b9fb22"
+eagle = "Hardware/SparkFun_Artemis_OpenLog.sch"
+pdf = "Hardware/SparkFun_Artemis_OpenLog-Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_lte_stick_lara_r6"
+repo = "https://github.com/sparkfun/SparkFun_LTE_Stick_LARA_R6"
+commit = "37618ae62bce8bc04d645585f28c873d6217f62b"
+eagle = "Hardware/SparkFun_LTE_Stick_LARA_R6.sch"
+pdf = "Hardware/SparkFun_LTE_Stick_LARA_R6.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_gnss_flex_system"
+repo = "https://github.com/sparkfun/SparkFun_GNSS_Flex_System"
+commit = "aea7919f1c6cdc5377260f126c0caddda1e57801"
+schematic = "flex_boards/SparkPNT_GNSS_Flex_Module_mosaic-X5/hardware/SparkFun_GNSS_Flex_Module_mosaic-X5.kicad_sch"
+pdf = "flex_boards/SparkPNT_GNSS_Flex_Module_mosaic-X5/hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_rtk_facet_mosaic"
+repo = "https://github.com/sparkfun/SparkFun_RTK_Facet_mosaic"
+commit = "841defd5311f493d5990eab093591dda3f9d4c3c"
+schematic = "Hardware/SparkFun_RTK_Facet_mosaic.kicad_sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_qwiic_oled_1.3in"
+repo = "https://github.com/sparkfun/SparkFun_Qwiic_OLED_1.3in"
+commit = "fe1cef157c993c8265288fbccf211043df3708be"
+eagle = "Hardware/Qwiic_OLED_1.3in.sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_soft_power_switch_usb-c"
+repo = "https://github.com/sparkfun/SparkFun_Soft_Power_Switch_USB-C"
+commit = "488c64fd7a1ff7941e6fd3f5927d3fcf70d21a1e"
+schematic = "Hardware/Soft_Power_Switch_USB-C.kicad_sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_soft_power_switch_mk2"
+repo = "https://github.com/sparkfun/SparkFun_Soft_Power_Switch_Mk2"
+commit = "137e85cd49428727dc839a2050e442ce9ad49f77"
+schematic = "Hardware/Soft_Power_Switch.kicad_sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-openlog"
+repo = "https://github.com/sparkfun/OpenLog"
+commit = "140fe56ee7d3912b1d35d2c85ed2769f15572a08"
+eagle = "hardware/OpenLog.sch"
+pdf = "hardware/OpenLogSchematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_gnss_flex_phat"
+repo = "https://github.com/sparkfun/SparkFun_GNSS_Flex_pHAT"
+commit = "20a5cb72ce28d5cd9bfebe683dcd425cadb658f9"
+schematic = "Hardware/SparkFun_GNSS_Flex_pHAT.kicad_sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-picobuck"
+repo = "https://github.com/sparkfun/PicoBuck"
+commit = "2a41992a24f352af5ce7c0c3a2334665850e2b72"
+eagle = "hardware/picoBuck.sch"
+pdf = "hardware/picoBuckv12.pdf"
+
+[[project]]
+name = "sparkfun-usb_type_a_female_breakout"
+repo = "https://github.com/sparkfun/USB_Type_A_Female_Breakout"
+commit = "afd8433bcd2237e66a1b518ff0a6292d453c9e44"
+eagle = "Hardware/USB_Type_A_Female_Breakout.sch"
+pdf = "Hardware/USB_Type_A_Female_Breakout.pdf"
+
+[[project]]
+name = "sparkfun-ina169_breakout"
+repo = "https://github.com/sparkfun/INA169_Breakout"
+commit = "42a78dbe618fe314bf3a39a4d541c42765d4087b"
+eagle = "Hardware/INA169_Breakout.sch"
+pdf = "Hardware/INA169_Breakout_Schematic.pdf"
+
+[[project]]
+name = "sparkfun-lilypad_mp3_player"
+repo = "https://github.com/sparkfun/LilyPad_MP3_Player"
+commit = "b48ac4ff34490c0d627419782a6566a18fc58f6e"
+eagle = "hardware/LilyPad-MP3-v15a.sch"
+pdf = "hardware/LilyPad-MP3-v15a.pdf"
+
+[[project]]
+name = "sparkfun-bigtime"
+repo = "https://github.com/sparkfun/BigTime"
+commit = "86c817220366889f3d0a92acbbdc802f67de6b70"
+eagle = "Hardware/BigTime.sch"
+pdf = "Hardware/BigTime.pdf"
+
+[[project]]
+name = "sparkfun-serial7segmentdisplay"
+repo = "https://github.com/sparkfun/Serial7SegmentDisplay"
+commit = "920e8f980b40ca45565f0a4ed87fdc5915583aad"
+eagle = "hardware/Serial-7-Segment-Display.sch"
+pdf = "hardware/Serial-7-Segment-Display.pdf"
+
+[[project]]
+name = "sparkfun-ubw32"
+repo = "https://github.com/sparkfun/UBW32"
+commit = "aed39433bf49bd65d48589b81ae09b74638d2df2"
+schematic = "Hardware/Kicad/UBW32_MX460_v262.kicad_sch"
+pdf = "Hardware/Kicad/UBW32_MX460_v262.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_u-blox_neo-d9s"
+repo = "https://github.com/sparkfun/SparkFun_u-blox_NEO-D9S"
+commit = "0b064a8b753c7b8f11d7731ccf401b1989aedbe9"
+eagle = "Hardware/SparkFun NEO-D9S.sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_u-blox_max-m10s"
+repo = "https://github.com/sparkfun/SparkFun_u-blox_MAX-M10S"
+commit = "48faa7a1fa792576929a56a323324d562448b7f1"
+eagle = "Hardware/SparkFun u-blox GNSS MAX-M10S.sch"
+pdf = "Hardware/SparkFun u-blox GNSS MAX-M10S.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_rtk_reference_station"
+repo = "https://github.com/sparkfun/SparkFun_RTK_Reference_Station"
+commit = "330216b1e20cdd2d8fc8a60b611488d7b6bebb51"
+eagle = "Hardware/Reference_Station.sch"
+pdf = "Hardware/Schematic.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_rtk_facet"
+repo = "https://github.com/sparkfun/SparkFun_RTK_Facet"
+commit = "47aa0abf364b5d41a1568778cb3abd4f2d598c22"
+eagle = "Hardware/Main-LBand/SparkFun RTK Facet L-Band - Main.sch"
+pdf = "Hardware/Main-LBand/SparkFun RTK Facet L-Band - Main.pdf"
+
+[[project]]
+name = "sparkfun-sparkfun_datalogger_iot_9dof"
+repo = "https://github.com/sparkfun/SparkFun_DataLogger_IoT_9DoF"
+commit = "d42f0b33a959f723029f568c73ae9f4e2e3d3e38"
+eagle = "Hardware/SparkFun_DataLogger_IoT_9DOF.sch"
+pdf = "Hardware/SparkFun_DataLogger_IoT_9DOF_v12.pdf"

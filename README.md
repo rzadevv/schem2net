@@ -33,22 +33,24 @@ Early development.
 Figures are for each corpus's test split, whose boards the learned models never
 saw, and its holdout, read once at commit 0cf46ce; both with KiCad's and
 SparkFun's part libraries indexed (see `docs/benchmark.md`). In brackets, a 95%
-interval from a bootstrap over the boards: with three to forty boards a split, a
-few points either way is noise.
+interval from a bootstrap over groups of boards, revisions of one board counted as
+one: with three to forty a split, a few points either way is noise. The holdout
+intervals of A, D and F, read before groups were drawn whole, are over boards and
+run narrow.
 
 | Corpus | Split | Designs | Pins | Pin accuracy | Connection F1 |
 |---|---|---|---|---|---|
-| A, KiCad | Test | 6 | 1,154 | 0.93 (0.88–1.00) | 0.90 (0.85–1.00) |
+| A, KiCad | Test | 6 | 1,154 | 0.93 (0.87–1.00) | 0.90 (0.85–1.00) |
 | A, KiCad | Holdout | 11 | 3,924 | 0.86 (0.83–0.94) | 0.88 (0.69–0.94) |
 | B, Altium, drawing only | Test | 12 | 3,887 | 0.86 (0.76–0.90) | 0.91 (0.86–0.94) |
 | B, Altium, drawing only | Holdout | 6 | 1,646 | 0.84 (0.78–0.90) | 0.82 (0.79–0.88) |
 | C, Eagle | Test | 39 | 2,824 | 0.81 (0.77–0.85) | 0.77 (0.71–0.82) |
 | C, Eagle | Holdout | 21 | 1,185 | 0.81 (0.78–0.85) | 0.81 (0.77–0.87) |
-| D, Olimex | Test | 20 | 6,057 | 0.86 (0.82–0.90) | 0.82 (0.76–0.88) |
+| D, Olimex | Test | 20 | 6,057 | 0.86 (0.82–0.90) | 0.82 (0.75–0.89) |
 | D, Olimex | Holdout | 7 | 1,911 | 0.86 (0.74–0.91) | 0.88 (0.69–0.94) |
-| E, EasyEDA | Test | 14 | 1,027 | 0.65 (0.50–0.78) | 0.51 (0.27–0.89) |
+| E, EasyEDA | Test | 14 | 1,027 | 0.65 (0.48–0.81) | 0.51 (0.29–0.89) |
 | E, EasyEDA | Holdout | 3 | 193 | 0.78 (0.61–0.86) | 0.78 (0.00–0.87) |
-| F, OrCAD | Test | 8 | 10,702 | 0.95 (0.93–0.96) | 0.97 (0.95–0.98) |
+| F, OrCAD | Test | 8 | 10,702 | 0.95 (0.90–0.96) | 0.97 (0.94–0.98) |
 | F, OrCAD | Holdout | 5 | 434 | 0.97 (0.96–1.00) | 0.92 (0.89–1.00) |
 
 Accuracy says how much is right; what a user also needs is to know where the rest
@@ -60,7 +62,7 @@ share of them that point at something wrong.
 
 | Corpus | Split | Silent errors | Pins not found | Wrong pins flagged | Review items per 100 pins | Review precision | Boards with no silent error |
 |---|---|---|---|---|---|---|---|
-| A, KiCad | Test | 0.2% (0.0–0.5) | 1.6% | 0.97 | 9.4 | 0.68 | 0.83 |
+| A, KiCad | Test | 0.2% (0.0–0.4) | 1.6% | 0.97 | 9.4 | 0.68 | 0.83 |
 | A, KiCad | Holdout | 0.4% (0.0–0.7) | 10.8% | 0.87 | 6.9 | 0.72 | 0.82 |
 | B, Altium, drawing only | Test | 2.2% (0.0–3.4) | 9.4% | 0.54 | 7.9 | 0.70 | 0.75 |
 | B, Altium, drawing only | Holdout | 0.4% (0.0–1.2) | 6.7% | 0.96 | 17.9 | 0.64 | 0.67 |

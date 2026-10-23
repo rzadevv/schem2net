@@ -2,7 +2,6 @@ import base64
 import json
 import os
 from collections import Counter
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 from enum import StrEnum
 from functools import partial
@@ -340,6 +339,10 @@ def bench(
     explain: Annotated[
         bool, typer.Option(help="Show where the pins went, and error by confidence.")
     ] = False,
+    folds: Annotated[
+        Path | None,
+        typer.Option(help="Read each dev design with the models of its fold in this folder."),
+    ] = None,
 ) -> None:
     """Score the extractor against a built corpus."""
     from schem2net.bench import corpus as corpora
@@ -347,14 +350,18 @@ def bench(
     from schem2net.bench import runner
     from schem2net.bench.score import Counts, intervals, score, summary
 
+    if folds and not (folds / "fold-0").is_dir():
+        raise typer.BadParameter(f"{folds} has no fold-0; make the folds with build-models")
     extract = partial(pipeline.extract, embedded=not drawing_only, library_dir=library_dir)
+    loaded = corpora.load(corpus, bench_dir)
     results = runner.run(
-        corpora.load(corpus, bench_dir),
+        loaded,
         split=split,
         sample=sample,
         extract=extract,
         workers=workers,
         judge=explained.judge if explain else score,
+        folds=folds,
     )
     if not results:
         typer.echo("nothing to score; run build-corpus first", err=True)
@@ -374,13 +381,21 @@ def bench(
             f"{name[:32]:32} {counts.pins:>6} " + " ".join(_fmt(metrics[c]) for c in columns)
         )
 
+    failed = [name for name, counts in results if counts.pages_failed]
+    if failed:
+        typer.echo(f"pages failed in {len(failed)} designs: {', '.join(failed)}", err=True)
+    groups = [loaded.groups[name] for name, _ in results]
+    typer.echo(f"{len(results)} designs in {len(set(groups))} groups")
+
     if json_out:
         report = {
             "corpus": corpus,
             "split": split,
+            "folds": str(folds) if folds else None,
             "total": summary([counts for _, counts in results]),
-            "intervals": intervals([counts for _, counts in results]),
+            "intervals": intervals([counts for _, counts in results], groups),
             "designs": {name: asdict(counts) for name, counts in results},
+            "groups": dict(zip((name for name, _ in results), groups, strict=True)),
         }
         json_out.write_text(json.dumps(report, indent=2))
 
@@ -391,7 +406,8 @@ def bench_compare(before: Path, after: Path) -> None:
     or silent errors are higher."""
     from schem2net.bench.score import Counts, compare
 
-    runs = [json.loads(path.read_text())["designs"] for path in (before, after)]
+    loaded = [json.loads(path.read_text()) for path in (before, after)]
+    runs = [run["designs"] for run in loaded]
     names = sorted(runs[0].keys() & runs[1].keys())
     for path, run in zip((before, after), runs, strict=True):
         if left := sorted(run.keys() - set(names)):
@@ -399,7 +415,12 @@ def bench_compare(before: Path, after: Path) -> None:
     if not names:
         typer.echo("no designs in common", err=True)
         raise typer.Exit(1)
-    changes = compare(*([Counts(**run[n]) for n in names] for run in runs))
+    # Runs written before groups were kept count each design as a group of its own.
+    known = loaded[1].get("groups") or loaded[0].get("groups") or {}
+    groups = [known.get(n, n) for n in names]
+    counts = [[Counts(**run[n]) for n in names] for run in runs]
+    changes = compare(*counts, groups)
+    typer.echo(f"{len(names)} designs in {len(set(groups))} groups")
     typer.echo(f"{'metric':32} {'before':>8} {'after':>8} {'change':>8}  95% interval")
     for name, (first, second, change, low, high) in changes.items():
         typer.echo(f"{name:32} {first:8.4f} {second:8.4f} {change:+8.4f}  {low:+.4f} {high:+.4f}")
@@ -409,6 +430,8 @@ def bench_compare(before: Path, after: Path) -> None:
         failed.append("pin accuracy is lower")
     if silent and silent[2] > GATE["silent_error_rate"]:
         failed.append("silent errors are higher")
+    if sum(c.pages_failed for c in counts[1]) > sum(c.pages_failed for c in counts[0]):
+        failed.append("more pages failed")
     if pins and pins[3] > 0:
         typer.echo("pin accuracy is higher")
     for line in failed:
@@ -422,140 +445,27 @@ def bench_compare(before: Path, after: Path) -> None:
 GATE = {"pin_accuracy": -0.002, "silent_error_rate": 0.001}
 
 
-@app.command("build-font", hidden=True)
-def build_font(
-    corpus: CorpusName = "c",
+@app.command("build-models", hidden=True)
+def build_models(
+    kinds: Annotated[
+        list[str] | None, typer.Argument(help="roles, designators, groups, font; all if none.")
+    ] = None,
     bench_dir: BenchDir = Path("bench"),
     out_dir: Annotated[Path, typer.Option("-o", "--out-dir")] = Path("src/schem2net/profiles"),
+    folds: Annotated[
+        bool, typer.Option(help="Learn each fold's models without its designs, into fold-K.")
+    ] = False,
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
-    """Learn Eagle's glyph shapes, stroked and outlined, from a corpus (dev split)."""
-    from schem2net.bench import corpus as corpora
-    from schem2net.bench import font
+    """Learn the files of profiles/ from the dev split of each corpus. Needs scikit-learn
+    (the dev dependencies)."""
+    from schem2net.bench import learn
 
-    loaded = corpora.load(corpus, bench_dir)
-    dirs = [loaded.build_dir(p) for p in loaded.projects if loaded.in_split(p, "dev")]
-    jobs = [(d / "schematic.sch", d / "schematic.pdf") for d in dirs]
-    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
-        got = list(pool.map(font.samples_of, jobs))
-    found = [s for stroked, _ in got for s in stroked]
-    filled = [s for _, outlined in got for s in outlined]
-    table = font.build(found)
-    # Then glyphs too rare to place by position, from lines missing only them.
-    shapes = [
-        (e["char"], [tuple(map(tuple, seg)) for seg in sh]) for e in table for sh in e["shapes"]
-    ]
-    jobs = [(d / "schematic.sch", d / "schematic.pdf", shapes) for d in dirs]
-    with ProcessPoolExecutor(max_workers=workers) as pool:
-        found += [s for got in pool.map(font.gap_samples_of, jobs) for s in got]
-    table = font.build(found)
-    font.write(table, out_dir / "eagle_font.json")
-    filled_table = font.build_fills(filled)
-    font.write(filled_table, out_dir / "eagle_fills.json")
-    typer.echo(
-        f"{len(table)} stroked characters from {len(found)} glyphs, "
-        f"{len(filled_table)} outlined from {len(filled)}, in {len(dirs)} designs"
-    )
-
-
-@app.command("build-roles", hidden=True)
-def build_roles(
-    bench_dir: BenchDir = Path("bench"),
-    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
-        "src/schem2net/profiles/roles.npz"
-    ),
-    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
-) -> None:
-    """Learn path and text roles from the colour pages of each corpus's dev split, for
-    reading pages printed in black. Needs scikit-learn (the dev dependencies)."""
-    import numpy as np
-
-    from schem2net.bench import corpus as corpora
-    from schem2net.bench import roles as role_examples
-
-    generators = {"a": "kicad", "b": "altium", "c": "eagle", "e": "easyeda", "f": "orcad"}
-    jobs = []
-    for name, generator in generators.items():
-        try:
-            loaded = corpora.load(name, bench_dir)
-        except FileNotFoundError:
-            continue
-        jobs += [
-            (generator, loaded.build_dir(p) / "schematic.pdf")
-            for p in loaded.projects
-            if loaded.in_split(p, "dev")
-        ]
-    examples: dict[str, list] = {}
-    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
-        for (generator, _), pages in zip(jobs, pool.map(role_examples.rows, jobs), strict=True):
-            examples.setdefault(generator, []).append(pages)
-    with output.open("wb") as f:
-        np.savez_compressed(f, **role_examples.train(examples))
-    counts = ", ".join(
-        f"{g} {sum(len(e[1]) for d in designs for e in d)}" for g, designs in examples.items()
-    )
-    typer.echo(f"{output}: learned from paths of {counts}")
-
-
-@app.command("build-designators", hidden=True)
-def build_designators(
-    bench_dir: BenchDir = Path("bench"),
-    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
-        "src/schem2net/profiles/designators.npz"
-    ),
-    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
-) -> None:
-    """Learn which texts are designators from the dev split of every corpus, whose truth
-    netlists say which texts name parts. Needs scikit-learn (the dev dependencies)."""
-    from schem2net.bench import corpus as corpora
-    from schem2net.bench import designators as designator_examples
-
-    designs = []
-    for name in "abcde":
-        try:
-            loaded = corpora.load(name, bench_dir)
-        except FileNotFoundError:
-            continue
-        designs += [loaded.build_dir(p) for p in loaded.projects if loaded.in_split(p, "dev")]
-    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
-        examples = [e for found in pool.map(designator_examples.rows, designs) for e in found]
-    designator_examples.save(designator_examples.train(examples), output)
-    counts = Counter()
-    for generator, _, labels in examples:
-        counts[generator] += int((labels >= 0).sum())
-    typer.echo(f"{output}: learned from {len(designs)} designs, texts {dict(counts)}")
-
-
-@app.command("build-groups", hidden=True)
-def build_groups(
-    bench_dir: BenchDir = Path("bench"),
-    output: Annotated[Path, typer.Option("-o", "--output")] = Path(
-        "src/schem2net/profiles/groups.npz"
-    ),
-    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
-) -> None:
-    """Learn which shapes of a page are one part, from the dev split of the Eagle designs
-    of corpora C and D and the EasyEDA ones of E, whose sources place each part. Needs
-    scikit-learn."""
-    import numpy as np
-
-    from schem2net.bench import corpus as corpora
-    from schem2net.bench import groups
-
-    designs = []
-    for name in "cde":
-        loaded = corpora.load(name, bench_dir)
-        designs += [
-            loaded.build_dir(p)
-            for p in loaded.projects
-            if (p.eagle or p.easyeda) and loaded.in_split(p, "dev")
-        ]
-    with ProcessPoolExecutor(max_workers=workers) as pool:  # each holds whole PDFs in memory
-        examples = list(pool.map(groups.rows, designs))
-    with output.open("wb") as f:
-        np.savez_compressed(f, **groups.train(examples))
-    pairs = sum(int((y >= 0).sum()) for _, _, y in examples)
-    typer.echo(f"{output}: learned from {pairs} pairs of shapes in {len(designs)} designs")
+    unknown = sorted(set(kinds or ()) - learn.KINDS.keys())
+    if unknown:
+        raise typer.BadParameter(f"no such kind: {', '.join(unknown)}")
+    for line in learn.learn(kinds or list(learn.KINDS), bench_dir, out_dir, workers, folds):
+        typer.echo(line)
 
 
 @app.command("bench-schematic", hidden=True)

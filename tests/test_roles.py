@@ -121,3 +121,13 @@ def test_a_page_made_black_keeps_its_white():
     black = _in_black(page)
     assert [p.stroke or p.fill for p in black.paths] == [(0, 0, 0), (255, 255, 255)]
     assert roles.colourless(black) and black.texts[0].color == (0, 0, 0)
+
+
+def test_learned_files_are_read_from_a_folder_given(tmp_path):
+    assert roles.learned("kicad")
+    profile.use_learned(tmp_path)  # a folder where nothing was learned
+    try:
+        assert not roles.learned("kicad")
+    finally:
+        profile.use_learned(None)
+    assert roles.learned("kicad")

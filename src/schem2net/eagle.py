@@ -15,7 +15,10 @@ from schem2net.ir import Component, Design, Net, Pin, Source
 
 
 def read(path: str | Path) -> Design:
-    root = ET.parse(path).getroot()
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError:
+        raise ValueError(f"{path}: not an Eagle schematic in XML, as Eagle 6 on writes") from None
     schematic = root.find("drawing/schematic")
     if schematic is None:
         raise ValueError(f"{path}: not an Eagle schematic")

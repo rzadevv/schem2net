@@ -76,6 +76,11 @@ def bbox_gap(a: BBox, b: BBox) -> float:
     return math.hypot(dx, dy)
 
 
+def grown(box: BBox, by: float) -> BBox:
+    """The box with `by` added on every side."""
+    return box[0] - by, box[1] - by, box[2] + by, box[3] + by
+
+
 def center(box: BBox) -> Point:
     return (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
 
