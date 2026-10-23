@@ -14,9 +14,6 @@ import re
 from collections import Counter
 from typing import TYPE_CHECKING
 
-import numpy as np
-from scipy.optimize import linear_sum_assignment
-
 from schem2net import designators, geometry
 from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point, Text
@@ -601,7 +598,7 @@ def _assign_refs(
     # One text per symbol, minimising total cost. Then symbols drawn in pieces
     # (diode arrays, relay coils) share the text of the piece that got it.
     taken, used = set(), {}
-    for si, ti in _best_pairs(candidates):
+    for si, ti in geometry.best_pairs(candidates, UNPAIRED_COST):
         _set_ref(parts[si], texts.texts[ti].text)
         taken.add(si)
         used[ti] = si
@@ -715,32 +712,6 @@ def _among_values(scene: Scene, profile: Profile) -> set[int]:
     return {id(t) for t in scene.fields if id(t) in run and is_common_ref(t.text)}
 
 
-def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int]]:
-    """Optimal one-to-one pairing of (cost, row, column) candidates, solved separately
-    for each cluster of rivals; a row left unpaired costs more than any pair."""
-    clusters = UnionFind()
-    for _, si, ti in candidates:
-        clusters.union(("s", si), ("t", ti))
-    by_cluster: dict = {}
-    for cost, si, ti in candidates:
-        by_cluster.setdefault(clusters.find(("s", si)), []).append((cost, si, ti))
-
-    pairs = []
-    for group in by_cluster.values():
-        rows = sorted({si for _, si, _ in group})
-        cols = sorted({ti for _, _, ti in group})
-        row, col = {si: k for k, si in enumerate(rows)}, {ti: k for k, ti in enumerate(cols)}
-        # Extra columns let a symbol stay unpaired at a cost.
-        cost = np.full((len(rows), len(cols) + len(rows)), UNPAIRED_COST * 10)
-        cost[:, len(cols) :] = UNPAIRED_COST
-        for c, si, ti in group:
-            cost[row[si], col[ti]] = c
-        for r, c in zip(*linear_sum_assignment(cost), strict=True):
-            if c < len(cols) and cost[r, c] < UNPAIRED_COST:
-                pairs.append((rows[r], cols[c]))
-    return pairs
-
-
 def _set_ref(symbol: Symbol, text: str) -> None:
     match = split_ref(text)
     if not match:  # a name of the designer's own, taken whole
@@ -818,7 +789,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
     # Each number names one pin and each pin has one number: the pairing of least total
     # gap, so a number between two pins goes where it leaves no other unpaired.
     named, used = set(), set()
-    for i, t in _best_pairs(options):
+    for i, t in geometry.best_pairs(options, UNPAIRED_COST):
         pins[i].number = PAD_COUNT.sub("", numbers[t].text)  # "A6*2": pin A6, two pads
         pins[i].how = "read"
         named.add(i)
@@ -1412,7 +1383,7 @@ def _assign_values(
                 pairs.append((si, ti))
                 texts.used.add(ti)
     else:
-        pairs = _best_pairs(sorted(candidates))
+        pairs = geometry.best_pairs(sorted(candidates), UNPAIRED_COST)
     for si, ti in pairs:
         named[si].value = texts.texts[ti].text
         texts.used.add(ti)

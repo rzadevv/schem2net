@@ -4,6 +4,9 @@ import math
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 
+import numpy as np
+from scipy.optimize import linear_sum_assignment
+
 from schem2net.primitives import BBox, Point
 
 Segment = tuple[Point, Point]
@@ -176,3 +179,30 @@ class UnionFind:
         for x in list(self._parent):
             out[self.find(x)].append(x)
         return out
+
+
+def best_pairs(candidates: list[tuple[float, int, int]], unpaired: float) -> list[tuple[int, int]]:
+    """Optimal one-to-one pairing of (cost, row, column) candidates, solved separately
+    for each cluster of rivals. A row left unpaired costs `unpaired`, more than any pair,
+    so as many rows as can be are paired."""
+    clusters = UnionFind()
+    for _, si, ti in candidates:
+        clusters.union(("s", si), ("t", ti))
+    by_cluster: dict = {}
+    for cost, si, ti in candidates:
+        by_cluster.setdefault(clusters.find(("s", si)), []).append((cost, si, ti))
+
+    pairs = []
+    for group in by_cluster.values():
+        rows = sorted({si for _, si, _ in group})
+        cols = sorted({ti for _, _, ti in group})
+        row, col = {si: k for k, si in enumerate(rows)}, {ti: k for k, ti in enumerate(cols)}
+        # Extra columns let a row stay unpaired at a cost.
+        cost = np.full((len(rows), len(cols) + len(rows)), unpaired * 10)
+        cost[:, len(cols) :] = unpaired
+        for c, si, ti in group:
+            cost[row[si], col[ti]] = c
+        for r, c in zip(*linear_sum_assignment(cost), strict=True):
+            if c < len(cols) and cost[r, c] < unpaired:
+                pairs.append((rows[r], cols[c]))
+    return pairs

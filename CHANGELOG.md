@@ -7,6 +7,8 @@
 - A profile with a section, key or colour role it does not know is an error.
 - An Eagle part named by what it does, such as HDMI, keeps that name over its part
   number printed nearer, where the designator model finds the name likelier.
+- EasyEDA net labels marked by a dot are paired with their dots as a whole, so rows of
+  labels set close together no longer shift by one onto their neighbours' wires.
 
 ## 0.2.0
 

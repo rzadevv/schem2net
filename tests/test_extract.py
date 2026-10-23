@@ -16,6 +16,7 @@ from schem2net.scene import (
     Sheet,
     SheetPin,
     _along,
+    _anchored_labels,
     _designator_apart,
     _join_runs,
     drop_sheet_references,
@@ -1969,3 +1970,15 @@ def test_a_part_named_by_function_takes_the_word_likelier_to_name_it():
     connector.ref, texts.used = None, set()
     fields._name_by_function([connector], texts, rules, set(), {})  # no model: the nearest
     assert connector.ref == "HDMI-SWM-19"
+
+
+def test_rows_of_anchored_labels_closer_than_a_name_is_high_each_keep_their_own():
+    """GND's text lies nearer the dot above it than its own, as the rows sit close: the
+    dots and names are paired as a whole, so 3V3 is not left without its dot."""
+    scene = Scene(page=1, wires=[((0, 57.42), (6.4, 57.42)), ((0, 59.25), (6.4, 59.25))])
+    scene.fields = [
+        Text(0, "3V3", (6.5, 55.9, 9.3, 57.12), 1.2, 0, (0, 0, 0)),
+        Text(1, "GND", (6.5, 57.69, 10.0, 58.95), 1.2, 0, (0, 0, 0)),
+    ]
+    _anchored_labels(scene, [(6.4, 57.42), (6.4, 59.25)], profile.load("easyeda"))
+    assert {lb.text: lb.outline[0][1] for lb in scene.labels} == {"3V3": 57.42, "GND": 59.25}

@@ -710,8 +710,10 @@ def values_run(texts: list[Text], reach: int = 6) -> set[int]:
 
 
 def _anchored_labels(scene: Scene, anchors: list[Point], profile: Profile) -> None:
-    """Net labels marked by a dot where they meet their wire, at its open end: each dot
-    takes the nearest name beside it, one to one, never a designator's colour."""
+    """Net labels marked by a dot where they meet their wire, at its open end: dots and
+    the names beside them are paired one to one, least distance in all, never a name in
+    a designator's colour. Rows of labels may sit closer than a name is high, and a dot
+    taking the nearest name could leave its neighbour's name to the next row."""
     ends = GridIndex(cell=2.0)
     for k, wire in enumerate(scene.wires):
         for end in wire:
@@ -726,19 +728,16 @@ def _anchored_labels(scene: Scene, anchors: list[Point], profile: Profile) -> No
         )
     ]
     texts = [t for t in scene.fields if not profile.is_("designator", t.color)]
-    pairs = sorted(
+    candidates = [
         (geometry.bbox_gap((*a, *a), t.bbox), i, j)
         for i, a in enumerate(on_ends)
         for j, t in enumerate(texts)
         if geometry.bbox_gap((*a, *a), t.bbox) <= ANCHOR_REACH
-    )
-    named, taken = set(), set()
-    for _, i, j in pairs:
-        if i in named or j in taken:
-            continue
+    ]
+    taken = set()
+    for i, j in sorted(geometry.best_pairs(candidates, 2 * ANCHOR_REACH)):
         text = texts[j]
         scene.labels.append(Label(text.text, "local", text.bbox, text.angle, [on_ends[i]]))
-        named.add(i)
         taken.add(j)
     gone = {id(texts[j]) for j in taken}
     scene.fields = [t for t in scene.fields if id(t) not in gone]
