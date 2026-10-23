@@ -9,6 +9,7 @@ from __future__ import annotations
 import bisect
 import heapq
 import itertools
+import math
 import re
 from collections import Counter
 from typing import TYPE_CHECKING
@@ -615,16 +616,22 @@ def _assign_refs(
     texts.used |= set(used)
     if profile.names_by_layer:
         unnamed = [p for k, p in enumerate(parts) if k not in taken]
-        _name_by_function(unnamed, texts, profile, among_values)
+        _name_by_function(unnamed, texts, profile, among_values, likely or {})
     return {id(parts[si]): ti for ti, si in used.items()}
 
 
 def _name_by_function(
-    parts: list[Symbol], texts: _Texts, profile: Profile, among_values: set[int]
+    parts: list[Symbol],
+    texts: _Texts,
+    profile: Profile,
+    among_values: set[int],
+    likely: dict[int, float],
 ) -> None:
     """Eagle takes any name for a part, and designers name jumpers and connectors by
-    what they do: I2C, PWR, LCD_CON. A part left without a designator takes the nearest
-    unused word beside it that is not one of its pin names, a value, a number or a note."""
+    what they do: I2C, PWR, LCD_CON. A part left without a designator takes an unused
+    word beside it that is not one of its pin names, a value, a number or a note: the
+    one the designator model finds likeliest by an order of magnitude, as HDMI is against
+    its connector's part number HDMI-SWM-19, and the nearest of those alike."""
     options = []
     for si, symbol in enumerate(parts):
         if len(symbol.pins) < 2:
@@ -640,9 +647,10 @@ def _name_by_function(
                 or is_pin_name(symbol, text, profile.pin_name_gap)
             ):
                 continue
-            options.append((gap, si, ti))
+            odds = round(math.log10(likely.get(id(text), 0.0) + 1e-12))
+            options.append((-odds, gap, si, ti))
     named = set()
-    for _, si, ti in sorted(options):
+    for _, _, si, ti in sorted(options):
         if si in named or ti in texts.used:
             continue
         parts[si].ref = texts.texts[ti].text

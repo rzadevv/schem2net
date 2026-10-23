@@ -1951,3 +1951,21 @@ def test_a_part_drawn_over_itself_is_one_part_per_name_stacked_by_it():
     found = symbols._drawn_over([part], b.scene, lambda: None)
     assert sorted(s.ref for s in found) == ["J1", "J2", "J3"]
     assert all(len(s.pins) == 1 for s in found)
+
+
+def test_a_part_named_by_function_takes_the_word_likelier_to_name_it():
+    """HDMI beside its connector names it, though its part number lies nearer."""
+    connector = symbols.Symbol(
+        [],
+        (10, 10, 30, 40),
+        pins=[symbols.Pin(0, ((10, 12), (8, 12))), symbols.Pin(1, ((10, 14), (8, 14)))],
+    )
+    number = Text(0, "HDMI-SWM-19", (10, 41, 25, 43), 1.8, 0, (128, 128, 128))
+    name = Text(1, "HDMI", (10, 44, 16, 46), 1.8, 0, (128, 128, 128))
+    texts = fields._Texts([number, name])
+    rules = profile.load("eagle")
+    fields._name_by_function([connector], texts, rules, set(), {id(number): 1e-6, id(name): 1e-4})
+    assert connector.ref == "HDMI"
+    connector.ref, texts.used = None, set()
+    fields._name_by_function([connector], texts, rules, set(), {})  # no model: the nearest
+    assert connector.ref == "HDMI-SWM-19"

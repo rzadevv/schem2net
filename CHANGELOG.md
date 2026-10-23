@@ -5,6 +5,8 @@
 - A file of more than 1,000 pages is refused, and a page past 1.5 million drawing
   objects or twenty minutes of reading is reported as failed; dense pages read faster.
 - A profile with a section, key or colour role it does not know is an error.
+- An Eagle part named by what it does, such as HDMI, keeps that name over its part
+  number printed nearer, where the designator model finds the name likelier.
 
 ## 0.2.0
 
