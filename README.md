@@ -112,7 +112,9 @@ names from them, as their pads depend on the package.
 
 A command exits with 2 for a PDF no supported tool drew and with 3 when no part was
 found on any page, writing nothing either way; with `--strict`, also when any page
-could not be read.
+could not be read. A file of more than 1,000 pages is refused; a page of more than
+1.5 million drawing objects, or one read for more than twenty minutes, is reported as
+failed and the other pages are read.
 
 `export` also takes the JSON written by `extract`. The KiCad netlist imports
 into the PCB editor; footprints are not in the PDF, so assign them in KiCad.

@@ -102,10 +102,14 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                     symbol.power = _ground_name(symbol, scene, profile)
                     symbol.power_hidden = True
     # Where each power symbol connects; a flag may sit straight on a part's pin.
-    tips = [p.at for s in symbols if not s.power for p in s.pins]
+    wired = [end for wire in scene.wires for end in wire]
+    ends = wired + [p.at for s in symbols if not s.power for p in s.pins]
+    index = GridIndex()
+    for k, end in enumerate(ends):
+        index.add(k, (*end, *end))
     for symbol in symbols:
         if symbol.power:
-            symbol.anchors = _anchors(symbol, scene, tips)
+            symbol.anchors = _anchors(symbol, scene, ends, len(wired), index)
     values = _values_by_order(scene, profile)
     likely = designators.likelihood(scene, symbols, runs, profile)
     ordered = _designators_by_order(symbols, scene, profile)
@@ -439,22 +443,23 @@ def _has_bars(symbol: Symbol, scene: Scene) -> bool:
     return False
 
 
-def _anchors(symbol: Symbol, scene: Scene, tips: list[Point]) -> list[Point]:
+def _anchors(
+    symbol: Symbol, scene: Scene, ends: list[Point], wired: int, index: GridIndex
+) -> list[Point]:
     """A power symbol connects at its pin, or else at a loose end of its drawing, or
     at the middle of its base when it is a lone triangle; a port flag, a closed outline,
-    at the corner its wire ends on, or the corner set on a pin's tip (`tips`)."""
+    at the corner its wire ends on, or the corner set on a pin's tip. `ends` are the wire
+    ends, the first `wired`, then the pin tips, in `index`."""
     if symbol.pins:
         return [p.at for p in symbol.pins]
     shapes = [scene.shapes[i] for i in symbol.shapes]
     # A wire ending on it, as on the middle of a ground's top bar or in the mouth of an
     # off-page arrow: at one point, for a symbol with wires at two is no power symbol.
-    x0, y0, x1, y1 = symbol.bbox
+    x0, y0, x1, y1 = box = geometry.grown(symbol.bbox, CORNER_GAP)
     landed = [
         end
-        for wire in scene.wires
-        for end in wire
-        if x0 - CORNER_GAP <= end[0] <= x1 + CORNER_GAP
-        and y0 - CORNER_GAP <= end[1] <= y1 + CORNER_GAP
+        for end in (ends[k] for k in sorted(index.within(box)) if k < wired)
+        if x0 <= end[0] <= x1 and y0 <= end[1] <= y1
     ]
     if landed and all(geometry.distance(end, landed[0]) <= CORNER_GAP for end in landed):
         return landed[:1]
@@ -463,8 +468,11 @@ def _anchors(symbol: Symbol, scene: Scene, tips: list[Point]) -> list[Point]:
     if loose or base:
         return loose or [base]
     corners = {p for shape in shapes for p in shape.points}
-    ends = [e for wire in scene.wires for e in wire] + tips
-    return [c for c in corners if any(geometry.distance(c, e) <= CORNER_GAP for e in ends)]
+    return [
+        c
+        for c in corners
+        if any(geometry.distance(c, ends[k]) <= CORNER_GAP for k in index.near(c, CORNER_GAP))
+    ]
 
 
 def _in_line(symbol: Symbol, text: Text, loose: bool = False) -> bool:
@@ -713,11 +721,12 @@ def _best_pairs(candidates: list[tuple[float, int, int]]) -> list[tuple[int, int
     for group in by_cluster.values():
         rows = sorted({si for _, si, _ in group})
         cols = sorted({ti for _, _, ti in group})
+        row, col = {si: k for k, si in enumerate(rows)}, {ti: k for k, ti in enumerate(cols)}
         # Extra columns let a symbol stay unpaired at a cost.
         cost = np.full((len(rows), len(cols) + len(rows)), UNPAIRED_COST * 10)
         cost[:, len(cols) :] = UNPAIRED_COST
         for c, si, ti in group:
-            cost[rows.index(si), cols.index(ti)] = c
+            cost[row[si], col[ti]] = c
         for r, c in zip(*linear_sum_assignment(cost), strict=True):
             if c < len(cols) and cost[r, c] < UNPAIRED_COST:
                 pairs.append((rows[r], cols[c]))
@@ -1191,12 +1200,19 @@ def _rows(pins: list[Pin]) -> list[list[Pin]]:
 
 def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> None:
     """A pin drawn with its name but no number is known by its name."""
+    index = GridIndex()
+    for t, text in enumerate(texts):
+        index.add(t, text.bbox)
+    reach = name_gap + max((_size(t) for t in texts), default=1.0) + 1.0
     options = []
     for symbol in symbols:
         unnamed = [p for p in symbol.pins if p.number is None]
         if not symbol.ref or not unnamed:
             continue
-        for t, text in enumerate(texts):
+        ends = geometry.bbox_of([p.line[0] for p in unnamed])
+        near = index.within(geometry.grown(ends, reach))
+        for t in sorted(near):
+            text = texts[t]
             if not is_pin_name(symbol, text, name_gap):
                 continue
             c = geometry.center(text.bbox)

@@ -15,6 +15,10 @@ from schem2net.primitives import BBox, Color, Document, Page, Path, Point, Text
 MM_PER_PT = 25.4 / 72
 BEZIER_STEPS = 8
 WORD_GAP = 2.0  # font sizes between words of one text object that are separate texts
+# Past these a file is no schematic, and reading it would only exhaust the memory: the
+# densest page benched holds 330,000 objects, the longest document 73 pages.
+MAX_PAGES = 1000
+MAX_OBJECTS = 1_500_000  # paths and texts on one page
 
 # Affine matrix (a, b, c, d, e, f) in PDF row-vector convention.
 Matrix = tuple[float, float, float, float, float, float]
@@ -31,6 +35,8 @@ def read(file: str | FilePath) -> Document:
     except pdfium.PdfiumError as e:
         raise InputError(f"{file}: not a PDF that can be read ({e})") from None
     try:
+        if len(pdf) > MAX_PAGES:
+            raise InputError(f"{file}: {len(pdf)} pages, more than {MAX_PAGES}")
         pages = [_read_page(pdf[i], i + 1) for i in range(len(pdf))]
         return Document(pages=pages, metadata=pdf.get_metadata_dict(skip_empty=True))
     except pdfium.PdfiumError as e:
@@ -45,8 +51,15 @@ def _read_page(page: pdfium.PdfPage, number: int) -> Page:
     textpage = page.get_textpage()
     count = raw.FPDFPage_CountObjects(page.raw)
     objects = [raw.FPDFPage_GetObject(page.raw, i) for i in range(count)]
-    _collect(objects, transform, textpage.raw, out, _chars(textpage.raw, transform))
+    try:
+        _collect(objects, transform, textpage.raw, out, _chars(textpage.raw, transform))
+    except _TooLarge:
+        return Page(number=number, width=width, height=height, too_large=True)
     return out
+
+
+class _TooLarge(Exception):
+    pass
 
 
 def _chars(textpage, transform: Matrix) -> dict[int, list[tuple[str, BBox]]]:
@@ -71,6 +84,8 @@ MAX_FORM_DEPTH = 32  # forms nested deeper are left unread, as no plotter nests 
 
 def _collect(objects, parent: Matrix, textpage, out: Page, chars, depth: int = 0) -> None:
     for obj in objects:
+        if len(out.paths) + len(out.texts) > MAX_OBJECTS:
+            raise _TooLarge
         kind = raw.FPDFPageObj_GetType(obj)
         matrix = _multiply(_object_matrix(obj), parent)
         if kind == raw.FPDF_PAGEOBJ_PATH:

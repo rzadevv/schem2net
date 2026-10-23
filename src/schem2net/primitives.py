@@ -52,6 +52,7 @@ class Page:
     paths: list[Path] = field(default_factory=list)
     texts: list[Text] = field(default_factory=list)
     images: int = 0
+    too_large: bool = False  # left unread: more drawing objects than a schematic page has
 
 
 @dataclass(slots=True)

@@ -1,9 +1,16 @@
 import ctypes
+import os
 import re
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
 import pytest
+from hypothesis import settings
+
+# The usual number of examples in a test run; many more in the nightly one.
+settings.register_profile("quick", max_examples=100)
+settings.register_profile("nightly", max_examples=2000)
+settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "quick"))
 
 
 class PdfBuilder:

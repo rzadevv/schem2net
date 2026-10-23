@@ -398,6 +398,7 @@ class Netlister:
         pages: dict[tuple, set[int]] = defaultdict(set)
         issues = list(self.issues)
         guessed: dict[tuple[str, int], list[tuple]] = defaultdict(list)
+        marks: Counter = Counter()  # pins kept unnumbered so far, by part
         for node, page, symbol, pin in self.pins:
             if _doubtful(pin, symbol):
                 guessed[symbol.ref, page].append((symbol, pin))
@@ -410,7 +411,8 @@ class Netlister:
             if pin.number is None:
                 # The pin and what it connects to are drawn, its number is not: it stays
                 # on its net under a mark, so the connection is not lost with the number.
-                number = f"{UNNUMBERED}{sum(p.how == 'unnumbered' for p in comp.pins) + 1}"
+                marks[symbol.ref] += 1
+                number = f"{UNNUMBERED}{marks[symbol.ref]}"
                 issues.append(
                     Issue(
                         kind="unnumbered_pin",
@@ -601,11 +603,13 @@ def _apart(parts: list[tuple]) -> list[set[int]]:
     """Parts, each (node, page, pin, symbol), grouped into drawings: those on one page
     whose boxes touch are one."""
     groups = UnionFind()
+    index: dict[int, GridIndex] = defaultdict(GridIndex)  # by page
     for i, (_, page, _, symbol) in enumerate(parts):
         groups.find(i)
-        for j, (_, other_page, _, other) in enumerate(parts[:i]):
-            if page == other_page and geometry.bbox_gap(symbol.bbox, other.bbox) <= PIECE_GAP:
+        for j in index[page].within(geometry.grown(symbol.bbox, PIECE_GAP)):
+            if geometry.bbox_gap(symbol.bbox, parts[j][3].bbox) <= PIECE_GAP:
                 groups.union(i, j)
+        index[page].add(i, symbol.bbox)
     found: dict = defaultdict(set)
     for i in range(len(parts)):
         found[groups.find(i)].add(i)

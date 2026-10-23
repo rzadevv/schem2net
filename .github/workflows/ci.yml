@@ -4,18 +4,26 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 3 * * *"  # nightly: property tests at many examples
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.14"]
+    env:
+      HYPOTHESIS_PROFILE: ${{ github.event_name == 'schedule' && 'nightly' || 'quick' }}
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --python ${{ matrix.python }}
       - run: make lint
-      - run: make test
+      - run: uv run pytest --cov=schem2net --cov-fail-under=80
 
   bench:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     strategy:
       matrix:

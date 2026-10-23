@@ -158,8 +158,13 @@ def build(page: Page, profile: Profile) -> Scene:
     outlines: dict[str, list[list[Point]]] = {"global": [], "hier": []}
     pin_outlines: list[list[Point]] = []
 
-    copies = Counter(_path_key(p) for p in page.paths)
-    paths = unique_paths(page.paths)
+    keys = [_path_key(p) for p in page.paths]  # once each: a path may hold thousands of points
+    copies = Counter(keys)
+    copies_of = {id(p): copies[key] for p, key in zip(page.paths, keys, strict=True)}
+    first: dict[tuple, Path] = {}
+    for key, path in zip(keys, page.paths, strict=True):
+        first.setdefault(key, path)
+    paths = list(first.values())
     crosses, scene.no_connects = _no_connect_crosses(paths)
     paths = [p for p in paths if p.seq not in crosses]
     drawn: list[Text] = []  # text drawn as strokes or as filled outlines
@@ -197,7 +202,7 @@ def build(page: Page, profile: Profile) -> Scene:
                 if box[2] - box[0] > 1e-3 or box[3] - box[1] > 1e-3:  # skip zero-length dots
                     shape = Shape(len(scene.shapes), sub, path.width, box, path.seq, color)
                     shape.filled = path.fill is not None
-                    shape.copies = copies[_path_key(path)]
+                    shape.copies = copies_of[id(path)]
                     scene.shapes.append(shape)
         elif profile.is_("hier_label", path.stroke):
             outlines["hier"].extend(path.subpaths)

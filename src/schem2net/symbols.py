@@ -43,6 +43,7 @@ BETWEEN_MAX = 60  # shapes drawn between two of a piece's own, when looking for 
 
 # A group the rules made stays whole where a learned model links its shapes this surely.
 GROUP_LINK = 0.5
+LINK_BATCH = 20_000  # pairs judged at once
 GROUP_REACH = 1.0  # mm between shapes for a pair the model judges, or
 GROUP_STEPS, GROUP_STEP_REACH = 6, 5.0  # drawing steps apart within this many mm
 GROUPS_FILE = "groups.npz"
@@ -109,12 +110,15 @@ def _drawn_over(symbols: list[Symbol], scene: Scene, chances) -> list[Symbol]:
     # A part's value is no name, though a printer that draws everything twice writes
     # it by its designator.
     claimed = {s.ref for s in symbols if s.ref} | {s.value for s in symbols if s.value}
+    written: dict[str, list] = {}
+    for t in scene.fields:
+        written.setdefault(t.text.strip(), []).append(t)
     out, likely = list(symbols), None
     for symbol in symbols:
         if not symbol.ref or symbol.power or not symbol.shapes:
             continue
         times = min(scene.shapes[i].copies for i in symbol.shapes)
-        own = [t for t in scene.fields if t.text.strip() == symbol.ref]
+        own = written.get(symbol.ref)
         if times < 2 or not own:
             continue
         here = min(own, key=lambda t: geometry.bbox_gap(t.bbox, symbol.bbox))
@@ -169,10 +173,17 @@ def _split_unlinked(symbols: list[Symbol], scene: Scene, model) -> list[Symbol]:
     owner = {i: k for k, s in enumerate(symbols) for i in s.shapes}
     pairs = [(i, j) for i, j in near_pairs(scene) if i in owner and owner[i] == owner.get(j)]
     linked = UnionFind()
-    if pairs:
-        seqs = [t.seq for t in scene.fields]
-        rows = np.array([pair_features(scene, pins, i, j, seqs) for i, j in pairs])
-        for (i, j), p in zip(pairs, designators.probability(model, rows), strict=True):
+    seqs = [t.seq for t in scene.fields]
+    # In batches, leaving out pairs earlier ones already linked: they cannot change which
+    # shapes are linked, and a group of thousands of shapes has millions of pairs.
+    for start in range(0, len(pairs), LINK_BATCH):
+        batch = [
+            (i, j) for i, j in pairs[start : start + LINK_BATCH] if linked.find(i) != linked.find(j)
+        ]
+        if not batch:
+            continue
+        rows = np.array([pair_features(scene, pins, i, j, seqs) for i, j in batch])
+        for (i, j), p in zip(batch, designators.probability(model, rows), strict=True):
             if p >= GROUP_LINK:
                 linked.union(i, j)
     out = []
@@ -233,7 +244,7 @@ def pair_features(scene: Scene, pins: dict, i: int, j: int, seqs: list[int]) -> 
         min(_reach(a, b), _reach(b, a)),
         min(geometry.distance(p, q) for p in ends_a for q in ends_b),
         abs(a.seq - b.seq),
-        sum(lo < s < hi for s in seqs),
+        bisect.bisect_left(seqs, hi) - bisect.bisect_right(seqs, lo),  # seqs are sorted
         float(a.color == b.color),
         min(a.width, b.width) / max(a.width, b.width, 1e-6),
         geometry.distance(a.bbox[:2], a.bbox[2:]),
@@ -655,9 +666,20 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
     joined = UnionFind()
     for s in symbols:
         joined.find(id(s))
+    index = GridIndex()
+    for k, s in enumerate(symbols):
+        index.add(k, s.bbox)
+
+    def around(s: Symbol, gap: float, among) -> list[Symbol]:
+        """The symbols of ids `among` whose boxes may lie within `gap` of the symbol's."""
+        found = index.within(geometry.grown(s.bbox, gap))
+        return [symbols[k] for k in sorted(found) if id(symbols[k]) in among]
+
+    piece_ids = {id(p) for p in pieces}
     for box in boxes:
         lo, hi = spans[id(box)]
-        for piece in pieces:
+        # A piece that enters the box overlaps it, so it is near too.
+        for piece in around(box, DRAWN_TOGETHER_GAP, piece_ids):
             a, b = spans[id(piece)]
             drawn_with = a <= hi + DRAWN_TOGETHER_SEQ and lo <= b + DRAWN_TOGETHER_SEQ
             # Near the box's edge. A box's pins connect outside it: a part whose pins all
@@ -672,9 +694,10 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
     # found on it is an unwired pin, not a piece of body.
     if profile.drawn_by_part:
         drawn = [s for s in symbols if id(s) in spans and (s.pins or min(_sides(s.bbox)) > MIN_BOX)]
+        order = {id(s): i for i, s in enumerate(drawn)}
         for i, a in enumerate(drawn):
             seqs = sorted(scene.shapes[k].seq for k in a.shapes)
-            for b in drawn[i + 1 :]:
+            for b in (b for b in around(a, PIECE_GAP, order.keys()) if order[id(b)] > i):
                 lo, hi = spans[id(b)]
                 k = bisect.bisect_left(seqs, lo)
                 interleaved = k < len(seqs) and seqs[k] < hi
@@ -688,10 +711,9 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
     # are more of it: the separate bars of a ground sign under its stem.
     small = [s for s in symbols if not s.pins and id(s) in spans and _size(s.bbox) < BIT_SIZE]
     bits = small if profile.symbols_in_pieces else []
-    others = [s for s in symbols if id(s) in spans]
     for bit in bits:
         lo, hi = spans[id(bit)]
-        for other in others:
+        for other in around(bit, BIT_GAP, spans.keys()):
             a, b = spans[id(other)]
             if other is bit or not (a <= hi + 1 and lo <= b + 1):
                 continue
@@ -811,9 +833,10 @@ def _without_frames(symbols: list[Symbol]) -> list[Symbol]:
 
     def frame(s: Symbol) -> bool:
         x0, y0, x1, y1 = s.bbox
-        big = min(x1 - x0, y1 - y0) > FRAME_MIN_SIZE
+        if min(x1 - x0, y1 - y0) <= FRAME_MIN_SIZE:
+            return False
         held = sum(holds(s.bbox, t.bbox) for t in symbols if t is not s)
-        return big and held >= max(FRAME_HOLDS, len(symbols) / 2)  # it holds most of the page
+        return held >= max(FRAME_HOLDS, len(symbols) / 2)  # it holds most of the page
 
     return [s for s in symbols if not frame(s)]
 
@@ -824,9 +847,12 @@ def _merge_halves(symbols: list[Symbol]) -> list[Symbol]:
     The halves have one pin each, on the same axis, pointing away from each other.
     """
     singles = [s for s in symbols if len(s.pins) == 1]
+    index = GridIndex(HALF_GAP)
+    for k, s in enumerate(singles):
+        index.add(k, (*s.pins[0].line[0], *s.pins[0].line[0]))
     pairs = []
     for i, a in enumerate(singles):
-        for b in singles[i + 1 :]:
+        for b in (singles[j] for j in sorted(index.near(a.pins[0].line[0], HALF_GAP)) if j > i):
             (a0, _), (b0, _) = a.pins[0].line, b.pins[0].line
             out, back = geometry.unit(*a.pins[0].line), geometry.unit(*b.pins[0].line)
             gap = (b0[0] - a0[0], b0[1] - a0[1])

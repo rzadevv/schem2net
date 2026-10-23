@@ -1,6 +1,9 @@
 """Run the extraction stages on one PDF."""
 
 import hashlib
+import signal
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -25,6 +28,7 @@ from schem2net.symbols import Symbol
 
 PROFILES = {"kicad", "altium", "eagle", "easyeda", "orcad"}
 BLACK, WHITE = (0, 0, 0), (255, 255, 255)
+PAGE_SECONDS = 1200  # a page read for longer is given up; the slowest benched takes 30 s
 
 
 @dataclass
@@ -207,7 +211,10 @@ def _extract(
     )
     for result in pages:
         try:
-            _read_page(result, design, rules, printed, region, len(doc.pages))
+            if result.page.too_large:
+                raise ValueError(f"more than {pdf.MAX_OBJECTS} drawing objects")
+            with _time_limit(PAGE_SECONDS):
+                _read_page(result, design, rules, printed, region, len(doc.pages))
         except Exception as e:  # one page the reader trips on: the others are still read
             result.scene, result.symbols = None, []
             detail = f"{type(e).__name__}: {e}"
@@ -232,6 +239,28 @@ def _extract(
     design.nets = found.nets
     design.issues += found.issues
     return Extraction(design, pages, found.wire_nets)
+
+
+@contextmanager
+def _time_limit(seconds: float):
+    """Stop the block with a TimeoutError after so many seconds, where a signal can: on
+    the main thread of a system that has them."""
+    if threading.current_thread() is not threading.main_thread() or not hasattr(
+        signal, "setitimer"
+    ):
+        yield
+        return
+
+    def stop(signum, frame):
+        raise TimeoutError(f"read for more than {seconds} s")
+
+    previous = signal.signal(signal.SIGALRM, stop)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 def _read_page(

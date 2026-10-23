@@ -97,12 +97,43 @@ class Profile:
         return color is not None and color in self.colors.get(role, frozenset())
 
 
+# Roles a profile may give colours to.
+COLOUR_ROLES = frozenset(
+    {"wire", "bus", "pin", "symbol", "hier_label", "sheet_pin", "note", "local_label"}
+    | {"global_label", "pin_number", "field", "designator", "label_anchor"}
+)
+SECTIONS = ("pins", "order", "power", "sheets", "wires", "labels", "text", "page", "parts")
+
+
+class _Table(dict):
+    """A TOML table that keeps the keys read from it, so a misspelt one is caught."""
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.read: set[str] = set()
+
+    def get(self, key, default=None):
+        self.read.add(key)
+        return super().get(key, default)
+
+    def __getitem__(self, key):
+        self.read.add(key)
+        return super().__getitem__(key)
+
+
 def load(name: str) -> Profile:
     text = resources.files("schem2net").joinpath("profiles", f"{name}.toml").read_text()
-    data = tomllib.loads(text)
-    sections = ("pins", "order", "power", "sheets", "wires", "labels", "text")
-    pins, order, power, sheets, wires, labels, text = (data.get(k, {}) for k in sections)
-    return Profile(
+    return parse(name, tomllib.loads(text))
+
+
+def parse(name: str, data: dict) -> Profile:
+    """A profile from its TOML tables. A section, key or colour role it does not know is
+    an error rather than a default quietly taken."""
+    unknown = [f"[{k}]" for k in data.keys() - {"colors", *SECTIONS}]
+    unknown += [f"colors.{role}" for role in data.get("colors", {}).keys() - COLOUR_ROLES]
+    tables = {k: _Table(data.get(k, {})) for k in SECTIONS}
+    pins, order, power, sheets, wires, labels, text, page, parts = tables.values()
+    profile = Profile(
         name=name,
         colors={
             role: frozenset(tuple(c) for c in values) for role, values in data["colors"].items()
@@ -122,7 +153,7 @@ def load(name: str) -> Profile:
         diode_pin_names=tuple(pins.get("diode_names", ())),
         pin_roles=pins.get("roles", {}),
         pin_numbers_have_digits=pins.get("numbers_have_digits", False),
-        learned_grouping=data.get("parts", {}).get("grouping") == "learned",
+        learned_grouping=parts.get("grouping") == "learned",
         pin_library=pins.get("library"),
         fields_follow_symbol=order.get("fields_follow_symbol", False),
         pins_after_fields=order.get("pins_after_fields", False),
@@ -135,7 +166,7 @@ def load(name: str) -> Profile:
         thick_wires_are_buses=wires.get("thick_are_buses", False),
         infer_wire_colour=wires.get("infer_colour", False),
         wire_grids=tuple(_listed(wires.get("grid", []))),
-        page_scale=data.get("page", {}).get("scale"),
+        page_scale=page.get("scale"),
         designators_in_any_colour=order.get("designators_in_any_colour", False),
         designators_in_pin_colour=order.get("designators_in_pin_colour", False),
         designators_outside=order.get("designators_outside", False),
@@ -156,6 +187,10 @@ def load(name: str) -> Profile:
         sheet_file_prefix=sheets.get("file_prefix"),
         sheet_path_prefix=sheets.get("path_prefix"),
     )
+    unknown += [f"{k}.{key}" for k, table in tables.items() for key in table.keys() - table.read]
+    if unknown:
+        raise ValueError(f"profile {name}: unknown {', '.join(sorted(unknown))}")
+    return profile
 
 
 def _listed(value) -> list:
