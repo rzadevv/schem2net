@@ -203,25 +203,7 @@ def probability(model: Forest, rows: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(raw[:, 0] - raw[:, 1]))
 
 
-_OVERRIDE: dict = {}  # models set in place of the stored ones, by generator, for testing
-
-
-def use(generator: str, model: Forest | None) -> None:
-    """Read with this model for the generator, as the bench does with models learned
-    without the design it reads; None goes back to the stored one."""
-    if model is None:
-        _OVERRIDE.pop(generator, None)
-    else:
-        _OVERRIDE[generator] = model
-
-
 def _model(generator: str) -> Forest | None:
-    if generator in _OVERRIDE:
-        return _OVERRIDE[generator]
-    return _stored(generator)
-
-
-def _stored(generator: str) -> Forest | None:
     return _forest(learned_file(MODEL_FILE), generator)
 
 
