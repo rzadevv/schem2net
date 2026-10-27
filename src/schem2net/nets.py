@@ -61,11 +61,15 @@ class Netlister:
         labels_span_pages: bool = False,
         designators: frozenset = frozenset(),
         case_blind: bool = False,
+        not_nets: frozenset = frozenset(),
     ):
         # Net labels with one name are one net on every page, unless sheets are nested.
         self.labels_span_pages = labels_span_pages
         self.case_blind = case_blind
         self.designators = designators  # the designators' own colours, where they have one
+        # Names of symbols drawn like power symbols that join nothing by name, as PWR_FLAG:
+        # a wire ending on one ends on something, but no net takes its name.
+        self.not_nets = not_nets
         self.nested = False
         self.no_connect: set[tuple] = set()  # pins flagged as left unconnected on purpose
         self.uf = UnionFind()
@@ -163,6 +167,9 @@ class Netlister:
         pin_lines: list[tuple[Segment, tuple]] = []
         ports: set[tuple] = set()
         for si, symbol in enumerate(symbols):
+            if symbol.power in self.not_nets:
+                points += [(p, ("s", page, si)) for p in symbol.anchors]
+                continue
             if symbol.power:
                 node = ("s", page, si)
                 self.names[node] = symbol.power
@@ -376,6 +383,14 @@ class Netlister:
             for page, keys in self.local_names.items():
                 for key in keys:
                     self.join(("local", page, key), ("label", key), "local_name")
+        # A net label names the same net as a power symbol or global label of its name on
+        # its page.
+        for page, keys in self.local_names.items():
+            for key in keys:
+                if page in self.printed_pages.get(key, ()):
+                    self.join(("local", page, key), ("global", key), "local_name")
+                elif page in self.hidden_pages.get(key, ()):
+                    self.join(("local", page, key), ("hidden", page, key), "local_name")
         for key, hidden in self.hidden_pages.items():
             printed = self.printed_pages[key]
             for page in hidden:

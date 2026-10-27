@@ -23,6 +23,10 @@ MODEL_FILE = "roles.npz"
 PATH_ROLES = ("wire", "bus", "pin", "symbol", "hier_label", "sheet_pin", "note")
 TEXT_ROLES = ("local_label", "global_label", "hier_label", "pin_number", "field", "bus", "note")
 LOCAL_LABEL = TEXT_ROLES.index("local_label")
+# Each text role, and none, as a row, against its family as a column: net labels of
+# every kind are one family.
+_FAMILY = [("label" if role.endswith("_label") else role) for role in (*TEXT_ROLES, "none")]
+ROLE_FAMILIES = np.array([[f == g for g in dict.fromkeys(_FAMILY)] for f in _FAMILY], dtype=float)
 
 TOUCH = 0.05  # mm between ends that meet
 DOT = 1.5  # mm; filled shapes smaller than this may be junction dots
@@ -305,17 +309,28 @@ def name_unknown_texts(page: Page, profile: Profile, models=None) -> Page:
     # A string the PDF splits into pieces is one text, with one role.
     groups = _runs([t for t in page.texts if t.visible])
     whole = [joined for joined, _ in groups]
-    found = texts_model.predict(text_features(whole, paths, path_roles))
+    scores = texts_model.scores(text_features(whole, paths, path_roles), TEXT_ROLES)
+    # A theme gives each kind of text its colour, so the texts of one colour are judged
+    # together, though a theme may give net labels of every kind one colour: a text keeps
+    # the role it is judged to have alone where that is of its colour's kind, and takes
+    # the likeliest role of that kind for its colour where not.
+    pooled: dict = {}
+    for joined, row in zip(whole, scores, strict=True):
+        pooled[joined.color] = pooled.get(joined.color, 0.0) + row
     index = geometry.GridIndex(cell=2.0)
     for k, p in enumerate(paths):
         index.add(k, p.bbox)
-    colour = {
-        id(piece): _colour(profile, TEXT_ROLES, int(r))
-        for (joined, pieces), r in zip(groups, found, strict=True)
-        if joined.color not in known
-        and not (int(r) == LOCAL_LABEL and _drawn_with(joined, paths, index))
-        for piece in pieces
-    }
+    colour = {}
+    for (joined, pieces), row in zip(groups, scores, strict=True):
+        if joined.color in known:
+            continue
+        family = ROLE_FAMILIES[:, int(np.argmax(pooled[joined.color] @ ROLE_FAMILIES))]
+        role = int(np.argmax(row))
+        if not family[role]:
+            role = int(np.argmax(pooled[joined.color] * family))
+        if role == LOCAL_LABEL and _drawn_with(joined, paths, index):
+            continue
+        colour.update((id(piece), _colour(profile, TEXT_ROLES, role)) for piece in pieces)
     return replace(page, texts=[replace(t, color=colour.get(id(t)) or t.color) for t in page.texts])
 
 
@@ -376,10 +391,10 @@ class Forest:
             return np.full(len(rows), self.classes[0])
         return self.classes[self._raw(rows).argmax(axis=1)]
 
-    def scores(self, rows: np.ndarray) -> np.ndarray:
-        """How likely each row is to have each role, one column per role of PATH_ROLES
-        and one for none."""
-        out = np.zeros((len(rows), len(PATH_ROLES) + 1))
+    def scores(self, rows: np.ndarray, roles: tuple[str, ...] = PATH_ROLES) -> np.ndarray:
+        """How likely each row is to have each role, one column per role and one for
+        none."""
+        out = np.zeros((len(rows), len(roles) + 1))
         if len(self.classes) == 1:
             out[:, self.classes[0]] = 1.0
             return out

@@ -9,6 +9,16 @@
   number printed nearer, where the designator model finds the name likelier.
 - EasyEDA net labels marked by a dot are paired with their dots as a whole, so rows of
   labels set close together no longer shift by one onto their neighbours' wires.
+- A net label joins the power symbol or global label of its name on its page.
+- In Eagle and EasyEDA, a ground's or flag's name printed over a wire passing beyond it
+  names the sign instead of labelling that wire.
+- Texts in a theme colour no profile knows are judged together, one kind of text to a
+  colour, so a theme's net labels are no longer read in part as fields.
+- OrCAD off-page connectors take the name drawn right after them, though it sits
+  farther off than a name found by distance alone.
+- KiCad hierarchical labels connect on their flag's centre line, which the text's box
+  can miss by a fraction of a millimetre.
+- A wire ending on KiCad's PWR_FLAG is no dangling wire.
 - The benchmark forgives swapped ends of a resistor or capacitor whose neighbours are
   swapped too, as in a chain of them, as its rules say.
 

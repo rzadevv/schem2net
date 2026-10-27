@@ -7,11 +7,14 @@ value, and pins get their numbers.
 from __future__ import annotations
 
 import bisect
+import functools
 import heapq
 import itertools
 import math
 import re
 from collections import Counter
+from collections.abc import Callable
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from schem2net import designators, geometry
@@ -82,7 +85,16 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
     texts = _Texts(scene.fields)
     _name_power_symbols(symbols, texts, scene, profile, runs)
     if profile.power_names_in_labels:
-        _name_power_from_labels(symbols, scene, profile)
+        if profile.labels_follow_flags:
+            _name_flags_by_labels_after(symbols, scene, profile)
+        _name_power_from_labels(symbols, scene, profile, _could_be_power)
+    elif profile.labels_on_wires:
+        # Over a wire, a label may lie beside any small drawing, such as a piece of a part
+        # read apart from it: only a flag or a ground sign takes it.
+        def takes(symbol: Symbol) -> bool:
+            return _could_be_power(symbol) and _is_flag_or_ground(symbol, scene)
+
+        _name_power_from_labels(symbols, scene, profile, takes)
     if profile.unnamed_ground:
         named = {id(s): s.power for s in symbols if s.power}
         # Bars and other pinless bits of one sign, each beside the next.
@@ -99,6 +111,12 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
                 else:
                     symbol.power = _ground_name(symbol, scene, profile)
                     symbol.power_hidden = True
+        if profile.labels_on_wires:
+            _name_grounds_from_labels(symbols, scene, profile, pieces)
+    # Drawn like a power symbol but joining nothing by name, as PWR_FLAG: named last, so
+    # it takes no symbol another name or the usual ground's would.
+    if profile.not_power_nets:
+        _name_by_texts(symbols, texts, profile, runs, lambda t: t.text in profile.not_power_nets)
     # Where each power symbol connects; a flag may sit straight on a part's pin.
     wired = [end for wire in scene.wires for end in wire]
     ends = wired + [p.at for s in symbols if not s.power for p in s.pins]
@@ -144,8 +162,19 @@ def _name_power_symbols(
     """Power symbols are small, have at most one pin and a net name next to them."""
     if profile.drawn_by_part and not runs:
         _name_flags_by_order(symbols, texts, scene, profile)
-    # A name in line with the symbol first; only then one that overhangs it. Each name
-    # goes to the nearest symbol it may name: a printer may draw two in one path.
+    _name_by_texts(symbols, texts, profile, runs, lambda text: _is_power_name(text, profile))
+
+
+def _name_by_texts(
+    symbols: list[Symbol],
+    texts: _Texts,
+    profile: Profile,
+    runs: Runs | None,
+    names: Callable[[Text], bool],
+) -> None:
+    """Each symbol that may be a power symbol named by a text `names` accepts beside it:
+    a name in line with the symbol first; only then one that overhangs it. Each name
+    goes to the nearest symbol it may name: a printer may draw two in one path."""
     reach = profile.power_name_gap or POWER_NAME_GAP
     for loose in (False, True):
         options = []
@@ -154,7 +183,7 @@ def _name_power_symbols(
                 continue
             for gap, i in texts.near(symbol.bbox, reach):
                 text = texts.texts[i]
-                if not _is_power_name(text, profile):
+                if not names(text):
                     continue
                 # The first text drawn after the symbol, or else one in line with it.
                 if runs.first_text(symbol) == text.seq if runs else _in_line(symbol, text, loose):
@@ -165,19 +194,89 @@ def _name_power_symbols(
                 texts.used.add(i)
 
 
-def _name_power_from_labels(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
-    """Some generators write power port names in the net label colour."""
+def _name_power_from_labels(
+    symbols: list[Symbol], scene: Scene, profile: Profile, takes: Callable[[Symbol], bool]
+) -> None:
+    """A power symbol's name may have been read as a net label: some generators write
+    it in the net label colour, and where labels are names laid along wires, a name set
+    past its symbol over a wire passing there reads as one. Each symbol that `takes`
+    a name takes the first such label in line with it."""
+    for symbol, name in _labels_in_line(symbols, scene, profile, takes):
+        symbol.power = name
+
+
+def _name_flags_by_labels_after(symbols: list[Symbol], scene: Scene, profile: Profile) -> None:
+    """Where each flag's name is drawn right after it, in the label colour, as an off-page
+    connector's is in OrCAD, the label drawn right after a flag and in line with it names
+    it, though it may sit farther off than a name found by distance alone."""
+    seqs = sorted([t.seq for t in scene.fields] + [lb.seq for lb in scene.labels])
+    after = {lb.seq: lb for lb in scene.labels if lb.kind == "local" and not lb.outline}
+    claimed = set()
+    for symbol in filter(_could_be_power, symbols):
+        k = bisect.bisect_right(seqs, max(scene.shapes[i].seq for i in symbol.shapes))
+        label = after.get(seqs[k]) if k < len(seqs) else None
+        if label is None or id(label) in claimed:
+            continue
+        text = Text(0, label.text, label.bbox, 0.0, label.angle, None)
+        near = geometry.bbox_gap(symbol.bbox, label.bbox) <= REF_SEARCH
+        if near and _is_power_name(text, profile) and _in_line(symbol, text):
+            symbol.power = label.text
+            claimed.add(id(label))
+    scene.labels = [label for label in scene.labels if id(label) not in claimed]
+
+
+def _name_grounds_from_labels(
+    symbols: list[Symbol], scene: Scene, profile: Profile, pieces: dict[int, list[int]]
+) -> None:
+    """A ground sign given the usual name may show its own past it, read as a label on a
+    wire passing there: the name is the sign's. A sign drawn in pieces, a stem and bars
+    apart, is judged and named whole."""
+    loose = [s for s in symbols if not s.pins and (s.power_hidden or _could_be_power(s))]
+    signs: dict[int, tuple[Symbol, list[Symbol]]] = {}
+    for symbol in symbols:
+        if not symbol.power_hidden or not symbol.pins:
+            continue  # the pieces of a sign are found from its stem
+        near = [s for s in loose if geometry.bbox_gap(s.bbox, symbol.bbox) <= PIECE_GAP]
+        ids = {k for s in near for k in [id(s), *pieces.get(id(s), ())]}
+        members = [symbol, *(s for s in loose if id(s) in ids)]
+        shapes = sorted({i for s in members for i in s.shapes})
+        box = functools.reduce(geometry.union_bbox, (s.bbox for s in members))
+        whole = replace(symbol, shapes=shapes, bbox=box)
+        if _is_flag_or_ground(whole, scene):
+            signs[id(whole)] = whole, members
+    wholes = [whole for whole, _ in signs.values()]
+    for whole, name in _labels_in_line(wholes, scene, profile, lambda _: True):
+        for member in signs[id(whole)][1]:
+            if member.power_hidden:
+                member.power, member.power_hidden = name, False
+
+
+def _labels_in_line(
+    symbols: list[Symbol], scene: Scene, profile: Profile, takes: Callable[[Symbol], bool]
+) -> list[tuple[Symbol, str]]:
+    """Each symbol that `takes` a name, with the first unclaimed outline-less net label
+    that may name it, in line with it; the labels taken are no labels any more."""
     local = [label for label in scene.labels if label.kind == "local" and not label.outline]
     pool = _Texts([Text(i, lb.text, lb.bbox, 0.0, lb.angle, None) for i, lb in enumerate(local)])
-    for symbol in filter(_could_be_power, symbols):
+    found = []
+    for symbol in filter(takes, symbols):
         for _, i in pool.near(symbol.bbox, profile.label_name_gap or POWER_NAME_GAP):
             text = pool.texts[i]
             if _is_power_name(text, profile) and _in_line(symbol, text):
-                symbol.power = text.text
+                found.append((symbol, text.text))
                 pool.used.add(i)
                 break
     claimed = {id(local[i]) for i in pool.used}
     scene.labels = [label for label in scene.labels if id(label) not in claimed]
+    return found
+
+
+def _is_flag_or_ground(symbol: Symbol, scene: Scene) -> bool:
+    """A pinless closed outline, or a ground sign of more than a bar across a stem, which
+    two lines of any small drawing may make."""
+    if not symbol.pins and any(scene.shapes[i].closed for i in symbol.shapes):
+        return True
+    return _looks_like_ground(symbol, scene) and not _is_tee(symbol, scene)
 
 
 def _name_flags_by_order(
