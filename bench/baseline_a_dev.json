@@ -1,113 +1,114 @@
 {
   "corpus": "a",
   "split": "dev",
+  "folds": null,
   "total": {
-    "pin_accuracy": 0.9172829478903946,
-    "signal_pin_accuracy": 0.9387373444250984,
-    "net_exact": 0.8772655634357762,
-    "connection_precision": 0.998137280153065,
-    "connection_recall": 0.8976666845908529,
-    "connection_f1": 0.9452396974626673,
+    "pin_accuracy": 0.9220707049117257,
+    "signal_pin_accuracy": 0.944541174953247,
+    "net_exact": 0.8926319936958235,
+    "connection_precision": 0.9982353022274714,
+    "connection_recall": 0.8984856820221792,
+    "connection_f1": 0.9457375478927204,
     "component_precision": 0.9957199109741482,
     "component_recall": 0.9724126400267514,
-    "value_accuracy": 0.44660695831898034,
-    "flag_recall": 0.4689189189189189,
-    "flag_precision": 0.7609649122807017,
-    "perfect_designs": 0.2653061224489796,
-    "silent_error_rate": 0.0038900525798315736,
-    "pin_flag_recall": 0.7636363636363637,
-    "missed_pin_rate": 0.06625913734877954,
+    "value_accuracy": 0.44505683775404753,
+    "flag_recall": 0.3401709401709402,
+    "flag_precision": 0.8652173913043478,
+    "perfect_designs": 0.30612244897959184,
+    "silent_error_rate": 0.002607617663403582,
+    "pin_flag_recall": 0.7781818181818182,
+    "missed_pin_rate": 0.06617364168768435,
     "extra_pin_rate": 0.00017099132219039885,
-    "review_items_per_100_pins": 3.569443850724576,
-    "review_precision": 0.47664670658682634,
-    "designs_without_silent_errors": 0.7346938775510204,
-    "macro_pin_accuracy": 0.9329726356185,
-    "macro_connection_f1": 0.9021022529993403
+    "review_items_per_100_pins": 2.6033428803488223,
+    "review_precision": 0.4121510673234811,
+    "designs_without_silent_errors": 0.8775510204081632,
+    "macro_pin_accuracy": 0.9439111515753411,
+    "macro_connection_f1": 0.9210720723517576
   },
   "intervals": {
     "pin_accuracy": [
-      0.8789455337212756,
-      0.9509418798820676
+      0.8776384435384481,
+      0.9555685780840419
     ],
     "signal_pin_accuracy": [
-      0.899015181889082,
-      0.9618926522477699
+      0.9035123650516774,
+      0.9669522286656083
     ],
     "net_exact": [
-      0.8288663062304747,
-      0.90993497074411
+      0.8471627172479617,
+      0.9206448513643498
     ],
     "connection_precision": [
-      0.9694112007514875,
-      0.9990724766417317
+      0.9683143417417169,
+      0.9991196971836245
     ],
     "connection_recall": [
-      0.41842240921190005,
-      0.9315636035836409
+      0.39775878083141186,
+      0.9318737003845803
     ],
     "connection_f1": [
-      0.5870224473807274,
-      0.9638464568367893
+      0.5664675505549533,
+      0.9640387195591965
     ],
     "component_precision": [
-      0.992063345471177,
-      0.9997597014789775
+      0.9919455607512123,
+      0.9997447213863497
     ],
     "component_recall": [
-      0.9578925854289544,
-      0.9821839840549057
+      0.9557194726844191,
+      0.9820264448424381
     ],
     "value_accuracy": [
-      0.27458358123490745,
-      0.8139819135053006
+      0.2731072467264025,
+      0.824139714227029
     ],
     "flag_recall": [
-      0.37024297316095245,
-      0.5597682039728232
+      0.217620794255115,
+      0.4856730245437759
     ],
     "flag_precision": [
-      0.6363492822966507,
-      0.8710461430081015
+      0.7863152289669861,
+      0.9448289437958186
     ],
     "perfect_designs": [
-      0.14285714285714285,
-      0.3877551020408163
+      0.1777450980392157,
+      0.44680851063829785
     ],
     "silent_error_rate": [
-      0.0015290636389199684,
-      0.006045086082988641
+      0.00044206304757850366,
+      0.0047293206977006156
     ],
     "pin_flag_recall": [
-      0.6724275829908144,
-      0.8779105218377765
+      0.6626075493806495,
+      0.9549857292532244
     ],
     "missed_pin_rate": [
-      0.03021168131976297,
-      0.10734469975579951
+      0.030019192960822484,
+      0.11402779437690762
     ],
     "extra_pin_rate": [
       0.0,
-      0.00046394437061349285
+      0.0004804507739379747
     ],
     "review_items_per_100_pins": [
-      2.4561420342051434,
-      5.684128611988081
+      1.6121157420330552,
+      4.736246521486587
     ],
     "review_precision": [
-      0.3484862698451628,
-      0.5980042127574317
+      0.2710206291315249,
+      0.5738325722175022
     ],
     "designs_without_silent_errors": [
-      0.6122448979591837,
-      0.8571428571428571
+      0.7799444444444444,
+      0.96
     ],
     "macro_pin_accuracy": [
-      0.9111666486918619,
-      0.9533131346631251
+      0.9220079698018587,
+      0.9616619318657263
     ],
     "macro_connection_f1": [
-      0.8487114773466455,
-      0.9442785932476612
+      0.8682115197204678,
+      0.9587358218620816
     ]
   },
   "designs": {
@@ -138,36 +139,38 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-amplifier-ac": {
       "designs": 1,
-      "perfect_designs": 0,
+      "perfect_designs": 1,
       "pins": 49,
-      "pins_correct": 47,
+      "pins_correct": 49,
       "signal_pins": 35,
-      "signal_pins_correct": 33,
+      "signal_pins_correct": 35,
       "nets": 13,
-      "nets_exact": 11,
+      "nets_exact": 13,
       "pairs_true": 41,
       "pairs_predicted": 41,
-      "pairs_correct": 37,
+      "pairs_correct": 41,
       "refs_true": 23,
       "refs_predicted": 23,
       "refs_common": 23,
       "values_known": 23,
       "values_correct": 23,
-      "wrong_nets": 2,
+      "wrong_nets": 0,
       "flagged_nets": 0,
       "wrong_flagged": 0,
-      "pins_wrong": 2,
+      "pins_wrong": 0,
       "pins_wrong_flagged": 0,
       "pins_missed": 0,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-buck-conv": {
       "designs": 1,
@@ -196,65 +199,68 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 3,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-cm5-minima-3": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 477,
-      "pins_correct": 404,
+      "pins_correct": 428,
       "signal_pins": 261,
-      "signal_pins_correct": 220,
+      "signal_pins_correct": 238,
       "nets": 95,
-      "nets_exact": 53,
+      "nets_exact": 69,
       "pairs_true": 449,
-      "pairs_predicted": 359,
-      "pairs_correct": 359,
+      "pairs_predicted": 385,
+      "pairs_correct": 385,
       "refs_true": 84,
       "refs_predicted": 81,
       "refs_common": 76,
       "values_known": 76,
       "values_correct": 63,
-      "wrong_nets": 59,
-      "flagged_nets": 34,
-      "wrong_flagged": 34,
-      "pins_wrong": 24,
-      "pins_wrong_flagged": 20,
+      "wrong_nets": 26,
+      "flagged_nets": 3,
+      "wrong_flagged": 3,
+      "pins_wrong": 0,
+      "pins_wrong_flagged": 0,
       "pins_missed": 49,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 8,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-complex-hierarchy": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 162,
-      "pins_correct": 157,
+      "pins_correct": 161,
       "signal_pins": 124,
-      "signal_pins_correct": 120,
+      "signal_pins_correct": 124,
       "nets": 50,
-      "nets_exact": 45,
+      "nets_exact": 49,
       "pairs_true": 129,
       "pairs_predicted": 129,
-      "pairs_correct": 121,
+      "pairs_correct": 129,
       "refs_true": 68,
       "refs_predicted": 68,
       "refs_common": 68,
       "values_known": 68,
       "values_correct": 66,
-      "wrong_nets": 6,
-      "flagged_nets": 4,
+      "wrong_nets": 2,
+      "flagged_nets": 2,
       "wrong_flagged": 2,
-      "pins_wrong": 5,
+      "pins_wrong": 1,
       "pins_wrong_flagged": 1,
       "pins_missed": 0,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 9,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-ecc83-pp": {
       "designs": 1,
@@ -274,7 +280,7 @@
       "values_known": 15,
       "values_correct": 11,
       "wrong_nets": 0,
-      "flagged_nets": 2,
+      "flagged_nets": 0,
       "wrong_flagged": 0,
       "pins_wrong": 0,
       "pins_wrong_flagged": 0,
@@ -283,7 +289,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-ecc83-pp-v2": {
       "designs": 1,
@@ -303,7 +310,7 @@
       "values_known": 15,
       "values_correct": 10,
       "wrong_nets": 0,
-      "flagged_nets": 2,
+      "flagged_nets": 0,
       "wrong_flagged": 0,
       "pins_wrong": 0,
       "pins_wrong_flagged": 0,
@@ -312,7 +319,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-generic-opamp-bip": {
       "designs": 1,
@@ -341,7 +349,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 4,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-hv-converter": {
       "designs": 1,
@@ -370,123 +379,128 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 11,
-      "pin_issues_wrong": 8
+      "pin_issues_wrong": 8,
+      "pages_failed": 0
     },
     "demo-jetson-agx-thor-baseboard": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 4250,
-      "pins_correct": 3612,
+      "pins_correct": 3615,
       "signal_pins": 2497,
-      "signal_pins_correct": 2286,
+      "signal_pins_correct": 2289,
       "nets": 893,
       "nets_exact": 777,
       "pairs_true": 5121,
-      "pairs_predicted": 3254,
-      "pairs_correct": 3248,
+      "pairs_predicted": 3260,
+      "pairs_correct": 3254,
       "refs_true": 1123,
       "refs_predicted": 1113,
       "refs_common": 1113,
       "values_known": 1113,
-      "values_correct": 7,
-      "wrong_nets": 110,
-      "flagged_nets": 44,
-      "wrong_flagged": 31,
-      "pins_wrong": 11,
-      "pins_wrong_flagged": 11,
+      "values_correct": 3,
+      "wrong_nets": 107,
+      "flagged_nets": 26,
+      "wrong_flagged": 19,
+      "pins_wrong": 8,
+      "pins_wrong_flagged": 8,
       "pins_missed": 627,
       "pins_missed_flagged": 0,
       "pins_extra": 4,
       "designs_without_silent_errors": 1,
       "pin_issues": 65,
-      "pin_issues_wrong": 5
+      "pin_issues_wrong": 5,
+      "pages_failed": 0
     },
     "demo-kit-dev-coldfire-xilinx-5213": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 734,
-      "pins_correct": 648,
+      "pins_correct": 676,
       "signal_pins": 496,
-      "signal_pins_correct": 450,
+      "signal_pins_correct": 475,
       "nets": 209,
-      "nets_exact": 166,
+      "nets_exact": 190,
       "pairs_true": 421,
-      "pairs_predicted": 364,
-      "pairs_correct": 336,
+      "pairs_predicted": 429,
+      "pairs_correct": 397,
       "refs_true": 160,
       "refs_predicted": 154,
       "refs_common": 154,
       "values_known": 154,
       "values_correct": 152,
-      "wrong_nets": 73,
-      "flagged_nets": 44,
-      "wrong_flagged": 44,
-      "pins_wrong": 47,
-      "pins_wrong_flagged": 35,
+      "wrong_nets": 22,
+      "flagged_nets": 14,
+      "wrong_flagged": 14,
+      "pins_wrong": 19,
+      "pins_wrong_flagged": 11,
       "pins_missed": 39,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 13,
-      "pin_issues_wrong": 5
+      "pin_issues_wrong": 6,
+      "pages_failed": 0
     },
     "demo-mainsheet": {
       "designs": 1,
-      "perfect_designs": 0,
+      "perfect_designs": 1,
       "pins": 26,
-      "pins_correct": 19,
+      "pins_correct": 26,
       "signal_pins": 20,
-      "signal_pins_correct": 13,
+      "signal_pins_correct": 20,
       "nets": 8,
-      "nets_exact": 2,
+      "nets_exact": 8,
       "pairs_true": 22,
-      "pairs_predicted": 16,
-      "pairs_correct": 10,
+      "pairs_predicted": 22,
+      "pairs_correct": 22,
       "refs_true": 13,
       "refs_predicted": 13,
       "refs_common": 13,
       "values_known": 13,
       "values_correct": 13,
-      "wrong_nets": 10,
-      "flagged_nets": 7,
-      "wrong_flagged": 6,
-      "pins_wrong": 7,
-      "pins_wrong_flagged": 4,
+      "wrong_nets": 0,
+      "flagged_nets": 0,
+      "wrong_flagged": 0,
+      "pins_wrong": 0,
+      "pins_wrong_flagged": 0,
       "pins_missed": 0,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-one-air-max": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 612,
-      "pins_correct": 549,
+      "pins_correct": 561,
       "signal_pins": 376,
-      "signal_pins_correct": 325,
+      "signal_pins_correct": 329,
       "nets": 120,
-      "nets_exact": 80,
+      "nets_exact": 81,
       "pairs_true": 732,
-      "pairs_predicted": 526,
-      "pairs_correct": 526,
+      "pairs_predicted": 566,
+      "pairs_correct": 566,
       "refs_true": 204,
       "refs_predicted": 204,
       "refs_common": 204,
       "values_known": 204,
       "values_correct": 198,
-      "wrong_nets": 77,
-      "flagged_nets": 65,
-      "wrong_flagged": 61,
-      "pins_wrong": 48,
-      "pins_wrong_flagged": 42,
+      "wrong_nets": 72,
+      "flagged_nets": 60,
+      "wrong_flagged": 56,
+      "pins_wrong": 36,
+      "pins_wrong_flagged": 34,
       "pins_missed": 15,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 5,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-pic-programmer": {
       "designs": 1,
@@ -506,7 +520,7 @@
       "values_known": 57,
       "values_correct": 55,
       "wrong_nets": 3,
-      "flagged_nets": 7,
+      "flagged_nets": 3,
       "wrong_flagged": 3,
       "pins_wrong": 2,
       "pins_wrong_flagged": 2,
@@ -515,7 +529,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 1,
-      "pin_issues_wrong": 1
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "demo-power-supply": {
       "designs": 1,
@@ -544,7 +559,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 5,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-q17ng": {
       "designs": 1,
@@ -573,7 +589,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 5,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-rectifier": {
       "designs": 1,
@@ -602,36 +619,38 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-royalblue54l-feather": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 286,
-      "pins_correct": 236,
+      "pins_correct": 239,
       "signal_pins": 188,
-      "signal_pins_correct": 158,
+      "signal_pins_correct": 161,
       "nets": 68,
-      "nets_exact": 47,
+      "nets_exact": 49,
       "pairs_true": 304,
-      "pairs_predicted": 174,
-      "pairs_correct": 174,
+      "pairs_predicted": 178,
+      "pairs_correct": 178,
       "refs_true": 71,
       "refs_predicted": 53,
       "refs_common": 53,
       "values_known": 53,
       "values_correct": 53,
-      "wrong_nets": 27,
-      "flagged_nets": 9,
-      "wrong_flagged": 9,
-      "pins_wrong": 8,
-      "pins_wrong_flagged": 4,
-      "pins_missed": 42,
+      "wrong_nets": 24,
+      "flagged_nets": 6,
+      "wrong_flagged": 6,
+      "pins_wrong": 7,
+      "pins_wrong_flagged": 3,
+      "pins_missed": 40,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-royalblue54l-nfc-antenna": {
       "designs": 1,
@@ -660,7 +679,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-royer1": {
       "designs": 1,
@@ -689,7 +709,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 5,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-smps-com": {
       "designs": 1,
@@ -707,7 +728,7 @@
       "refs_predicted": 21,
       "refs_common": 21,
       "values_known": 21,
-      "values_correct": 21,
+      "values_correct": 20,
       "wrong_nets": 4,
       "flagged_nets": 5,
       "wrong_flagged": 4,
@@ -718,7 +739,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 5,
-      "pin_issues_wrong": 2
+      "pin_issues_wrong": 2,
+      "pages_failed": 0
     },
     "demo-sonde-xilinx": {
       "designs": 1,
@@ -738,8 +760,8 @@
       "values_known": 25,
       "values_correct": 25,
       "wrong_nets": 6,
-      "flagged_nets": 3,
-      "wrong_flagged": 3,
+      "flagged_nets": 2,
+      "wrong_flagged": 2,
       "pins_wrong": 6,
       "pins_wrong_flagged": 6,
       "pins_missed": 4,
@@ -747,7 +769,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 3,
-      "pin_issues_wrong": 3
+      "pin_issues_wrong": 3,
+      "pages_failed": 0
     },
     "demo-stickhub": {
       "designs": 1,
@@ -767,8 +790,8 @@
       "values_known": 88,
       "values_correct": 88,
       "wrong_nets": 18,
-      "flagged_nets": 2,
-      "wrong_flagged": 1,
+      "flagged_nets": 0,
+      "wrong_flagged": 0,
       "pins_wrong": 32,
       "pins_wrong_flagged": 32,
       "pins_missed": 2,
@@ -776,7 +799,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 18,
-      "pin_issues_wrong": 16
+      "pin_issues_wrong": 16,
+      "pages_failed": 0
     },
     "demo-up-down-c": {
       "designs": 1,
@@ -805,7 +829,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "demo-vme-wren": {
       "designs": 1,
@@ -825,8 +850,8 @@
       "values_known": 1466,
       "values_correct": 199,
       "wrong_nets": 85,
-      "flagged_nets": 80,
-      "wrong_flagged": 41,
+      "flagged_nets": 44,
+      "wrong_flagged": 32,
       "pins_wrong": 103,
       "pins_wrong_flagged": 62,
       "pins_missed": 120,
@@ -834,7 +859,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "dmxsun-baseboard": {
       "designs": 1,
@@ -863,7 +889,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 1,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "dmxsun-ioboard": {
       "designs": 1,
@@ -892,65 +919,68 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "ef-s-adapter": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 111,
-      "pins_correct": 103,
+      "pins_correct": 105,
       "signal_pins": 57,
-      "signal_pins_correct": 55,
+      "signal_pins_correct": 57,
       "nets": 26,
-      "nets_exact": 22,
+      "nets_exact": 24,
       "pairs_true": 50,
-      "pairs_predicted": 44,
-      "pairs_correct": 44,
+      "pairs_predicted": 50,
+      "pairs_correct": 50,
       "refs_true": 39,
       "refs_predicted": 39,
       "refs_common": 39,
       "values_known": 39,
       "values_correct": 38,
-      "wrong_nets": 6,
-      "flagged_nets": 2,
-      "wrong_flagged": 2,
-      "pins_wrong": 2,
-      "pins_wrong_flagged": 2,
+      "wrong_nets": 2,
+      "flagged_nets": 0,
+      "wrong_flagged": 0,
+      "pins_wrong": 0,
+      "pins_wrong_flagged": 0,
       "pins_missed": 6,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "funbox-v3": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 199,
-      "pins_correct": 175,
+      "pins_correct": 179,
       "signal_pins": 137,
-      "signal_pins_correct": 126,
+      "signal_pins_correct": 130,
       "nets": 54,
-      "nets_exact": 43,
+      "nets_exact": 45,
       "pairs_true": 165,
       "pairs_predicted": 154,
-      "pairs_correct": 150,
+      "pairs_correct": 154,
       "refs_true": 70,
       "refs_predicted": 63,
       "refs_common": 62,
       "values_known": 62,
       "values_correct": 56,
-      "wrong_nets": 11,
+      "wrong_nets": 9,
       "flagged_nets": 4,
       "wrong_flagged": 4,
-      "pins_wrong": 4,
+      "pins_wrong": 0,
       "pins_wrong_flagged": 0,
       "pins_missed": 20,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 4,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "granit": {
       "designs": 1,
@@ -979,7 +1009,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 14,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "hdmi-mipi-bridge": {
       "designs": 1,
@@ -997,10 +1028,10 @@
       "refs_predicted": 122,
       "refs_common": 119,
       "values_known": 119,
-      "values_correct": 4,
+      "values_correct": 1,
       "wrong_nets": 39,
-      "flagged_nets": 26,
-      "wrong_flagged": 15,
+      "flagged_nets": 4,
+      "wrong_flagged": 4,
       "pins_wrong": 7,
       "pins_wrong_flagged": 7,
       "pins_missed": 36,
@@ -1008,7 +1039,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "iot12-control": {
       "designs": 1,
@@ -1028,8 +1060,8 @@
       "values_known": 70,
       "values_correct": 69,
       "wrong_nets": 3,
-      "flagged_nets": 5,
-      "wrong_flagged": 2,
+      "flagged_nets": 0,
+      "wrong_flagged": 0,
       "pins_wrong": 1,
       "pins_wrong_flagged": 1,
       "pins_missed": 4,
@@ -1037,7 +1069,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 7,
-      "pin_issues_wrong": 1
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "iot12-power": {
       "designs": 1,
@@ -1057,7 +1090,7 @@
       "values_known": 33,
       "values_correct": 32,
       "wrong_nets": 0,
-      "flagged_nets": 6,
+      "flagged_nets": 1,
       "wrong_flagged": 0,
       "pins_wrong": 0,
       "pins_wrong_flagged": 0,
@@ -1066,36 +1099,38 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 6,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "jetson-nano-baseboard": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 1327,
-      "pins_correct": 1158,
+      "pins_correct": 1166,
       "signal_pins": 1016,
-      "signal_pins_correct": 970,
+      "signal_pins_correct": 978,
       "nets": 341,
-      "nets_exact": 305,
+      "nets_exact": 313,
       "pairs_true": 3779,
-      "pairs_predicted": 3208,
-      "pairs_correct": 3207,
+      "pairs_predicted": 3216,
+      "pairs_correct": 3215,
       "refs_true": 373,
       "refs_predicted": 365,
       "refs_common": 365,
       "values_known": 365,
       "values_correct": 62,
-      "wrong_nets": 43,
-      "flagged_nets": 22,
-      "wrong_flagged": 21,
-      "pins_wrong": 13,
-      "pins_wrong_flagged": 13,
+      "wrong_nets": 27,
+      "flagged_nets": 6,
+      "wrong_flagged": 5,
+      "pins_wrong": 5,
+      "pins_wrong_flagged": 5,
       "pins_missed": 156,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 14,
-      "pin_issues_wrong": 2
+      "pin_issues_wrong": 2,
+      "pages_failed": 0
     },
     "mackerel-08": {
       "designs": 1,
@@ -1124,7 +1159,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 4,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "mackerel-10": {
       "designs": 1,
@@ -1153,7 +1189,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 8,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "mackerel-30": {
       "designs": 1,
@@ -1182,36 +1219,38 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 8,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "mikoto": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 225,
-      "pins_correct": 213,
+      "pins_correct": 215,
       "signal_pins": 133,
-      "signal_pins_correct": 130,
+      "signal_pins_correct": 132,
       "nets": 61,
-      "nets_exact": 55,
+      "nets_exact": 56,
       "pairs_true": 111,
       "pairs_predicted": 109,
-      "pairs_correct": 106,
+      "pairs_correct": 109,
       "refs_true": 67,
       "refs_predicted": 64,
       "refs_common": 64,
       "values_known": 64,
       "values_correct": 64,
-      "wrong_nets": 6,
+      "wrong_nets": 5,
       "flagged_nets": 4,
       "wrong_flagged": 1,
-      "pins_wrong": 2,
+      "pins_wrong": 0,
       "pins_wrong_flagged": 0,
       "pins_missed": 10,
       "pins_missed_flagged": 1,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 14,
-      "pin_issues_wrong": 1
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "mvme712m-p2": {
       "designs": 1,
@@ -1240,7 +1279,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 1,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "nessionator": {
       "designs": 1,
@@ -1269,36 +1309,38 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "ottercast-audio": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 729,
-      "pins_correct": 704,
+      "pins_correct": 711,
       "signal_pins": 395,
-      "signal_pins_correct": 382,
+      "signal_pins_correct": 389,
       "nets": 149,
-      "nets_exact": 134,
+      "nets_exact": 141,
       "pairs_true": 633,
-      "pairs_predicted": 615,
-      "pairs_correct": 607,
+      "pairs_predicted": 629,
+      "pairs_correct": 621,
       "refs_true": 218,
       "refs_predicted": 218,
       "refs_common": 218,
       "values_known": 218,
       "values_correct": 216,
-      "wrong_nets": 22,
-      "flagged_nets": 9,
-      "wrong_flagged": 8,
-      "pins_wrong": 11,
-      "pins_wrong_flagged": 7,
+      "wrong_nets": 8,
+      "flagged_nets": 2,
+      "wrong_flagged": 1,
+      "pins_wrong": 4,
+      "pins_wrong_flagged": 0,
       "pins_missed": 14,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 5,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "patchlogic": {
       "designs": 1,
@@ -1327,7 +1369,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 13,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "rp-micro": {
       "designs": 1,
@@ -1356,7 +1399,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 5,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "rs485-moist-sensor": {
       "designs": 1,
@@ -1385,17 +1429,18 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 4,
-      "pin_issues_wrong": 2
+      "pin_issues_wrong": 2,
+      "pages_failed": 0
     },
     "sdi-mipi-bridge": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 601,
-      "pins_correct": 558,
+      "pins_correct": 561,
       "signal_pins": 371,
       "signal_pins_correct": 362,
       "nets": 146,
-      "nets_exact": 134,
+      "nets_exact": 135,
       "pairs_true": 608,
       "pairs_predicted": 530,
       "pairs_correct": 524,
@@ -1403,18 +1448,19 @@
       "refs_predicted": 184,
       "refs_common": 184,
       "values_known": 184,
-      "values_correct": 8,
-      "wrong_nets": 14,
-      "flagged_nets": 15,
-      "wrong_flagged": 7,
-      "pins_wrong": 14,
+      "values_correct": 7,
+      "wrong_nets": 12,
+      "flagged_nets": 1,
+      "wrong_flagged": 1,
+      "pins_wrong": 11,
       "pins_wrong_flagged": 11,
       "pins_missed": 29,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 22,
-      "pin_issues_wrong": 4
+      "pin_issues_wrong": 4,
+      "pages_failed": 0
     },
     "seatalk-wifi": {
       "designs": 1,
@@ -1434,7 +1480,7 @@
       "values_known": 32,
       "values_correct": 28,
       "wrong_nets": 8,
-      "flagged_nets": 4,
+      "flagged_nets": 3,
       "wrong_flagged": 3,
       "pins_wrong": 2,
       "pins_wrong_flagged": 2,
@@ -1443,36 +1489,38 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 1,
-      "pin_issues_wrong": 1
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "soleil": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 209,
-      "pins_correct": 176,
+      "pins_correct": 179,
       "signal_pins": 95,
-      "signal_pins_correct": 87,
+      "signal_pins_correct": 88,
       "nets": 33,
-      "nets_exact": 20,
+      "nets_exact": 22,
       "pairs_true": 164,
-      "pairs_predicted": 132,
-      "pairs_correct": 132,
+      "pairs_predicted": 134,
+      "pairs_correct": 134,
       "refs_true": 72,
       "refs_predicted": 66,
       "refs_common": 66,
       "values_known": 66,
       "values_correct": 65,
-      "wrong_nets": 16,
-      "flagged_nets": 10,
-      "wrong_flagged": 8,
-      "pins_wrong": 3,
-      "pins_wrong_flagged": 3,
+      "wrong_nets": 11,
+      "flagged_nets": 2,
+      "wrong_flagged": 2,
+      "pins_wrong": 0,
+      "pins_wrong_flagged": 0,
       "pins_missed": 30,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 8,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "trellis-core": {
       "designs": 1,
@@ -1492,7 +1540,7 @@
       "values_known": 84,
       "values_correct": 80,
       "wrong_nets": 4,
-      "flagged_nets": 3,
+      "flagged_nets": 0,
       "wrong_flagged": 0,
       "pins_wrong": 0,
       "pins_wrong_flagged": 0,
@@ -1501,7 +1549,8 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "urchin": {
       "designs": 1,
@@ -1530,7 +1579,59 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 68,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     }
+  },
+  "groups": {
+    "demo-a-multi": "kicad-demos/simulation/analog-multiplier",
+    "demo-amplifier-ac": "kicad-demos/simulation/amplifier-ac",
+    "demo-buck-conv": "kicad-demos/simulation/power_supplies/buck_conv",
+    "demo-cm5-minima-3": "kicad-demos/cm5_minima",
+    "demo-complex-hierarchy": "kicad-demos/complex_hierarchy",
+    "demo-ecc83-pp": "kicad-demos/ecc83",
+    "demo-ecc83-pp-v2": "kicad-demos/ecc83",
+    "demo-generic-opamp-bip": "kicad-demos/simulation/generic_models",
+    "demo-hv-converter": "kicad-demos/simulation/power_supplies/hv_converter",
+    "demo-jetson-agx-thor-baseboard": "kicad-demos/jetson-agx-thor-baseboard",
+    "demo-kit-dev-coldfire-xilinx-5213": "kicad-demos/kit-dev-coldfire-xilinx_5213",
+    "demo-mainsheet": "kicad-demos/simulation/subsheets",
+    "demo-one-air-max": "kicad-demos/openair-max",
+    "demo-pic-programmer": "kicad-demos/pic_programmer",
+    "demo-power-supply": "kicad-demos/simulation/power_supplies/LM317_power_supply",
+    "demo-q17ng": "kicad-demos/simulation/q17",
+    "demo-rectifier": "kicad-demos/simulation/rectifier",
+    "demo-royalblue54l-feather": "kicad-demos/royalblue54L_feather",
+    "demo-royalblue54l-nfc-antenna": "kicad-demos/royalblue54L_feather/nfc_antenna/RoyalBlue54L-NFC-Antenna",
+    "demo-royer1": "kicad-demos/simulation/power_supplies/royer",
+    "demo-smps-com": "kicad-demos/simulation/power_supplies/boost",
+    "demo-sonde-xilinx": "kicad-demos/sonde xilinx",
+    "demo-stickhub": "kicad-demos/stickhub",
+    "demo-up-down-c": "kicad-demos/simulation/up-down-counter",
+    "demo-vme-wren": "kicad-demos/vme-wren",
+    "dmxsun-baseboard": "https://github.com/OpenLightingProject/rp2040-dmxsun",
+    "dmxsun-ioboard": "https://github.com/OpenLightingProject/rp2040-dmxsun",
+    "ef-s-adapter": "https://github.com/Jana-Marie/EF-S-Adapter",
+    "funbox-v3": "https://github.com/GuitarML/FunBox",
+    "granit": "https://github.com/laenzlinger/granit",
+    "hdmi-mipi-bridge": "https://github.com/antmicro/hdmi-mipi-bridge",
+    "iot12-control": "https://github.com/atoomnetmarc/IoT12",
+    "iot12-power": "https://github.com/atoomnetmarc/IoT12",
+    "jetson-nano-baseboard": "https://github.com/antmicro/jetson-nano-baseboard",
+    "mackerel-08": "https://github.com/crmaykish/mackerel-68k",
+    "mackerel-10": "https://github.com/crmaykish/mackerel-68k",
+    "mackerel-30": "https://github.com/crmaykish/mackerel-68k",
+    "mikoto": "https://github.com/zhiayang/mikoto",
+    "mvme712m-p2": "https://github.com/parceval/MVME712M_P2",
+    "nessionator": "https://github.com/KabukiFlux/NES-IO-Board-nessionator",
+    "ottercast-audio": "https://github.com/Ottercast/OtterCastAudioV2",
+    "patchlogic": "https://github.com/Unicamp-Odhin/PatchLogic",
+    "rp-micro": "https://github.com/siderakb/rp-micro",
+    "rs485-moist-sensor": "https://github.com/Miceuz/rs485-moist-sensor",
+    "sdi-mipi-bridge": "https://github.com/antmicro/sdi-mipi-bridge-hw",
+    "seatalk-wifi": "https://github.com/atonizzo/seatalk_wifi",
+    "soleil": "https://github.com/protolux-electronics/soleil_hardware",
+    "trellis-core": "https://github.com/protolux-electronics/trellis_core",
+    "urchin": "https://github.com/duckyb/urchin"
   }
 }

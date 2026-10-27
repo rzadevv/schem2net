@@ -1,113 +1,114 @@
 {
   "corpus": "e",
   "split": "dev",
+  "folds": null,
   "total": {
-    "pin_accuracy": 0.7482970027247956,
-    "signal_pin_accuracy": 0.7368173258003766,
-    "net_exact": 0.5168374816983895,
-    "connection_precision": 0.7867076033953404,
-    "connection_recall": 0.29303733602421794,
-    "connection_f1": 0.4270169591216547,
-    "component_precision": 0.9560301507537688,
-    "component_recall": 0.9406674907292955,
-    "value_accuracy": 0.8031088082901554,
-    "flag_recall": 0.5618279569892473,
-    "flag_precision": 0.7946768060836502,
+    "pin_accuracy": 0.7758855585831063,
+    "signal_pin_accuracy": 0.7641242937853108,
+    "net_exact": 0.5666178623718887,
+    "connection_precision": 0.8087780003642324,
+    "connection_recall": 0.29875546585940127,
+    "connection_f1": 0.4363332678325801,
+    "component_precision": 0.9560853199498118,
+    "component_recall": 0.9419035846724351,
+    "value_accuracy": 0.8068965517241379,
+    "flag_recall": 0.5386996904024768,
+    "flag_precision": 0.7565217391304347,
     "perfect_designs": 0.07692307692307693,
-    "silent_error_rate": 0.030653950953678476,
-    "pin_flag_recall": 0.7239263803680982,
-    "missed_pin_rate": 0.14066757493188012,
+    "silent_error_rate": 0.01634877384196185,
+    "pin_flag_recall": 0.8072289156626506,
+    "missed_pin_rate": 0.1393051771117166,
     "extra_pin_rate": 0.0030653950953678476,
-    "review_items_per_100_pins": 13.079019073569482,
-    "review_precision": 0.75,
-    "designs_without_silent_errors": 0.38461538461538464,
-    "macro_pin_accuracy": 0.8073998012438953,
-    "macro_connection_f1": 0.7178979058897154
+    "review_items_per_100_pins": 11.920980926430518,
+    "review_precision": 0.7085714285714285,
+    "designs_without_silent_errors": 0.5384615384615384,
+    "macro_pin_accuracy": 0.84014721599567,
+    "macro_connection_f1": 0.7625831838873283
   },
   "intervals": {
     "pin_accuracy": [
-      0.6270569578026252,
-      0.8633538274436705
+      0.6422657473588262,
+      0.8891051069712389
     ],
     "signal_pin_accuracy": [
-      0.5955090463233412,
-      0.871422776982062
+      0.6167999565014815,
+      0.8930971684904011
     ],
     "net_exact": [
-      0.3607411657948115,
-      0.669496575540122
+      0.3885307755478108,
+      0.7331557638119723
     ],
     "connection_precision": [
-      0.6149337380796109,
-      0.9252818817128652
+      0.6698045848830362,
+      0.956425642301301
     ],
     "connection_recall": [
-      0.22749660912021505,
-      0.8035069496206938
+      0.22869322560981306,
+      0.8076542439173845
     ],
     "connection_f1": [
-      0.3494659115662548,
-      0.8577328039835811
+      0.35283420070966476,
+      0.8727494520167842
     ],
     "component_precision": [
-      0.9151714687594191,
+      0.9157344911710037,
       1.0
     ],
     "component_recall": [
-      0.9084405652599379,
-      0.9802354800304226
+      0.9109317741433491,
+      0.9796351105513573
     ],
     "value_accuracy": [
-      0.6898947258703356,
-      0.9568239681972485
+      0.6940087861531399,
+      0.9551995798319327
     ],
     "flag_recall": [
-      0.36160881379587434,
-      0.6684939138398138
+      0.28243296144059504,
+      0.6608727487322957
     ],
     "flag_precision": [
-      0.5416385135135134,
-      0.9498362858656975
+      0.4268203012912482,
+      0.9344702930688242
     ],
     "perfect_designs": [
       0.0,
-      0.23076923076923078
+      0.25
     ],
     "silent_error_rate": [
-      0.014924240020667993,
-      0.05878477738872006
+      0.006416947125126919,
+      0.029110772744575537
     ],
     "pin_flag_recall": [
-      0.479426537738383,
-      0.8306458054210039
+      0.6363082039911309,
+      0.8759724223091171
     ],
     "missed_pin_rate": [
-      0.06697088360978656,
-      0.22074491771378316
+      0.06939800561870768,
+      0.2203980348560443
     ],
     "extra_pin_rate": [
       0.0,
-      0.008170831004359728
+      0.007888918383383568
     ],
     "review_items_per_100_pins": [
-      9.471491486291486,
-      16.750114435378634
+      8.181045312524645,
+      16.156013602949997
     ],
     "review_precision": [
-      0.564931289640592,
-      0.8650644627025623
+      0.4716279902987543,
+      0.8451258830211925
     ],
     "designs_without_silent_errors": [
-      0.15384615384615385,
-      0.6153846153846154
+      0.3076923076923077,
+      0.7692307692307693
     ],
     "macro_pin_accuracy": [
-      0.7247801517011502,
-      0.8811806362843441
+      0.7561776313496547,
+      0.9112768094557128
     ],
     "macro_connection_f1": [
-      0.5781948413799045,
-      0.8451315548272962
+      0.6198263970296986,
+      0.8833147206123962
     ]
   },
   "designs": {
@@ -115,9 +116,9 @@
       "designs": 1,
       "perfect_designs": 0,
       "pins": 841,
-      "pins_correct": 731,
+      "pins_correct": 737,
       "signal_pins": 636,
-      "signal_pins_correct": 565,
+      "signal_pins_correct": 567,
       "nets": 178,
       "nets_exact": 120,
       "pairs_true": 1113,
@@ -128,17 +129,18 @@
       "refs_common": 148,
       "values_known": 148,
       "values_correct": 140,
-      "wrong_nets": 60,
-      "flagged_nets": 57,
-      "wrong_flagged": 44,
-      "pins_wrong": 34,
-      "pins_wrong_flagged": 28,
+      "wrong_nets": 57,
+      "flagged_nets": 53,
+      "wrong_flagged": 40,
+      "pins_wrong": 28,
+      "pins_wrong_flagged": 22,
       "pins_missed": 76,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 20,
-      "pin_issues_wrong": 8
+      "pin_issues_wrong": 8,
+      "pages_failed": 0
     },
     "easyeda-schematic-pdf": {
       "designs": 1,
@@ -167,100 +169,104 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 0,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "esp32-iot-board-using-easyeda-schematic-esp32-module-2020-08-31-08-59-": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 139,
-      "pins_correct": 117,
+      "pins_correct": 120,
       "signal_pins": 97,
-      "signal_pins_correct": 80,
+      "signal_pins_correct": 83,
       "nets": 46,
-      "nets_exact": 29,
+      "nets_exact": 31,
       "pairs_true": 69,
-      "pairs_predicted": 68,
-      "pairs_correct": 50,
+      "pairs_predicted": 74,
+      "pairs_correct": 56,
       "refs_true": 36,
       "refs_predicted": 35,
       "refs_common": 35,
       "values_known": 35,
       "values_correct": 30,
-      "wrong_nets": 16,
+      "wrong_nets": 14,
       "flagged_nets": 31,
-      "wrong_flagged": 6,
-      "pins_wrong": 17,
+      "wrong_flagged": 5,
+      "pins_wrong": 15,
       "pins_wrong_flagged": 11,
-      "pins_missed": 5,
+      "pins_missed": 4,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 5,
-      "pin_issues_wrong": 5
+      "pin_issues_wrong": 5,
+      "pages_failed": 0
     },
     "flarm-usb-updater-schematic-rev-a": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 92,
-      "pins_correct": 63,
+      "pins_correct": 69,
       "signal_pins": 60,
-      "signal_pins_correct": 36,
+      "signal_pins_correct": 41,
       "nets": 20,
       "nets_exact": 7,
       "pairs_true": 132,
-      "pairs_predicted": 164,
-      "pairs_correct": 49,
+      "pairs_predicted": 140,
+      "pairs_correct": 59,
       "refs_true": 26,
       "refs_predicted": 38,
       "refs_common": 26,
       "values_known": 0,
       "values_correct": 0,
-      "wrong_nets": 14,
-      "flagged_nets": 2,
-      "wrong_flagged": 2,
-      "pins_wrong": 25,
-      "pins_wrong_flagged": 9,
+      "wrong_nets": 13,
+      "flagged_nets": 0,
+      "wrong_flagged": 0,
+      "pins_wrong": 19,
+      "pins_wrong_flagged": 8,
       "pins_missed": 4,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 4,
-      "pin_issues_wrong": 4
+      "pin_issues_wrong": 4,
+      "pages_failed": 0
     },
     "flight-control-computer-schematic-flight-control-computer": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 206,
-      "pins_correct": 179,
+      "pins_correct": 180,
       "signal_pins": 111,
-      "signal_pins_correct": 95,
+      "signal_pins_correct": 96,
       "nets": 45,
       "nets_exact": 30,
       "pairs_true": 104,
-      "pairs_predicted": 79,
-      "pairs_correct": 79,
+      "pairs_predicted": 80,
+      "pairs_correct": 80,
       "refs_true": 66,
       "refs_predicted": 66,
       "refs_common": 66,
       "values_known": 66,
       "values_correct": 66,
-      "wrong_nets": 17,
-      "flagged_nets": 21,
-      "wrong_flagged": 13,
-      "pins_wrong": 3,
-      "pins_wrong_flagged": 3,
+      "wrong_nets": 16,
+      "flagged_nets": 19,
+      "wrong_flagged": 11,
+      "pins_wrong": 2,
+      "pins_wrong_flagged": 2,
       "pins_missed": 24,
       "pins_missed_flagged": 2,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 3,
-      "pin_issues_wrong": 1
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "line-follower-robot-pcb-v1-0-8ch-ir-bluetooth-schematic-newlfronly-202": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 269,
-      "pins_correct": 145,
+      "pins_correct": 147,
       "signal_pins": 168,
       "signal_pins_correct": 109,
       "nets": 64,
@@ -276,72 +282,75 @@
       "wrong_nets": 50,
       "flagged_nets": 12,
       "wrong_flagged": 8,
-      "pins_wrong": 80,
-      "pins_wrong_flagged": 72,
+      "pins_wrong": 78,
+      "pins_wrong_flagged": 70,
       "pins_missed": 44,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 36,
-      "pin_issues_wrong": 33
+      "pin_issues_wrong": 33,
+      "pages_failed": 0
     },
     "model-rocket-telemetry-lora-e32-sch-echo": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 139,
-      "pins_correct": 121,
+      "pins_correct": 126,
       "signal_pins": 98,
-      "signal_pins_correct": 85,
+      "signal_pins_correct": 90,
       "nets": 34,
-      "nets_exact": 23,
+      "nets_exact": 26,
       "pairs_true": 177,
-      "pairs_predicted": 181,
-      "pairs_correct": 166,
+      "pairs_predicted": 172,
+      "pairs_correct": 170,
       "refs_true": 39,
       "refs_predicted": 38,
       "refs_common": 38,
       "values_known": 0,
       "values_correct": 0,
-      "wrong_nets": 10,
-      "flagged_nets": 4,
-      "wrong_flagged": 4,
-      "pins_wrong": 10,
-      "pins_wrong_flagged": 6,
+      "wrong_nets": 7,
+      "flagged_nets": 3,
+      "wrong_flagged": 3,
+      "pins_wrong": 5,
+      "pins_wrong_flagged": 4,
       "pins_missed": 8,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
       "pin_issues": 7,
-      "pin_issues_wrong": 3
+      "pin_issues_wrong": 2,
+      "pages_failed": 0
     },
     "model-rocket-telemetry-lora-e32-sch-sonic": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 165,
-      "pins_correct": 118,
+      "pins_correct": 134,
       "signal_pins": 110,
-      "signal_pins_correct": 71,
+      "signal_pins_correct": 87,
       "nets": 38,
-      "nets_exact": 9,
+      "nets_exact": 20,
       "pairs_true": 160,
-      "pairs_predicted": 114,
-      "pairs_correct": 81,
+      "pairs_predicted": 98,
+      "pairs_correct": 98,
       "refs_true": 49,
       "refs_predicted": 47,
       "refs_common": 47,
       "values_known": 0,
       "values_correct": 0,
-      "wrong_nets": 32,
-      "flagged_nets": 21,
-      "wrong_flagged": 20,
-      "pins_wrong": 19,
-      "pins_wrong_flagged": 11,
+      "wrong_nets": 19,
+      "flagged_nets": 10,
+      "wrong_flagged": 9,
+      "pins_wrong": 3,
+      "pins_wrong_flagged": 3,
       "pins_missed": 28,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 8,
-      "pin_issues_wrong": 4
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "oscilator2-0-simple-5v-transistor-lc-oscillator-pcb-schematic-oscilato": {
       "designs": 1,
@@ -370,13 +379,14 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "oshwlab-star-schematic-simplefoc-bldc-mosquito-v20-2022-11-24": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 138,
-      "pins_correct": 122,
+      "pins_correct": 123,
       "signal_pins": 101,
       "signal_pins_correct": 91,
       "nets": 35,
@@ -394,70 +404,73 @@
       "wrong_flagged": 4,
       "pins_wrong": 0,
       "pins_wrong_flagged": 0,
-      "pins_missed": 16,
+      "pins_missed": 15,
       "pins_missed_flagged": 3,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 4,
-      "pin_issues_wrong": 1
+      "pin_issues_wrong": 1,
+      "pages_failed": 0
     },
     "paralelahardware-schematic-nolman-2x2-rusefi-2023-03-16": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 627,
-      "pins_correct": 315,
+      "pins_correct": 329,
       "signal_pins": 562,
-      "signal_pins_correct": 268,
+      "signal_pins_correct": 281,
       "nets": 138,
-      "nets_exact": 26,
+      "nets_exact": 27,
       "pairs_true": 12561,
-      "pairs_predicted": 3439,
-      "pairs_correct": 2670,
+      "pairs_predicted": 3447,
+      "pairs_correct": 2705,
       "refs_true": 231,
-      "refs_predicted": 224,
-      "refs_common": 202,
-      "values_known": 202,
-      "values_correct": 133,
-      "wrong_nets": 135,
-      "flagged_nets": 91,
-      "wrong_flagged": 91,
-      "pins_wrong": 109,
-      "pins_wrong_flagged": 88,
-      "pins_missed": 203,
+      "refs_predicted": 225,
+      "refs_common": 203,
+      "values_known": 203,
+      "values_correct": 136,
+      "wrong_nets": 133,
+      "flagged_nets": 89,
+      "wrong_flagged": 89,
+      "pins_wrong": 97,
+      "pins_wrong_flagged": 79,
+      "pins_missed": 201,
       "pins_missed_flagged": 2,
       "pins_extra": 9,
       "designs_without_silent_errors": 0,
-      "pin_issues": 27,
-      "pin_issues_wrong": 20
+      "pin_issues": 26,
+      "pin_issues_wrong": 19,
+      "pages_failed": 0
     },
     "stm32f103-minimal-system-pcb-sch-schematic1-1-2025-12-13": {
       "designs": 1,
       "perfect_designs": 0,
       "pins": 172,
-      "pins_correct": 144,
+      "pins_correct": 171,
       "signal_pins": 107,
-      "signal_pins_correct": 93,
+      "signal_pins_correct": 106,
       "nets": 51,
-      "nets_exact": 33,
+      "nets_exact": 50,
       "pairs_true": 85,
-      "pairs_predicted": 95,
-      "pairs_correct": 71,
+      "pairs_predicted": 83,
+      "pairs_correct": 83,
       "refs_true": 36,
       "refs_predicted": 36,
       "refs_common": 36,
       "values_known": 0,
       "values_correct": 0,
-      "wrong_nets": 26,
-      "flagged_nets": 13,
-      "wrong_flagged": 13,
-      "pins_wrong": 28,
-      "pins_wrong_flagged": 7,
+      "wrong_nets": 2,
+      "flagged_nets": 2,
+      "wrong_flagged": 1,
+      "pins_wrong": 1,
+      "pins_wrong_flagged": 1,
       "pins_missed": 0,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
+      "designs_without_silent_errors": 1,
       "pin_issues": 3,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     },
     "stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19": {
       "designs": 1,
@@ -486,7 +499,23 @@
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
       "pin_issues": 2,
-      "pin_issues_wrong": 0
+      "pin_issues_wrong": 0,
+      "pages_failed": 0
     }
+  },
+  "groups": {
+    "cyborg-sch-cyborg": "https://github.com/cyrusbuilt/CyBorg",
+    "easyeda-schematic-pdf": "https://github.com/levonkarapetyann/EasyEDA",
+    "esp32-iot-board-using-easyeda-schematic-esp32-module-2020-08-31-08-59-": "https://github.com/RidhaBouyahi/ESP32-iot-board-using-EasyEDA",
+    "flarm-usb-updater-schematic-rev-a": "https://github.com/rikvdb229/FLARM-USB-Updater",
+    "flight-control-computer-schematic-flight-control-computer": "https://github.com/nakujaproject/flight-control-computer",
+    "line-follower-robot-pcb-v1-0-8ch-ir-bluetooth-schematic-newlfronly-202": "https://github.com/Rahber-Saeed/Line-Follower-Robot-PCB-V1.0-8CH-IR-Bluetooth",
+    "model-rocket-telemetry-lora-e32-sch-echo": "https://github.com/sujaldavda/Model_Rocket_telemetry_LORA_E32",
+    "model-rocket-telemetry-lora-e32-sch-sonic": "https://github.com/sujaldavda/Model_Rocket_telemetry_LORA_E32",
+    "oscilator2-0-simple-5v-transistor-lc-oscillator-pcb-schematic-oscilato": "https://github.com/Rahber-Saeed/Oscilator2.0-Simple-5V-Transistor-LC-Oscillator-PCB",
+    "oshwlab-star-schematic-simplefoc-bldc-mosquito-v20-2022-11-24": "https://github.com/abetusk/oshwlab_star",
+    "paralelahardware-schematic-nolman-2x2-rusefi-2023-03-16": "https://github.com/ElDominio/ParalelaHardware",
+    "stm32f103-minimal-system-pcb-sch-schematic1-1-2025-12-13": "https://github.com/Kurisu-g/STM32F103-Minimal-System-PCB-",
+    "stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19": "https://github.com/WesterbergEbbe/STM32F722-Flight-controller-PCB"
   }
 }
