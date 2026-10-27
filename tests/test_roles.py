@@ -50,8 +50,8 @@ class _Stub:
     def predict(self, rows):
         return np.array([self.rule(r) for r in rows])
 
-    def scores(self, rows):
-        out = np.zeros((len(rows), len(roles.PATH_ROLES) + 1))
+    def scores(self, rows, kinds=roles.PATH_ROLES):
+        out = np.zeros((len(rows), len(kinds) + 1))
         out[np.arange(len(rows)), self.predict(rows)] = 1.0
         return out
 
@@ -82,6 +82,33 @@ def test_texts_in_unknown_colours_take_a_predicted_role():
     models = (None, None, _Stub(lambda row: local))
     named = roles.name_unknown_texts(page, kicad, models)
     assert [kicad.is_("local_label", t.color) for t in named.texts] == [True, True, False]
+
+
+def test_texts_of_one_unknown_colour_share_the_role_most_of_them_have():
+    """A theme gives each kind of text its colour: net labels in the theme's label colour
+    are labels, though the model takes one of them, alone, for a field. Which kind of
+    label each is, local or global, it keeps."""
+    kicad = profile.load("kicad")
+    local, other, field = (
+        roles.TEXT_ROLES.index(r) for r in ("local_label", "global_label", "field")
+    )
+    page = _page((0, 150, 0))
+    page.texts = [
+        Text(k, name, (10 * k, -4, 10 * k + 3, -2.5), 1.3, 0.0, (194, 0, 0), k)
+        for k, name in enumerate(("SDA", "SCL", "MISO", "USB"), 3)
+    ]
+    found = iter((local, field, local, other))
+    models = (None, None, _Stub(lambda row: next(found)))
+    named = roles.name_unknown_texts(page, kicad, models)
+    kinds = [
+        "global_label"
+        if kicad.is_("global_label", t.color)
+        else "local_label"
+        if kicad.is_("local_label", t.color)
+        else None
+        for t in named.texts
+    ]
+    assert kinds == ["local_label", "local_label", "local_label", "global_label"]
 
 
 def test_a_name_drawn_with_a_mark_of_its_colour_is_not_a_net_label():

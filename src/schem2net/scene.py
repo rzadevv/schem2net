@@ -53,6 +53,7 @@ class Label:
     bbox: BBox
     angle: float
     outline: list[Point] = field(default_factory=list)
+    seq: int = 0  # where its text is in the page's drawing order
 
 
 @dataclass(slots=True)
@@ -264,7 +265,9 @@ def build(page: Page, profile: Profile) -> Scene:
         on_wires = [o for o in outlines_any if _meets_wire(o, scene.wires, wire_index)]
         boxed = list(_outlined(scene.fields, on_wires))
         for text, outline in boxed:
-            scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
+            scene.labels.append(
+                Label(text.text, "global", text.bbox, text.angle, outline, text.seq)
+            )
             used.add(id(outline))
         taken = {id(text) for text, _ in boxed}
         if profile.labels_on_wires:
@@ -289,12 +292,14 @@ def build(page: Page, profile: Profile) -> Scene:
                 if id(text) in values:
                     continue
                 if _on_wire(text, scene.wires, wire_index, meets):
-                    scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
+                    scene.labels.append(
+                        Label(text.text, "local", text.bbox, text.angle, seq=text.seq)
+                    )
                     taken.add(id(text))
         scene.fields = [t for t in scene.fields if id(t) not in taken]
         scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in taken]
     for text, outline in _outlined(label_texts["global"], outlines["global"]):
-        scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
+        scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline, text.seq))
         used.add(id(outline))
     # A net label text inside an outline is a port, which reaches other sheets. So is
     # text given a colour of its own, when its outline meets a wire.
@@ -305,20 +310,20 @@ def build(page: Page, profile: Profile) -> Scene:
     ported = set()
     pairs = [*_outlined(label_texts["local"], outlines["global"]), *_outlined(recoloured, wired)]
     for text, outline in pairs:
-        scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline))
+        scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline, text.seq))
         used.add(id(outline))
         ported.add(id(text))
     for text in label_texts["local"]:
         if id(text) not in ported:
-            scene.labels.append(Label(text.text, "local", text.bbox, text.angle))
+            scene.labels.append(Label(text.text, "local", text.bbox, text.angle, seq=text.seq))
     # Bus names are drawn in the bus colour, whether they are labels or hierarchical labels.
     flagged = set()
     for text, anchor in _flagged(label_texts["hier"] + bus_texts, outlines["hier"]):
-        scene.labels.append(Label(text.text, "hier", text.bbox, text.angle, [anchor]))
+        scene.labels.append(Label(text.text, "hier", text.bbox, text.angle, [anchor], text.seq))
         flagged.add(id(text))
     for text in bus_texts:
         if id(text) not in flagged:
-            scene.labels.append(Label(text.text, "bus", text.bbox, text.angle))
+            scene.labels.append(Label(text.text, "bus", text.bbox, text.angle, seq=text.seq))
     scene.shapes = [s for s in scene.shapes if id(s.points) not in used]
     for i, shape in enumerate(scene.shapes):
         shape.id = i
@@ -649,7 +654,8 @@ def _on_edge(pin: BBox, box: BBox, tol: float = 0.05) -> Point | None:
 def _flagged(texts: list[Text], outlines: list[list[Point]]):
     """Pair each text with the small flag drawn beside it, and find where the flag connects.
 
-    The flag connects on the text's centre line, at its side away from the text.
+    The flag connects at its side away from the text, on its own centre line: a text's
+    box sits a little off it, by how far the font's ascent and descent differ.
     """
     index = GridIndex()
     boxes = [geometry.bbox_of(o) for o in outlines]
@@ -674,7 +680,7 @@ def _flagged(texts: list[Text], outlines: list[list[Point]]):
         tx, ty = geometry.center(text.bbox)
         fx, fy = geometry.center(box)
         if geometry.reading_frame(text.angle)[0][0]:  # reading along x
-            yield text, (box[0] if fx < tx else box[2], ty)
+            yield text, (box[0] if fx < tx else box[2], fy)
         else:
             yield text, (fx, box[1] if fy < ty else box[3])
 
@@ -737,7 +743,9 @@ def _anchored_labels(scene: Scene, anchors: list[Point], profile: Profile) -> No
     taken = set()
     for i, j in sorted(geometry.best_pairs(candidates, 2 * ANCHOR_REACH)):
         text = texts[j]
-        scene.labels.append(Label(text.text, "local", text.bbox, text.angle, [on_ends[i]]))
+        scene.labels.append(
+            Label(text.text, "local", text.bbox, text.angle, [on_ends[i]], text.seq)
+        )
         taken.add(j)
     gone = {id(texts[j]) for j in taken}
     scene.fields = [t for t in scene.fields if id(t) not in gone]

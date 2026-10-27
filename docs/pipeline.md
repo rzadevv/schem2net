@@ -142,7 +142,9 @@ the text inside the box level with its flag, and joins the hierarchical label
 of the same name on the child page. KiCad sets a name against its flag by its
 width at full size, but draws subscripts small, so a name with a subscript ends
 short of its flag by what the subscript lost; sheet pins and hierarchical
-labels allow for that gap. A hierarchical label of a bus is written in the bus
+labels allow for that gap. A hierarchical label connects on its flag's centre line,
+which the text's box, set by the font's ascent and descent, may miss by a tenth of a
+millimetre. A hierarchical label of a bus is written in the bus
 colour, beside its flag. A design may leave its sheets' names and files unprinted;
 a box with sheet pins on its edge is then a sheet still, and it stands for the page
 one level down whose hierarchical labels share most names with its pins.
@@ -215,7 +217,10 @@ on the left and usually turned counter-clockwise, so upright parts count from
 the bottom, and most Altium diode libraries make the anode pin 1.
 
 A net label text inside a small outline is a port. Unless the design nests
-sheets, ports and net labels connect their name on every sheet.
+sheets, ports and net labels connect their name on every sheet. A net label joins
+the power symbol or global label of its name on its own page: KiCad does so, keeping
+it to that page, Eagle and EasyEDA join every name everywhere, and no dev board of
+Altium or OrCAD reads worse for it.
 
 Power port names use the net label colour. Ground ports usually have no name and are
 recognised by their stacked bars, centred one above another, their triangle, or the
@@ -225,8 +230,13 @@ KiCad the same sign is Earth, so there a pin keeps it a part. A ground drawn in
 pieces takes the name a piece beside it took, or one further along its pinless bars.
 A power symbol's name sits past its end away from the wire, never beside its stem,
 where the number of the pin it sits on may be; each name goes to the nearest symbol
-it may name. Designers often change the wire colour, so each page's wire colour is
-learned from the lines that end on pin ends. Junctions may be drawn as rings, and
+it may name. Where labels are names laid along wires, as in Eagle and EasyEDA, a
+ground's or flag's name set past it may lie over a wire passing there and read as a
+label on it; a flag, or a ground sign of more than a bar across a stem, takes such a
+label as its name, a sign drawn in pieces judged whole. KiCad's PWR_FLAG is drawn like
+a power symbol but joins nothing by name: it is named last, so it takes no symbol a
+real name would, and a wire ending on it ends on something. Designers often change the
+wire colour, so each page's wire colour is learned from the lines that end on pin ends. Junctions may be drawn as rings, and
 wires crossing without a connection may jump over each other with a small arc, which
 is read as a straight wire. Pages are scaled to fit, so buses are told from wires by
 relative thickness. Text drawn in invisible mode, such as the pin markers of a Smart
@@ -352,7 +362,8 @@ wire ends on it, when the wires that do all end at one point. A ground may be a 
 triangle of three lines, its wire ending on the middle of the base, or bars with no
 stem, the wire ending on the middle of the top one. An off-page connector is a pair
 of arrows whose wire ends in their mouth; its name, in the net alias colour, sits a
-little way beyond them, and the sheets the net is on may be listed beside it, as in
+little way beyond them, and is drawn right after them, which names them though it
+sits farther off than a name found by distance alone, and the sheets the net is on may be listed beside it, as in
 `[2,10,11]`, which is no label. A power name may sit as far off, as drawing order
 ties it to its symbol. Allegro takes net names in capitals, so names that differ only in case are one net, and a list of sheets written after a name in the same text, as `RESET [20,21]` or `RESET 20,21`, is no part of it. A ground's name is often hidden; Capture's library names its
 signs, so a bare triangle is GND_SIGNAL and a chassis rake GND_EARTH, apart from the
@@ -424,7 +435,11 @@ colour pages they misjudge more texts than they mend.
 Designers can change the colour theme, so a label may come in a colour the
 profile does not know. Such texts get their role from the same text model, with
 everything in a known colour kept as it is: a string the PDF splits into pieces
-is judged whole, and every piece takes its role. A net label has no drawing of
+is judged whole, and every piece takes its role. A theme gives each kind of text its
+colour, so the texts of one colour are judged together, by the model's scores summed
+over them: a label the model alone takes for a field is a label where most texts of
+its colour are. Net labels of every kind may share a colour, so which kind a label is,
+local or global, each tells by itself. A net label has no drawing of
 its own, so a text with lines of its colour right by it, other than the wire it
 lies along, is not taken for one: the net class name on a differential pair
 directive sits beside the directive's mark, just above the wire.

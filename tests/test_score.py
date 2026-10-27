@@ -128,6 +128,30 @@ def test_many_swapped_decoupling_capacitors_are_not_errors():
     assert score(predicted, truth).metrics()["pin_accuracy"] == 1
 
 
+def test_a_chain_of_swapped_resistors_and_capacitors_is_not_an_error():
+    """R1 and R2 in series through C1 to an op-amp input: each is turned round, and
+    each net between them holds only pins of turned parts."""
+    parts = [part("R1", "Device:R"), part("R2", "Device:R"), part("C1", "Device:C")]
+    truth = design(
+        {
+            "IN": [("J1", "1"), ("R1", "1")],
+            "A": [("R1", "2"), ("R2", "1")],
+            "B": [("R2", "2"), ("C1", "1")],
+            "OUT": [("C1", "2"), ("U1", "3")],
+        },
+        parts,
+    )
+    predicted = design(
+        {
+            "IN": [("J1", "1"), ("R1", "2")],
+            "A": [("R1", "1"), ("R2", "2")],
+            "B": [("R2", "1"), ("C1", "2")],
+            "OUT": [("C1", "1"), ("U1", "3")],
+        }
+    )
+    assert score(predicted, truth).metrics()["pin_accuracy"] == 1
+
+
 def test_merged_nets():
     predicted = design(
         {

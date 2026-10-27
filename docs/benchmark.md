@@ -287,9 +287,11 @@ momentary switch in it), or by designator (R, C, L, FB, F) when the symbol is
 named after a value or package; their two pins may be numbered anyhow (1 and 3,
 P$1 and P$2). A two-pin connector is not among them: which end is which matters. Symbols whose names mark them as
 polarised (`CP`, `C_Polarized`, electrolytic, tantalum) are not treated this
-way. Nets are first paired without the pins of these parts, so a board full of
-decoupling capacitors turned the other way round cannot pair its supply nets
-the wrong way.
+way. Each such part is turned round where that puts more pairs of pins on a net
+together as the truth has them: first judged by the pins of other parts only, so a
+board full of decoupling capacitors turned the other way round cannot outvote its
+supply pins, then by its turned neighbours too, so a chain of resistors and
+capacitors all turned comes right.
 
 Power nets are recognised by name: names starting with `+` or `-`, voltages
 such as `3V3`, `VCC`, `VDD`, `VSS`, `VBUS` and anything containing `GND`.

@@ -370,6 +370,29 @@ def test_kicad_ground_with_hidden_name():
     assert nets["GND"].pins == [("R1", "2")]
 
 
+def test_a_wire_to_a_pwr_flag_ends_on_it_but_takes_no_name():
+    """KiCad's PWR_FLAG is drawn like a power symbol, a stem and a diamond, but joins
+    nothing by name: the wire to it is no dangling wire, and no net is named for it."""
+    pages = []
+    for page in (1, 2):
+        b = SceneBuilder()
+        b.scene.page = page
+        b.resistor(10, 10, f"R{page}", "1k")
+        b.scene.wires += [((10, 7.46), (15, 7.46)), ((15, 7.46), (15, 5))]
+        b.shape((15, 5), (15, 3.73))  # the stem, then the diamond
+        b.shape((15, 3.73), (13.73, 2.46), (15, 1.19), (16.27, 2.46), (15, 3.73))
+        b.field("PWR_FLAG", 12, -0.5)
+        pages.append(b.scene)
+
+    netlister = Netlister(not_nets=KICAD.not_power_nets)
+    for scene in pages:
+        netlister.add_page(scene, symbols.find(scene, KICAD))
+    found = netlister.result()
+    assert sorted(n.pins for n in found.nets) == [[("R1", "1")], [("R2", "1")]]
+    assert not any(n.name for n in found.nets)
+    assert not any(i.kind == "dangling_wire" for i in found.issues)
+
+
 def test_lone_triangle_ground_on_a_wire():
     """Older KiCad grounds are a bare triangle; the wire meets the middle of its base."""
     b = SceneBuilder()
@@ -579,6 +602,23 @@ def test_bus_hierarchical_label_with_a_subscript_keeps_its_flag():
 
     built = build_scene(page, KICAD)
     assert [(lb.text, lb.kind) for lb in built.labels] == [("PCIeC1x1{PCIe}", "hier")]
+
+
+def test_hierarchical_label_connects_on_its_flags_centre_line():
+    """The text's box sits a little above or below the flag's middle, by the font's
+    ascent and descent; the wire ends on the flag's middle (the coldfire demo, CANTX)."""
+    flag = [(353.06, 68.58), (353.82, 67.82), (354.58, 67.82), (354.58, 69.34), (353.82, 69.34)]
+    page = Page(1, 400, 300)
+    page.paths = [
+        Path(0, [[(342.9, 68.58), (353.06, 68.58)]], 0.15, (0, 150, 0), None),
+        Path(1, [[*flag, flag[0]]], 0.15, (114, 86, 0), None),
+    ]
+    page.texts = [Text(2, "CANTX", (354.61, 67.68, 361.8, 69.35), 1.27, 0.0, (114, 86, 0))]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    (label,) = build_scene(page, KICAD).labels
+    assert (label.kind, label.outline) == ("hier", [(353.06, 68.58)])
 
 
 def _subscripted(x: float, y: float, head: str, sub: str, tail: str) -> list[Text]:
@@ -800,6 +840,52 @@ def test_easyeda_ground_with_hidden_name_does_not_take_a_designator():
     assert list(parts) == ["R1"]
     assert nets["GND"].pins == [("R1", "2")]
     assert nets["VIN"].pins == [("R1", "1")]
+
+
+def test_ground_name_over_a_passing_wire_names_the_ground_not_that_wire():
+    """A ground's name printed below its bars, over a wire passing there, was taken for
+    a label on that wire, which then joined GND."""
+    red, navy = (135, 0, 0), (0, 0, 128)
+    b = SceneBuilder()
+    for x, ref in ((10, "R1"), (30, "R2")):
+        b.shape((x - 1, 10), (x + 1, 10), (x + 1, 15), (x - 1, 15), (x - 1, 10), color=red)
+        b.shape((x, 10), (x, 7.46), width=0.25, color=red)
+        b.shape((x, 15), (x, 17.54), width=0.25, color=red)
+        b.seq += 1
+        box = (x + 2, 11, x + 4, 12.3)
+        b.scene.fields.append(Text(b.seq, ref, box, 1.27, 0.0, navy, b.seq))
+    b.shape((10, 20.08), (10, 22), width=0.25, color=red)  # the ground, on R1's wire
+    for half, y in ((2, 22), (1.3, 22.8), (0.6, 23.6)):
+        b.shape((10 - half, y), (10 + half, y), width=0.25, color=red)
+    b.scene.wires += [((10, 17.54), (10, 20.08)), ((30, 17.54), (30, 26.5))]
+    b.scene.wires.append(((0, 26.5), (30, 26.5)))  # R2's net, passing under the name
+    b.scene.labels.append(Label("GND", "local", (8.5, 24.5, 11.5, 26.2), 0.0))
+
+    _, nets = netlist(b.scene, rules=profile.load("easyeda"))
+    assert nets["GND"].pins == [("R1", "2")]
+
+
+def test_a_net_label_joins_the_power_symbol_of_its_name_on_its_page_only():
+    """KiCad joins a local label to the power net of its name on the same sheet, and
+    keeps it to that sheet."""
+    pages = []
+    for page in (1, 2):
+        b = SceneBuilder()
+        b.scene.page = page
+        b.resistor(10, 10, f"R{page}", "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("GND", "local", (13, 6.0, 16, 7.2), 0.0))
+        if page == 1:  # a ground on R1's other pin, on the same page as its label
+            b.shape(
+                (10, 17.54), (10, 18.81), (11.27, 18.81), (10, 20.08), (8.73, 18.81), (10, 18.81)
+            )
+        pages.append(b.scene)
+
+    netlister = Netlister()
+    for scene in pages:
+        netlister.add_page(scene, symbols.find(scene, KICAD))
+    found = sorted(n.pins for n in netlister.result().nets)
+    assert found == [[("R1", "1"), ("R1", "2")], [("R2", "1")]]
 
 
 def test_section_frame_does_not_take_the_part_drawn_after_it():
@@ -1487,10 +1573,12 @@ def test_a_two_pin_connectors_guessed_order_is_reported_but_a_resistors_is_not()
     assert guessed("R1") == []
 
 
-def test_an_orcad_page():
+@pytest.mark.parametrize("name_at", [46, 50.5])
+def test_an_orcad_page(name_at):
     """OrCAD draws a part's body, then its texts, then its pins. A ground may be a bare
     triangle of three lines whose base the wire ends on; an off-page arrow is named in
-    the net alias colour a little way beyond its arrows."""
+    the net alias colour a little way beyond its arrows, drawn right after them, which
+    ties the name to them where it sits farther off."""
     orcad = profile.load("orcad")
     blue, red, navy, maroon = (0, 0, 255), (255, 0, 0), (0, 0, 128), (128, 0, 64)
     paths, texts = [], []
@@ -1519,7 +1607,7 @@ def test_an_orcad_page():
     line(red, (40, 11.25), (41.25, 10))
     line(red, (41.25, 8.75), (42.5, 10))
     line(red, (41.25, 11.25), (42.5, 10))
-    text("SDA", red, 46, 9.25)
+    text("SDA", red, name_at, 9.25)
     scene = build_scene(Page(1, 100, 100, paths=paths, texts=texts), orcad)
 
     _, nets = netlist(scene, rules=orcad)

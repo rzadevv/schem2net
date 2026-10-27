@@ -207,7 +207,10 @@ def _extract(
     pages = [PageResult(page) for page in doc.pages]
     rules = profile.load(generator)
     netlister = Netlister(
-        rules.labels_span_pages, rules.colors.get("designator", frozenset()), rules.names_case_blind
+        rules.labels_span_pages,
+        rules.colors.get("designator", frozenset()),
+        rules.names_case_blind,
+        rules.not_power_nets,
     )
     for result in pages:
         try:
@@ -290,7 +293,7 @@ def _read_page(
         for page in (result.page, _in_black(result.page)):
             trial = PageResult(page)
             _read_drawing(trial, rules, printed, pages)
-            netlister = Netlister()
+            netlister = Netlister(not_nets=rules.not_power_nets)
             netlister.add_page(trial.scene, trial.symbols)
             found = netlister.result()
             readings.append((_reading_score(found.nets, found.components, found.issues), trial))

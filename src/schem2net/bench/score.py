@@ -147,10 +147,7 @@ def align(predicted: Design, truth: Design) -> Aligned:
     confidence = [n.confidence for n in nonempty]
     doubted = {aliases.get(p, tuple(p)) for issue in predicted.issues for p in issue.pins}
 
-    # Pins of symmetric parts may be swapped, so they take no part in the first match.
-    loose = {(c.ref, n) for c in truth.components for n in _alike_ends(c) or ()}
-    match = match_nets([n - loose for n in true_nets], [n - loose for n in pred_nets])
-    pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, match, truth.components)
+    pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, truth.components)
     match = match_nets(true_nets, pred_nets)
     return Aligned(true_nets, power, pred_nets, confidence, doubted, aliases, match)
 
@@ -356,37 +353,53 @@ def match_nets(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> di
 
 
 def _undo_symmetric_swaps(
-    pred_nets: list[set[PinRef]],
-    true_nets: list[set[PinRef]],
-    match: dict[int, int],
-    components: list[Component],
+    pred_nets: list[set[PinRef]], true_nets: list[set[PinRef]], components: list[Component]
 ) -> list[set[PinRef]]:
+    """The predicted nets with the ends of symmetric parts turned round wherever that
+    puts more pairs of pins on a net together as the truth has them.
+
+    Each part is first judged by the pins of other parts, whose numbers are fixed, so a
+    board of decoupling capacitors all turned round cannot outvote its supply pins. Then
+    parts are turned while any turn gains, so a chain of resistors and capacitors, each
+    judged by its turned neighbours, comes right too. Every turn gains, so it ends.
+    """
     nets = [set(net) for net in pred_nets]
     true_owner = _owners(true_nets)
     pred_owner = _owners(nets)
+    parts = [((c.ref, e[0]), (c.ref, e[1])) for c in components if (e := _alike_ends(c))]
+    loose = {pin for part in parts for pin in part}
 
-    def hit(pin: PinRef, owner_of: PinRef) -> bool:
-        t, p = true_owner.get(pin), pred_owner.get(owner_of)
-        return t is not None and p is not None and match.get(t) == p
+    def agree(pin: PinRef, net: int | None, skip: set[PinRef]) -> int:
+        """Pins of a predicted net on the true net of `pin`, but those skipped."""
+        t = true_owner.get(pin)
+        if t is None or net is None:
+            return 0
+        return sum(true_owner.get(q) == t for q in nets[net] if q not in skip)
 
-    for comp in components:
-        ends = _alike_ends(comp)
-        if not ends:
-            continue
-        a, b = (comp.ref, ends[0]), (comp.ref, ends[1])
-        if hit(a, b) + hit(b, a) > hit(a, a) + hit(b, b):
-            pa, pb = pred_owner.get(a), pred_owner.get(b)
-            if pa is not None:
-                nets[pa].discard(a)
-                nets[pa].add(b)
-            if pb is not None:
-                nets[pb].discard(b)
-                nets[pb].add(a)
+    def gain(a: PinRef, b: PinRef, skip: set[PinRef]) -> int:
+        pa, pb = pred_owner.get(a), pred_owner.get(b)
+        before = agree(a, pa, skip) + agree(b, pb, skip)
+        return agree(a, pb, skip) + agree(b, pa, skip) - before
+
+    def turn(a: PinRef, b: PinRef) -> None:
+        pa, pb = pred_owner.pop(a, None), pred_owner.pop(b, None)
+        for pin, net, other in ((a, pa, b), (b, pb, a)):
+            if net is not None:
+                nets[net].discard(pin)
+                nets[net].add(other)
+                pred_owner[other] = net
+
+    for a, b in parts:
+        if pred_owner.get(a) != pred_owner.get(b) and gain(a, b, loose) > 0:
+            turn(a, b)
+    turned = True
+    while turned:
+        turned = False
+        for a, b in parts:
+            if pred_owner.get(a) != pred_owner.get(b) and gain(a, b, {a, b}) > 0:
+                turn(a, b)
+                turned = True
     return nets
-
-
-def _is_symmetric(comp: Component) -> bool:
-    return _alike_ends(comp) is not None
 
 
 def _alike_ends(comp: Component) -> tuple[str, str] | None:
