@@ -9,6 +9,8 @@
   number printed nearer, where the designator model finds the name likelier.
 - EasyEDA net labels marked by a dot are paired with their dots as a whole, so rows of
   labels set close together no longer shift by one onto their neighbours' wires.
+- The benchmark forgives swapped ends of a resistor or capacitor whose neighbours are
+  swapped too, as in a chain of them, as its rules say.
 
 ## 0.2.0
 
