@@ -283,7 +283,7 @@ def test_macro_metrics_weigh_designs_alike():
 def test_a_change_on_every_design_has_a_tight_interval():
     before = [Counts(designs=1, pins=100, pins_correct=80 + i) for i in range(10)]
     after = [Counts(designs=1, pins=100, pins_correct=85 + i) for i in range(10)]
-    first, second, change, low, high = compare(before, after)["pin_accuracy"]
+    _, _, change, low, high = compare(before, after)["pin_accuracy"]
     assert change == pytest.approx(0.05) and low == pytest.approx(0.05)
     assert high == pytest.approx(0.05)
     _, _, change, low, high = compare(before, before)["pin_accuracy"]
