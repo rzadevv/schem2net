@@ -40,7 +40,7 @@ corpus-c:
 bench-c: corpus-c
 	uv run schem2net bench c --split dev
 
-corpus-d:
+corpus-d: image
 	uv run schem2net build-corpus d
 
 bench-d: corpus-d
@@ -52,7 +52,7 @@ corpus-e:
 bench-e: corpus-e
 	uv run schem2net bench e --split dev
 
-corpus-f:
+corpus-f: image
 	uv run schem2net build-corpus f
 
 bench-f: corpus-f
