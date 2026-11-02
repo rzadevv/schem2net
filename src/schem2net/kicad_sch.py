@@ -259,10 +259,15 @@ def _wire_labels(
     and power symbols; otherwise at any end of the piece.
     """
     named = [i for i, net in enumerate(wire_net) if net in labels]
+    if not named:
+        return []
+    index = GridIndex()
+    for i, wire in enumerate(wires):
+        index.add(i, geometry.bbox_of(wire))
     pieces = UnionFind()
     for i in named:
         pieces.find(i)
-        for j in named:
+        for j in sorted(index.within(geometry.grown(geometry.bbox_of(wires[i]), TOUCH))):
             if j > i and wire_net[i] == wire_net[j] and _touch(wires[i], wires[j]):
                 pieces.union(i, j)
     out = []
@@ -273,7 +278,7 @@ def _wire_labels(
             for i in group
             for end, other in (wires[i], wires[i][::-1])
             if _key(end) not in tips
-            and not any(j != i and _on(end, wires[j]) for j in range(len(wires)))
+            and not any(j != i and _on(end, wires[j]) for j in index.near(end, TOUCH))
         ]
         for end, other in loose or [wires[group[0]]]:
             out.append(_label(name, end, _angle(other, end)))

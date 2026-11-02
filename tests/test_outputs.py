@@ -44,6 +44,30 @@ def test_kicad_netlist_round_trip(tmp_path):
     assert back.nets[1].name == "Net-(R10-Pad2)"
 
 
+def test_wire_labels_cover_connected_pieces_and_prefer_open_ends():
+    wires = [
+        ((0, 0), (5, 0)),
+        ((5, 0), (10, 0)),
+        ((20, 0), (25, 0)),
+        ((25, 0), (25, 5)),
+    ]
+    labels = kicad_sch._wire_labels(
+        wires,
+        ["n1", "n1", "n1", None],
+        {"n1": "DATA"},
+        {kicad_sch._key((0, 0)), kicad_sch._key((10, 0))},
+    )
+    assert [str(label[1]) for label in labels] == ["DATA", "DATA"]
+    assert [(float(label[3][1]), float(label[3][2])) for label in labels] == [(0, 0), (20, 0)]
+
+
+def test_wire_label_groups_keep_plain_crossings_apart():
+    wires = [((0, 5), (10, 5)), ((5, 0), (5, 10))]
+    tips = {kicad_sch._key(p) for wire in wires for p in wire}
+    labels = kicad_sch._wire_labels(wires, ["n1", "n1"], {"n1": "DATA"}, tips)
+    assert len(labels) == 2
+
+
 def test_bom_groups_by_value():
     lines = export.bom_csv(DESIGN).splitlines()
     assert lines[0] == "References,Value,Quantity"
