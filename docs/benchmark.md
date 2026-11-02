@@ -240,8 +240,8 @@ schem2net bench a --split test --json results.json
 Revisions of one board are not independent, so intervals come from a bootstrap over
 groups: 2,000 draws of the groups with replacement, each design counted as often as
 its group is drawn. `bench` says how many groups its designs are in, and `bench --json`
-keeps each design's group. `bench-compare` sets two such runs side by side, design by
-design, and gives for each metric the change and a 95% interval of it, the same draws
+keeps each design's group. `bench-compare` requires identical design sets and gives
+for each metric the change and a 95% interval of it, the same draws
 for both runs. A run fails when the interval of the pin accuracy change lies wholly
 below -0.002, silent errors rise by more than 0.001, or more pages fail to be read.
 
@@ -310,6 +310,17 @@ whose errors no one can find is worse than one 90% right whose doubtful pins are
 all marked. So each wrong pin is also asked whether anything flags it: a net of
 low confidence, or an issue naming the pin, such as a pin number the drawing does
 not show and the extraction guessed.
+
+Issue pin references undergo the same recovered-name mapping and symmetric-end
+alignment as predicted nets. Before the 2026-11-02 correction, named `?N` pins could
+escape issue accounting, and a warning could follow the opposite end of a swapped
+passive. Historical confidence, silent-error and review figures therefore require
+rescoring. Preserve original reports and rescore both sets of saved predictions with
+the same scorer; electrical pin/net/pair counts are unaffected by this correction.
+See [the audit](audit-2026-11-02.md) for the initial correctness measurements and
+[continued development](development-2026-11-02.md) for extraction improvements
+measured after upstream reconciliation. These are development results; the
+historical test and holdout figures above have not been reevaluated.
 
 A pin kept without a number (`?1`) cannot be told from the truth's pins, so it is
 left out before nets are compared; the true pin counts as not found. One kept with

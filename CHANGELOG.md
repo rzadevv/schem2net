@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- A wire split at a plain crossing no longer shorts to the wire passing through it;
+  T contacts, junction dots and shared endpoints keep their connections.
+- Section borders containing independent parts are removed before symbol grouping,
+  so their drawing order cannot pull nearby component marks into one large part.
+- Conflicting voltage labels, including labels without power symbols, are reported
+  with their net and affected pins; equivalent voltage spellings remain aliases.
+- Library pin names stay names, and numbered or missing units no longer borrow an
+  ambiguous pinout from another unit.
+- PDF ingestion has its own page time budget, checks object counts before reading
+  text, counts nested and discarded objects, and reports excessive form nesting.
+- Schematic wire-label placement uses spatial searches instead of all wire pairs.
+- Benchmark issues follow the same pin-name and symmetric-end alignment as nets;
+  historical confidence and review metrics need rescoring. Comparisons reject
+  runs with different design sets.
 - A file of more than 1,000 pages is refused, and a page past 1.5 million drawing
   objects or twenty minutes of reading is reported as failed; dense pages read faster.
 - A profile with a section, key or colour role it does not know is an error.

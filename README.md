@@ -48,6 +48,13 @@ no net at all: its part was missed, or its number is hidden in the drawing. Thes
 figures were read once at commit 0cf46ce. Holdout results, intervals and review
 figures are in [docs/benchmark.md](docs/benchmark.md#results).
 
+These are historical measurements. The current scorer aligns issue references
+with recovered names and equivalent passive ends; confidence and review figures
+need rescoring before comparison. See the
+[development audit](docs/audit-2026-11-02.md) for the initial correctness findings and
+[continued development](docs/development-2026-11-02.md) for extraction improvements
+measured after upstream reconciliation.
+
 ## Install
 
 Not on PyPI yet:
@@ -110,8 +117,11 @@ no library is read, so a PDF reads the same on every machine.
 | 3 | No part was found on any page. With `--strict`, also when any page could not be read. |
 
 Nothing is written in either case. Files over 1,000 pages are refused. A page with
-more than 1.5 million drawing objects, or one that takes more than twenty minutes,
-is reported as failed and the rest are still read.
+more than 1.5 million visited drawing objects or excessive nested forms is reported
+as failed and the rest are still read. Ingestion and drawing analysis each have a
+twenty-minute budget on POSIX main threads. Native PDFium calls can delay timeout
+handling; these are not hard process limits, and threads and Windows have no
+interval timer.
 
 ## MCP server
 
