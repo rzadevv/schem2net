@@ -704,8 +704,13 @@ def _assign_refs(
     for _, si, ti in candidates:
         if si in taken or ti not in used:
             continue
-        # Without drawing order, only a piece right beside the one named can share it.
-        beside = geometry.bbox_gap(parts[si].bbox, parts[used[ti]].bbox) <= PIECE_GAP
+        # Body pieces can share a reference; separate parts touching through their
+        # pin tips cannot. Include pins only where a piece has no body graphics.
+        other = parts[used[ti]]
+        beside = (
+            geometry.bbox_gap(parts[si].body or parts[si].bbox, other.body or other.bbox)
+            <= PIECE_GAP
+        )
         if runs.owns(parts[si], texts.texts[ti].seq) if runs else beside:
             _set_ref(parts[si], texts.texts[ti].text)
             taken.add(si)

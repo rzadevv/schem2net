@@ -1250,6 +1250,33 @@ def test_power_name_sits_away_from_the_wire():
     assert not fields._in_line(ground, left) and fields._in_line(ground, right)
 
 
+def test_unnamed_part_touching_a_pin_does_not_borrow_its_neighbors_reference():
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    # A second resistor has a hidden reference. Its pin touches R1's lower pin,
+    # but its separate body is not a piece of R1.
+    b.shape((9, 20.08), (11, 20.08), (11, 25.08), (9, 25.08), (9, 20.08))
+    b.shape((10, 20.08), (10, 17.54))
+    b.shape((10, 25.08), (10, 27.62))
+    b.scene.fields = [replace(t, color=(0, 0, 128)) for t in b.scene.fields]
+
+    found = symbols.find(b.scene, profile.load("easyeda"))
+    assert len(found) == 1
+    assert found[0].ref == "R1"
+    assert sorted(p.number for p in found[0].pins) == ["1", "2"]
+
+
+def test_nearby_body_pieces_can_share_one_reference():
+    first = symbols.Symbol([], (0, 0, 2, 4), [symbols.Pin(0, ((1, 1), (1, -2)))], body=(0, 0, 2, 1))
+    second = symbols.Symbol([], (0, 2, 2, 6), [symbols.Pin(1, ((1, 3), (1, 6)))], body=(0, 2, 2, 3))
+    scene = Scene(page=1)
+    scene.fields = [Text(0, "K1", (3, 0, 5, 1.2), 1.27, 0, (0, 0, 128))]
+    fields._assign_refs(
+        [first, second], fields._Texts(scene.fields), None, profile.load("easyeda"), set(), set()
+    )
+    assert first.ref == second.ref == "K1"
+
+
 def test_numbered_units():
     match = REFDES.match("U3.1")  # EasyEDA
     assert match and match.groups() == ("U", "3", ".1") and is_common_ref("U10.2")
