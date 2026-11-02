@@ -94,7 +94,7 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     else:  # a frame spans all the drawing: gone first, so no piece joins it
         symbols = _join_drawn_together(_without_frames(symbols), scene, profile)
     if profile.learned_grouping and (model := _grouping_model(profile.name)):
-        symbols = _split_unlinked(symbols, scene, model)
+        symbols = _split_unlinked(symbols, scene, model, pins)
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene, profile if profile.pinless_at_body_edge else None)
     fields.annotate(symbols, scene, profile, runs)
@@ -166,13 +166,23 @@ def _stacked(text, texts, claimed: set[str]) -> list:
     ]
 
 
-def _split_unlinked(symbols: list[Symbol], scene: Scene, model) -> list[Symbol]:
+def _split_unlinked(
+    symbols: list[Symbol], scene: Scene, model, candidates: dict[int, Pin] | None = None
+) -> list[Symbol]:
     """Each group split where the learned model links none of its shapes across: two
     parts drawn touching, as a supply sign set on a part's pin, are two."""
     pins = {p.shape: p.line for s in symbols for p in s.pins}
     owner = {i: k for k, s in enumerate(symbols) for i in s.shapes}
+    # A reconstructed pin is one object even when its lines were drawn apart.
+    # Keep only candidates that survived grouping as real pins.
+    for i, pin in (candidates or {}).items():
+        if pin.shape in pins and owner.get(i) == owner.get(pin.shape):
+            pins[i] = pin.line
     pairs = [(i, j) for i, j in near_pairs(scene) if i in owner and owner[i] == owner.get(j)]
     linked = UnionFind()
+    for i, pin in (candidates or {}).items():
+        if i in pins and owner.get(i) == owner.get(pin.shape):
+            linked.union(i, pin.shape)
     seqs = [t.seq for t in scene.fields]
     # In batches, leaving out pairs earlier ones already linked: they cannot change which
     # shapes are linked, and a group of thousands of shapes has millions of pairs.

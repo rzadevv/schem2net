@@ -947,6 +947,7 @@ def test_numbered_pin_continues_to_a_wire_only_through_an_unbranched_path(case):
         b.scene.pin_numbers.append(number)
     b.field("U1", 3, -3)
     b.scene.fields[-1] = replace(b.scene.fields[-1], color=(0, 0, 128))
+    b.seq += 100  # the continuation belongs to a later drawing pass
     if case == "short fragments":
         for start, end in ((-5, -5.7), (-5.7, -6.5), (-6.5, -7.54)):
             b.shape((start, 7.5), (end, 7.5))
@@ -967,6 +968,9 @@ def test_numbered_pin_continues_to_a_wire_only_through_an_unbranched_path(case):
     assert pins[2].at == ((-7.54, 7.5) if connected else (-5, 7.5))
     if connected:
         b.scene.labels = [Label("IN", "local", (-11, 5.7, -9, 7), 0)]
+        amplifier = next(s for s in symbols.find(b.scene, rules) if s.ref == "U1")
+        assert amplifier.bbox[0] <= -7.54
+        assert 4 in amplifier.shapes  # retain the recovered line, not just its pin tip
         parts, nets = netlist(b.scene, rules=rules)
         assert {p.num for p in parts["U1"].pins} == {"5", "6", "7"}
         assert nets["IN"].pins == [("U1", "5")]
