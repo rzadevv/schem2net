@@ -412,6 +412,9 @@ def bench_compare(before: Path, after: Path) -> None:
     for path, run in zip((before, after), runs, strict=True):
         if left := sorted(run.keys() - set(names)):
             typer.echo(f"{path}: {len(left)} designs not in the other run: {', '.join(left)}")
+    if runs[0].keys() != runs[1].keys():
+        typer.echo("cannot compare runs with different designs", err=True)
+        raise typer.Exit(1)
     if not names:
         typer.echo("no designs in common", err=True)
         raise typer.Exit(1)

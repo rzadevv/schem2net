@@ -238,6 +238,55 @@ def test_a_wrong_pin_no_flag_points_to_is_a_silent_error():
     assert flagged["designs_without_silent_errors"] == 1
 
 
+@pytest.mark.parametrize("flagged_end,wrong_flagged", [("2", 0), ("1", 1)])
+def test_issue_pins_follow_the_physical_end_when_symmetric_pins_are_aligned(
+    flagged_end, wrong_flagged
+):
+    truth = design(
+        {
+            "A": [("U1", "1"), ("U1", "2"), ("R1", "1")],
+            "B": [("U1", "3"), ("U1", "4"), ("R1", "2")],
+            "C": [("U1", "5"), ("U1", "6"), ("J1", "1")],
+        },
+        [part("R1", "Device:R")],
+    )
+    predicted = design(
+        {
+            "A": [("U1", "1"), ("U1", "2"), ("R1", "2")],
+            "B": [("U1", "3"), ("U1", "4")],
+            "C": [("U1", "5"), ("U1", "6"), ("J1", "1"), ("R1", "1")],
+        }
+    )
+    predicted.issues = [Issue(kind="check_pin", pins=[("R1", flagged_end)])]
+    counts = score(predicted, truth)
+    assert counts.pins_wrong == 1
+    assert counts.pins_wrong_flagged == counts.pin_issues_wrong == wrong_flagged
+
+
+def test_issues_on_unnumbered_named_pins_use_the_same_aliases_as_nets():
+    truth = design(
+        {"A": [("U1", "1"), ("J1", "1")]}, [Component(ref="U1", pins=[Pin(num="1", name="OUT")])]
+    )
+    predicted = design(
+        {"A": [("U1", "?1"), ("J1", "1")]}, [Component(ref="U1", pins=[Pin(num="?1", name="OUT")])]
+    )
+    predicted.issues = [Issue(kind="unnumbered_pin", pins=[("U1", "?1")])]
+    by_mark = score(predicted, truth)
+    predicted.issues = [Issue(kind="unnumbered_pin", pins=[("U1", "OUT")])]
+    assert by_mark == score(predicted, truth)
+
+
+def test_an_unrecognised_pin_name_does_not_invent_a_numbered_extra_pin():
+    truth = design(
+        {"A": [("U1", "1"), ("J1", "1")]}, [Component(ref="U1", pins=[Pin(num="1", name="OUT")])]
+    )
+    predicted = design(
+        {"A": [("U1", "?1"), ("J1", "1")]},
+        [Component(ref="U1", pins=[Pin(num="?1", name="UNKNOWN")])],
+    )
+    assert score(predicted, truth).pins_extra == 0
+
+
 def test_swapped_ends_of_a_crystal_are_forgiven_but_not_of_a_connector():
     """Whatever its pads are called, a crystal's two ends are alike; a two-pin header's
     are not, as a battery's polarity depends on them."""

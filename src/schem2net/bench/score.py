@@ -115,7 +115,7 @@ class Aligned:
     pred_nets: list[set[PinRef]]
     confidence: list[float]
     doubted: set[PinRef]
-    aliases: dict[PinRef, PinRef]
+    aliases: dict[PinRef, PinRef]  # raw predicted pins to aligned pins, including swapped ends
     match: dict[int, int]
 
 
@@ -145,9 +145,14 @@ def align(predicted: Design, truth: Design) -> Aligned:
     aliases = _pin_aliases(truth)
     pred_nets = [{aliases.get(p, p) for p in n.pins} for n in nonempty]
     confidence = [n.confidence for n in nonempty]
-    doubted = {aliases.get(p, tuple(p)) for issue in predicted.issues for p in issue.pins}
 
-    pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, truth.components)
+    swapped = {}
+    pred_nets = _undo_symmetric_swaps(pred_nets, true_nets, truth.components, swapped)
+    # Issues follow the same physical pins through name recovery and every turn.
+    aliases = {pin: swapped.get(target, target) for pin, target in aliases.items()}
+    aliases.update(swapped)
+    aliases.update({pin: aliases.get(name, name) for pin, name in names.items()})
+    doubted = {aliases.get(p, tuple(p)) for issue in predicted.issues for p in issue.pins}
     match = match_nets(true_nets, pred_nets)
     return Aligned(true_nets, power, pred_nets, confidence, doubted, aliases, match)
 
@@ -196,10 +201,13 @@ def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDEN
     c.values_correct = sum(_same_value(true_refs[r].value, pred_refs[r].value) for r in known)
     true_pins = {p for n in truth.nets for p in n.pins}
     true_pins |= {(comp.ref, pin.num) for comp in truth.components for pin in comp.pins}
-    numbered = {found.aliases.get(tuple(p), tuple(p)) for n in predicted.nets for p in n.pins}
-    c.pins_extra = sum(
-        p[0] in true_refs and not unnumbered(p[1]) and p not in true_pins for p in numbered
-    )
+    numbered = {
+        found.aliases.get(tuple(p), tuple(p))
+        for n in predicted.nets
+        for p in n.pins
+        if not unnumbered(p[1])
+    }
+    c.pins_extra = sum(p[0] in true_refs and p not in true_pins for p in numbered)
 
     matched_true = {p: t for t, p in match.items()}
     for p, net in enumerate(pred_nets):
@@ -353,7 +361,10 @@ def match_nets(true_nets: list[set[PinRef]], pred_nets: list[set[PinRef]]) -> di
 
 
 def _undo_symmetric_swaps(
-    pred_nets: list[set[PinRef]], true_nets: list[set[PinRef]], components: list[Component]
+    pred_nets: list[set[PinRef]],
+    true_nets: list[set[PinRef]],
+    components: list[Component],
+    swapped: dict[PinRef, PinRef] | None = None,
 ) -> list[set[PinRef]]:
     """The predicted nets with the ends of symmetric parts turned round wherever that
     puts more pairs of pins on a net together as the truth has them.
@@ -382,6 +393,11 @@ def _undo_symmetric_swaps(
         return agree(a, pb, skip) + agree(b, pa, skip) - before
 
     def turn(a: PinRef, b: PinRef) -> None:
+        if swapped is not None:
+            if a in swapped:
+                del swapped[a], swapped[b]
+            else:
+                swapped.update({a: b, b: a})
         pa, pb = pred_owner.pop(a, None), pred_owner.pop(b, None)
         for pin, net, other in ((a, pa, b), (b, pb, a)):
             if net is not None:

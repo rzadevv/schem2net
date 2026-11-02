@@ -324,6 +324,25 @@ def test_bench_compare_fails_when_pins_are_lost(tmp_path):
     assert failed.exit_code == 1 and "pin accuracy is lower" in failed.output
 
 
+def test_bench_compare_refuses_to_drop_a_design(tmp_path):
+    import json
+    from dataclasses import asdict
+
+    from typer.testing import CliRunner
+
+    from schem2net import cli
+    from schem2net.bench.score import Counts
+
+    good = asdict(Counts(designs=1, pins=100, pins_correct=100))
+    bad = asdict(Counts(designs=1, pins=100, pins_correct=0))
+    before, after = tmp_path / "before.json", tmp_path / "after.json"
+    before.write_text(json.dumps({"designs": {"good": good, "bad": bad}}))
+    after.write_text(json.dumps({"designs": {"good": good}}))
+    result = CliRunner().invoke(cli.app, ["bench-compare", str(before), str(after)])
+    assert result.exit_code == 1
+    assert "bad" in result.output and "different designs" in result.output
+
+
 def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():
     """The drawing shows what the pin connects to, though not which pad it is."""
     led = symbols.Symbol([], (0, 0, 4, 4), [symbols.Pin(0, ((2, 2), (2, 0)))], ref="D1")
