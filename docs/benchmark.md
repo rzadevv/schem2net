@@ -322,6 +322,11 @@ See [the audit](audit-2026-11-02.md) for the initial correctness measurements an
 measured after upstream reconciliation. These are development results; the
 historical test and holdout figures above have not been reevaluated.
 
+Further [component and pin recovery results](recovery-2026-11-02.md) retain that
+baseline and examine additional missing-pin failures. The
+[OpenLog pairing review](openlog-provenance-2026-11-02.md) proposes a separate
+input correction; all extraction comparisons retain the existing dataset.
+
 A pin kept without a number (`?1`) cannot be told from the truth's pins, so it is
 left out before nets are compared; the true pin counts as not found. One kept with
 the name drawn beside it, because its number is hidden, counts as the pin of that

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Separate bodies meeting through pin tips no longer borrow each other's reference.
+- Numbered pin fragments can follow an unbranched path to a wire and stay together
+  through symbol splitting.
 - A wire split at a plain crossing no longer shorts to the wire passing through it;
   T contacts, junction dots and shared endpoints keep their connections.
 - Section borders containing independent parts are removed before symbol grouping,
