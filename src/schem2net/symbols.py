@@ -320,7 +320,61 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
             pins[shape.id] = pin
     # Only where drawing order keeps neighbouring symbols apart, so the lines made
     # body join nothing of another symbol.
-    return _without_bodies(pins, scene, index) if profile.fields_follow_symbol else pins
+    if profile.fields_follow_symbol:
+        return _without_bodies(pins, scene, index)
+    return _continued_pins(pins, scene, index, wires, profile)
+
+
+def _continued_pins(
+    pins: dict[int, Pin], scene: Scene, index: GridIndex, wires: GridIndex, profile: Profile
+) -> dict[int, Pin]:
+    """A pin can be drawn before a collinear extension that reaches its wire.
+
+    A printed pad number anchors the pin. Follow only an unbranched chain from
+    body graphics to a wire; a connection between two bodies is not such a chain.
+    """
+    numbers = fields._Texts([t for t in scene.pin_numbers if t.text.strip().isdecimal()])
+    for first in list(pins.values()):
+        if pins.get(first.shape) is not first or _on_wire(first.at, scene.wires, wires):
+            continue
+        own = {first.shape}
+        if not _contacts(first.line[0], own, scene, index)[0] or not any(
+            fields._number_gap(
+                numbers.texts[i].bbox,
+                first.line,
+                profile.pin_numbers_above,
+                profile.pin_numbers_overhang,
+            )
+            is not None
+            for _, i in numbers.near(geometry.bbox_of(first.line), fields.PIN_NUMBER_GAP)
+        ):
+            continue
+        end, last = first.at, scene.shapes[first.shape]
+        extended = False
+        while not _on_wire(end, scene.wires, wires):
+            body, neighbours = _contacts(end, own, scene, index)
+            if body or len(neighbours) != 1:
+                break
+            other = scene.shapes[neighbours[0]]
+            if (
+                len(other.points) != 2
+                or other.width > profile.pin_max_width
+                or not continues(last, other, end)
+            ):
+                break
+            own.add(other.id)
+            a, b = other.points
+            end = b if geometry.distance(a, end) <= TOUCH else a
+            last, extended = other, True
+        if (
+            extended
+            and _on_wire(end, scene.wires, wires)
+            and not _contacts(end, own, scene, index)[0]
+        ):
+            first.line = (first.line[0], end)
+            for i in own:
+                pins[i] = first
+    return pins
 
 
 def _without_bodies(pins: dict[int, Pin], scene: Scene, index: GridIndex) -> dict[int, Pin]:

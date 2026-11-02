@@ -929,6 +929,49 @@ def test_pins_leave_the_slanted_sides_of_a_triangle_past_a_polarity_mark():
     assert sorted((p.number, p.at) for p in u1.pins) == [("1", (12, 1)), ("2", (-5, 5))]
 
 
+@pytest.mark.parametrize(
+    "case", ["wire", "short fragments", "branch", "body", "dangling", "no number"]
+)
+def test_numbered_pin_continues_to_a_wire_only_through_an_unbranched_path(case):
+    b = SceneBuilder()
+    b.shape((0, 0), (0, 10), (10, 5), (0, 0))
+    b.shape((0, 2.5), (-5, 2.5))
+    b.shape((0, 7.5), (-5, 7.5))
+    b.shape((10, 5), (15, 5))
+    for text, x, y in (("6", -3, 0.7), ("5", -3, 5.7), ("7", 11, 3.2)):
+        if case == "no number" and text == "5":
+            continue
+        b.seq += 1
+        number = Text(b.seq, text, (x, y, x + 1, y + 1.3), 1.27, 0, (0, 0, 255), b.seq)
+        b.scene.fields.append(number)
+        b.scene.pin_numbers.append(number)
+    b.field("U1", 3, -3)
+    b.scene.fields[-1] = replace(b.scene.fields[-1], color=(0, 0, 128))
+    if case == "short fragments":
+        for start, end in ((-5, -5.7), (-5.7, -6.5), (-6.5, -7.54)):
+            b.shape((start, 7.5), (end, 7.5))
+    else:
+        b.shape((-5, 7.5), (-7.54, 7.5))
+    if case == "branch":
+        b.shape((-5, 7.5), (-5, 10))
+    if case == "body":
+        b.shape((-10, 6), (-7.54, 6), (-7.54, 9), (-10, 9), (-10, 6))
+    if case != "dangling":
+        b.scene.wires = [((-12, 7.5), (-7.54, 7.5))]
+    rules = profile.load("easyeda")
+    index = geometry.GridIndex()
+    for shape in b.scene.shapes:
+        index.add(shape.id, shape.bbox)
+    pins = symbols._find_pins(b.scene, index, rules)
+    connected = case in ("wire", "short fragments")
+    assert pins[2].at == ((-7.54, 7.5) if connected else (-5, 7.5))
+    if connected:
+        b.scene.labels = [Label("IN", "local", (-11, 5.7, -9, 7), 0)]
+        parts, nets = netlist(b.scene, rules=rules)
+        assert {p.num for p in parts["U1"].pins} == {"5", "6", "7"}
+        assert nets["IN"].pins == [("U1", "5")]
+
+
 def test_easyeda_ground_with_hidden_name_does_not_take_a_designator():
     """EasyEDA's ground is a stem and three bars drawn apart, its name hidden. The
     stem reads as a pin, since pins and bodies share a colour."""
