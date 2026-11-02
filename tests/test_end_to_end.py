@@ -1,6 +1,7 @@
 import contextlib
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -76,6 +77,7 @@ def test_a_page_past_the_limits_fails_alone(tmp_path, monkeypatch):
     assert len(failed) == 1 and "drawing objects" in failed[0].detail
 
 
+@pytest.mark.skipif(not hasattr(signal, "setitimer"), reason="requires POSIX interval timers")
 def test_a_page_read_too_long_fails_alone(tmp_path, monkeypatch):
     file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
     monkeypatch.setattr(pipeline, "PAGE_SECONDS", 0.01)
@@ -89,3 +91,25 @@ def test_a_file_of_too_many_pages_is_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(pdf, "MAX_PAGES", 0)
     with pytest.raises(pdf.InputError, match="pages"):
         pipeline.extract(file)
+
+
+@pytest.mark.parametrize("creator", [KICAD, None])
+@pytest.mark.skipif(not hasattr(signal, "setitimer"), reason="requires POSIX interval timers")
+def test_page_timeout_includes_pdf_ingestion(tmp_path, monkeypatch, creator):
+    file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=creator)
+    monkeypatch.setattr(pipeline, "PAGE_SECONDS", 0.01)
+    monkeypatch.setattr(pdf, "_chars", lambda *args: time.sleep(1))
+    failed = [i for i in pipeline.extract(file).issues if i.kind == "page_failed"]
+    assert len(failed) == 1 and "TimeoutError" in failed[0].detail
+
+
+def test_object_limit_precedes_character_extraction(tmp_path, monkeypatch):
+    file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
+    monkeypatch.setattr(pdf, "MAX_OBJECTS", 5)
+
+    def chars(*args):
+        pytest.fail("a page already over its object budget must not extract text")
+
+    monkeypatch.setattr(pdf, "_chars", chars)
+    failed = [i for i in pipeline.extract(file).issues if i.kind == "page_failed"]
+    assert len(failed) == 1 and "drawing objects" in failed[0].detail

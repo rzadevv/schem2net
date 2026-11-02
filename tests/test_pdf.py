@@ -1,3 +1,5 @@
+import signal
+
 import pytest
 
 from schem2net import pdf
@@ -110,3 +112,51 @@ def test_a_dashed_line_is_never_a_wire(tmp_path, pdf_builder):
     page = pdf.read(b.save(tmp_path / "a.pdf")).pages[0]
     assert [p.dashed for p in page.paths] == [True, False]
     assert len(scene.build(page, profile.load("kicad")).wires) == 1
+
+
+@pytest.mark.skipif(not hasattr(signal, "setitimer"), reason="requires POSIX interval timers")
+def test_a_page_timeout_leaves_the_following_page_readable(tmp_path, pdf_builder, monkeypatch):
+    import time
+
+    b = pdf_builder()
+    b.line((72, 72), (144, 72))
+    file = b.save(tmp_path / "two.pdf")
+    b.page = b.pdf.new_page(612, 792)
+    b.line((72, 72), (144, 72))
+    b.save(file)
+    chars = pdf._chars
+    calls = 0
+
+    def slow_first(*args):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            time.sleep(1)
+        return chars(*args)
+
+    monkeypatch.setattr(pdf, "_chars", slow_first)
+    first, second = pdf.read(file, page_seconds=0.05).pages
+    assert "TimeoutError" in first.read_error and not first.paths
+    assert second.read_error is None and len(second.paths) == 1
+
+
+def test_nested_forms_must_not_silently_drop_drawing(monkeypatch):
+    from schem2net.primitives import Page
+
+    monkeypatch.setattr(pdf, "MAX_FORM_DEPTH", 2)
+    monkeypatch.setattr(pdf.raw, "FPDFPageObj_GetType", lambda obj: pdf.raw.FPDF_PAGEOBJ_FORM)
+    monkeypatch.setattr(pdf, "_object_matrix", lambda obj: (1, 0, 0, 1, 0, 0))
+    monkeypatch.setattr(pdf.raw, "FPDFFormObj_CountObjects", lambda obj: 1)
+    monkeypatch.setattr(pdf.raw, "FPDFFormObj_GetObject", lambda obj, i: obj)
+    with pytest.raises(pdf._TooLarge):
+        pdf._collect([object()], (1, 0, 0, 1, 0, 0), None, Page(1, 100, 100), {})
+
+
+def test_object_budget_counts_deduplicated_paths(tmp_path, pdf_builder, monkeypatch):
+    b = pdf_builder()
+    b.line((72, 72), (144, 72))
+    for _ in range(8):
+        b.line((144, 72), (144, 72))
+    file = b.save(tmp_path / "repeat.pdf")
+    monkeypatch.setattr(pdf, "MAX_OBJECTS", 4)
+    assert pdf.read(file).pages[0].too_large

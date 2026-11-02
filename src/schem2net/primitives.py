@@ -53,6 +53,7 @@ class Page:
     texts: list[Text] = field(default_factory=list)
     images: int = 0
     too_large: bool = False  # left unread: more drawing objects than a schematic page has
+    read_error: str | None = None  # ingestion failed; later stages must not read a partial page
 
 
 @dataclass(slots=True)

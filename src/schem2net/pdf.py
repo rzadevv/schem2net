@@ -2,8 +2,11 @@
 
 import ctypes
 import math
+import signal
 import struct
+import threading
 import zlib
+from contextlib import closing, contextmanager
 from dataclasses import replace
 from pathlib import Path as FilePath
 
@@ -18,7 +21,8 @@ WORD_GAP = 2.0  # font sizes between words of one text object that are separate 
 # Past these a file is no schematic, and reading it would only exhaust the memory: the
 # densest page benched holds 330,000 objects, the longest document 73 pages.
 MAX_PAGES = 1000
-MAX_OBJECTS = 1_500_000  # paths and texts on one page
+MAX_OBJECTS = 1_500_000  # visited objects, including forms, images and duplicate paths
+PAGE_SECONDS = 1200
 
 # Affine matrix (a, b, c, d, e, f) in PDF row-vector convention.
 Matrix = tuple[float, float, float, float, float, float]
@@ -29,7 +33,7 @@ class InputError(Exception):
     the PDF does not have."""
 
 
-def read(file: str | FilePath) -> Document:
+def read(file: str | FilePath, *, page_seconds: float = PAGE_SECONDS) -> Document:
     try:
         pdf = pdfium.PdfDocument(file)
     except pdfium.PdfiumError as e:
@@ -37,7 +41,13 @@ def read(file: str | FilePath) -> Document:
     try:
         if len(pdf) > MAX_PAGES:
             raise InputError(f"{file}: {len(pdf)} pages, more than {MAX_PAGES}")
-        pages = [_read_page(pdf[i], i + 1) for i in range(len(pdf))]
+        pages = []
+        for i in range(len(pdf)):
+            try:
+                with time_limit(page_seconds), closing(pdf[i]) as page:
+                    pages.append(_read_page(page, i + 1))
+            except TimeoutError as e:
+                pages.append(Page(i + 1, 0, 0, read_error=f"TimeoutError: {e}"))
         return Document(pages=pages, metadata=pdf.get_metadata_dict(skip_empty=True))
     except pdfium.PdfiumError as e:
         raise InputError(f"{file}: a page that cannot be read ({e})") from None
@@ -48,14 +58,47 @@ def read(file: str | FilePath) -> Document:
 def _read_page(page: pdfium.PdfPage, number: int) -> Page:
     transform, width, height = _page_transform(page)
     out = Page(number=number, width=width, height=height)
-    textpage = page.get_textpage()
     count = raw.FPDFPage_CountObjects(page.raw)
-    objects = [raw.FPDFPage_GetObject(page.raw, i) for i in range(count)]
-    try:
-        _collect(objects, transform, textpage.raw, out, _chars(textpage.raw, transform))
-    except _TooLarge:
+    if count > MAX_OBJECTS:
         return Page(number=number, width=width, height=height, too_large=True)
+    try:
+        with closing(page.get_textpage()) as textpage:
+            objects = (raw.FPDFPage_GetObject(page.raw, i) for i in range(count))
+            _collect(objects, transform, textpage.raw, out, _chars(textpage.raw, transform))
+    except _TooLarge as e:
+        return Page(
+            number=number,
+            width=width,
+            height=height,
+            too_large=True,
+            read_error=f"ValueError: {e}" if str(e) else None,
+        )
     return out
+
+
+@contextmanager
+def time_limit(seconds: float):
+    """Limit PDF processing on a main thread with POSIX interval timers.
+
+    Python handles the signal when a native call returns; this is not a hard limit
+    on PDFium itself. Threads and systems without setitimer run without a timer.
+    """
+    if threading.current_thread() is not threading.main_thread() or not hasattr(
+        signal, "setitimer"
+    ):
+        yield
+        return
+
+    def stop(signum, frame):
+        raise TimeoutError(f"read for more than {seconds} s")
+
+    previous = signal.signal(signal.SIGALRM, stop)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 class _TooLarge(Exception):
@@ -79,13 +122,24 @@ def _chars(textpage, transform: Matrix) -> dict[int, list[tuple[str, BBox]]]:
     return found
 
 
-MAX_FORM_DEPTH = 32  # forms nested deeper are left unread, as no plotter nests so far
+MAX_FORM_DEPTH = 32
 
 
-def _collect(objects, parent: Matrix, textpage, out: Page, chars, depth: int = 0) -> None:
+def _collect(
+    objects,
+    parent: Matrix,
+    textpage,
+    out: Page,
+    chars,
+    depth: int = 0,
+    remaining: list[int] | None = None,
+) -> None:
+    if remaining is None:
+        remaining = [MAX_OBJECTS]
     for obj in objects:
-        if len(out.paths) + len(out.texts) > MAX_OBJECTS:
+        if remaining[0] <= 0:
             raise _TooLarge
+        remaining[0] -= 1
         kind = raw.FPDFPageObj_GetType(obj)
         matrix = _multiply(_object_matrix(obj), parent)
         if kind == raw.FPDF_PAGEOBJ_PATH:
@@ -102,10 +156,14 @@ def _collect(objects, parent: Matrix, textpage, out: Page, chars, depth: int = 0
                 out.texts.append(part)
         elif kind == raw.FPDF_PAGEOBJ_IMAGE:
             out.images += 1
-        elif kind == raw.FPDF_PAGEOBJ_FORM and depth < MAX_FORM_DEPTH:
+        elif kind == raw.FPDF_PAGEOBJ_FORM:
             count = raw.FPDFFormObj_CountObjects(obj)
-            children = [raw.FPDFFormObj_GetObject(obj, i) for i in range(count)]
-            _collect(children, matrix, textpage, out, chars, depth + 1)
+            if count > remaining[0]:
+                raise _TooLarge
+            if count and depth >= MAX_FORM_DEPTH:
+                raise _TooLarge(f"forms nested more than {MAX_FORM_DEPTH} levels")
+            children = (raw.FPDFFormObj_GetObject(obj, i) for i in range(count))
+            _collect(children, matrix, textpage, out, chars, depth + 1, remaining)
 
 
 def _repeats_end(path: Path, last: Path | None) -> bool:
