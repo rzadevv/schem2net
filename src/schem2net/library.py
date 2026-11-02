@@ -14,6 +14,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 from collections import defaultdict
 from dataclasses import dataclass, replace
 from functools import cache
@@ -255,8 +256,8 @@ BY_NAME = {"eagle"}
 def resolve(
     symbols: list[Symbol], library: Library, by_name: bool = False, texts: list[Text] = ()
 ) -> int:
-    """Number the pins of parts whose value names a library symbol, and add the pins
-    stacked under them. Returns how many pins gained a number.
+    """Resolve the pins of parts whose value names a library symbol, and add the pins
+    stacked under them. Returns how many pins gained a number or name.
 
     The symbol is placed over the drawing: every drawn pin end must meet a library pin
     end, in one of the unit's eight orientations, and the numbers and names already read
@@ -292,7 +293,7 @@ def resolve(
         named = by_name
         fits = {_numbering(f, by_name=named) for f in placed}
         if not fits and not named:
-            fits = {_stacked(symbol, entry[1]) for entry in entries} - {None}
+            fits = {_stacked(symbol, entry[1], unit) for entry in entries} - {None}
         elif len(fits) > 1 and not named:
             # Packages of one part number its pins apart; the pins' names still hold.
             named = True
@@ -302,8 +303,8 @@ def resolve(
         numbering = fits.pop()
         for pin, numbers in zip(list(symbol.pins), numbering, strict=True):
             if named:
-                if not pin.number and len(numbers) == 1:
-                    pin.number = numbers[0]
+                if not pin.number and not pin.name and len(numbers) == 1:
+                    pin.name = numbers[0]
                     pin.how = "library"
                     gained += 1
                 continue
@@ -326,7 +327,7 @@ def _fits(symbol: Symbol, pins: list[LibPin], unit: int | None):
     pins under each drawn pin end; none under a pin whose number disagrees. A unit
     named on the drawing is the only one tried."""
     units = sorted({p.unit for p in pins} - {0}) or [0]
-    if unit is not None and unit in units:
+    if unit is not None:
         units = [unit]
     tips = [p.at for p in symbol.pins]
     labels = [p.number for p in symbol.pins]
@@ -370,10 +371,14 @@ def _fits(symbol: Symbol, pins: list[LibPin], unit: int | None):
                             yield [placed[at] if at else [] for at in found]
 
 
-def _stacked(symbol: Symbol, pins: list[LibPin]) -> tuple[tuple[str, ...], ...] | None:
+def _stacked(
+    symbol: Symbol, pins: list[LibPin], unit: int | None = None
+) -> tuple[tuple[str, ...], ...] | None:
     """For a symbol that no longer fits, the numbers of the hidden pins of the same name
     stacked under each drawn pin, when every drawn pin's number is the library's."""
     numbers = [p.number for p in symbol.pins]
+    if unit is not None:
+        pins = [p for p in pins if p.unit in (0, unit)]
     by_number = {p.number: p for p in pins}
     if not numbers or any(n not in by_number for n in numbers):
         return None
@@ -390,9 +395,11 @@ def _stacked(symbol: Symbol, pins: list[LibPin]) -> tuple[tuple[str, ...], ...] 
 
 
 def _unit_number(unit: str | None) -> int | None:
-    """KiCad's units are lettered A, B, C."""
+    """Lettered units, or numbered gates as G$2, .2 and -2."""
     if unit and len(unit) == 1 and "A" <= unit <= "Z":
         return ord(unit) - ord("A") + 1
+    if unit and (match := re.fullmatch(r"(?:G\$?|[.-])?([1-9]\d*)", unit)):
+        return int(match[1])
     return None
 
 

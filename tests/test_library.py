@@ -1,7 +1,10 @@
 """Numbering pins from KiCad's symbol libraries."""
 
-from schem2net import library
+from schem2net import export, fields, library
+from schem2net.ir import Design, Source
+from schem2net.nets import Netlister
 from schem2net.primitives import Text
+from schem2net.scene import Scene
 from schem2net.symbols import Pin, Symbol
 
 CHIP = """(kicad_symbol_lib
@@ -186,9 +189,55 @@ def test_eagle_devices_are_indexed_by_the_values_eagle_prints(tmp_path):
     ]
 
 
+def test_numbered_units_disambiguate_identical_library_gates(tmp_path):
+    (tmp_path / "Amps.lbr").write_text(LBR)
+    for unit in ("B", ".2", "G2", "G$2", "-2"):
+        amp = Symbol([], (-8, -1, 8, 1), value="LM358", unit=unit)
+        amp.pins = [_pin((-5.08, 0), (-7.62, 0), "IN"), _pin((5.08, 0), (7.62, 0))]
+        library.resolve([amp], library.index_eagle(tmp_path))
+        assert [p.number for p in amp.pins] == ["5", "7"], unit
+
+
+def test_a_missing_library_unit_cannot_borrow_another_units_pins(tmp_path):
+    for numbers in (("1", None, None), ("1", "2", "4")):
+        chip = Symbol([], (90, 40, 110, 60), value="CHIP", unit="B")
+        chip.pins = [
+            _pin((95.08, 47.46), (92.38, 47.46), numbers[0]),
+            _pin((100, 55.08), (100, 57.62), numbers[1]),
+            _pin((104.92, 47.46), (107.62, 47.46), numbers[2]),
+        ]
+        assert library.resolve([chip], _library(tmp_path)) == 0
+        assert [p.number for p in chip.pins] == list(numbers)
+
+
 def test_no_index_is_read_unless_its_folder_is_given(tmp_path):
     pins = [library.LibPin("1", "A", 0, (0.0, 0.0), False)]
     library.save({"r": [("Device:R", pins)]}, library.path(tmp_path, "kicad"))
     assert library.load(tmp_path, "kicad") == {"r": [("Device:R", pins)]}
     assert library.load(None, "kicad") == {} and library.fingerprint(None, "kicad") is None
     assert library.fingerprint(tmp_path, "kicad").startswith("kicad-symbols.json.gz ")
+
+
+def test_library_pin_names_never_become_board_pad_numbers(tmp_path):
+    chip = Symbol([], (90, 40, 110, 60), ref="U1", value="CHIP")
+    chip.pins = [
+        _pin((95.08, 47.46), (92.38, 47.46), "1"),
+        _pin((100, 55.08), (100, 57.62)),
+        _pin((104.92, 47.46), (107.62, 47.46)),
+    ]
+    library.resolve([chip], _library(tmp_path), by_name=True)
+    fields.names_apart([chip])
+    assert [(p.number, p.name) for p in chip.pins] == [
+        ("1", None),
+        (None, "GND"),
+        (None, "OUT"),
+    ]
+    for i, pin in enumerate(chip.pins):
+        pin.shape = i
+    netlister = Netlister()
+    netlister.add_page(Scene(page=1, wires=[((100, 57.62), (107.62, 47.46))]), [chip])
+    found = netlister.result()
+    design = Design(source=Source(file="x"), components=found.components, nets=found.nets)
+    assert all(p[1].startswith("?") for net in design.nets for p in net.pins)
+    assert '(pin "GND")' not in export.kicad_netlist(design)
+    assert '(pin "OUT")' not in export.kicad_netlist(design)
