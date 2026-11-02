@@ -46,6 +46,9 @@ DUPLICATE_PIN_CONFIDENCE = 0.6  # a pin number used twice in one part
 DUPLICATE_REF_CONFIDENCE = 0.6  # one designator on two parts: a copy, or a misread
 PIECE_GAP = 0.5  # mm; parts of one designator this close are pieces of one drawing
 UNANNOTATED = re.compile(r"^[A-Za-z]{1,4}\?+[A-Z]?$")  # R?, U?A: a part not yet numbered
+# Check textual supply conflicts for distinct voltages, or voltage and
+# ground. Names such as VCC and VDD may intentionally alias the same rail.
+VOLTAGE_NAME = re.compile(r"[+-]?(?:\d+(?:\.\d+)?V|\d+V\d+)", re.I)
 
 
 class Result(NamedTuple):
@@ -132,10 +135,26 @@ class Netlister:
         def dotted(p: Point) -> bool:
             return any(geometry.distance(p, scene.junctions[k]) <= TOL for k in dots.near(p, TOL))
 
+        plain_crossings: dict[Point, bool] = {}
         for i, seg in enumerate(wires):
             for end in seg:
-                for j in wire_index.near(end, TOL):
+                near = wire_index.near(end, TOL)
+                if end not in plain_crossings:
+                    plain_crossings[end] = not dotted(end) and _crosses(
+                        end, [wires[j] for j in near]
+                    )
+                for j in near:
                     if j != i:
+                        # A PDF can split a continuous wire at a plain crossing.
+                        # Its artificial end is not a T-contact with the other axis.
+                        if (
+                            plain_crossings[end]
+                            and geometry.is_axis_aligned(seg)
+                            and geometry.is_axis_aligned(wires[j])
+                            and geometry.is_horizontal(seg) != geometry.is_horizontal(wires[j])
+                            and geometry.is_interior(end, wires[j], TOL)
+                        ):
+                            continue
                         self._touch(("w", page, i), end, ("w", page, j), wires[j], dotted)
 
         for c in scene.junctions:
@@ -465,11 +484,32 @@ class Netlister:
         for node, name in self.names.items():
             if node[0] == "s":
                 power[find(node)].add(self._key(name))
-        for root, found in power.items():
-            if len(found) > 1:
+        power_issues = {}
+        for root, named in names.items():
+            keys = {self._key(name) for name in named}
+            voltages = {
+                key: float(key.upper().rstrip("V").replace("V", "."))
+                for key in keys
+                if VOLTAGE_NAME.fullmatch(key)
+            }
+            grounds = {key for key in keys if "GND" in key.upper()}
+            found = power[root]
+            if (
+                len(found) > 1
+                or len(set(voltages.values())) > 1
+                or (any(voltages.values()) and grounds)
+            ):
+                found = found | voltages.keys() | grounds
                 caps[root] = min(caps[root], MERGED_POWER_CONFIDENCE)
                 detail = " and ".join(sorted(found))
-                issues.append(Issue(kind="power_nets_merged", severity="error", detail=detail))
+                issue = Issue(
+                    kind="power_nets_merged",
+                    severity="error",
+                    detail=detail,
+                    pins=sorted(members[root]),
+                )
+                issues.append(issue)
+                power_issues[root] = issue
         # Pins on no net should carry a no-connect flag, and flagged pins should be on none.
         for node, page, symbol, pin in self.pins:
             if pin.number is None:
@@ -548,7 +588,10 @@ class Netlister:
         net_of_root = {}
         for i, net in enumerate(nets, 1):
             net.id = f"n{i}"
-            net_of_root[roots[id(net)]] = net.id
+            root = roots[id(net)]
+            net_of_root[root] = net.id
+            if root in power_issues:
+                power_issues[root].net = net.id
 
         wire_nets = {
             (node[1], node[2]): net_of_root[root]
@@ -558,6 +601,20 @@ class Netlister:
             if node[0] == "w"
         }
         return Result(sorted(components.values(), key=lambda c: c.ref), nets, issues, wire_nets)
+
+
+def _crosses(p: Point, segments: list[Segment]) -> bool:
+    """Four wire arms at a point, whether drawn whole or split into pieces."""
+    arms = set()
+    for seg in segments:
+        if not geometry.is_axis_aligned(seg) or not _on(p, seg):
+            continue
+        axis = 0 if geometry.is_horizontal(seg) else 1
+        for end in seg:
+            offset = end[axis] - p[axis]
+            if abs(offset) > TOL:
+                arms.add((axis, 1 if offset > 0 else -1))
+    return len(arms) == 4
 
 
 def _on(p: Point, seg: Segment) -> bool:

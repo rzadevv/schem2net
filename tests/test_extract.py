@@ -130,6 +130,59 @@ def test_wires_join_at_junctions_but_not_plain_crossings():
     assert net.confidence == 1.0
 
 
+@pytest.mark.parametrize("split_horizontal,split_vertical", [(True, False), (False, True)])
+@pytest.mark.parametrize("junction", [False, True])
+def test_split_wire_crossings_need_a_junction(split_horizontal, split_vertical, junction):
+    horizontal = [((0, 10), (20, 10))]
+    vertical = [((10, 0), (10, 20))]
+    if split_horizontal:
+        horizontal = [((0, 10), (10, 10)), ((10, 10), (20, 10))]
+    if split_vertical:
+        vertical = [((10, 0), (10, 10)), ((10, 10), (10, 20))]
+    scene = Scene(page=1, wires=horizontal + vertical)
+    if junction:
+        scene.junctions.append((10, 10))
+    parts = [
+        symbols.Symbol(
+            [],
+            (*point, *point),
+            [symbols.Pin(i, ((point[0] - 2, point[1] - 2), point), "1")],
+            ref=f"J{i + 1}",
+        )
+        for i, point in enumerate(((0, 10), (20, 10), (10, 0), (10, 20)))
+    ]
+    netlister = Netlister()
+    netlister.add_page(scene, parts)
+    found = {frozenset(net.pins) for net in netlister.result().nets}
+    expected = [{("J1", "1"), ("J2", "1")}, {("J3", "1"), ("J4", "1")}]
+    if junction:
+        expected = [set.union(*expected)]
+    assert found == {frozenset(pins) for pins in expected}
+
+
+def test_split_wire_at_a_tee_still_connects_without_a_dot():
+    scene = Scene(page=1, wires=[((0, 10), (10, 10)), ((10, 10), (20, 10)), ((10, 0), (10, 10))])
+    netlister = Netlister()
+    netlister.add_page(scene, [])
+    roots = {netlister.uf.find(("w", 1, i)) for i in range(3)}
+    assert len(roots) == 1
+
+
+def test_explicit_wire_ends_share_a_node_without_a_dot():
+    scene = Scene(
+        page=1,
+        wires=[
+            ((0, 10), (10, 10)),
+            ((10, 10), (20, 10)),
+            ((10, 0), (10, 10)),
+            ((10, 10), (10, 20)),
+        ],
+    )
+    netlister = Netlister()
+    netlister.add_page(scene, [])
+    assert len({netlister.uf.find(("w", 1, i)) for i in range(4)}) == 1
+
+
 def test_dangling_wire_lowers_confidence():
     b = SceneBuilder()
     b.resistor(10, 10, "R1", "1k")
@@ -497,6 +550,62 @@ def test_pin_shared_by_two_units_is_one_net():
     assert len(nets) == 1
     assert nets[0].pins == [("U1", "8")]
     assert sorted(nets[0].names_seen) == ["A", "B"]
+
+
+@pytest.mark.parametrize("kind", ["local", "global", "hier"])
+def test_textual_supply_conflicts_are_reported_with_their_pins(kind):
+    scene = Scene(page=1, path="/")
+    scene.wires = [((0, 0), (10, 0))]
+    scene.labels = [
+        Label("+3V3", kind, (1, -1.5, 4, -0.3), 0),
+        Label("+5V", kind, (6, -1.5, 9, -0.3), 0),
+    ]
+    parts = [
+        symbols.Symbol(
+            [i], (x - 1, 2, x + 1, 4), [symbols.Pin(i, ((x, 2), (x, 0)), "1")], ref=f"J{i + 1}"
+        )
+        for i, x in enumerate((0, 10))
+    ]
+    netlister = Netlister()
+    netlister.add_page(scene, parts)
+    found = netlister.result()
+    (conflict,) = [i for i in found.issues if i.kind == "power_nets_merged"]
+    (net,) = found.nets
+    assert conflict.net == net.id
+    assert conflict.pins == net.pins == [("J1", "1"), ("J2", "1")]
+    assert conflict.detail == "+3V3 and +5V"
+    assert net.confidence == nets.MERGED_POWER_CONFIDENCE
+
+
+def test_signal_aliases_on_one_net_do_not_imply_a_supply_conflict():
+    scene = Scene(page=1, wires=[((0, 0), (10, 0))])
+    scene.labels = [
+        Label("SDA", "local", (1, -1.5, 4, -0.3), 0),
+        Label("I2C_DATA", "global", (6, -1.5, 9, -0.3), 0),
+    ]
+    netlister = Netlister()
+    netlister.add_page(scene, [])
+    assert not any(i.kind == "power_nets_merged" for i in netlister.result().issues)
+
+
+@pytest.mark.parametrize(
+    "first,second,conflict",
+    [
+        ("+5V", "5v", False),
+        ("3V3", "3.3V", False),
+        ("AGND", "DGND", False),
+        ("0V", "GND", False),
+        ("VCC", "+5V", False),
+        ("+3V3", "GND", True),
+        ("-5V", "+5V", True),
+        ("1.8V", "3V3", True),
+    ],
+)
+def test_supply_conflicts_distinguish_voltage_from_aliases(first, second, conflict):
+    netlister = Netlister()
+    netlister.names = {("l", 1, 0): first, ("l", 1, 1): second}
+    netlister.join(("l", 1, 0), ("l", 1, 1), "exact")
+    assert any(i.kind == "power_nets_merged" for i in netlister.result().issues) == conflict
 
 
 def test_eagle_connector_box_joins_the_pins_that_cross_into_it():
@@ -911,6 +1020,39 @@ def test_section_frame_does_not_take_the_part_drawn_after_it():
     found = symbols.find(b.scene, profile.load("easyeda"))
     named = {s.ref: s.bbox[1] for s in found if s.ref}
     assert named == {"R16": 87.1, "R17": 78.2, "R18": 68.1}
+
+
+@pytest.mark.parametrize("width,height", [(60, 40), (160, 140)])
+def test_section_frame_drawn_around_parts_does_not_group_them_by_order(width, height):
+    b = SceneBuilder()
+    # The header is drawn first and the adjoining border last. Their combined
+    # drawing order encloses the parts' even though the drawings never touch.
+    b.shape((0, 0), (width, 0), (width, 5), (0, 5), (0, 0))
+    for x, ref in ((10, "C1"), (30, "C2"), (50, "C3")):
+        b.shape((x - 1, 15), (x + 1, 15), (x + 1, 20), (x - 1, 20), (x - 1, 15))
+        b.shape((x - 2, 15.65), (x - 2, 16.35))  # separate polarity mark
+        b.shape((x - 2.35, 16), (x - 1.65, 16))
+        b.shape((x, 15), (x, 12.46))
+        b.shape((x, 20), (x, 22.54))
+        b.field(ref, x + 2, 16)
+        b.field("10uF", x + 2, 18)
+    b.shape((0, 5), (width, 5), (width, height), (0, height), (0, 5))
+    # The section contains only a minority of the page's parts.
+    for i in range(12):
+        b.resistor(width + 20 + 10 * i, 10, f"R{i + 1}", "1k")
+    b.scene.fields = [replace(text, color=(0, 0, 128)) for text in b.scene.fields]
+    b.scene.wires = [((10, 12.46), (50, 12.46)), ((10, 22.54), (50, 22.54))]
+    b.scene.labels = [
+        Label("TOP", "local", (15, 11, 20, 12.2), 0),
+        Label("BOTTOM", "local", (15, 21, 20, 22.2), 0),
+    ]
+    # Geometric frame rejection must work even without a learned grouping model.
+    rules = replace(profile.load("easyeda"), learned_grouping=False)
+    parts, connected = netlist(b.scene, rules=rules)
+    assert set(parts) == {"C1", "C2", "C3"} | {f"R{i + 1}" for i in range(12)}
+    assert all(len(part.pins) == 2 for part in parts.values())
+    assert set(connected["TOP"].pins) == {("C1", "1"), ("C2", "1"), ("C3", "1")}
+    assert set(connected["BOTTOM"].pins) == {("C1", "2"), ("C2", "2"), ("C3", "2")}
 
 
 def test_easyeda_net_label_is_named_by_the_text_drawn_before_its_mark():
@@ -1708,6 +1850,52 @@ def test_one_designator_on_two_parts_is_reported():
     assert issues["duplicate_designator"].pins == [("R5", "1")]
     assert issues["unannotated_part"].detail == "R?"
     assert "duplicate_pin" not in issues
+
+
+def test_transistor_outline_surrounding_pin_like_body_strokes_is_kept():
+    b = SceneBuilder()
+    for points, width in (
+        (((7.356, 8.191), (7.356, 6.794)), 0.17),
+        (((1.133, 5.651), (4.816, 5.651)), 0.254),
+        (((4.816, 5.651), (8.499, 5.651)), 0.254),
+        (((4.181, 5.016), (4.816, 3.746)), 0.254),
+        (((5.451, 5.016), (4.816, 3.746)), 0.254),
+        (((2.276, 6.794), (7.356, 6.794)), 0.254),
+        (((4.816, 5.651), (4.816, 3.746)), 0.17),
+        (((4.816, 3.746), (7.356, 3.746)), 0.17),
+        (((2.276, 2.476), (4.181, 2.476)), 0.127),
+        (((4.181, 3.111), (4.181, 2.476)), 0.127),
+        (((4.181, 2.476), (4.181, 1.841)), 0.127),
+        (((4.181, 1.841), (5.451, 2.476)), 0.127),
+        (((5.451, 2.476), (4.181, 3.111)), 0.127),
+        (((5.451, 3.111), (5.451, 2.476)), 0.127),
+        (((5.451, 2.476), (5.451, 1.841)), 0.127),
+        (((5.451, 2.476), (7.356, 2.476)), 0.127),
+    ):
+        b.shape(*points, width=width)
+    for x, y in ((2.276, 2.476), (7.356, 2.476), (7.356, 3.746)):
+        b.shape(
+            *[
+                (x + 0.254 * math.cos(i * math.pi / 4), y + 0.254 * math.sin(i * math.pi / 4))
+                for i in range(9)
+            ],
+            width=0,
+        )
+        b.scene.shapes[-1].filled = True
+    outline = len(b.scene.shapes)
+    b.shape(
+        *[
+            (4.816 + 4.487 * math.cos(i * math.pi / 16), 5.651 + 4.487 * math.sin(i * math.pi / 16))
+            for i in range(33)
+        ]
+    )
+    b.shape((7.356, 10.731), (7.356, 8.191))
+    b.shape((2.276, 0.571), (2.276, 5.651))
+    b.shape((7.356, 0.571), (7.356, 5.651))
+    b.field("Q1", -2, 2)
+
+    found = symbols.find(b.scene, profile.load("eagle"))
+    assert any(outline in part.shapes for part in found)
 
 
 def test_pieces_drawn_in_turn_are_one_part_where_drawing_goes_by_layer():

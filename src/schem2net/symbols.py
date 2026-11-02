@@ -833,6 +833,15 @@ def _without_frames(symbols: list[Symbol]) -> list[Symbol]:
 
     def frame(s: Symbol) -> bool:
         x0, y0, x1, y1 = s.bbox
+        # Whole parts inside a pinless outline establish that it is a section
+        # border. Single-pin fragments can be drawing inside a transistor's body.
+        if (
+            not s.pins
+            and min(x1 - x0, y1 - y0) > MIN_BOX
+            and sum(len(t.pins) > 1 and holds(s.bbox, t.bbox) for t in symbols if t is not s)
+            >= FRAME_HOLDS
+        ):
+            return True
         if min(x1 - x0, y1 - y0) <= FRAME_MIN_SIZE:
             return False
         held = sum(holds(s.bbox, t.bbox) for t in symbols if t is not s)
