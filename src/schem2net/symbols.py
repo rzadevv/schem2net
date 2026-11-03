@@ -109,7 +109,8 @@ def _drawn_over(symbols: list[Symbol], scene: Scene, chances) -> list[Symbol]:
     model was learned."""
     # A part's value is no name, though a printer that draws everything twice writes
     # it by its designator.
-    claimed = {s.ref for s in symbols if s.ref} | {s.value for s in symbols if s.value}
+    references = {s.ref for s in symbols if s.ref}
+    claimed = references | {s.value for s in symbols if s.value}
     written: dict[str, list] = {}
     for t in scene.fields:
         written.setdefault(t.text.strip(), []).append(t)
@@ -122,19 +123,42 @@ def _drawn_over(symbols: list[Symbol], scene: Scene, chances) -> list[Symbol]:
         if times < 2 or not own:
             continue
         here = min(own, key=lambda t: geometry.bbox_gap(t.bbox, symbol.bbox))
-        stacked = _stacked(here, scene.fields, claimed)
+        stacked = _stacked(here, scene.fields, references)
+        # A complete column of related names accounts for every drawing copy.
+        # Values may have taken one of these names before the copies were restored.
+        names = [here, *stacked]
+        stems = {t.text.strip().split("_", 1)[0] for t in names}
+        complete = (
+            len(names) == times
+            and len({t.text.strip() for t in names}) == times
+            and len(stems) == 1
+            and all("_" in t.text and fields._name_like(t.text.strip()) for t in names)
+            and all(geometry.bbox_gap(t.bbox, symbol.body or symbol.bbox) > 0 for t in names)
+            and all(
+                t.text.strip() not in claimed or t.text.strip() == symbol.value for t in stacked
+            )
+        )
         if stacked and likely is None:
             likely = chances() or {}
         stacked = [
             t
             for t in stacked
-            if (likely.get(id(t), 0.0) >= fields.WORD_FLOOR if likely else is_common_ref(t.text))
+            if complete
+            or (
+                t.text.strip() not in claimed
+                and (
+                    likely.get(id(t), 0.0) >= fields.WORD_FLOOR if likely else is_common_ref(t.text)
+                )
+            )
         ]
         for text in stacked[: times - 1]:
             name = text.text.strip()
             pins = [replace(p) for p in symbol.pins]
             out.append(Symbol(symbol.shapes, symbol.bbox, pins, body=symbol.body, ref=name))
             claimed.add(name)
+            references.add(name)
+            if symbol.value == name:
+                symbol.value = None
     return out
 
 

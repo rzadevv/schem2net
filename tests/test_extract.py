@@ -2332,3 +2332,51 @@ def test_rows_of_anchored_labels_closer_than_a_name_is_high_each_keep_their_own(
     ]
     _anchored_labels(scene, [(6.4, 57.42), (6.4, 59.25)], profile.load("easyeda"))
     assert {lb.text: lb.outline[0][1] for lb in scene.labels} == {"3V3": 57.42, "GND": 59.25}
+
+
+@pytest.mark.parametrize(
+    ("copies", "names", "value", "expected"),
+    [
+        (3, ("PORT_A2", "PORT_A", "PORT_B"), "PORT_B", ["PORT_A2", "PORT_A", "PORT_B"]),
+        (1, ("PORT_A2", "PORT_A", "PORT_B"), "PORT_B", ["PORT_A2"]),
+        (2, ("PORT_A2", "PORT_A", "PORT_B"), "PORT_B", ["PORT_A2"]),
+        (3, ("PORT_A2", "PORT_A", "10k"), "10k", ["PORT_A2"]),
+        (3, ("PORT_A2", "PORT_A", "OTHER_B"), "OTHER_B", ["PORT_A2"]),
+    ],
+)
+def test_overlaid_copies_support_a_complete_column_of_related_names(copies, names, value, expected):
+    b = SceneBuilder()
+    b.shape((0, 0), (4, 0), (4, 8), (0, 8), (0, 0))
+    b.shape((4, 2), (6.54, 2))
+    for shape in b.scene.shapes:
+        shape.copies = copies
+    for k, name in enumerate(names):
+        b.field(name, 0, -6 + 1.5 * k)
+    part = symbols.Symbol(
+        [0, 1],
+        (0, 0, 6.54, 8),
+        [symbols.Pin(1, ((4, 2), (6.54, 2)), "7", "read")],
+        ref=names[0],
+        value=value,
+    )
+    found = symbols._drawn_over([part], b.scene, lambda: {id(t): 0.001 for t in b.scene.fields})
+    assert [s.ref for s in found] == expected
+    assert part.value == (None if len(expected) > 1 else value)
+    if len(found) > 1:
+        assert found[1].pins[0] is not part.pins[0]
+        assert all(s.pins[0].number == "7" for s in found)
+
+
+def test_an_alternate_name_cannot_belong_to_another_part():
+    b = SceneBuilder()
+    b.shape((0, 0), (4, 0), (4, 8), (0, 8), (0, 0))
+    b.shape((4, 2), (6.54, 2))
+    for shape in b.scene.shapes:
+        shape.copies = 2
+    b.field("PORT_A", 0, -4.5)
+    b.field("PORT_B", 0, -3)
+    part = symbols.Symbol(
+        [0, 1], (0, 0, 6.54, 8), [symbols.Pin(1, ((4, 2), (6.54, 2)))], ref="PORT_A"
+    )
+    other = symbols.Symbol([], (20, 20, 24, 28), ref="PORT_B")
+    assert symbols._drawn_over([part, other], b.scene, lambda: None) == [part, other]
