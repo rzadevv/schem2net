@@ -39,6 +39,7 @@ MIN_BOX = 1.0  # mm; narrower pinless pieces are lines, not boxes
 ENTER_DEPTH = 2.54  # mm a pin crossing into a box ends inside its edge
 DRAWN_TOGETHER_GAP = 5.0  # mm between a body and pins drawn with it
 DRAWN_TOGETHER_SEQ = 3  # drawing steps between a body and pins drawn with it
+DASH_VARIATION = 1.15  # maximum length/gap ratio in a regular dashed body edge
 BETWEEN_MAX = 60  # shapes drawn between two of a piece's own, when looking for its other pieces
 
 # A group the rules made stays whole where a learned model links its shapes this surely.
@@ -98,8 +99,127 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene, profile if profile.pinless_at_body_edge else None)
     fields.annotate(symbols, scene, profile, runs)
+    symbols = _join_dashed_bodies(symbols, scene, profile)
     kept = [s for s in symbols if s.ref or s.power]
     return _drawn_over(kept, scene, lambda: designators.likelihood(scene, kept, runs, profile))
+
+
+def _join_dashed_bodies(symbols: list[Symbol], scene: Scene, profile: Profile) -> list[Symbol]:
+    """Sections of one outline separated by matching dashed sides are one body.
+
+    Both sides must continue between equally wide bodies, with at least three
+    regular dashes per side. A lone dashed annotation cannot join components.
+    """
+    bodies = [
+        s
+        for s in symbols
+        if s.pins and s.shapes and not s.power and s.body and min(_sides(s.body)) > MIN_BOX
+    ]
+    index = GridIndex()
+    for shape in scene.shapes:
+        if len(shape.points) == 2 and not shape.filled:
+            index.add(shape.id, shape.bbox)
+    joined = UnionFind()
+    for k in range(len(symbols)):
+        joined.find(k)
+    owner = {i: k for k, s in enumerate(symbols) for i in s.shapes}
+
+    def dashes(axis, cross, lo, hi):
+        ends = ((lo, cross), (hi, cross)) if axis == 0 else ((cross, lo), (cross, hi))
+        found = []
+        for i in index.within(geometry.grown(geometry.bbox_of(ends), TOUCH)):
+            if i not in owner:
+                continue  # frames and other discarded graphics have no symbol
+            shape = scene.shapes[i]
+            a, b = sorted(p[axis] for p in shape.points)
+            if (
+                lo + TOUCH < a < b < hi - TOUCH
+                and all(abs(p[1 - axis] - cross) <= TOUCH for p in shape.points)
+                and not symbols[owner[i]].pins
+                and not symbols[owner[i]].power
+            ):
+                found.append((a, b, i))
+        found.sort()
+        if len(found) < 3:
+            return []
+        lengths = [b - a for a, b, _ in found]
+        gaps = [found[0][0] - lo, hi - found[-1][1]]
+        gaps += [b[0] - a[1] for a, b in zip(found, found[1:], strict=False)]
+        if (
+            min(gaps) <= TOUCH
+            or max(gaps) > min(lengths)
+            or max(lengths) > DASH_VARIATION * min(lengths)
+            or max(gaps) > DASH_VARIATION * min(gaps)
+        ):
+            return []
+        return found
+
+    for k, a in enumerate(bodies):
+        for b in bodies[k + 1 :]:
+            for axis in (0, 1):
+                cross = 1 - axis
+                if any(abs(a.body[j] - b.body[j]) > TOUCH for j in (cross, cross + 2)):
+                    continue
+                first, last = sorted((a, b), key=lambda s: s.body[axis])
+                lo, hi = first.body[axis + 2], last.body[axis]
+                if not TOUCH < hi - lo < min(_sides(first.body) + _sides(last.body)):
+                    continue
+                left = dashes(axis, a.body[cross], lo, hi)
+                right = dashes(axis, a.body[cross + 2], lo, hi)
+                if not left or len(left) != len(right):
+                    continue
+                if any(
+                    abs(u - v) > TOUCH
+                    for dash, other in zip(left, right, strict=True)
+                    for u, v in zip(dash[:2], other[:2], strict=True)
+                ):
+                    continue
+                strokes = [scene.shapes[i] for _, _, i in left + right]
+                if len({s.color for s in strokes}) > 1 or max(
+                    s.width for s in strokes
+                ) > DASH_VARIATION * min(s.width for s in strokes):
+                    continue
+                together = [owner[a.shapes[0]], owner[b.shapes[0]], *[owner[s.id] for s in strokes]]
+                for i in together[1:]:
+                    joined.union(together[0], i)
+    groups = {}
+    for k, s in enumerate(symbols):
+        groups.setdefault(joined.find(k), []).append(s)
+    out = []
+    for parts in groups.values():
+        if len(parts) == 1:
+            out.extend(parts)
+            continue
+        whole = _combine(parts)
+        # The reference for an outlined part sits beyond the whole outline.
+        # Labels along a section's pins must not become component references.
+        axis = (
+            0
+            if _sides(whole.body)[0] > max(_sides(p.body)[0] for p in parts if p.body) + TOUCH
+            else 1
+        )
+        names = [
+            (part, t)
+            for part in parts
+            if part.ref
+            for t in scene.fields
+            if t.text.strip() == part.ref
+            and (t.bbox[axis + 2] < part.bbox[axis] or t.bbox[axis] > part.bbox[axis + 2])
+        ]
+        if len({part.ref for part, _ in names}) != 1 or not all(
+            t.bbox[axis + 2] < whole.bbox[axis] or t.bbox[axis] > whole.bbox[axis + 2]
+            for _, t in names
+        ):
+            out.extend(parts)
+            continue
+        source = names[0][0]
+        whole.ref, whole.unit, whole.value = source.ref, source.unit, source.value
+        taken = {id(t) for _, t in names}
+        for pin in whole.pins:
+            pin.number = pin.how = pin.name = None
+        fields._number_pins([whole], scene, profile, taken)
+        out.append(whole)
+    return out
 
 
 def _drawn_over(symbols: list[Symbol], scene: Scene, chances) -> list[Symbol]:

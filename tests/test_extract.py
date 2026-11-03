@@ -2380,3 +2380,74 @@ def test_an_alternate_name_cannot_belong_to_another_part():
     )
     other = symbols.Symbol([], (20, 20, 24, 28), ref="PORT_B")
     assert symbols._drawn_over([part, other], b.scene, lambda: None) == [part, other]
+
+
+@pytest.mark.parametrize("turned", [False, True])
+@pytest.mark.parametrize("defect", [None, "one_side", "uneven", "separate_refs", "no_ref", "wire"])
+def test_dashed_sides_join_sections_of_one_body(turned, defect):
+    b = SceneBuilder()
+    parts = []
+    for y, ref in (
+        (0, None if defect == "no_ref" else "J1"),
+        (16, "J2" if defect == "separate_refs" else None),
+    ):
+        start = len(b.scene.shapes)
+        b.shape((0, y), (10, y), (10, y + 8), (0, y + 8), (0, y))
+        b.shape((0, y + 2), (-2.54, y + 2))
+        b.shape((0, y + 6), (-2.54, y + 6))
+        parts.append(
+            symbols.Symbol(
+                list(range(start, start + 3)),
+                (-2.54, y, 10, y + 8),
+                [
+                    symbols.Pin(start + 1, ((0, y + 2), (-2.54, y + 2))),
+                    symbols.Pin(start + 2, ((0, y + 6), (-2.54, y + 6))),
+                ],
+                body=(0, y, 10, y + 8),
+                ref=ref,
+            )
+        )
+        if ref:
+            b.field(ref, 1, y - 3)
+    for x in (0, 10):
+        if defect == "one_side" and x == 10:
+            continue
+        for y in (9, 11, 13):
+            start = len(b.scene.shapes)
+            end = y + (0.5 if defect == "uneven" and y == 11 else 1)
+            b.shape((x, y), (x, end))
+            parts.append(symbols.Symbol([start], (x, y, x, end)))
+        # The gap is eight millimetres, including four evenly spaced dashes.
+        start = len(b.scene.shapes)
+        b.shape((x, 15), (x, 16))
+        # This end dash belongs to the next body, as it touches it.
+        parts[1].shapes.append(start)
+        parts[1].body = (0, 15, 10, 24)
+        parts[1].bbox = (-2.54, 15, 10, 24)
+    if defect == "wire":
+        parts[-1].pins.append(symbols.Pin(parts[-1].shapes[0], ((10, 13), (10, 14))))
+    b.shape((0, 10.2), (0, 10.8))  # discarded annotation has no symbol owner
+    if turned:
+
+        def rotate(box):
+            x0, y0, x1, y1 = box
+            return y0, x0, y1, x1
+
+        for s in b.scene.shapes:
+            s.points = [(y, x) for x, y in s.points]
+            s.bbox = rotate(s.bbox)
+        for t in b.scene.fields:
+            t.bbox = rotate(t.bbox)
+        for s in parts:
+            s.bbox = rotate(s.bbox)
+            s.body = rotate(s.body) if s.body else None
+            for p in s.pins:
+                p.line = tuple((y, x) for x, y in p.line)
+    found = symbols._join_dashed_bodies(parts, b.scene, KICAD)
+    if defect:
+        assert found == parts
+    else:
+        assert len(found) == 1
+        assert found[0].ref == "J1"
+        assert len(found[0].pins) == 4
+        assert len(found[0].shapes) == len(b.scene.shapes) - 1
