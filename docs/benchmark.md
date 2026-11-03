@@ -388,3 +388,8 @@ Some connections exist in the design but are not visible in the PDF:
 - Pin numbers that the library hides, and stacked pins that print one number.
 
 Apart from the Altium label scope, these are not handled.
+
+The [connector recovery evaluation](connector-recovery-2026-11-03.md) covers
+overlaid alternatives and sections joined by dashed body borders, with separate
+[data-source checks](dataset-review-2026-11-03.md). Its development comparisons
+retain every original input, including OpenLog.

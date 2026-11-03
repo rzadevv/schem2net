@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Complete stacks of related connector names recover the separate overlaid parts.
+- Matching dashed body borders reunite connector sections under their external
+  reference and restore their printed pin numbers.
+
 - Separate bodies meeting through pin tips no longer borrow each other's reference.
 - Numbered pin fragments can follow an unbranched path to a wire and stay together
   through symbol splitting.
