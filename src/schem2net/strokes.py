@@ -349,6 +349,7 @@ class _Table:
     chars: list[str]
     arrays: list[np.ndarray]
     aspects: list[float]
+    lengths: list[float]
     seen: dict = field(default_factory=dict)  # shapes already read: letters repeat
 
 
@@ -360,7 +361,15 @@ def _prepared(shapes: list[tuple[str, Shape]]) -> _Table:
     entry = _TABLES.get(id(shapes))
     if entry is None or entry[0] is not shapes:  # kept alive here, so the id stays its own
         arrays = [np.asarray(known, dtype=float) for _, known in shapes]
-        entry = (shapes, _Table([c for c, _ in shapes], arrays, [_aspect(a) for a in arrays]))
+        entry = (
+            shapes,
+            _Table(
+                [c for c, _ in shapes],
+                arrays,
+                [_aspect(a) for a in arrays],
+                [float(np.linalg.norm(a[:, 1] - a[:, 0], axis=1).sum()) for a in arrays],
+            ),
+        )
         _TABLES[id(shapes)] = entry
     return entry[1]
 
@@ -368,12 +377,10 @@ def _prepared(shapes: list[tuple[str, Shape]]) -> _Table:
 def _nearest(shape: np.ndarray, table: _Table) -> str | None:
     best, found = MAX_MATCH, None
     aspect = _aspect(shape)
-    candidates = [
-        k
-        for k, known in enumerate(table.arrays)
-        if abs(len(known) - len(shape)) <= 4  # large text is drawn with more pieces
-        and abs(table.aspects[k] - aspect) <= MAX_ASPECT_GAP
+    nearby = [
+        k for k in range(len(table.arrays)) if abs(table.aspects[k] - aspect) <= MAX_ASPECT_GAP
     ]
+    candidates = [k for k in nearby if abs(len(table.arrays[k]) - len(shape)) <= 4]
     for scale in SCALES:
         scaled = shape * scale
         for k in candidates:
@@ -381,7 +388,26 @@ def _nearest(shape: np.ndarray, table: _Table) -> str | None:
             if d < best:
                 best, found = d, table.chars[k]
         if best < MAX_MATCH / 2:
-            break
+            return found
+
+    # Segment counts change with PDF curve decomposition. For weak or absent
+    # matches, also try excluded shapes whose ink length fits the existing scales.
+    length = float(np.linalg.norm(shape[:, 1] - shape[:, 0], axis=1).sum())
+    possible = {}
+    for k in nearby:
+        if k in candidates or not length:
+            continue
+        if not min(SCALES) <= table.lengths[k] / length <= max(SCALES):
+            continue
+        d = min(_distance(shape * scale, table.arrays[k]) for scale in SCALES)
+        if d < MAX_MATCH:
+            char = table.chars[k]
+            possible[char] = min(d, possible.get(char, MAX_MATCH))
+    strong = {char for char, d in possible.items() if d < MAX_MATCH / 2}
+    if len(strong) == 1:
+        return strong.pop()
+    if found is None and len(possible) == 1:
+        return next(iter(possible))
     return found
 
 

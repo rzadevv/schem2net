@@ -168,3 +168,45 @@ def test_text_traced_with_an_invisible_copy_is_read_from_the_copy():
     page = strokes.traced(Page(1, 50, 50, paths=[*letters, pin], texts=[copy, marker]))
     assert [t.text for t in page.texts if t.visible] == ["R12"]  # the marker has no ink of its own
     assert page.paths == [pin]
+
+
+def _curved_eight(pieces):
+    """The same two loops tessellated with a different number of PDF chords."""
+    import math
+
+    points = [
+        (0.25 * math.sin(2 * t), 0.5 + 0.5 * math.cos(t))
+        for t in (2 * math.pi * k / pieces for k in range(pieces + 1))
+    ]
+    return list(zip(points, points[1:], strict=False))
+
+
+def test_glyph_candidates_survive_different_curve_decompositions():
+    query = _curved_eight(22)
+    assert strokes.match(query, [("8", _curved_eight(32))]) == "8"
+
+
+def test_ambiguous_excluded_glyphs_do_not_supply_a_character():
+    template = _curved_eight(32)
+    assert strokes.match(_curved_eight(22), [("8", template), ("B", template)]) is None
+
+
+def test_new_candidates_do_not_replace_an_existing_strong_reading():
+    query = _curved_eight(22)
+    assert strokes.match(query, [("B", query), ("8", _curved_eight(32))]) == "B"
+
+
+def test_a_fragmented_match_still_requires_the_same_geometric_threshold():
+    import math
+
+    circle = [(math.cos(k * math.pi / 8), math.sin(k * math.pi / 8)) for k in range(17)]
+    assert (
+        strokes.match(list(zip(circle, circle[1:], strict=False)), [("8", _curved_eight(32))])
+        is None
+    )
+
+
+def test_alphanumeric_pad_labels_keep_their_drawn_characters():
+    for word in ("A8", "B8", "2o", "O8", "G8"):
+        texts, _ = strokes.read(_drawn(word, 10, 20, 1.8, 0), "eagle")
+        assert [t.text for t in texts] == [word]
