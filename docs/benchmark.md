@@ -398,3 +398,9 @@ The [recognition and field ownership evaluation](recognition-2026-11-04.md)
 covers fragmented glyph candidates, pin-name ownership, values mistaken for
 references, and repeated labels overhanging short wires. It includes all six
 development corpora, separate library checks, per-pin regressions and timing.
+
+The [reliability and runtime evaluation](reliability-2026-11-05.md) covers corrected
+reference ownership, bus labels, visible unpopulated parts and touching capacitor
+plates. It records all six development comparisons, separate library results,
+complete-output checks for glyph optimization, repeated CPU/wall measurements,
+review-precision trade-offs and a plan for frozen independent validation.

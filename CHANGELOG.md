@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Nearby component references stay with bodies whose device values had displaced them.
+- Glyph matching reuses scaled queries and computes endpoint distances with a compiled kernel.
+- Bus labels follow bus geometry independently of their printed label colour.
+- KiCad's additional gray palette restores visible unpopulated parts. Capacitor plates
+  touching a separate closed body remain body graphics.
+
 - Weak glyph reads consider matching outlines with different curve decompositions.
 - Numbered pins reserve their printed names from unnumbered neighbours. Independent
   bodies retain their references during overlaid-part recovery.
