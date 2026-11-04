@@ -1292,14 +1292,14 @@ def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> Non
         unnamed = [p for p in symbol.pins if p.number is None]
         if not symbol.ref or not unnamed:
             continue
-        ends = geometry.bbox_of([p.line[0] for p in unnamed])
+        ends = geometry.bbox_of([p.line[0] for p in symbol.pins])
         near = index.within(geometry.grown(ends, reach))
         for t in sorted(near):
             text = texts[t]
             if not is_pin_name(symbol, text, name_gap):
                 continue
             c = geometry.center(text.bbox)
-            for pin in unnamed:
+            for pin in symbol.pins:
                 inward = geometry.unit(pin.line[1], pin.line[0])
                 ahead = (c[0] - pin.line[0][0]) * inward[0] + (c[1] - pin.line[0][1]) * inward[1]
                 gap = geometry.distance(c, pin.line[0])
@@ -1308,8 +1308,11 @@ def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> Non
     taken, named = set(), set()
     for _, t, key, pin in sorted(options, key=lambda o: o[0]):
         if t not in taken and key not in named:
-            pin.number = texts[t].text
-            pin.how = "name"
+            # A numbered pin still owns its printed name. Reserving it prevents
+            # an unnumbered neighbour from taking that name instead of its own.
+            if pin.number is None:
+                pin.number = texts[t].text
+                pin.how = "name"
             taken.add(t)
             named.add(key)
 

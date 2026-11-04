@@ -2451,3 +2451,46 @@ def test_dashed_sides_join_sections_of_one_body(turned, defect):
         assert found[0].ref == "J1"
         assert len(found[0].pins) == 4
         assert len(found[0].shapes) == len(b.scene.shapes) - 1
+
+
+def test_shared_prefix_names_nearer_other_bodies_are_not_alternatives():
+    b = SceneBuilder()
+    b.shape((10, 10), (16, 10), (16, 20), (10, 20), (10, 10))
+    b.shape((10, 12), (7.46, 12))
+    for shape in b.scene.shapes:
+        shape.copies = 3
+    main = symbols.Symbol(
+        [0, 1],
+        (7.46, 10, 16, 20),
+        [symbols.Pin(1, ((10, 12), (7.46, 12)))],
+        body=(10, 10, 16, 20),
+        ref="BUS_A2",
+    )
+    b.shape((7, 3), (9, 3), (9, 8), (7, 8), (7, 3))
+    b.shape((7, 4), (4.46, 4))
+    other = symbols.Symbol(
+        [2, 3], (4.46, 3, 9, 8), [symbols.Pin(3, ((7, 4), (4.46, 4)))], body=(7, 3, 9, 8)
+    )
+    for k, name in enumerate(("BUS_A2", "BUS_A", "BUS_B")):
+        b.field(name, 10, 2 + 1.5 * k)
+    found = symbols._drawn_over(
+        [main, other], b.scene, lambda: {id(t): 0.001 for t in b.scene.fields}
+    )
+    assert [s.ref for s in found if s.ref] == ["BUS_A2"]
+
+
+def test_numbered_pins_reserve_their_names_from_unnumbered_neighbours():
+    numbered = symbols.Pin(0, ((10, 10), (7.46, 10)), "24", "read")
+    unknown = symbols.Pin(1, ((10, 12.54), (7.46, 12.54)))
+    third = symbols.Pin(2, ((10, 15.08), (7.46, 15.08)), "30", "read")
+    part = symbols.Symbol(
+        [], (7.46, 8, 20, 18), [numbered, unknown, third], body=(10, 8, 20, 18), ref="U1"
+    )
+    first = Text(0, "P0.08", (10.2, 9.5, 12.2, 10.5), 1, 0, None)
+    second = Text(1, "P0.09(NFC1)", (10.2, 12.04, 16.2, 13.04), 1, 0, None)
+    fields._name_pins([part], [first, second], 1.5)
+    assert (numbered.number, numbered.how, numbered.name) == ("24", "read", None)
+    assert (unknown.number, unknown.how) == ("P0.09(NFC1)", "name")
+    unknown.number = unknown.how = None
+    fields._name_pins([part], [first], 1.5)
+    assert unknown.number is None

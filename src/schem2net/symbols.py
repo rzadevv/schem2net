@@ -101,7 +101,8 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
     fields.annotate(symbols, scene, profile, runs)
     symbols = _join_dashed_bodies(symbols, scene, profile)
     kept = [s for s in symbols if s.ref or s.power]
-    return _drawn_over(kept, scene, lambda: designators.likelihood(scene, kept, runs, profile))
+    found = _drawn_over(symbols, scene, lambda: designators.likelihood(scene, kept, runs, profile))
+    return [s for s in found if s.ref or s.power]
 
 
 def _join_dashed_bodies(symbols: list[Symbol], scene: Scene, profile: Profile) -> list[Symbol]:
@@ -243,7 +244,16 @@ def _drawn_over(symbols: list[Symbol], scene: Scene, chances) -> list[Symbol]:
         if times < 2 or not own:
             continue
         here = min(own, key=lambda t: geometry.bbox_gap(t.bbox, symbol.bbox))
-        stacked = _stacked(here, scene.fields, references)
+        stacked = [
+            t
+            for t in _stacked(here, scene.fields, references)
+            if all(
+                geometry.bbox_gap(t.bbox, symbol.body or symbol.bbox)
+                <= geometry.bbox_gap(t.bbox, other.body) + TOUCH
+                for other in symbols
+                if other is not symbol and other.body and other.pins and not other.power
+            )
+        ]
         # A complete column of related names accounts for every drawing copy.
         # Values may have taken one of these names before the copies were restored.
         names = [here, *stacked]
