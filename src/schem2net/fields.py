@@ -694,10 +694,50 @@ def _assign_refs(
             candidates.append((cost, si, ti))
     candidates.sort()
 
+    def weak_value(si: int, ti: int) -> bool:
+        text = texts.texts[ti]
+        first = (ordered or {}).get(id(parts[si])) is text or (
+            first_reach and runs.first_text(parts[si]) == text.seq
+        )
+        return (
+            not is_common_ref(text.text)
+            and id(text) in among_values
+            and likely is not None
+            and likely.get(id(text), 1.0) < WORD_FLOOR
+            and not first
+        )
+
+    pairs = geometry.best_pairs(candidates, UNPAIRED_COST)
+    weak = {si for si, ti in pairs if weak_value(si, ti)} if profile.names_by_layer else set()
+    if weak:
+        # A device value can make it cheaper to give the part's real reference
+        # to a distant drawing. Reserve nearby references for these weak owners;
+        # equally close pieces and isolated distant fields remain in competition.
+        nearest = {}
+        gaps = {}
+        for _, si, ti in candidates:
+            gap = geometry.bbox_gap(parts[si].body or parts[si].bbox, texts.texts[ti].bbox)
+            gaps[si, ti] = gap
+            nearest[ti] = min((gap, si), nearest.get(ti, (gap, si)))
+        kept = [
+            (cost, si, ti)
+            for cost, si, ti in candidates
+            if not (
+                nearest[ti][1] in weak
+                and nearest[ti][0] <= FUNCTION_NAME_GAP
+                and gaps[si, ti] > max(FUNCTION_NAME_GAP, nearest[ti][0] + PIECE_GAP)
+                and id(texts.texts[ti]) not in among_values
+                and (ordered or {}).get(id(parts[si])) is not texts.texts[ti]
+            )
+        ]
+        if len(kept) != len(candidates):
+            candidates = kept
+            pairs = geometry.best_pairs(candidates, UNPAIRED_COST)
+
     # One text per symbol, minimising total cost. Then symbols drawn in pieces
     # (diode arrays, relay coils) share the text of the piece that got it.
     taken, used = set(), {}
-    for si, ti in geometry.best_pairs(candidates, UNPAIRED_COST):
+    for si, ti in pairs:
         _set_ref(parts[si], texts.texts[ti].text)
         taken.add(si)
         used[ti] = si
@@ -719,20 +759,7 @@ def _assign_refs(
         # Keep the joint assignment stable before replacing a weak part number
         # from the value pass. Only an unused functional name may replace it;
         # removing candidates earlier can shift neighbouring parts' references.
-        suspects = []
-        for ti, si in used.items():
-            text = texts.texts[ti]
-            first = (ordered or {}).get(id(parts[si])) is text or (
-                first_reach and runs.first_text(parts[si]) == text.seq
-            )
-            if (
-                not is_common_ref(text.text)
-                and id(text) in among_values
-                and likely is not None
-                and likely.get(id(text), 1.0) < WORD_FLOOR
-                and not first
-            ):
-                suspects.append((si, ti))
+        suspects = [(si, ti) for ti, si in used.items() if weak_value(si, ti)]
         replacements = _name_by_function(
             [parts[si] for si, _ in suspects],
             texts,

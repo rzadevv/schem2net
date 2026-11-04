@@ -2638,3 +2638,69 @@ def test_a_repeated_net_name_does_not_take_a_parts_reference():
     assert any(s.ref == "GEO" for s in found)
     assert len(b.scene.labels) == 1
     assert text in b.scene.fields
+
+
+@pytest.mark.parametrize(
+    "reference, pins",
+    [("LED7", 2), ("FET7", 3), ("D7", 2), ("TP7", 1), ("R7", 2), ("BUS_POWER", 4)],
+)
+def test_device_value_cannot_send_a_nearby_reference_to_another_body(reference, pins):
+    """A TVS, transistor or other part keeps its name when a small drawing has none."""
+    own = symbols.Symbol(
+        [],
+        (16, 10, 20, 14),
+        [symbols.Pin(k, ((17 + k, 14), (17 + k, 16.54))) for k in range(pins)],
+        body=(16, 10, 20, 14),
+    )
+    other = symbols.Symbol(
+        [], (5, 10, 7, 14), [symbols.Pin(10, ((6, 14), (6, 16.54)))], body=(5, 10, 7, 14)
+    )
+    name = Text(0, reference, (13, 10, 15, 11), 1, 0, None)
+    value = Text(1, "DEVICE42", (20.5, 12, 24, 13), 1, 0, None)
+    texts = fields._Texts([name, value])
+    named = fields._assign_refs(
+        [other, own],
+        texts,
+        None,
+        profile.load("eagle"),
+        set(),
+        {id(value)},
+        {id(name): 0.6, id(value): 1e-6},
+    )
+    assert own.ref == reference
+    assert other.ref is None
+    assert named[id(own)] == 0
+    assert texts.used == {0}
+
+
+@pytest.mark.parametrize("case", ["isolated", "near_tie", "strong_value", "ordered_value"])
+def test_reference_ownership_keeps_ambiguous_and_supported_assignments(case):
+    own = symbols.Symbol(
+        [],
+        (16, 10, 20, 14),
+        [symbols.Pin(0, ((17, 14), (17, 16.54)))],
+        body=(16, 10, 20, 14),
+    )
+    x = 9 if case == "near_tie" else 5
+    other = symbols.Symbol(
+        [],
+        (x, 10, x + 2, 14),
+        [symbols.Pin(1, ((x + 1, 14), (x + 1, 16.54)))],
+        body=(x, 10, x + 2, 14),
+    )
+    name = Text(0, "LED7", (13, 10, 15, 11), 1, 0, None)
+    value = Text(1, "DEVICE42", (20.5, 12, 24, 13), 1, 0, None)
+    texts = fields._Texts([name, value])
+    fields._assign_refs(
+        [other] if case == "isolated" else [other, own],
+        texts,
+        None,
+        profile.load("eagle"),
+        set(),
+        {id(value)},
+        {id(name): 0.6, id(value): 0.95 if case == "strong_value" else 1e-6},
+        {id(own): value} if case == "ordered_value" else None,
+    )
+    assert other.ref == "LED7"
+    if case != "isolated":
+        assert own.ref == "DEVICE42"
