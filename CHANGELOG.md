@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Weak glyph reads consider matching outlines with different curve decompositions.
+- Numbered pins reserve their printed names from unnumbered neighbours. Independent
+  bodies retain their references during overlaid-part recovery.
+- Connector references can replace weak part values without shifting neighbouring
+  reference assignments.
+- Repeated net names can label short wires outside component and pin bounds.
+
 - Complete stacks of related connector names recover the separate overlaid parts.
 - Matching dashed body borders reunite connector sections under their external
   reference and restore their printed pin numbers.

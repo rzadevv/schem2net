@@ -393,3 +393,8 @@ The [connector recovery evaluation](connector-recovery-2026-11-03.md) covers
 overlaid alternatives and sections joined by dashed body borders, with separate
 [data-source checks](dataset-review-2026-11-03.md). Its development comparisons
 retain every original input, including OpenLog.
+
+The [recognition and field ownership evaluation](recognition-2026-11-04.md)
+covers fragmented glyph candidates, pin-name ownership, values mistaken for
+references, and repeated labels overhanging short wires. It includes all six
+development corpora, separate library checks, per-pin regressions and timing.
