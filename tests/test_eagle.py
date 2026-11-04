@@ -210,3 +210,19 @@ def test_alphanumeric_pad_labels_keep_their_drawn_characters():
     for word in ("A8", "B8", "2o", "O8", "G8"):
         texts, _ = strokes.read(_drawn(word, 10, 20, 1.8, 0), "eagle")
         assert [t.text for t in texts] == [word]
+
+
+def test_glyph_distance_handles_reversed_segments_and_unequal_shapes():
+    import math
+
+    import pytest
+
+    # Segment direction and drawing order carry no character information.
+    shape = [((0, 0), (1, 0)), ((1, 0), (1, 1))]
+    reversed_shape = [(b, a) for a, b in reversed(shape)]
+    assert strokes.distance(shape, reversed_shape) == 0
+    # An unmatched stroke still contributes its worst endpoint gap.
+    assert strokes.distance(shape, shape[:1]) == pytest.approx(0.5)
+    assert strokes.distance(shape[:1], shape) == pytest.approx(0.5)
+    assert strokes.distance([((0, 0), (1, 0))], [((0, 1), (1, 1))]) == 1
+    assert math.isinf(strokes.distance([], shape))

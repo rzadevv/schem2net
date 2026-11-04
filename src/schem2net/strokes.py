@@ -13,6 +13,7 @@ from dataclasses import dataclass, field, replace
 from functools import cache
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from schem2net import geometry
 from schem2net.primitives import BBox, Page, Path, Point, Text
@@ -188,12 +189,11 @@ def distance(a: Shape, b: Shape) -> float:
 def _distance(a: np.ndarray, b: np.ndarray) -> float:
     """distance() on arrays of segments, shaped (n, 2, 2)."""
 
-    # Each segment pair compared end to end, and with one of them turned round.
-    def apart(i: int, j: int) -> np.ndarray:
-        return np.hypot(a[:, None, i, 0] - b[None, :, j, 0], a[:, None, i, 1] - b[None, :, j, 1])
-
-    same = np.maximum(apart(0, 0), apart(1, 1))
-    flipped = np.maximum(apart(0, 1), apart(1, 0))
+    # Compute endpoint distances together, then compare each segment pair in
+    # both directions. The compiled kernel avoids four broadcast temporaries.
+    ends = cdist(a.reshape(-1, 2), b.reshape(-1, 2))
+    same = np.maximum(ends[::2, ::2], ends[1::2, 1::2])
+    flipped = np.maximum(ends[::2, 1::2], ends[1::2, ::2])
     gaps = np.minimum(same, flipped)
 
     def one_way(rows: np.ndarray) -> float:
@@ -381,8 +381,10 @@ def _nearest(shape: np.ndarray, table: _Table) -> str | None:
         k for k in range(len(table.arrays)) if abs(table.aspects[k] - aspect) <= MAX_ASPECT_GAP
     ]
     candidates = [k for k in nearby if abs(len(table.arrays[k]) - len(shape)) <= 4]
+    scaled_shapes = []
     for scale in SCALES:
         scaled = shape * scale
+        scaled_shapes.append(scaled)
         for k in candidates:
             d = _distance(scaled, table.arrays[k])
             if d < best:
@@ -395,11 +397,11 @@ def _nearest(shape: np.ndarray, table: _Table) -> str | None:
     length = float(np.linalg.norm(shape[:, 1] - shape[:, 0], axis=1).sum())
     possible = {}
     for k in nearby:
-        if k in candidates or not length:
+        if abs(len(table.arrays[k]) - len(shape)) <= 4 or not length:
             continue
         if not min(SCALES) <= table.lengths[k] / length <= max(SCALES):
             continue
-        d = min(_distance(shape * scale, table.arrays[k]) for scale in SCALES)
+        d = min(_distance(scaled, table.arrays[k]) for scaled in scaled_shapes)
         if d < MAX_MATCH:
             char = table.chars[k]
             possible[char] = min(d, possible.get(char, MAX_MATCH))
