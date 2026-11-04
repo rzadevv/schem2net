@@ -685,7 +685,7 @@ def _assign_refs(
                 cost += INSIDE_BODY_COST
             if id(text) in values:
                 cost += VALUE_FIRST_COST
-            if id(text) in among_values:
+            if id(text) in among_values and is_common_ref(text.text):
                 cost += AMONG_VALUES_COST
             if runs and not runs.owns(symbol, text.seq):
                 cost += OTHER_SYMBOL_COST
@@ -716,6 +716,40 @@ def _assign_refs(
             taken.add(si)
     texts.used |= set(used)
     if profile.names_by_layer:
+        # Keep the joint assignment stable before replacing a weak part number
+        # from the value pass. Only an unused functional name may replace it;
+        # removing candidates earlier can shift neighbouring parts' references.
+        suspects = []
+        for ti, si in used.items():
+            text = texts.texts[ti]
+            first = (ordered or {}).get(id(parts[si])) is text or (
+                first_reach and runs.first_text(parts[si]) == text.seq
+            )
+            if (
+                not is_common_ref(text.text)
+                and id(text) in among_values
+                and likely is not None
+                and likely.get(id(text), 1.0) < WORD_FLOOR
+                and not first
+            ):
+                suspects.append((si, ti))
+        replacements = _name_by_function(
+            [parts[si] for si, _ in suspects],
+            texts,
+            profile,
+            among_values,
+            likely or {},
+            {
+                id(parts[si]): round(math.log10(likely[id(texts.texts[ti])] + 1e-12))
+                for si, ti in suspects
+            },
+        )
+        for k, ti in replacements.items():
+            si, old = suspects[k]
+            parts[si].unit = None
+            del used[old]
+            texts.used.discard(old)
+            used[ti] = si
         unnamed = [p for k, p in enumerate(parts) if k not in taken]
         _name_by_function(unnamed, texts, profile, among_values, likely or {})
     return {id(parts[si]): ti for ti, si in used.items()}
@@ -727,7 +761,8 @@ def _name_by_function(
     profile: Profile,
     among_values: set[int],
     likely: dict[int, float],
-) -> None:
+    previous_odds: dict[int, int] | None = None,
+) -> dict[int, int]:
     """Eagle takes any name for a part, and designers name jumpers and connectors by
     what they do: I2C, PWR, LCD_CON. A part left without a designator takes an unused
     word beside it that is not one of its pin names, a value, a number or a note: the
@@ -749,14 +784,17 @@ def _name_by_function(
             ):
                 continue
             odds = round(math.log10(likely.get(id(text), 0.0) + 1e-12))
+            if previous_odds is not None and odds <= previous_odds[id(symbol)]:
+                continue
             options.append((-odds, gap, si, ti))
-    named = set()
+    named = {}
     for _, _, si, ti in sorted(options):
         if si in named or ti in texts.used:
             continue
         parts[si].ref = texts.texts[ti].text
-        named.add(si)
+        named[si] = ti
         texts.used.add(ti)
+    return named
 
 
 def _designators_by_order(symbols: list[Symbol], scene: Scene, profile: Profile) -> dict:
@@ -813,7 +851,7 @@ def _among_values(scene: Scene, profile: Profile) -> set[int]:
     if not profile.names_by_layer:
         return set()
     run = values_run(scene.fields, LAYER_NEIGHBOURS)
-    return {id(t) for t in scene.fields if id(t) in run and is_common_ref(t.text)}
+    return {id(t) for t in scene.fields if id(t) in run and split_ref(t.text)}
 
 
 def _set_ref(symbol: Symbol, text: str) -> None:

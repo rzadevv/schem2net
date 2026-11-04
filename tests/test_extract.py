@@ -2494,3 +2494,147 @@ def test_numbered_pins_reserve_their_names_from_unnumbered_neighbours():
     unknown.number = unknown.how = None
     fields._name_pins([part], [first], 1.5)
     assert unknown.number is None
+
+
+@pytest.mark.parametrize(
+    "in_values, probability, ordered, name_probability, expected",
+    [
+        (True, 1e-6, False, 0.03, "BUS_DATA"),
+        (False, 1e-6, False, 0.03, "HEADER40S"),
+        (True, 0.95, False, 0.03, "HEADER40S"),
+        (True, 1e-6, True, 0.03, "HEADER40S"),
+        (True, 1e-6, False, 1e-6, "HEADER40S"),
+        (True, 1e-6, False, 1e-9, "HEADER40S"),
+    ],
+)
+def test_unusual_references_drawn_in_a_value_pass_need_support(
+    in_values, probability, ordered, name_probability, expected
+):
+    b = SceneBuilder()
+    if in_values:
+        for word in ("10k", "3.3V", "22uF", "100nF", "1k", "47pF", "0R"):
+            b.field(word, 60, 60)
+    b.field("HEADER40S", 11, 30.7)
+    if in_values:
+        for word in ("1uF", "3.3V", "100nF", "10k", "0R", "5V", "33R"):
+            b.field(word, 60, 60)
+    b.field("BUS_DATA", 11, 8)
+    part = symbols.Symbol(
+        [],
+        (7.46, 10, 22.54, 30),
+        [symbols.Pin(k, ((10, 12 + 2.54 * k), (7.46, 12 + 2.54 * k))) for k in range(4)],
+        body=(10, 10, 20, 30),
+    )
+    texts = fields._Texts(b.scene.fields)
+    scores = {
+        id(t): probability
+        if t.text == "HEADER40S"
+        else name_probability
+        if t.text == "BUS_DATA"
+        else 1e-6
+        for t in b.scene.fields
+    }
+    rules = profile.load("eagle")
+    named = fields._assign_refs(
+        [part],
+        texts,
+        None,
+        rules,
+        set(),
+        fields._among_values(b.scene, rules),
+        scores,
+        {id(part): next(t for t in b.scene.fields if t.text == "HEADER40S")} if ordered else None,
+    )
+    assert part.ref + (part.unit or "") == expected
+    if expected == "BUS_DATA":
+        assert texts.texts[named[id(part)]].text == "BUS_DATA"
+        assert next(k for k, t in enumerate(texts.texts) if t.text == "HEADER40S") not in texts.used
+
+
+@pytest.mark.parametrize("turned", [False, True])
+@pytest.mark.parametrize(
+    "case",
+    [
+        "valid",
+        "new_name",
+        "uncertain",
+        "inside_body",
+        "ambiguous",
+        "value",
+        "wrong_baseline",
+    ],
+)
+def test_a_repeated_label_can_overhang_one_short_wire(case, turned):
+    from schem2net.scene import _on_wire, recover_labels
+
+    word = "?CLK" if case == "uncertain" else "22uF/6.3V" if case == "value" else "SIGNAL_NAME"
+    text = Text(1, word, (1.5, 8.7, 25, 9.97), 1.27, 0, None)
+    scene = Scene(page=1, wires=[((0, 10), (8, 10))], fields=[text], pin_numbers=[text])
+    if case != "new_name":
+        scene.labels.append(Label(word, "local", (100, 100, 120, 101.27), 0))
+    bodies = [(0, 0, 30, 15)] if case == "inside_body" else []
+    if case == "ambiguous":
+        scene.wires.append(((0, 10.1), (8, 10.1)))
+    if case == "wrong_baseline":
+        text.bbox = (1.5, 13, 25, 14.27)
+    if turned:
+
+        def point(p):
+            return p[1], -p[0]
+
+        def box(b):
+            return geometry.bbox_of([point((b[0], b[1])), point((b[2], b[3]))])
+
+        scene.wires = [tuple(point(p) for p in wire) for wire in scene.wires]
+        text.bbox, text.angle = box(text.bbox), 90
+        for label in scene.labels:
+            label.bbox, label.angle = box(label.bbox), 90
+        bodies = [box(b) for b in bodies]
+    index = geometry.GridIndex()
+    for k, wire in enumerate(scene.wires):
+        index.add(k, geometry.bbox_of(wire))
+    assert not _on_wire(text, scene.wires, index)
+    before = len(scene.labels)
+    recover_labels(scene, bodies)
+    if case == "valid":
+        assert len(scene.labels) == before + 1
+        assert scene.fields == scene.pin_numbers == []
+        assert scene.labels[-1].text == word
+    else:
+        assert len(scene.labels) == before
+        assert scene.fields == [text]
+
+
+def test_a_repeated_usb_pad_name_stays_with_its_pin():
+    from schem2net.scene import recover_labels
+
+    text = Text(1, "D+", (1.5, 8.7, 5.5, 9.97), 1.27, 0, None)
+    scene = Scene(page=1, wires=[((0, 10), (8, 10))], fields=[text], pin_numbers=[text])
+    scene.labels.append(Label("D+", "local", (100, 100, 120, 101.27), 0))
+    part = symbols.Symbol(
+        [],
+        (-2, 8, 8, 17),
+        [symbols.Pin(k, ((0, 10 + 2.54 * k), (8, 10 + 2.54 * k))) for k in range(3)],
+        body=(-2, 8, 0, 17),
+        ref="J1",
+    )
+    recover_labels(scene, [part.bbox])
+    fields._number_pins([part], scene, profile.load("eagle"), set())
+    assert part.pins[0].number == "D+"
+    assert len(scene.labels) == 1
+    assert scene.fields == [text]
+
+
+def test_a_repeated_net_name_does_not_take_a_parts_reference():
+    b = SceneBuilder()
+    b.shape((10, 10), (16, 10), (16, 20), (10, 20), (10, 10))
+    b.shape((10, 12), (7.46, 12))
+    b.shape((10, 17.08), (7.46, 17.08))
+    text = Text(1, "GEO", (6, 11, 10.4, 12.27), 1.27, 0, None)
+    b.scene.fields.append(text)
+    b.scene.wires.append(((5, 12.3), (9, 12.3)))
+    b.scene.labels.append(Label("GEO", "local", (100, 100, 120, 101.27), 0))
+    found = symbols.find(b.scene, profile.load("eagle"))
+    assert any(s.ref == "GEO" for s in found)
+    assert len(b.scene.labels) == 1
+    assert text in b.scene.fields

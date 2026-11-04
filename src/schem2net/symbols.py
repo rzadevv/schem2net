@@ -17,7 +17,7 @@ from schem2net.geometry import GridIndex, Segment, UnionFind
 from schem2net.primitives import BBox, Point
 from schem2net.profile import Profile, learned_arrays, learned_file
 from schem2net.refdes import PART_VALUE, is_common_ref
-from schem2net.scene import Scene, Shape
+from schem2net.scene import Scene, Shape, recover_labels
 
 TOUCH = 0.03  # mm, on top of half the stroke widths
 HALF_GAP = 6.0  # mm between the two halves of a capacitor-like symbol
@@ -96,6 +96,8 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
         symbols = _join_drawn_together(_without_frames(symbols), scene, profile)
     if profile.learned_grouping and (model := _grouping_model(profile.name)):
         symbols = _split_unlinked(symbols, scene, model, pins)
+    if profile.labels_in_outlines and profile.labels_on_wires:
+        recover_labels(scene, [geometry.grown(s.bbox, TOUCH) for s in symbols])
     if profile.pins_at_body_edge:
         _add_edge_pins(symbols, scene, profile if profile.pinless_at_body_edge else None)
     fields.annotate(symbols, scene, profile, runs)

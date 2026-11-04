@@ -753,7 +753,11 @@ def _anchored_labels(scene: Scene, anchors: list[Point], profile: Profile) -> No
 
 
 def _on_wire(
-    text: Text, wires: list[Segment], index: GridIndex, meets: Callable | None = None
+    text: Text,
+    wires: list[Segment],
+    index: GridIndex,
+    meets: Callable | None = None,
+    short: bool = False,
 ) -> bool:
     """True if a wire runs under nearly all of the text, just below its baseline, or
     ends where the text starts or stops, as a label set at a wire's open end: an end
@@ -765,6 +769,7 @@ def _on_wire(
     rise = LABEL_RISE * text.size
     # An underscore or a letter's tail reaches below the baseline, past the wire.
     drop = -DESCENT * text.size
+    short_matches = []
     for k in index.within((x0 - rise, y0 - rise, x1 + rise, y1 + rise)):
         ends = wires[k]
         if abs(geometry.dot(ends[0], across) - geometry.dot(ends[1], across)) >= 1e-3:
@@ -774,6 +779,13 @@ def _on_wire(
         under = min(hi, max(a, b)) - max(lo, min(a, b))
         if drop <= gap <= rise and under >= LABEL_UNDER * (hi - lo):
             return True
+        if (
+            short
+            and drop <= gap <= rise
+            and under >= text.size
+            and 0 <= lo - min(a, b) <= ANCHOR_REACH * text.size
+        ):
+            short_matches.append(k)
         # Ending at the text from either side, not running on under it.
         near = [
             e for e in ends if min(abs(geometry.dot(e, along) - v) for v in (lo, hi)) <= LABEL_END
@@ -781,7 +793,7 @@ def _on_wire(
         open_end = meets is None or not any(meets(e) for e in near)
         if drop <= gap <= rise and near and under <= LABEL_END and open_end:
             return True
-    return False
+    return len(short_matches) == 1
 
 
 def _meets_wire(outline: list[Point], wires: list[Segment], index: GridIndex) -> bool:
@@ -922,3 +934,34 @@ def _unique_texts(texts: list[Text]) -> list[Text]:
             seen.add(key)
             out.append(text)
     return out
+
+
+def recover_labels(scene: Scene, bodies: list[BBox]) -> None:
+    """Recover a repeated net name that overhangs its short wire.
+
+    Ordinary label recognition supplies the name independently. The remaining
+    occurrence must sit outside complete part bounds, along exactly one wire near its start.
+    """
+    known = {name_key(label.text) for label in scene.labels if "?" not in label.text}
+    index = GridIndex()
+    for k, wire in enumerate(scene.wires):
+        index.add(k, geometry.bbox_of(wire))
+    body_index = GridIndex()
+    for k, box in enumerate(bodies):
+        body_index.add(k, box)
+    taken = set()
+    for text in scene.fields:
+        word = text.text.strip()
+        if not word or word[0].isdigit() or is_common_ref(word) or name_key(word) not in known:
+            continue
+        x, y = geometry.center(text.bbox)
+        if any(
+            bodies[k][0] < x < bodies[k][2] and bodies[k][1] < y < bodies[k][3]
+            for k in body_index.near((x, y), 0)
+        ):
+            continue
+        if _on_wire(text, scene.wires, index, short=True):
+            scene.labels.append(Label(text.text, "local", text.bbox, text.angle, seq=text.seq))
+            taken.add(id(text))
+    scene.fields = [t for t in scene.fields if id(t) not in taken]
+    scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in taken]
