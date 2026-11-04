@@ -2722,3 +2722,48 @@ def test_bus_syntax_labels_never_join_scalar_wires_beneath_them(kind, name):
     assert {p for n in found for p in n.pins} == {("R1", "1"), ("R2", "1")}
     joined = any({("R1", "1"), ("R2", "1")} <= set(n.pins) for n in found)
     assert joined == (name == "SENSE")
+
+
+@pytest.mark.parametrize("turned", [False, True])
+def test_capacitor_plates_touching_another_body_are_not_its_pins(turned):
+    b = SceneBuilder()
+    b.shape((11.5, 11), (11.5, 12.5))
+    b.shape((12, 11), (12, 12.5))
+    b.shape((11.5, 11.75), (9, 11.75))
+    b.shape((12, 11.75), (15, 11.75))
+    b.field("C1", 6, 12)
+    b.field("100pF", 16, 12)
+    b.shape((11, 10), (13, 10), (13, 11), (11, 11), (11, 10))
+    b.shape((11, 10.5), (9, 10.5))
+    b.shape((13, 10.5), (15, 10.5))
+    b.field("R1", 6, 9)
+    b.field("10k", 16, 9)
+    if turned:
+        for shape in b.scene.shapes:
+            shape.points = [(y, x) for x, y in shape.points]
+            shape.bbox = geometry.bbox_of(shape.points)
+        for text in b.scene.fields:
+            x0, y0, x1, y1 = text.bbox
+            text.bbox = (y0, x0, y1, x1)
+            text.angle = 90
+    parts = symbols.find(b.scene, KICAD)
+    assert {s.ref: len(s.pins) for s in parts} == {"C1": 2, "R1": 2}
+    cap = next(s for s in parts if s.ref == "C1")
+    assert set(cap.shapes) == {0, 1, 2, 3}
+    resistor = next(s for s in parts if s.ref == "R1")
+    assert set(resistor.shapes) == {4, 5, 6}
+
+
+@pytest.mark.parametrize("pin_name", ["A1", "R2", "D3"])
+def test_pin_names_that_look_like_references_do_not_separate_pins_from_their_body(pin_name):
+    b = SceneBuilder()
+    b.shape((10, 10), (16, 10), (16, 20), (10, 20), (10, 10))
+    b.shape((10, 12), (7.46, 12))
+    b.field(pin_name, 10.2, 11.2)
+    b.shape((16, 14.54), (18.54, 14.54))
+    b.field("U1", 10, 7)
+    b.field("DEVICE", 17, 7)
+    (part,) = symbols.find(b.scene, KICAD)
+    assert part.ref == "U1"
+    assert len(part.pins) == 2
+    assert set(part.shapes) == {0, 1, 2}

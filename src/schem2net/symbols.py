@@ -487,7 +487,7 @@ def _find_pins(scene: Scene, index: GridIndex, profile: Profile) -> dict[int, Pi
     # Only where drawing order keeps neighbouring symbols apart, so the lines made
     # body join nothing of another symbol.
     if profile.fields_follow_symbol:
-        return _without_bodies(pins, scene, index)
+        return _without_bodies(pins, scene, index, breaks)
     return _continued_pins(pins, scene, index, wires, profile)
 
 
@@ -543,10 +543,13 @@ def _continued_pins(
     return pins
 
 
-def _without_bodies(pins: dict[int, Pin], scene: Scene, index: GridIndex) -> dict[int, Pin]:
+def _without_bodies(
+    pins: dict[int, Pin], scene: Scene, index: GridIndex, breaks: list[int]
+) -> dict[int, Pin]:
     """A line another pin starts on square, at its middle, is body when it was only
     taken for a pin by starting on a line it runs along: the plate of a capacitor whose
-    end overlaps its neighbour's plate, the parts set a grid step apart."""
+    end overlaps its neighbour's plate, the parts set a grid step apart. The same
+    applies to a plate ending on a closed body drawn after another reference."""
     started = set()
     for k, pin in pins.items():
         for j in index.near(pin.line[0], TOUCH):
@@ -559,16 +562,19 @@ def _without_bodies(pins: dict[int, Pin], scene: Scene, index: GridIndex) -> dic
         for j in index.near(pin.line[0], TOUCH):
             other = scene.shapes[j]
             along = len(other.points) == 2 and abs(_cosine(pin.line, tuple(other.points))) > 0.99
-            if j != k and along and _starts_on(pin, scene, k, j):
+            separate = other.closed and not _drawn_together(scene.shapes[k], other, breaks)
+            if j != k and (along or separate) and _starts_on(pin, scene, k, j):
                 body.add(id(pin))
     return {k: p for k, p in pins.items() if id(p) not in body}
 
 
 def _starts_on(pin: Pin, scene: Scene, k: int, j: int) -> bool:
-    """Whether pin k starts on shape j, between its ends."""
-    line = tuple(scene.shapes[j].points)
+    """Whether pin k starts inside a segment of shape j."""
     tol = (scene.shapes[k].width + scene.shapes[j].width) / 2 + TOUCH
-    return len(line) == 2 and geometry.is_interior(pin.line[0], line, tol)
+    return any(
+        geometry.is_interior(pin.line[0], line, tol)
+        for line in geometry.segments(scene.shapes[j].points)
+    )
 
 
 def _inner_end(
