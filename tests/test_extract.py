@@ -2704,3 +2704,21 @@ def test_reference_ownership_keeps_ambiguous_and_supported_assignments(case):
     assert other.ref == "LED7"
     if case != "isolated":
         assert own.ref == "DEVICE42"
+
+
+@pytest.mark.parametrize("kind", ["local", "global"])
+@pytest.mark.parametrize("name", ["D[0..7]", "CTRL{SDA SCL}", "{CONTROL}", "SENSE"])
+def test_bus_syntax_labels_never_join_scalar_wires_beneath_them(kind, name):
+    b = SceneBuilder()
+    for i, y in enumerate((10, 40), 1):
+        b.resistor(20, y, f"R{i}", "10k")
+        b.scene.wires.append(((0, y - 2.54), (20, y - 2.54)))
+        b.scene.buses.append(((0, y - 2.7), (20, y - 2.7)))
+        b.scene.labels.append(Label(name, kind, (2, y - 4, 12, y - 2.8), 0))
+    reader = Netlister()
+    reader.add_page(b.scene, symbols.find(b.scene, KICAD))
+    parts, found, *_ = reader.result()
+    assert {p.ref for p in parts} == {"R1", "R2"}
+    assert {p for n in found for p in n.pins} == {("R1", "1"), ("R2", "1")}
+    joined = any({("R1", "1"), ("R2", "1")} <= set(n.pins) for n in found)
+    assert joined == (name == "SENSE")

@@ -231,7 +231,7 @@ class Netlister:
                 self.join(node, ("hier", scene.path, key), "hier_name")
                 if bus and label.outline:
                     crossings.append((node, label.outline[0], ("label", scene.path, key), bus))
-            if label.kind == "bus":
+            if label.kind == "bus" or (bus and not label.outline):
                 target = _under_label(label, buses, bus_index, [], None, ("b", page))
                 if target:
                     self.join(node, target, "label")
