@@ -1,11 +1,34 @@
-"""Installed-distribution checks using an existing synthetic resistor PDF."""
+"""Installed CLI/MCP checks. With no arguments, create a disposable test fixture."""
 
 import asyncio
 import json
 import os
 import subprocess
 import sys
+import tarfile
+import zipfile
 from pathlib import Path
+from tempfile import TemporaryDirectory
+
+
+def check_distributions(folder=Path("dist")):
+    """Reject local/untracked files accidentally included by the build backend."""
+    tracked = set(subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0"))
+    archive = next(folder.glob("schem2net-*.tar.gz"))
+    wheel = next(folder.glob("schem2net-*.whl"))
+    with tarfile.open(archive) as source:
+        for member in source.getmembers():
+            if member.isdir():
+                continue
+            path = member.name.partition("/")[2]
+            assert member.isfile() and path in tracked | {"PKG-INFO"}, member.name
+    with zipfile.ZipFile(wheel) as package:
+        for path in package.namelist():
+            if path.startswith("schem2net/"):
+                assert "src/" + path in tracked, path
+            else:
+                assert path.split("/")[0].endswith(".dist-info"), path
+    print("Wheel and sdist contain only project files and generated package metadata")
 
 
 async def mcp_check(cli, ir):
@@ -115,4 +138,12 @@ def main(root):
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]).resolve())
+    if len(sys.argv) > 1:
+        main(Path(sys.argv[1]).resolve())
+    else:
+        from tests.conftest import KICAD_INK, resistor_page
+
+        with TemporaryDirectory(prefix="schem2net-smoke-") as folder:
+            root = Path(folder)
+            resistor_page(KICAD_INK).save(root / "resistors.pdf", creator="Eeschema (KiCad 8.0)")
+            main(root)

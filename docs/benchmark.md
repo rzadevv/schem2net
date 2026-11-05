@@ -1,6 +1,17 @@
 # Benchmark
 
-## Results
+## Evidence and current status
+
+The [independent evaluation](release-2026-11-05.md) is the current frozen result:
+63 new designs / 40 groups, predominantly generated KiCad PDFs, 91.02% drawing-only
+pin accuracy. It did not meet all release gates. The [development guide](development.md#engineering-history)
+summarizes the separate, repeatedly optimized 198-design development corpus.
+The historical test/holdout tables below are preserved as originally reported;
+they are not fresh results for the current extractor.
+
+<a id="results"></a>
+
+## Historical test and holdout results
 
 Figures are for each corpus's test split, whose boards the learned models never
 saw, and its holdout, read once at commit 0cf46ce; both with KiCad's and
@@ -317,15 +328,11 @@ escape issue accounting, and a warning could follow the opposite end of a swappe
 passive. Historical confidence, silent-error and review figures therefore require
 rescoring. Preserve original reports and rescore both sets of saved predictions with
 the same scorer; electrical pin/net/pair counts are unaffected by this correction.
-See [the audit](audit-2026-11-02.md) for the initial correctness measurements and
-[continued development](development-2026-11-02.md) for extraction improvements
-measured after upstream reconciliation. These are development results; the
-historical test and holdout figures above have not been reevaluated.
-
-Further [component and pin recovery results](recovery-2026-11-02.md) retain that
-baseline and examine additional missing-pin failures. The
-[OpenLog pairing review](openlog-provenance-2026-11-02.md) proposes a separate
-input correction; all extraction comparisons retain the existing dataset.
+The [development history](development.md#engineering-history) summarizes the
+reconciled audit and later extraction comparisons. Historical test and holdout
+figures above have not been reevaluated. The [OpenLog pairing review](openlog-provenance-2026-11-02.md)
+proposes a separate input correction; the original case remains in every reported
+comparison.
 
 A pin kept without a number (`?1`) cannot be told from the truth's pins, so it is
 left out before nets are compared; the true pin counts as not found. One kept with
@@ -388,19 +395,3 @@ Some connections exist in the design but are not visible in the PDF:
 - Pin numbers that the library hides, and stacked pins that print one number.
 
 Apart from the Altium label scope, these are not handled.
-
-The [connector recovery evaluation](connector-recovery-2026-11-03.md) covers
-overlaid alternatives and sections joined by dashed body borders, with separate
-[data-source checks](dataset-review-2026-11-03.md). Its development comparisons
-retain every original input, including OpenLog.
-
-The [recognition and field ownership evaluation](recognition-2026-11-04.md)
-covers fragmented glyph candidates, pin-name ownership, values mistaken for
-references, and repeated labels overhanging short wires. It includes all six
-development corpora, separate library checks, per-pin regressions and timing.
-
-The [reliability and runtime evaluation](reliability-2026-11-05.md) covers corrected
-reference ownership, bus labels, visible unpopulated parts and touching capacitor
-plates. It records all six development comparisons, separate library results,
-complete-output checks for glyph optimization, repeated CPU/wall measurements,
-review-precision trade-offs and a plan for frozen independent validation.

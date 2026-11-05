@@ -81,3 +81,17 @@ If clearance requires replacing or retraining assets, that creates a new
 candidate. Its independent accuracy claim needs a fresh panel under the frozen
 evaluation protocol. No asset has been removed, relicensed, or declared to be a
 derivative work by this audit.
+
+## Repository publication scope
+
+The repository cleanup was checked against the fetched public `origin/main` at
+`19d02f61211f89bb79357bdd2fb316cefce89550`. All five asset files have identical
+bytes there and locally; no pending commit changes them. The source/documentation
+push therefore adds no learned-asset content. This is not clearance of the
+existing public assets or permission to distribute a new model or package.
+
+The tag-triggered PyPI workflow has been removed. CI builds and tests packages
+locally on its runners but does not publish distributions. Before restoring
+package publication or changing an asset, complete the per-artifact source/font
+review and notices described above. Replacing assets, if needed, must be an
+explicit, separately validated change rather than a silent cleanup.

@@ -41,6 +41,14 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "src/schem2net/__init__.py"
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src", "/tests", "/docs", "/docker", "/.github",
+    "/bench/*.py", "/bench/*.toml", "/bench/*.json",
+    "/pyproject.toml", "/uv.lock", "/.gitignore", "/Makefile",
+    "/README.md", "/CHANGELOG.md", "/LICENSE", "/schem2net.png",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

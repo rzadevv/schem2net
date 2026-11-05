@@ -18,9 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync --python ${{ matrix.python }}
+      - run: uv sync --locked --all-extras --python ${{ matrix.python }}
       - run: make lint
-      - run: uv run pytest --cov=schem2net --cov-fail-under=80
+      - run: make package-check
 
   bench:
     if: github.event_name != 'schedule'
@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - id: cache
         uses: actions/cache@v4
         with:

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Consolidate usage, architecture and development documentation while preserving
+  frozen evaluation records and historical comparisons.
+- Test the installed wheel and optional MCP workflow in CI.
+- Keep untracked files and local tool settings out of source distributions.
+- Disable automatic package publication pending learned-asset clearance.
+
 - Nearby component references stay with bodies whose device values had displaced them.
 - Glyph matching reuses scaled queries and computes endpoint distances with a compiled kernel.
 - Bus labels follow bus geometry independently of their printed label colour.

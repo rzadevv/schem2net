@@ -1,9 +1,9 @@
 IMAGE := schem2net-kicad:10.0.6
 
-.PHONY: install test lint format image corpus bench corpus-b bench-b bench-schematic corpus-c bench-c corpus-d bench-d corpus-e bench-e corpus-f bench-f font roles
+.PHONY: install test lint format package-check image corpus bench corpus-b bench-b bench-schematic corpus-c bench-c corpus-d bench-d corpus-e bench-e corpus-f bench-f font roles
 
 install:
-	uv sync
+	uv sync --locked --all-extras
 
 test:
 	uv run pytest
@@ -15,6 +15,15 @@ lint:
 format:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+# Direct Python calls keep uv from restoring the editable install over the wheel.
+package-check:
+	uv build
+	.venv/bin/python -c 'from bench.release_smoke import check_distributions; check_distributions()'
+	uv pip install --python .venv/bin/python --reinstall --no-deps dist/*.whl
+	.venv/bin/python -c 'from schem2net import pipeline; assert "/site-packages/" in pipeline.__file__'
+	.venv/bin/python -m pytest --cov=schem2net --cov-fail-under=80
+	.venv/bin/python -m bench.release_smoke
 
 image:
 	docker build -q -t $(IMAGE) -f docker/Dockerfile.kicad docker
