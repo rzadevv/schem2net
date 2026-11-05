@@ -13,6 +13,15 @@ it does not perform OCR on scanned schematics.
 This is experimental software. Check the drawing and reported issues before
 using an extracted netlist to design or build hardware.
 
+## Demo
+
+![Selecting a net and inspecting a guessed-pad warning in the HTML report](docs/media/demo.gif)
+
+The report highlights an extracted net, then zooms to a guessed-pad warning in the
+[nsumo controller by Artful Bytes](https://github.com/artfulbytes/nsumo_hardware/tree/4ed17819480d61c4b71980c695a0770774c9d91b)
+([MIT notice](docs/media/NOTICE)). [Run the same example locally](#install-and-run).
+Verify extracted connections and pad numbers against the PDF.
+
 ## Install and run
 
 Requires Python 3.11 or later. Install from the repository with
