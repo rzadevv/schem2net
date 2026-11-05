@@ -91,6 +91,37 @@ The server exposes one design over stdio. Its read-only tools are
 networks through series passives. MCP queries report the extracted design, not
 independent verification of the original circuit.
 
+## Desktop application
+
+An optional Qt application shows a PDF, runs the same extraction, and lets you
+review the result beside the drawing. Install it with the `gui` extra, which adds
+PySide6 (about 700 MB with Qt WebEngine); the CLI does not need it.
+
+```sh
+uv tool install 'schem2net[gui] @ git+https://github.com/rzadevv/schem2net'
+schem2net-gui board.pdf
+```
+
+From a checkout, `uv sync --extra gui` then `uv run schem2net-gui`.
+
+- **Original** shows the PDF with zoom (Ctrl+Plus/Minus, Ctrl+wheel), fit
+  (Ctrl+0) and page keys (Page Up/Down). Files can also be dropped on the window.
+- **Extract** (Ctrl+E) runs extraction in a separate process. Stop ends that
+  process and keeps nothing; no file is written until you export.
+- **Extracted Nets** is the HTML report. Selecting a net, component or issue in
+  the side panels highlights it or zooms to it there; Esc clears the selection.
+  Properties lists each pin's number source: printed, part library, inferred,
+  guessed or not shown.
+- **File › Export** writes the KiCad netlist (Ctrl+S), JSON, BOM, SPICE, HTML
+  report or an editable KiCad project, as the CLI does.
+
+Nets carried in an Altium PDF are listed but cannot be shown on the drawing, since
+the drawing is not read. The extractor reports no progress, so only a busy
+indicator is shown. PyPI's Qt cannot load distribution theme plugins such as
+KDE's; the application then follows the desktop's light or dark setting through
+the XDG portal. Qt WebEngine needs NSS, ALSA, EGL and xkbcommon, which desktop
+Linux installations provide.
+
 ## Failures and resource limits
 
 | Exit | Meaning |
