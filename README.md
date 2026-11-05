@@ -55,6 +55,12 @@ need rescoring before comparison. See the
 [continued development](docs/development-2026-11-02.md) for extraction improvements
 measured after upstream reconciliation.
 
+The [independent release evaluation](docs/release-2026-11-05.md) covers 63 new
+designs from 40 source groups, mostly generated KiCad exports. Pin accuracy was
+91.02%, but the silent-error gate remained inconclusive and a high-confidence
+MCU pad error persisted. Generator coverage and learned-asset distribution
+clearance are incomplete; the candidate is not ready for public release.
+
 ## Install
 
 Not on PyPI yet:
@@ -164,3 +170,7 @@ make lint
 ## License
 
 Apache-2.0, see [LICENSE](LICENSE).
+
+The bundled learned assets still need a complete provenance and distribution
+review. See [the asset inventory](docs/learned-assets.md) before publishing a
+distribution containing them.
