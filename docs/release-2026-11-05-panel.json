@@ -1,0 +1,21 @@
+{
+  "panel_sha256": "fbdcefbdd40b9f7f25a8537b0abe8dfd3a2ceab69c1ccb6350c22d9924bb6511",
+  "designs": 63,
+  "groups": 40,
+  "generators": {
+    "kicad": 62,
+    "altium": 1,
+    "eagle": 0,
+    "easyeda": 0,
+    "orcad": 0
+  },
+  "decisions_sha256": "60b49cc07301822bceecac48b932afba0085e8a19368ae4aababd981b242f03b",
+  "downloads_sha256": {
+    "downloads.json": "7438bd204a0c25caca52e58bd9403fe6465825fd5b85c174c4d790fdf9df6af7",
+    "extra/downloads.json": "8b2ec15977ad75f215b32b2f9edda397aae68afbb8ae95b250802d3d14cecd72",
+    "native/downloads.json": "a82dc9fb18fb4ae0ee6ad36b2817c51ed30f20056e0df0259ef450a2e7b19900"
+  },
+  "repository_audit_sha256": "0830bdc494b021506b47e68aeaaa4856b7ea40e9d447a485301dc2710ae513b6",
+  "native_pairing_sha256": "0f878b90d414c676bd3e18c267a2dce164ac9874598646abc09aff97f457f444",
+  "coverage": "Target counts met; generator and export-style diversity incomplete; no new accuracy results observed."
+}
