@@ -7,8 +7,11 @@ one queue, most serious first; clicking an entry shows where it is, and clicking
 net in the list highlights the net.
 """
 
+import base64
 from html import escape
+from pathlib import Path
 
+from schem2net import pdf
 from schem2net.ir import LOW_CONFIDENCE, Net
 from schem2net.pipeline import Extraction, PageResult
 
@@ -148,7 +151,7 @@ def render(extraction: Extraction, pictures: dict[int, str] | None = None) -> st
     low = [n for n in design.nets if n.confidence < LOW_CONFIDENCE]
 
     items = "\n".join(_net_item(net) for net in design.nets)
-    todo = _review(design, extraction)
+    todo = review(design, extraction)
     pages = "\n".join(
         _page(
             result, extraction.wire_nets, net_of_pin, nets, todo, pictures.get(result.page.number)
@@ -188,7 +191,16 @@ def render(extraction: Extraction, pictures: dict[int, str] | None = None) -> st
 """
 
 
-def _review(design, extraction: Extraction) -> list[dict]:
+def pictures(file: str | Path, extraction: Extraction) -> dict[int, str]:
+    """The pages read, as printed, by number, as data URIs for `render`."""
+    read = [result.page.number for result in extraction.pages if result.scene is not None]
+    return {
+        number: f"data:image/png;base64,{base64.b64encode(png).decode()}"
+        for number, png in pdf.page_pngs(file, read).items()
+    }
+
+
+def review(design, extraction: Extraction) -> list[dict]:
     """Everything a reviewer should look at, with where it is: issues, and nets joined
     on weak evidence at their first pin. Guessed pin numbers are marked at each pin."""
     where = {}
@@ -205,7 +217,15 @@ def _review(design, extraction: Extraction) -> list[dict]:
         what = issue.detail or ", ".join(f"{r}.{n}" for r, n in issue.pins)
         if not what and issue.page is not None:
             what = f"page {issue.page}"
-        todo.append({"kind": issue.kind, "severity": issue.severity, "what": what, "spots": spots})
+        todo.append(
+            {
+                "kind": issue.kind,
+                "severity": issue.severity,
+                "what": what,
+                "spots": spots,
+                "pins": issue.pins,
+            }
+        )
     for net in design.nets:
         if net.confidence < LOW_CONFIDENCE and net.pins:
             spot = where.get(tuple(net.pins[0]))
@@ -216,6 +236,7 @@ def _review(design, extraction: Extraction) -> list[dict]:
                     "severity": "warn",
                     "what": name,
                     "spots": [spot] if spot else [],
+                    "pins": net.pins,
                 }
             )
     rank = {kind: k for k, kind in enumerate(ORDER)}
@@ -334,7 +355,10 @@ def _page(
     return "\n".join(out)
 
 
+def hue(net_id: str) -> float:
+    """A stable, well-spread hue for each net, in degrees."""
+    return (int(net_id[1:]) * 137.508) % 360
+
+
 def _color(net_id: str) -> str:
-    """A stable, well-spread colour for each net."""
-    hue = (int(net_id[1:]) * 137.508) % 360
-    return f"hsl({hue:.0f} 70% 42%)"
+    return f"hsl({hue(net_id):.0f} 70% 42%)"
