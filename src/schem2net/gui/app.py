@@ -12,13 +12,14 @@ from PySide6.QtCore import (
     QElapsedTimer,
     QEvent,
     QLibraryInfo,
-    QLoggingCategory,
     QPointF,
     QProcess,
     Qt,
     QTemporaryDir,
     QTimer,
     QUrl,
+    qFormatLogMessage,
+    qInstallMessageHandler,
 )
 from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPixmap
 from PySide6.QtPdf import QPdfDocument
@@ -27,7 +28,6 @@ from PySide6.QtWebEngineCore import (
     QWebEnginePage,
     QWebEngineScript,
     QWebEngineSettings,
-    QWebEngineUrlRequestInterceptor,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import (
@@ -51,7 +51,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from schem2net import __version__, export, report
+from schem2net import __version__, export, library, report
 from schem2net.cli import _stem, _write
 from schem2net.ir import LOW_CONFIDENCE, Design, Net
 
@@ -66,6 +66,9 @@ HOW = {  # how a pin's number was found, as the IR records it
     "unnumbered": "not shown",
 }
 SEVERITY = {"error": 2, "warn": 1, "info": 0}
+SEVERITY_TEXT = {"error": "Error", "warn": "Warning", "info": "Note"}
+GENERATORS = {"kicad": "KiCad", "altium": "Altium", "eagle": "Eagle", "easyeda": "EasyEDA"}
+GENERATORS["orcad"] = "OrCAD Capture"
 EXPORTS = [  # menu entry, file type, pattern, suffix, write(window, path)
     (
         "&KiCad Netlist…",
@@ -110,16 +113,21 @@ class Item(QTreeWidgetItem):
         return self.text(column).lower() < other.text(column).lower()
 
 
-class OnlyReport(QWebEngineUrlRequestInterceptor):
-    """Lets the view load the report it is given and nothing else."""
+class ReportPage(QWebEnginePage):
+    """Shows the report it is given and goes nowhere else. Its settings keep a local
+    page from reading other files or the network."""
 
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent)  # Qt's default profile keeps nothing on disk
         self.allowed = QUrl()
+        settings = self.settings()
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, False)
+        settings.setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, False
+        )
 
-    def interceptRequest(self, info):
-        url = info.requestUrl()
-        info.block(url != self.allowed and url.scheme() != "data")
+    def acceptNavigationRequest(self, url, kind, main_frame):
+        return url == self.allowed or url.scheme() in ("data", "about")
 
 
 class Window(QMainWindow):
@@ -137,6 +145,8 @@ class Window(QMainWindow):
         self.report_pages: list[int] = []  # numbers of the pages the report shows
         self.report_index: int | None = None  # which of them is in view
         self.folder = Path.cwd()
+        default = os.environ.get("SCHEM2NET_LIBRARY")  # the command line's default too
+        self.library: Path | None = Path(default) if default else None
 
         self.setWindowTitle("schem2net")
         self.setAcceptDrops(True)
@@ -146,6 +156,12 @@ class Window(QMainWindow):
         self._menus()
         self._status()
         self.stack.setFocus()
+        # The report view draws with the GPU. Shown first after the window is, it would make
+        # Qt create the window again, and a screen recorder following it would lose it; so
+        # it is in view when the window is created, and the empty page is put back on show.
+        self.stack.setCurrentWidget(self.tabs)
+        self.tabs.setCurrentWidget(self.web)
+        self.web.setHtml("")
         self.tabs.currentChanged.connect(self._update)
         self._update()
 
@@ -229,6 +245,12 @@ class Window(QMainWindow):
             ("go-down", sp.SP_ArrowDown),
             low=True,
         )
+        self.library_action = self._action(
+            "Part &Library…",
+            self.choose_library,
+            tip="Choose a folder made by schem2net index-library, to read pin numbers from",
+        )
+        self.no_library_action = self._action("&No Part Library", lambda: self._set_library(None))
         self.find_action = self._action("&Find…", self.find, key.Find)
         self.clear_action = self._action("&Clear Selection", self.clear, "Esc")
         for action in (self.previous_action, self.next_action):
@@ -243,21 +265,15 @@ class Window(QMainWindow):
         self.document = QPdfDocument(self)
 
         self.web = QWebEngineView()
-        page = QWebEnginePage(self.web)  # Qt's default profile keeps nothing on disk
-        self.only_report = OnlyReport(page)
-        page.setUrlRequestInterceptor(self.only_report)
+        page = self.report_page = ReportPage(self.web)
         script = QWebEngineScript()
         script.setName("schem2net")
         script.setSourceCode((Path(__file__).with_name("view.js")).read_text())
         script.setInjectionPoint(QWebEngineScript.InjectionPoint.DocumentReady)
         script.setWorldId(WORLD)
         page.scripts().insert(script)
-        settings = page.settings()
-        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, False)
-        settings.setAttribute(
-            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, False
-        )
         page.titleChanged.connect(self._report_title)
+        page.renderProcessTerminated.connect(self._report_crashed)
         self.web.setPage(page)
         self.web.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.web.setAcceptDrops(False)
@@ -315,6 +331,9 @@ class Window(QMainWindow):
             "Components", ["Reference", "Value", "Pins"], "Filter components"
         )
         self.issues_dock, self.issues, _ = self._list("Issues", ["Issue"], "Filter issues")
+        self.nets.headerItem().setToolTip(
+            2, "Evidence weight, not a probability: a net above 0.8 may still have a wrong pad"
+        )
         self.issues.setRootIsDecorated(True)
         self.issues.setHeaderHidden(True)
         for tree in (self.nets, self.parts):
@@ -362,6 +381,8 @@ class Window(QMainWindow):
         file.addSeparator()
         file.addAction(self.extract_action)
         file.addAction(self.stop_action)
+        libraries = file.addMenu("Part Li&brary")
+        libraries.addActions([self.library_action, self.no_library_action])
         file.addSeparator()
         exports = file.addMenu("E&xport")
         exports.addActions(self.exports)
@@ -472,6 +493,7 @@ class Window(QMainWindow):
         self.tabs.setCurrentWidget(self.drawing)
         self._page_shown(0)
         self._update()
+        self._summary()
         return True
 
     def dragEnterEvent(self, event):
@@ -494,7 +516,8 @@ class Window(QMainWindow):
         process = QProcess(self)
         process.setProgram(sys.executable)
         # -P: a folder named schem2net in the working directory is not imported
-        process.setArguments(["-P", "-m", "schem2net.gui.worker", str(self.file), self.out.path()])
+        arguments = ["-P", "-m", "schem2net.gui.worker", str(self.file), self.out.path()]
+        process.setArguments(arguments + ([str(self.library)] if self.library else []))
         process.setWorkingDirectory(self.out.path())
         process.setStandardOutputFile(QProcess.nullDevice())
         process.finished.connect(self._extracted)
@@ -506,6 +529,7 @@ class Window(QMainWindow):
         self.state_label.setText("Extracting…")
         self.statusBar().showMessage(f"Extracting {self.file.name}…")
         self._update()
+        self._summary()
 
     def stop(self):
         """Stop an extraction under way; what it wrote so far is deleted with its folder."""
@@ -541,6 +565,7 @@ class Window(QMainWindow):
         self.design = Design.load(self._output("design.ir.json"))
         self.review = json.loads(self._output("review.json").read_text())
         self._fill()
+        self._summary()
         seconds = self.clock.elapsed() / 1000
         self.state_label.setText("Extracted")
         unknown = next((i for i in self.design.issues if i.kind == "no_profile"), None)
@@ -555,8 +580,8 @@ class Window(QMainWindow):
             self.statusBar().showMessage(
                 f"Extracted in {seconds:.1f} s: check the issues and pin numbers."
             )
-        self.only_report.allowed = QUrl.fromLocalFile(str(self._output("report.html")))
-        self.web.load(self.only_report.allowed)
+        self.report_page.allowed = QUrl.fromLocalFile(str(self._output("report.html")))
+        self.web.load(self.report_page.allowed)
         self._update()
 
     def _fail(self, why):
@@ -571,7 +596,7 @@ class Window(QMainWindow):
         """Drop the results shown, with the folder they were read from."""
         self.design, self.review, self.picked = None, [], None
         self.report_pages, self.report_index = [], None
-        self.only_report.allowed = QUrl()
+        self.report_page.allowed = QUrl()
         self.web.setHtml("")
         for tree in (self.nets, self.parts, self.issues, self.properties):
             tree.clear()
@@ -585,6 +610,7 @@ class Window(QMainWindow):
             if self.tabs.currentWidget() is self.web:
                 self.tabs.setCurrentWidget(self.drawing)
         self._update()
+        self._summary()
 
     def _fill(self):
         design = self.design
@@ -634,10 +660,9 @@ class Window(QMainWindow):
         for kind, group in groups.items():
             group.setIcon(0, _severity_icon(worst[kind]))
             group.setText(0, f"{group.text(0)} ({group.childCount()})")
-        low = sum(n.confidence < LOW_CONFIDENCE for n in design.nets)
         self.counts_label.setText(
-            f"{len(design.components)} components · {len(design.nets)} nets "
-            f"({low} low confidence) · {len(design.issues)} issues"
+            f"{len(design.components)} components · {len(design.nets)} nets · "
+            f"{len(design.issues)} issues"
         )
         self.nets_dock.setWindowTitle(f"Nets ({len(design.nets)})")
         self.parts_dock.setWindowTitle(f"Components ({len(design.components)})")
@@ -700,7 +725,7 @@ class Window(QMainWindow):
             tree.setCurrentItem(None)
             tree.clearSelection()
             tree.blockSignals(False)
-        self.properties.clear()
+        self._summary()
         self._run("s2n.clear()")
 
     def find(self):
@@ -748,17 +773,17 @@ class Window(QMainWindow):
         ]
 
     def _net_properties(self, net: Net):
-        evidence = ", ".join(
-            f"{e.type.replace('_', ' ')} ×{e.count}" + (f" ({e.label})" if e.label else "")
+        evidence = [
+            (e.type.replace("_", " "), f"{e.count}" + (f" ({e.label})" if e.label else ""))
             for e in sorted(net.evidence, key=lambda e: -e.count)
-        )
+        ]
         confidence = f"{net.confidence:.2f}" + (
             " (low: check this net)" if net.confidence < LOW_CONFIDENCE else ""
         )
         rows = [
             ("Net", _net_name(net)),
             ("Confidence", confidence),
-            ("Evidence", evidence or "none"),
+            ("Evidence", "" if evidence else "none", evidence),
         ]
         others = [n for n in net.names_seen if n != net.name]
         if others:
@@ -774,9 +799,10 @@ class Window(QMainWindow):
         rows = [("Reference", part.ref), ("Value", part.value or "none read")]
         if part.symbol:
             rows.append(("Symbol", part.symbol))
-        rows.append(("Page", str(part.page) if part.page else "unknown"))
-        if part.units:
-            rows.append(("Units", ", ".join(part.units)))
+        page = str(part.page) if part.page else "unknown"
+        if len(part.units) > 1:  # the IR places a part by its first unit
+            page += f" (first of units {', '.join(part.units)})"
+        rows.append(("Page", page))
         pins = [self._pin_text(part.ref, p.num, with_net=True) for p in part.pins]
         rows.append((f"Pins ({len(pins)})", "", pins))
         issues = self._issues_of([(part.ref, p.num) for p in part.pins])
@@ -784,11 +810,45 @@ class Window(QMainWindow):
             rows.append((f"Issues ({len(issues)})", "", issues))
         return rows
 
+    def _summary(self):
+        """What is open and how it was read, shown while nothing is selected."""
+        if not self.file:
+            self.properties.clear()
+            return
+        rows = [("File", self.file.name), ("Pages", str(self.document.pageCount()))]
+        design = self.design
+        if design is None:
+            rows.append(("Extraction", "running" if self.process else "not run"))
+            self._properties(rows)
+            return
+        generator = design.source.generator
+        rows.append(("Drawn with", GENERATORS.get(generator, generator)))
+        if self.report_index is not None:
+            pages = self.report_pages
+            rows.append(
+                (
+                    "Nets read from",
+                    f"the drawing, {len(pages)} of {design.source.pages} pages"
+                    if pages
+                    else "the netlist the PDF carries; not shown on the drawing"
+                    if design.components
+                    else "nothing",
+                )
+            )
+        rows.append(("Part library", design.source.library or "none"))
+        low = sum(n.confidence < LOW_CONFIDENCE for n in design.nets)
+        rows += [
+            ("Components", str(len(design.components))),
+            ("Nets", f"{len(design.nets)}, {low} of low confidence"),
+            ("To check", str(len(self.review))),
+        ]
+        self._properties(rows)
+
     def _issue_properties(self, entry):
         pages = sorted({page for page, _ in entry["spots"]})
         rows = [
             ("Issue", report.ISSUE_TEXT.get(entry["kind"], entry["kind"])),
-            ("Severity", entry["severity"]),
+            ("Severity", SEVERITY_TEXT.get(entry["severity"], entry["severity"])),
             ("About", entry["what"]),
             ("Where", ", ".join(f"page {p}" for p in pages) or "not marked on the drawing"),
         ]
@@ -812,6 +872,8 @@ class Window(QMainWindow):
         loaded = self.report_index is None
         self.report_index = int(words[1])
         self.report_pages = [int(n) for n in words[3].split(",") if n.isdigit()]
+        if loaded and not self.picked:
+            self._summary()
         if loaded and self.report_pages:
             self.tabs.setCurrentWidget(self.web)
         elif loaded and self.design.components:  # parts found, yet no page read
@@ -820,6 +882,13 @@ class Window(QMainWindow):
                 "so they cannot be shown on it."
             )
         self._update()
+
+    def _report_crashed(self, status, code):
+        if status == QWebEnginePage.RenderProcessTerminationStatus.NormalTerminationStatus:
+            return
+        self.statusBar().showMessage(f"The report view stopped (code {code}); reloading it.")
+        self.picked, self.report_index = None, None
+        self.web.reload()
 
     def _page_shown(self, index):
         if self.tabs.currentWidget() is self.drawing:
@@ -910,6 +979,10 @@ class Window(QMainWindow):
         )  # the dialog asks before replacing a file
         if not path:
             return
+        if not Path(path).suffix:  # a name typed without one gets the format's
+            path += suffix
+            if Path(path).exists() and not self._replace(f"{path} already exists."):
+                return
         try:
             write(self, Path(path))
         except OSError as e:
@@ -929,17 +1002,11 @@ class Window(QMainWindow):
             return
         names = sorted(p.name for p in source.iterdir())
         existing = [n for n in names if (Path(folder) / n).exists()]
-        if existing:
-            answer = QMessageBox.question(
-                self,
-                "Replace Files",
-                f"{len(existing)} of the project's files already exist in {folder}: "
-                f"{', '.join(existing)}. Replace them?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
-            )
-            if answer != QMessageBox.StandardButton.Yes:
-                return
+        if existing and not self._replace(
+            f"{len(existing)} of the project's files are already in {folder}: "
+            f"{', '.join(existing)}."
+        ):
+            return
         try:
             for name in names:
                 part = Path(folder) / f".{name}.part"
@@ -952,6 +1019,41 @@ class Window(QMainWindow):
         self.statusBar().showMessage(
             f"Wrote {Path(folder) / (self.file.stem + '.kicad_pro')}", 10000
         )
+
+    def choose_library(self):
+        folder = QFileDialog.getExistingDirectory(
+            self, "Choose a Part Library Index", str(self.library or self.folder)
+        )
+        if not folder:
+            return
+        if not any(library.path(Path(folder), kind).is_file() for kind in ("kicad", "eagle")):
+            self._error(
+                "Not a part library index",
+                f"{folder} holds no index. Make one with: schem2net index-library LIBRARIES -o "
+                "FOLDER",
+            )
+            return
+        self._set_library(Path(folder))
+
+    def _set_library(self, folder: Path | None):
+        self.library = folder
+        self.statusBar().showMessage(
+            f"Part library {folder}: used from the next extraction."
+            if folder
+            else "No part library: used from the next extraction.",
+            10000,
+        )
+        self._update()
+
+    def _replace(self, why) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Replace Files",
+            f"{why} Replace?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return answer == QMessageBox.StandardButton.Yes
 
     def _exportable(self) -> bool:
         design = self.design
@@ -985,6 +1087,16 @@ class Window(QMainWindow):
         self.export_button.setEnabled(exportable)
         self.tabs.setTabEnabled(1, bool(self.report_pages) or self.tabs.currentWidget() is self.web)
         self.find_action.setEnabled(self.design is not None)
+        carried = (
+            self.design is not None and self.report_index is not None and not self.report_pages
+        )
+        self.tabs.setTabToolTip(
+            1,
+            "The nets came from the netlist this PDF carries; its drawing was not read."
+            if carried
+            else "",
+        )
+        self.no_library_action.setEnabled(self.library is not None)
         if not opened:
             self.page_label.clear()
         elif self.tabs.currentWidget() is self.drawing:
@@ -1009,6 +1121,11 @@ class Window(QMainWindow):
         )
         box.exec()
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.file is None:
+            self.stack.setCurrentIndex(0)
+
     def closeEvent(self, event):
         self.stop()
         super().closeEvent(event)
@@ -1024,9 +1141,10 @@ def _filter(tree: QTreeWidget, text: str):
     for k in range(tree.topLevelItemCount()):
         item = tree.topLevelItem(k)
         shown = 0
+        group = item.childCount() and text in item.text(0).lower()
         for c in range(item.childCount()):
             child = item.child(c)
-            hide = bool(text) and text not in child.text(0).lower()
+            hide = bool(text) and not group and text not in child.text(0).lower()
             child.setHidden(hide)
             shown += not hide
         texts = " ".join(item.text(c) for c in range(tree.columnCount())).lower()
@@ -1062,6 +1180,22 @@ def _severity_icon(severity: str) -> QIcon:
     return QApplication.style().standardIcon(pixmap)
 
 
+# Qt messages that say nothing about this application: the portal finding no
+# schem2net.desktop when installed with pip, links in a PDF that QtPdf cannot follow,
+# and focus changes Qt's Wayland text input reports. Everything else is printed.
+HARMLESS = (
+    "Failed to register with host portal",
+    "link with invalid location",
+    "skipping link with invalid page number",
+    "QWaylandTextInputv3::",
+)
+
+
+def _qt_message(mode, context, message):
+    if not any(known in message for known in HARMLESS):
+        sys.stderr.write(qFormatLogMessage(mode, context, message) + "\n")
+
+
 def application(argv: list[str]) -> QApplication:
     # PySide6 from PyPI carries its own Qt, without the desktop's theme plugins such as
     # KDE's; its portal theme still follows the desktop's choice of light or dark.
@@ -1072,12 +1206,7 @@ def application(argv: list[str]) -> QApplication:
     QApplication.setApplicationName("schem2net")
     QApplication.setApplicationVersion(__version__)
     QApplication.setDesktopFileName("schem2net")  # the Wayland app id
-    # Set first, to cover startup: the portal's warning that no schem2net.desktop is
-    # installed, links QtPdf cannot follow, and focus changes Qt's Wayland text input
-    # reports.
-    QLoggingCategory.setFilterRules(
-        "qt.qpa.services.warning=false\nqt.pdf.links=false\nqt.qpa.wayland.textinput=false"
-    )
+    qInstallMessageHandler(_qt_message)  # first, to cover startup
     app = QApplication(argv)
     if QIcon.themeName() in ("", "hicolor"):  # no icon theme found: use a common one
         dark = app.styleHints().colorScheme() == Qt.ColorScheme.Dark

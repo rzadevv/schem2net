@@ -111,12 +111,17 @@ From a checkout, `uv sync --extra gui` then `uv run schem2net-gui`.
 - **Extracted Nets** is the HTML report. Selecting a net, component or issue in
   the side panels highlights it or zooms to it there; Esc clears the selection.
   Properties lists each pin's number source: printed, part library, inferred,
-  guessed or not shown.
+  guessed or not shown. With nothing selected, it describes the document and how
+  it was read.
+- **File › Part Library** chooses an index made by `index-library`, as `--library`
+  does; `SCHEM2NET_LIBRARY` is the default.
 - **File › Export** writes the KiCad netlist (Ctrl+S), JSON, BOM, SPICE, HTML
   report or an editable KiCad project, as the CLI does.
 
 Nets carried in an Altium PDF are listed but cannot be shown on the drawing, since
-the drawing is not read. The extractor reports no progress, so only a busy
+the drawing is not read; the editable KiCad project, which needs the drawing, is
+then not offered (`schem2net schematic` reads the drawing instead). A component
+on several units is shown at its first. The extractor reports no progress, so only a busy
 indicator is shown. PyPI's Qt cannot load distribution theme plugins such as
 KDE's; the application then follows the desktop's light or dark setting through
 the XDG portal. Qt WebEngine needs NSS, ALSA, EGL and xkbcommon, which desktop

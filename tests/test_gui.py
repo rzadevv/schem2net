@@ -66,7 +66,8 @@ def test_the_report_has_the_markup_the_desktop_view_relies_on(tmp_path):
 
 @pytest.fixture(scope="module")
 def app():
-    pytest.importorskip("PySide6.QtWebEngineWidgets")
+    if not os.environ.get("SCHEM2NET_GUI_TESTS"):  # set where Qt must load, as in CI
+        pytest.importorskip("PySide6.QtWebEngineWidgets")
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     # Headless, Chromium has no GL to draw with, and crashes repainting the report.
     os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu")
@@ -156,6 +157,14 @@ def test_extraction_fills_the_lists_and_drives_the_report(app, window, tmp_path)
     _click(window.nets, item)  # the same net again clears it
     _wait(app, lambda: not _js(app, window, "document.body.classList.contains('focus')"))
 
+    summary = {
+        window.properties.topLevelItem(k).text(0): window.properties.topLevelItem(k).text(1)
+        for k in range(window.properties.topLevelItemCount())
+    }
+    assert summary["Drawn with"] == "KiCad"
+    assert summary["Nets read from"] == "the drawing, 1 of 1 pages"
+    assert summary["Part library"] == "none"
+
     # R3.2 is left open: the review queue's one entry, marked on the drawing
     assert [e["what"] for e in window.review] == ["R3.2"]
     window.issues.setCurrentItem(window.issues.topLevelItem(0).child(0))
@@ -163,6 +172,53 @@ def test_extraction_fills_the_lists_and_drives_the_report(app, window, tmp_path)
     assert window.properties.topLevelItem(0).text(1) == "pin on no net, without a no-connect flag"
     window.clear()
     _wait(app, lambda: _js(app, window, "document.querySelectorAll('.on').length") == 0)
+
+
+def test_a_net_name_is_text_wherever_it_shows(app, window, tmp_path):
+    name = """</script><b>"x'"""
+    file = resistor_page(KICAD_INK, label=name).save(tmp_path / "r.pdf", creator=KICAD)
+    _extracted(app, window, file)
+    item = next(
+        window.nets.topLevelItem(k)
+        for k in range(window.nets.topLevelItemCount())
+        if window.nets.topLevelItem(k).text(0) == name
+    )
+    _click(window.nets, item)
+    net = item.data(0, 256)
+    _wait(
+        app,
+        lambda: _js(
+            app, window, f"document.querySelectorAll('svg [data-net=\"{net}\"].on').length"
+        ),
+    )
+    assert _js(app, window, "document.querySelectorAll('aside b, main b').length") == 0
+    assert (
+        _js(app, window, f"document.querySelector('li[data-net=\"{net}\"] .n').textContent") == name
+    )
+    assert window.properties.topLevelItem(0).text(1) == name
+
+
+def test_the_report_cannot_leave_or_read_other_files(app, window, tmp_path):
+    file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
+    (tmp_path / "secret.txt").write_text("secret")
+    _extracted(app, window, file)
+    report = window.web.url()
+    page = window.web.page()
+    page.runJavaScript(f"location.href = {json.dumps((tmp_path / 'secret.txt').as_uri())}", 0)
+    page.runJavaScript("location.href = 'https://example.com/'", 0)
+    end = time.time() + 2
+    while time.time() < end:
+        app.processEvents()
+    assert window.web.url() == report
+    seen = []
+    page.titleChanged.connect(lambda title: seen.append(title) if title.startswith("got") else 0)
+    page.runJavaScript(
+        f"fetch({json.dumps(window._output('design.ir.json').as_uri())})"
+        ".then(() => document.title = 'got it', () => document.title = 'got nothing')",
+        0,
+    )
+    _wait(app, lambda: seen)
+    assert seen == ["got nothing"]
 
 
 def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatch):
@@ -183,6 +239,13 @@ def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatc
     assert (tmp_path / "r.cir").read_text() == export.spice_netlist(design)
     assert (tmp_path / "r.html").read_text() == window._output("report.html").read_text()
 
+    # A name typed without a suffix gets the format's, and asks before replacing a file
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(tmp_path / "r"), ""))
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.No)
+    (tmp_path / "r.net").write_text("mine")
+    window.exports[0].trigger()
+    assert (tmp_path / "r.net").read_text() == "mine"
+
     project = tmp_path / "project"
     project.mkdir()
     monkeypatch.setattr(QFileDialog, "getExistingDirectory", lambda *a, **k: str(project))
@@ -192,6 +255,30 @@ def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatc
     monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.No)
     window.schematic_action.trigger()
     assert (project / "r.kicad_sch").read_text() == "mine"
+
+
+def test_filtering_issues_by_their_kind_keeps_its_entries(app, window, tmp_path):
+    from schem2net.gui.app import _filter
+
+    file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
+    _extracted(app, window, file)
+    group = window.issues.topLevelItem(0)
+    _filter(window.issues, "no-connect")
+    assert not group.isHidden() and not group.child(0).isHidden()
+    _filter(window.issues, "R9")
+    assert group.isHidden()
+
+
+def test_the_part_library_chosen_goes_to_the_worker(app, window, tmp_path):
+    file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
+    assert window.open(file)
+    window._set_library(tmp_path)
+    window.extract()
+    assert window.process.arguments()[-1] == str(tmp_path)
+    window.stop()
+    window._set_library(None)
+    window.extract()
+    assert window.process.arguments()[-1] == window.out.path()
 
 
 def test_stopping_keeps_nothing(app, window, tmp_path):
