@@ -18,9 +18,26 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync --locked --all-extras --python ${{ matrix.python }}
+      - run: uv sync --locked --extra mcp --python ${{ matrix.python }}
       - run: make lint
       - run: make package-check
+
+  gui:
+    runs-on: ubuntu-latest
+    env:
+      SCHEM2NET_GUI_TESTS: "1"  # fail, rather than skip, when Qt cannot load
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      # What Qt and its web view load that a bare Ubuntu 24.04 lacks
+      - run: >-
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends
+          libasound2t64 libbrotli1 libdbus-1-3 libegl1 libexpat1 libfontconfig1 libfreetype6
+          libgbm1 libgl1 libglib2.0-0t64 libgssapi-krb5-2 libnss3 libx11-6 libxcb-dri3-0
+          libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxkbfile1
+          libxrandr2 libxtst6
+      - run: uv sync --locked --extra gui
+      - run: uv run --extra gui pytest tests/test_gui.py --cov=schem2net.gui --cov-config=/dev/null
 
   bench:
     if: github.event_name != 'schedule'

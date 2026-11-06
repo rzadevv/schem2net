@@ -60,5 +60,8 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
+[tool.coverage.report]
+omit = ["*/schem2net/gui/app.py"]  # needs Qt; the gui job in CI tests it
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
