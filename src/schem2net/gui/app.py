@@ -1128,6 +1128,8 @@ class Window(QMainWindow):
 
     def closeEvent(self, event):
         self.stop()
+        if self.out:  # the results shown; not left to object teardown at exit
+            self.out.remove()
         super().closeEvent(event)
 
 
