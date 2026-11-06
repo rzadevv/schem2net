@@ -121,7 +121,8 @@ From a checkout, `uv sync --extra gui` then `uv run schem2net-gui`.
 Nets carried in an Altium PDF are listed but cannot be shown on the drawing, since
 the drawing is not read; the editable KiCad project, which needs the drawing, is
 then not offered (`schem2net schematic` reads the drawing instead). A component
-on several units is shown at its first. The extractor reports no progress, so only a busy
+on several units is shown at its first. The report draws over a raster image of
+each page, which softens at high zoom; **Original** stays sharp. The extractor reports no progress, so only a busy
 indicator is shown. PyPI's Qt cannot load distribution theme plugins such as
 KDE's; the application then follows the desktop's light or dark setting through
 the XDG portal. Qt WebEngine needs NSS, ALSA, EGL and xkbcommon, which desktop
