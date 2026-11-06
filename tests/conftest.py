@@ -85,7 +85,7 @@ KICAD_INK = {
 }
 
 
-def resistor_page(ink):
+def resistor_page(ink, label="VIN"):
     """Three resistors in a row at KiCad's sizes, each role in its ink: the top ends wired
     together under the label VIN, the first two bottom ends too, the third left open."""
     b = PdfBuilder(400, 300)
@@ -108,7 +108,7 @@ def resistor_page(ink):
         text(("1k", "2k2", "4k7")[i], x + 2, 34.48, "field")
     line((30.48, 27.94), (71.12, 27.94), role="wire")
     line((30.48, 38.02), (50.8, 38.02), role="wire")
-    text("VIN", 35, 27.6, "local_label")
+    text(label, 35, 27.6, "local_label")
     return b
 
 

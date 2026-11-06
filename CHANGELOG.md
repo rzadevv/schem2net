@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an optional desktop application, `schem2net-gui`, installed with the `gui` extra.
+
 - Consolidate usage, architecture and development documentation while preserving
   frozen evaluation records and historical comparisons.
 - Test the installed wheel and optional MCP workflow in CI.

@@ -70,6 +70,10 @@ revision comparisons, and `index-library` for optional pin recovery. The
 [usage guide](docs/usage.md) covers exports, regions, libraries, Python access and
 read-only MCP tools.
 
+An optional desktop application, `schem2net-gui`, opens a PDF, runs extraction
+and shows the report beside lists of nets, components and issues. Install it with
+the `gui` extra; see [Desktop application](docs/usage.md#desktop-application).
+
 ## Evaluation
 
 The frozen extractor at `5d2417c` was evaluated once on **63 new designs from 40

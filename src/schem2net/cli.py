@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 from collections import Counter
@@ -250,11 +249,7 @@ def report_(
     output = output or file.with_name(_stem(file) + ".html")
     extraction = pipeline.run(file, region=_region(region), library_dir=library_dir)
     _refuse(extraction.design, strict)
-    pictures = {}
-    if pdf_under and not region:
-        read = [result.page.number for result in extraction.pages if result.scene is not None]
-        for number, png in pdf.page_pngs(file, read).items():
-            pictures[number] = f"data:image/png;base64,{base64.b64encode(png).decode()}"
+    pictures = report.pictures(file, extraction) if pdf_under and not region else {}
     _write(output, report.render(extraction, pictures))
     typer.echo(output)
     _say(extraction.design)

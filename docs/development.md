@@ -3,7 +3,7 @@
 ## Local checks
 
 Python 3.11+ and uv are required. `make install` installs locked development and
-optional MCP dependencies. CI tests Python 3.11 and 3.14.
+optional MCP and desktop (`gui`) dependencies. CI tests Python 3.11 and 3.14.
 
 ```sh
 make install
@@ -19,6 +19,11 @@ untracked local files; the sdist has an explicit project-path allowlist so perso
 PDFs and tool settings are not bundled. The target calls `.venv/bin/python`
 directly so uv cannot silently restore the editable installation. Run
 `make install` afterward to resume editable development.
+
+The desktop application's window tests skip where PySide6 is not installed, and
+its module is left out of the coverage gate. CI runs them in a separate `gui` job
+under Qt's offscreen platform, with `SCHEM2NET_GUI_TESTS=1` making them fail
+rather than skip when Qt cannot load.
 
 Tests cover geometry, glyph decoding, wire crossings, symbol/pin reconstruction,
 library fits, source readers, scoring and output formats. Synthetic PDF fixtures

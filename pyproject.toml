@@ -19,10 +19,14 @@ Repository = "https://github.com/rzadevv/schem2net"
 
 [project.scripts]
 schem2net = "schem2net.cli:main"
+schem2net-gui = "schem2net.gui:main"
 
 [project.optional-dependencies]
 mcp = [
     "mcp>=2.2,<3",
+]
+gui = [
+    "pyside6>=6.8,!=6.12.0",  # 6.12.0 under-counts references to None on Python 3.11
 ]
 
 [dependency-groups]
@@ -55,6 +59,9 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.coverage.report]
+omit = ["*/schem2net/gui/app.py"]  # needs Qt; the gui job in CI tests it
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
