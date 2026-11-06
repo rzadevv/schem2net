@@ -24,6 +24,9 @@ jobs:
 
   gui:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.14"]
     env:
       SCHEM2NET_GUI_TESTS: "1"  # fail, rather than skip, when Qt cannot load
     steps:
@@ -36,7 +39,7 @@ jobs:
           libgbm1 libgl1 libglib2.0-0t64 libgssapi-krb5-2 libnss3 libx11-6 libxcb-dri3-0
           libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxkbfile1
           libxrandr2 libxtst6
-      - run: uv sync --locked --extra gui
+      - run: uv sync --locked --extra gui --python ${{ matrix.python }}
       - run: uv run --extra gui pytest tests/test_gui.py --cov=schem2net.gui --cov-config=/dev/null
 
   bench:
