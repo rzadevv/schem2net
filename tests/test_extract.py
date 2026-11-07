@@ -1297,6 +1297,21 @@ def test_power_name_sits_away_from_the_wire():
     assert not fields._in_line(ground, left) and fields._in_line(ground, right)
 
 
+def test_a_ground_port_takes_its_name_along_its_wire_not_a_label_beside_it():
+    """Altium BOOT0 tied to ground beside NRST: a port with no pin, its wire coming in
+    from the left, GND printed to its right, and the NRST label of the next pin's wire
+    just under it, nearer. The port is named GND; NRST stays a label."""
+    port = symbols.Symbol([], (98.8, 132.7, 103.6, 137.8), body=(98.8, 132.7, 103.6, 137.8))
+    b = SceneBuilder()
+    b.scene.wires = [((93.7, 135.25), (98.8, 135.25)), ((93.7, 140.3), (98.8, 140.3))]
+    nrst = Label("NRST", "local", (98.8, 138.3, 104.6, 139.9), 0.0)
+    gnd = Label("GND", "local", (104.4, 134.5, 109.2, 136.1), 0.0)
+    b.scene.labels = [nrst, gnd]
+    altium = profile.load("altium")
+    fields._name_power_from_labels([port], b.scene, altium, fields._could_be_power)
+    assert port.power == "GND" and b.scene.labels == [nrst]
+
+
 def test_unnamed_part_touching_a_pin_does_not_borrow_its_neighbors_reference():
     b = SceneBuilder()
     b.resistor(10, 10, "R1", "1k")
