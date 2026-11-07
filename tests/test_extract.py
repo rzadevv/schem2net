@@ -287,6 +287,38 @@ def test_bus_entries_meeting_on_a_bus_are_not_joined():
     assert [("R3", "1"), ("R4", "1")] in [n.pins for n in nets.values()]
 
 
+def test_a_label_on_the_bus_names_the_members_a_sheet_pin_passes_on():
+    """Two copies of one sheet, each with a sheet pin SFP{SFP}, on buses labelled
+    SFP0{SFP} and SFP1{SFP}: each copy's SFP.TX is its own bus's member, apart."""
+    root = SceneBuilder()
+    root.scene.path = "/"
+    for k, y in enumerate((10, 30)):
+        root.resistor(10, y, f"R{k + 1}", "1k")
+        root.scene.wires.append(((10, y - 2.54), (20, y - 2.54)))
+        root.scene.labels += [
+            Label(f"SFP{k}.TX", "local", (11, y - 3.8, 16, y - 2.6), 0.0),
+            Label(f"SFP{k}{{SFP}}", "local", (31, y - 1.4, 38, y - 0.1), 0.0),
+        ]
+        root.scene.buses.append(((30, y), (40, y)))
+        root.scene.sheets.append(
+            Sheet(f"S{k}", (40, y - 10, 60, y + 10), [SheetPin("SFP{SFP}", (40, y))])
+        )
+
+    def copy(page, path, ref):
+        b = SceneBuilder()
+        b.scene.page, b.scene.path = page, path
+        b.resistor(10, 10, ref, "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("SFP.TX", "local", (11, 6.2, 15, 7.4), 0.0))
+        b.scene.labels.append(Label("SFP{SFP}", "hier", (31, 9.3, 37, 10.6), 0.0, [(30, 10)]))
+        b.scene.buses.append(((30, 10), (40, 10)))
+        return b.scene
+
+    _, nets = netlist(root.scene, copy(2, "/S0/", "R3"), copy(3, "/S1/", "R4"))
+    assert nets["SFP0.TX"].pins == [("R1", "1"), ("R3", "1")]
+    assert nets["SFP1.TX"].pins == [("R2", "1"), ("R4", "1")]
+
+
 def test_vector_bus_members_match_by_position():
     parent = SceneBuilder()
     parent.scene.path = "/"

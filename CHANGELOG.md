@@ -33,6 +33,7 @@
   of the neighbouring pin's wire.
 - The command line names the pad numbers it guessed, which exported netlists give as
   real pads.
+- A label on the bus to a sheet pin names the group bus members the sheet receives.
 - Slanted bus entries meeting at one point on a bus join the bus, not each other.
 
 - Numbered pin fragments can follow an unbranched path to a wire and stay together

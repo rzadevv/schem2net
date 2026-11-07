@@ -90,6 +90,7 @@ class Netlister:
         self.label_buses: dict[tuple[str, str], list[tuple[int, busnames.Bus]]] = defaultdict(list)
         # Nodes that name a group bus, with the bus they name: (page, node, bus)
         self.group_names: list[tuple[int, tuple, busnames.Bus]] = []
+        self.renamed: set[tuple] = set()  # sheet pins whose bus a label names
 
     def _key(self, name: str) -> str:
         """A net name as names are matched: in capitals too where case tells nothing."""
@@ -284,6 +285,8 @@ class Netlister:
         for node, at, (side, path, key), bus in crossings:
             if bus.vector:
                 bus = self._named_on_page(at, node, bus, vector_labels)
+            elif side == "sheet":
+                bus = self._labelled_on_page(page, node, bus)
             if side == "sheet":
                 self.sheet_buses.append((page, path, key, bus))
             else:
@@ -343,6 +346,24 @@ class Netlister:
             if geometry.distance_to_segment(p, buses[j]) <= TOL:
                 self.join(node, ("b", page, j), "bus")
 
+    def _labelled_on_page(self, page: int, node: tuple, bus: busnames.Bus) -> busnames.Bus:
+        """The names a group bus's members have where it meets a sheet pin: a label on
+        the bus names them, as SFP0{SFP} on the bus to a sheet pin SFP{SFP}; the sheet
+        pin's own name is what the sheet calls them."""
+        own, members = self.uf.find(node), self.names[node].partition("{")[2]
+        named = {
+            other
+            for at, label, other in self.group_names
+            if at == page
+            and label[0] == "l"
+            and self.uf.find(label) == own
+            and self.names[label].partition("{")[2] == members
+        }
+        if len(named) != 1:
+            return bus
+        self.renamed.add(node)
+        return named.pop()
+
     def _named_on_page(self, at: Point, node: tuple, bus: busnames.Bus, labels) -> busnames.Bus:
         """The names a vector bus's members have on this page.
 
@@ -379,11 +400,13 @@ class Netlister:
 
         # One bus named twice, as DPHY0_C{DPHY} and DPHY0_P{DPHY} where it runs between
         # two sheets that call it each its own way: members of one name are one net.
-        on_bus: dict[tuple, list[tuple[int, busnames.Bus]]] = defaultdict(list)
+        on_bus: dict[tuple, list[tuple[int, tuple, busnames.Bus]]] = defaultdict(list)
         for page, node, bus in self.group_names:
-            on_bus[self.uf.find(node)].append((page, bus))
+            on_bus[self.uf.find(node)].append((page, node, bus))
         for named in on_bus.values():
-            buses = {(page, bus.prefix): (page, bus) for page, bus in named}
+            # A sheet pin whose bus a label names names only its sheet's side.
+            named = [n for n in named if n[1] not in self.renamed]
+            buses = {(page, bus.prefix): (page, bus) for page, _, bus in named}
             if len({prefix for _, prefix in buses}) < 2:
                 continue
             members = [
