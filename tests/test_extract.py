@@ -856,6 +856,35 @@ def test_eagle_label_laid_on_a_wire():
     assert [(lb.text, lb.kind) for lb in built.labels] == [("ETXD0", "local")]
 
 
+def test_eagle_label_hanging_from_its_wire():
+    """Eagle turns an upright label that would read downwards half a turn, so it hangs
+    from its wire by the tops of its letters. A level text hanging under a wire is
+    no label: values of the parts below a rail sit there."""
+    from schem2net.nets import _under_label
+
+    green, grey = (0, 128, 0), (128, 128, 128)
+    page = Page(1, 100, 100)
+    page.paths = [
+        Path(0, [[(10, 10), (10, 40)]], 0.15, green, None),
+        Path(1, [[(30, 20), (60, 20)]], 0.15, green, None),
+    ]
+    page.texts = [
+        Text(0, "NRB0", (10.3, 20, 11.8, 25), 2.2, 90.0, grey),  # reads upwards
+        Text(1, "SDA", (34, 20.33, 38, 22.2), 2.2, 0.0, grey),
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, profile.load("eagle"))
+    assert [(lb.text, lb.angle) for lb in built.labels] == [("NRB0", 270.0)]
+    assert [t.text for t in built.fields] == ["SDA"]
+    index = geometry.GridIndex()
+    for k, wire in enumerate(built.wires):
+        index.add(k, geometry.bbox_of(wire))
+    on = _under_label(built.labels[0], built.wires, index, [], None, ("w",))
+    assert built.wires[on[1]] == ((10, 10), (10, 40))
+
+
 def test_eagle_designator_outside_the_box_beats_a_pin_name_inside():
     """A chip whose pins are named like designators (A0, A1), a little in from the pins,
     beyond where pin names are looked for: its name sits above the box."""

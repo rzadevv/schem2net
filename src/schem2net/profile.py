@@ -80,6 +80,7 @@ class Profile:
     names_case_blind: bool = False  # net names differing only in case are one net
     labels_in_outlines: bool = False
     labels_on_wires: bool = False  # a field-coloured name laid along a wire is its label
+    labels_hang: bool = False  # an upright label turned to stay readable hangs from its wire
     labels_show_sheet: bool = False  # "NAME/2": the sheet the net goes on to
     text_font: str | None = None
     texts_by_shape: bool = True  # texts in colours of no role take a role learned from shape
@@ -174,6 +175,7 @@ def parse(name: str, data: dict) -> Profile:
         names_case_blind=labels.get("case_blind", False),
         labels_in_outlines=labels.get("in_outlines", False),
         labels_on_wires=labels.get("on_wires", False),
+        labels_hang=labels.get("hang", False),
         labels_show_sheet=labels.get("sheet_reference", False),
         text_font=text.get("font"),
         texts_by_shape=text.get("by_shape", True),
