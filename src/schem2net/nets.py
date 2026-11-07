@@ -135,6 +135,15 @@ class Netlister:
         def dotted(p: Point) -> bool:
             return any(geometry.distance(p, scene.junctions[k]) <= TOL for k in dots.near(p, TOL))
 
+        buses = scene.buses
+        bus_index = GridIndex()
+        for i, seg in enumerate(buses):
+            bus_index.add(i, geometry.bbox_of(seg))
+            self.uf.find(("b", page, i))
+
+        def on_bus(p: Point) -> bool:
+            return any(_on(p, buses[j]) for j in bus_index.near(p, TOL))
+
         plain_crossings: dict[Point, bool] = {}
         for i, seg in enumerate(wires):
             for end in seg:
@@ -143,8 +152,13 @@ class Netlister:
                     plain_crossings[end] = not dotted(end) and _crosses(
                         end, [wires[j] for j in near]
                     )
+                on = on_bus(end)
                 for j in near:
                     if j != i:
+                        # A slanted bus entry joins the bus where it meets other wires on
+                        # it, not them: a bus carries its members by name.
+                        if on and (_slanted(seg) or _slanted(wires[j])):
+                            continue
                         # A PDF can split a continuous wire at a plain crossing.
                         # Its artificial end is not a T-contact with the other axis.
                         if (
@@ -167,14 +181,9 @@ class Netlister:
                 self.join(("w", page, through[0]), ("w", page, j), "junction")
 
         labelled: set[int] = set()
-        buses = scene.buses
-        bus_index = GridIndex()
         vector_labels: list[tuple[tuple, Label, busnames.Bus]] = []
         # Buses crossing sheets, named once this page's buses are joined: (node, at, key, bus)
         crossings: list[tuple[tuple, Point, tuple, busnames.Bus]] = []
-        for i, seg in enumerate(buses):
-            bus_index.add(i, geometry.bbox_of(seg))
-            self.uf.find(("b", page, i))
         for i, seg in enumerate(buses):
             for end in seg:
                 for j in bus_index.near(end, TOL):
@@ -615,6 +624,12 @@ def _crosses(p: Point, segments: list[Segment]) -> bool:
             if abs(offset) > TOL:
                 arms.add((axis, 1 if offset > 0 else -1))
     return len(arms) == 4
+
+
+def _slanted(seg: Segment) -> bool:
+    """Neither level nor upright, as a bus entry is."""
+    (ax, ay), (bx, by) = seg
+    return min(abs(ax - bx), abs(ay - by)) > TOL
 
 
 def _on(p: Point, seg: Segment) -> bool:

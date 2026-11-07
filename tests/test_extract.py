@@ -264,6 +264,29 @@ def test_sheet_pin_joins_child_label():
     assert nets["SIG"].pins == [("R1", "1"), ("R2", "1")]
 
 
+def test_bus_entries_meeting_on_a_bus_are_not_joined():
+    """Two slanted entries come onto the bus from either side at one point, where a
+    straight wire, split there, crosses it: each entry joins the bus, which carries its
+    members by name, not the other wires."""
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.resistor(30, 10, "R2", "1k")
+    b.resistor(5, 30, "R3", "1k")
+    b.resistor(35, 30, "R4", "1k")
+    b.scene.buses.append(((20, 0), (20, 10)))
+    b.scene.wires += [((10, 7.46), (17.46, 7.46)), ((17.46, 7.46), (20, 5))]
+    b.scene.wires += [((30, 7.46), (22.54, 7.46)), ((22.54, 7.46), (20, 5))]
+    b.scene.wires += [((5, 27.46), (5, 5)), ((5, 5), (20, 5)), ((20, 5), (35, 5))]
+    b.scene.wires += [((35, 5), (35, 27.46))]
+    b.scene.labels += [
+        Label("A", "local", (11, 6.2, 13, 7.4), 0.0),
+        Label("B", "local", (25, 6.2, 27, 7.4), 0.0),
+    ]
+    _, nets = netlist(b.scene)
+    assert nets["A"].pins == [("R1", "1")] and nets["B"].pins == [("R2", "1")]
+    assert [("R3", "1"), ("R4", "1")] in [n.pins for n in nets.values()]
+
+
 def test_vector_bus_members_match_by_position():
     parent = SceneBuilder()
     parent.scene.path = "/"
