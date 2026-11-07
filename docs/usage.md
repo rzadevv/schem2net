@@ -22,7 +22,8 @@ connection evidence and issues. A pin with an unread number keeps a placeholder
 such as `?1`; a known name can be retained separately. Confidence below 0.8 marks
 weak net evidence. Confidence at or above 0.8 does not certify the net's physical
 pin identities. The report lists guessed numbers, missing connections and other
-issues separately, with links to their positions on the drawing.
+issues separately, with links to their positions on the drawing. Exported netlists
+give guessed pad numbers as real pads; the command line names them when it writes one.
 
 ## Exports and revisions
 

@@ -213,6 +213,20 @@ def _say(design: Design) -> None:
             typer.echo(f"page {issue.page} skipped: {SKIPPED[issue.kind]}", err=True)
         elif issue.kind == "page_failed":
             typer.echo(f"page {issue.page} could not be read ({issue.detail})", err=True)
+    # A guessed pad sits on its net as firmly as a printed one: the net's confidence
+    # weighs the wiring, not which pad it is, so the guess is told apart.
+    guessed = sorted(
+        {f"{ref}.{num}" for i in issues if i.kind == "pin_number_guessed" for ref, num in i.pins},
+        key=exporters._natural,
+    )
+    if guessed:
+        more = f" and {len(guessed) - 6} more" if len(guessed) > 6 else ""
+        some = "1 pad number is" if len(guessed) == 1 else f"{len(guessed)} pad numbers are"
+        typer.echo(
+            f"{some} not printed but guessed ({', '.join(guessed[:6])}{more}); "
+            "exported netlists use them as real pads, so check them before laying out a board.",
+            err=True,
+        )
     doubtful = [n for n in design.nets if n.confidence < LOW_CONFIDENCE]
     worth = [i for i in issues if i.kind not in SKIPPED]
     if doubtful or worth:
