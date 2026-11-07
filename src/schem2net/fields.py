@@ -258,17 +258,40 @@ def _labels_in_line(
     that may name it, in line with it; the labels taken are no labels any more."""
     local = [label for label in scene.labels if label.kind == "local" and not label.outline]
     pool = _Texts([Text(i, lb.text, lb.bbox, 0.0, lb.angle, None) for i, lb in enumerate(local)])
+    # A net label in this colour may name a wire passing beside a pinless sign: the sign's
+    # own name lies along the axis from where it is joined.
+    ends = GridIndex()
+    tips = [e for wire in scene.wires for e in wire] + [
+        p.at for s in symbols for p in s.pins if not _could_be_power(s)
+    ]
+    for k, end in enumerate(tips):
+        ends.add(k, (*end, *end))
     found = []
     for symbol in filter(takes, symbols):
+        joined = None
+        if not symbol.pins:
+            box = geometry.grown(symbol.bbox, CORNER_GAP)
+            on = {
+                (round(tips[k][0], 1), round(tips[k][1], 1))
+                for k in ends.within(box)
+                if _on_outline(tips[k], symbol.bbox)
+            }
+            joined = on.pop() if len(on) == 1 else None
         for _, i in pool.near(symbol.bbox, profile.label_name_gap or POWER_NAME_GAP):
             text = pool.texts[i]
-            if _is_power_name(text, profile) and _in_line(symbol, text):
+            if _is_power_name(text, profile) and _in_line(symbol, text, joined=joined):
                 found.append((symbol, text.text))
                 pool.used.add(i)
                 break
     claimed = {id(local[i]) for i in pool.used}
     scene.labels = [label for label in scene.labels if id(label) not in claimed]
     return found
+
+
+def _on_outline(p: Point, box: BBox) -> bool:
+    x0, y0, x1, y1 = geometry.grown(box, CORNER_GAP)
+    inside = x0 <= p[0] <= x1 and y0 <= p[1] <= y1
+    return inside and min(p[0] - x0, x1 - p[0], p[1] - y0, y1 - p[1]) <= 2 * CORNER_GAP
 
 
 def _is_flag_or_ground(symbol: Symbol, scene: Scene) -> bool:
@@ -572,28 +595,35 @@ def _anchors(
     ]
 
 
-def _in_line(symbol: Symbol, text: Text, loose: bool = False) -> bool:
+def _in_line(symbol: Symbol, text: Text, loose: bool = False, joined: Point | None = None) -> bool:
     """True if the text sits beyond the symbol along its pin axis, not beside it. Loosely,
-    a name anchored at one end may overhang the symbol: it need only cross the pin's axis."""
+    a name anchored at one end may overhang the symbol: it need only cross the pin's axis.
+    A symbol without pins has its axis from `joined`, where a wire meets its outline, if
+    known."""
     x0, y0, x1, y1 = symbol.bbox
     cx, cy = geometry.center(text.bbox)
     above_or_below = x0 - 0.5 <= cx <= x1 + 0.5 and not y0 < cy < y1
     left_or_right = y0 - 0.5 <= cy <= y1 + 0.5 and not x0 < cx < x1
-    if not symbol.pins:
+    if symbol.pins:
+        (ax, ay), horizontal = symbol.pins[0].at, geometry.is_horizontal(symbol.pins[0].line)
+    elif joined:  # a wire on its left or right side gives a horizontal axis
+        across = min(abs(joined[0] - x0), abs(joined[0] - x1))
+        (ax, ay), horizontal = joined, across < min(abs(joined[1] - y0), abs(joined[1] - y1))
+    else:
         return above_or_below or left_or_right
-    (ax, ay), tx0, ty0, tx1, ty1 = symbol.pins[0].at, *text.bbox
+    tx0, ty0, tx1, ty1 = text.bbox
 
     upright = round(text.angle) % 180 == 0
 
     def overhangs(lo: float, hi: float, axis: float, a: float, b: float) -> bool:
         """Runs across the axis, as a name turned with its symbol does, with one end over
         the symbol, which spans a to b."""
-        across = upright != geometry.is_horizontal(symbol.pins[0].line)
+        across = upright != horizontal
         ends = (a - 0.5 <= lo <= b + 0.5) or (a - 0.5 <= hi <= b + 0.5)
         return loose and across and lo - 0.5 <= axis <= hi + 0.5 and ends
 
     # The name sits past the end away from where the wire meets the pin.
-    if geometry.is_horizontal(symbol.pins[0].line):
+    if horizontal:
         far = cx < x0 if ax > (x0 + x1) / 2 else cx > x1
         return (left_or_right or overhangs(ty0, ty1, ay, y0, y1)) and far
     far = cy < y0 if ay > (y0 + y1) / 2 else cy > y1

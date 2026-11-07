@@ -28,6 +28,12 @@
   reference and restore their printed pin numbers.
 
 - Separate bodies meeting through pin tips no longer borrow each other's reference.
+
+- A pinless power port takes the name lying along its wire, not a nearer net label
+  of the neighbouring pin's wire.
+- The command line names the pad numbers it guessed, which exported netlists give as
+  real pads.
+
 - Numbered pin fragments can follow an unbranched path to a wire and stay together
   through symbol splitting.
 - A wire split at a plain crossing no longer shorts to the wire passing through it;

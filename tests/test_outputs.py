@@ -252,6 +252,29 @@ def test_a_run_that_reads_nothing_leaves_an_earlier_output_as_it_was(tmp_path, m
     assert result.exit_code == 0 and (tmp_path / "board.rev2.bom.csv").exists()
 
 
+def test_guessed_pads_are_named_where_a_netlist_would_hide_them(tmp_path, monkeypatch):
+    """A guessed pad goes out in the KiCad netlist like a printed one, on a sure net: the
+    command says which pads were guessed."""
+    from typer.testing import CliRunner
+
+    from schem2net import cli, pipeline
+
+    pdf = tmp_path / "board.pdf"
+    pdf.write_bytes(b"%PDF")
+    net = Net(id="n1", name="VDD", pins=[("D1", "2"), ("U1", "1")], confidence=1.0)
+    issue = Issue(kind="pin_number_guessed", detail="D1", pins=[("D1", "1"), ("D1", "2")])
+    design = Design(
+        source=Source(file=str(pdf)),
+        components=[part("D1", None, "1", "2"), part("U1", None, "1")],
+        nets=[net],
+        issues=[issue],
+    )
+    monkeypatch.setattr(pipeline, "extract", lambda *a, **k: design)
+    result = CliRunner().invoke(cli.app, ["export", str(pdf), "--to", "kicad-net"])
+    assert result.exit_code == 0 and '(pin "2")' in (tmp_path / "board.net").read_text()
+    assert "2 pad numbers are not printed but guessed (D1.1, D1.2)" in result.stderr
+
+
 def test_input_that_cannot_be_read_is_told_plainly(tmp_path):
     from schem2net import pdf, pipeline
 
