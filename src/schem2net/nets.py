@@ -699,7 +699,7 @@ def _under_label(
 
     best = None
     for seg, node in candidates:
-        if geometry.is_horizontal(seg) == vertical:
+        if geometry.is_horizontal(seg) == vertical or _slanted(seg):
             continue
         gap = geometry.dot(seg[0], across) - base
         a, b = geometry.dot(seg[0], along), geometry.dot(seg[1], along)

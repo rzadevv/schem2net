@@ -2384,6 +2384,25 @@ def test_a_label_sits_on_the_wire_at_its_baseline_however_turned(angle, wire_y):
     assert _under_label(label, wires, index, [], None, ("w", 1)) == ("w", 1, 0)
 
 
+def test_a_label_does_not_sit_on_a_bus_entry():
+    """Upright wires in a row drop to a bus through slanted entries; the entry from the
+    wire left of RAM_A20's meets the bus right below RAM_A20's own wire. The label is
+    laid along its wire, not along the entry."""
+    from schem2net.nets import _under_label
+
+    label = Label("RAM_A20", "local", (127.88, 256.89, 129.77, 267.81), 90.0)
+    wires = [
+        ((129.59, 270.42), (127.03, 267.87)),  # entry from the wire to the left
+        ((127.03, 267.87), (127.03, 247.55)),
+        ((132.11, 270.42), (129.59, 267.87)),
+        ((129.59, 267.87), (129.59, 247.55)),  # RAM_A20's
+    ]
+    index = geometry.GridIndex()
+    for k, w in enumerate(wires):
+        index.add(k, geometry.bbox_of(w))
+    assert _under_label(label, wires, index, [], None, ("w",)) == ("w", 3)
+
+
 def test_easyeda_reads_a_sign_by_a_pin_as_no_number():
     """EasyEDA numbers its pads; a + by an LED's pin names it."""
     pins = [symbols.Pin(0, ((14, 10), (11, 10))), symbols.Pin(1, ((16, 10), (19, 10)))]
