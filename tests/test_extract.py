@@ -2174,6 +2174,27 @@ def test_a_sheet_whose_name_is_not_printed_is_named_by_its_pins():
     assert root.sheets[0].name == "I2C"
 
 
+def test_an_unnamed_copy_of_a_repeated_sheet_takes_the_copy_left_over():
+    """bank0, bank2 and bank3 are printed, bank1 is not; all four share their pins, so
+    the unnamed one is the child no other sheet names. With two unnamed, which is which
+    is not drawn: both stay unnamed."""
+    from schem2net.pipeline import _name_sheets
+
+    def named(banks):
+        root = Scene(page=1, path="/")
+        root.sheets = [Sheet(n, (0, 0, 20, 20), [SheetPin("OE_N", (0, 5))]) for n in banks]
+        children = []
+        for k in range(4):
+            child = Scene(page=k + 2, path=f"/bank{k}/")
+            child.labels = [Label("OE_N", "hier", (0, 0, 1, 1), 0.0)]
+            children.append(child)
+        _name_sheets([root, *children])
+        return [s.name for s in root.sheets]
+
+    assert named(["bank0", "", "bank2", "bank3"]) == ["bank0", "bank1", "bank2", "bank3"]
+    assert named(["bank0", "", "", "bank3"]) == ["bank0", "", "", "bank3"]
+
+
 def test_members_of_one_bus_named_twice_are_one_net():
     """DPHY0_C{DPHY} and DPHY0_P{DPHY} on the bus between two sheets name the same bus:
     DPHY0_C.C_N and DPHY0_P.C_N are one net."""

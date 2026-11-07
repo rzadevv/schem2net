@@ -343,7 +343,10 @@ def _name_sheets(scenes: list[Scene]) -> None:
                 for path, names in labels.items()
                 if path.startswith(page.path) and path.count("/") == page.path.count("/") + 1
             ]
-            shared, child = max(children, default=(0, ""))
-            if shared and name_key(child) not in named:
-                sheet.name = child
-                named.add(name_key(child))
+            best = max((shared for shared, _ in children), default=0)
+            # Repeated sheets share their pins: of the best matches, the one child no
+            # other sheet names; with several left, which is which is not drawn.
+            free = [c for shared, c in children if shared == best and name_key(c) not in named]
+            if best and len(free) == 1:
+                sheet.name = free[0]
+                named.add(name_key(free[0]))
