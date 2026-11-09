@@ -75,7 +75,7 @@ def extract(corpus: corpora.Corpus, out: Path, workers: int = 2, library: Path |
         except subprocess.TimeoutExpired:
             done, error = None, f"still reading after {SECONDS} s"
         if done is None or done.returncode:
-            _write(target.with_suffix(".failed.json"), {"error": error})
+            _write(target.with_suffix(".failed.json"), {"pdf": content_sha(pdf), "error": error})
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(one, admitted(corpus)))
@@ -101,8 +101,11 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
             failed = out / f"{p.name}.failed.json"
             if not failed.exists():
                 raise ValueError(f"{p.name} has not been read")
+            record = json.loads(failed.read_text())
+            if record["pdf"] != content_sha(corpus.build_dir(p) / "schematic.pdf"):
+                raise ValueError(f"{p.name} failed on another PDF than the one verified")
             counts = score(Design(source=truth.source), truth)
-            found = {"failed": json.loads(failed.read_text())["error"]}
+            found = {"failed": record["error"]}
         designs[p.name] = counts
         extra[p.name] = {"generator": generator(p), **found}
         if p.variant_of:
@@ -149,9 +152,10 @@ def _probe(env: dict, library: Path | None) -> dict:
     extractor's code and the learned and library files it loads."""
     cmd = [sys.executable, "-m", "schem2net.bench.evaluate", "--environment"]
     found = subprocess.run(
-        cmd + ([str(library)] if library else []),
-        env=env, check=True, capture_output=True, text=True,
-    )  # fmt: skip
+        cmd + ([str(library)] if library else []), env=env, capture_output=True, text=True
+    )
+    if found.returncode:
+        raise ValueError(f"cannot load schem2net to read with: {found.stderr.strip()[-300:]}")
     return json.loads(found.stdout)
 
 

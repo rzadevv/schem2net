@@ -45,7 +45,14 @@ def test_only_verified_unchanged_designs_are_scored(pilot, tmp_path):
     assert sorted(p.name for p in preds.iterdir()) == ["ok.json", "run.json"]  # no part left
     with pytest.raises(ValueError, match="failed has not been read"):
         evaluate.report(loaded, preds)
-    evaluate._write(preds / "failed.failed.json", {"error": "MemoryError"})
+    failed = loaded.build_dir(loaded.projects[2]) / "schematic.pdf"
+    evaluate._write(preds / "failed.failed.json", {"pdf": "0" * 64, "error": "MemoryError"})
+    with pytest.raises(ValueError, match="failed failed on another PDF"):
+        evaluate.report(loaded, preds)
+    (preds / "failed.failed.json").unlink()
+    evaluate._write(
+        preds / "failed.failed.json", {"pdf": content_sha(failed), "error": "MemoryError"}
+    )
     report = evaluate.report(loaded, preds)
     assert report["designs"]["ok"]["pins_correct"] == report["designs"]["ok"]["pins"] == 6
     assert report["designs"]["failed"]["pins_correct"] == 0
@@ -80,6 +87,6 @@ def test_a_reading_that_dies_is_recorded_once(pilot, tmp_path, monkeypatch):
     preds = tmp_path / "preds"
     evaluate.extract(loaded, preds)
     assert len(calls) == 2
-    assert json.loads((preds / "ok.failed.json").read_text()) == {"error": "exit -11"}
+    assert json.loads((preds / "ok.failed.json").read_text())["error"] == "exit -11"
     evaluate.extract(loaded, preds)  # read again: nothing left to read
     assert len(calls) == 2

@@ -146,7 +146,9 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     if project.variant_of:
         record["variant_of"] = project.variant_of
         base = next((q for q in corpus.projects if q.name == project.variant_of), None)
-        if base is None or not corpus.is_built(base):
+        if base is not None and base.variant_of:
+            blocking.append(f"{project.variant_of} is itself a rendering")
+        elif base is None or not corpus.is_built(base):
             blocking.append(f"{project.variant_of}, which it renders, is not built")
         elif corpora._true_nets(corpus.build_dir(base)) != nets:
             blocking.append(f"its netlist differs from {project.variant_of}'s")
