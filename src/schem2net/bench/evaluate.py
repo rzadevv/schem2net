@@ -50,36 +50,37 @@ def admitted(corpus: corpora.Corpus) -> list[corpora.Project]:
 
 
 def extract(corpus: corpora.Corpus, out: Path, workers: int = 2, library: Path | None = None):
-    """Read each admitted design not read yet into out/<name>.prediction.json."""
+    """Read each admitted design not read yet into out/<name>.json."""
     out.mkdir(parents=True, exist_ok=True)
-    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "SCHEM2NET_LIBRARY")}
+    env = {k: v for k, v in os.environ.items() if k != "SCHEM2NET_LIBRARY"}
     env.update(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", PYTHONHASHSEED="0")
     record = out / "run.json"
     if not record.exists():
-        record.write_text(json.dumps(_environment(library), indent=1) + "\n")
-    elif json.loads(record.read_text()) != _environment(library):
+        _write(record, _probe(env, library))
+    if json.loads(record.read_text()) != _probe(env, library):
         raise ValueError(f"{out} was read with other code, models or library")
 
     def one(project):
         target = out / project.name
-        if target.with_suffix(".prediction.json").exists():
+        if any(target.with_suffix(s).exists() for s in (".json", ".failed.json")):
             return
         pdf = corpus.build_dir(project) / "schematic.pdf"
         cmd = [sys.executable, "-m", "schem2net.bench.evaluate", str(pdf), str(target)]
-        cmd += [str(library)] if library else []
         try:
             done = subprocess.run(
-                cmd, env=env, capture_output=True, text=True, timeout=SECONDS,
-                preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (MEMORY, MEMORY)),
+                cmd + ([str(library)] if library else []),
+                env=env, capture_output=True, text=True, timeout=SECONDS,
             )  # fmt: skip
-            error = done.stderr.strip().splitlines()[-1:] if done.returncode else None
+            error = (done.stderr.strip().splitlines() or [f"exit {done.returncode}"])[-1]
         except subprocess.TimeoutExpired:
-            error = [f"still reading after {SECONDS} s"]
-        if error:
-            _write(target.with_suffix(".failed.json"), {"error": error[0] if error else ""})
+            done, error = None, f"still reading after {SECONDS} s"
+        if done is None or done.returncode:
+            _write(target.with_suffix(".failed.json"), {"error": error})
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(one, admitted(corpus)))
+    if json.loads(record.read_text()) != _probe(env, library):
+        raise ValueError(f"the code, models or library changed while {out} was read")
 
 
 def report(corpus: corpora.Corpus, out: Path) -> dict:
@@ -88,14 +89,14 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
     designs, extra, groups = {}, {}, {}
     for p in admitted(corpus):
         truth = kicad.read_netlist(corpus.build_dir(p) / "truth.net")
-        saved = out / f"{p.name}.prediction.json"
+        saved = out / f"{p.name}.json"
         if saved.exists():
-            predicted = Design.load(saved)
+            reading = json.loads(saved.read_text())
+            if reading["pdf"] != content_sha(corpus.build_dir(p) / "schematic.pdf"):
+                raise ValueError(f"{p.name} was read from another PDF than the one verified")
+            predicted = Design.model_validate(reading["prediction"])
             counts = score(predicted, truth)
-            found = {
-                **json.loads((out / f"{p.name}.timing.json").read_text()),
-                **wiring_mistakes(predicted, truth),
-            }
+            found = {**reading["stats"], **wiring_mistakes(predicted, truth)}
         else:  # the whole design failed: none of its pins is right
             failed = out / f"{p.name}.failed.json"
             if not failed.exists():
@@ -109,6 +110,8 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
         groups[p.name] = corpus.groups[p.name]
     # Renderings of a design are reported beside it, not counted as designs of their own.
     names = [n for n in designs if "variant_of" not in extra[n]]
+    if not names:
+        raise ValueError("no design of the corpus is admitted")
     renderings: dict[str, dict] = {}
     for n, e in extra.items():
         if "variant_of" in e:
@@ -141,8 +144,18 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
     }
 
 
-def _environment(library: Path | None) -> dict:
-    """What a reading depends on: the code's version and the learned and library files."""
+def _probe(env: dict, library: Path | None) -> dict:
+    """What a reading depends on, asked of the Python the designs are read with: the
+    extractor's code and the learned and library files it loads."""
+    cmd = [sys.executable, "-m", "schem2net.bench.evaluate", "--environment"]
+    found = subprocess.run(
+        cmd + ([str(library)] if library else []),
+        env=env, check=True, capture_output=True, text=True,
+    )  # fmt: skip
+    return json.loads(found.stdout)
+
+
+def _environment(library: str | None) -> dict:
     import schem2net
     from schem2net import profile
 
@@ -151,15 +164,15 @@ def _environment(library: Path | None) -> dict:
     code = hashlib.sha256()
     for f in sorted(package.rglob("*")):
         # The extractor's code: the bench tools that read and score it may change.
-        if f.suffix in (".py", ".toml") and not {"__pycache__", "bench"} & set(
-            f.relative_to(package).parts
-        ):
+        parts = set(f.relative_to(package).parts)
+        if f.suffix in (".py", ".toml") and not {"__pycache__", "bench"} & parts:
             code.update(f.relative_to(package).as_posix().encode() + f.read_bytes())
     files = {n: _digest(Path(str(profile.learned_file(n)))) for n in LEARNED}
     if library:
-        files |= {str(f): _digest(f) for f in sorted(library.glob("*")) if f.is_file()}
+        files |= {f.name: _digest(f) for f in sorted(Path(library).glob("*")) if f.is_file()}
     return {
         "schem2net": schem2net.__version__,
+        "package": str(package),
         "code": code.hexdigest(),
         "embedded": False,
         "files": files,
@@ -167,6 +180,7 @@ def _environment(library: Path | None) -> dict:
 
 
 def _worker(pdf: str, target: str, library: str | None) -> None:
+    resource.setrlimit(resource.RLIMIT_AS, (MEMORY, MEMORY))
     from schem2net import pipeline, profile
 
     profile.use_learned(None)
@@ -180,15 +194,19 @@ def _worker(pdf: str, target: str, library: str | None) -> None:
         "peak_rss_mb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024,
         "pages_failed": sum(i.kind == "page_failed" for i in design.issues),
     }
-    _write(
-        Path(target).with_suffix(".prediction.json"), design.model_dump(mode="json", by_alias=True)
-    )
-    _write(Path(target).with_suffix(".timing.json"), stats)
+    prediction = design.model_dump(mode="json", by_alias=True)
+    reading = {"pdf": content_sha(Path(pdf)), "stats": stats, "prediction": prediction}
+    _write(Path(target).with_suffix(".json"), reading)
 
 
 def _write(path: Path, value) -> None:
-    with path.open("x") as stream:  # never overwrite a reading
-        json.dump(value, stream, indent=1)
+    """Write a file whole, once: a reading is never overwritten or left half written."""
+    part = path.with_name(f".{path.name}.{os.getpid()}.part")
+    part.write_text(json.dumps(value, indent=1) + "\n")
+    try:
+        os.link(part, path)  # fails if the file exists
+    finally:
+        part.unlink()
 
 
 def _digest(path: Path) -> str:
@@ -196,4 +214,7 @@ def _digest(path: Path) -> str:
 
 
 if __name__ == "__main__":
-    _worker(*sys.argv[1:3], sys.argv[3] if len(sys.argv) > 3 else None)
+    if sys.argv[1] == "--environment":
+        print(json.dumps(_environment(sys.argv[2] if len(sys.argv) > 2 else None)))
+    else:
+        _worker(*sys.argv[1:3], sys.argv[3] if len(sys.argv) > 3 else None)

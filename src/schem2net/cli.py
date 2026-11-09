@@ -390,16 +390,10 @@ def evaluate(
         f"{'generator':10} {'designs':>7} {'groups':>6} "
         + " ".join(f"{c[:12]:>12}" for c in columns)
     )
-    for name, g in [*found["by_generator"].items(), ("all", None)]:
-        total = g["total"] if g else found["total"]
-        size = (
-            (g["designs"], g["groups"])
-            if g
-            else (found["size"]["designs"], found["size"]["groups"])
-        )
-        typer.echo(
-            f"{name:10} {size[0]:>7} {size[1]:>6} " + " ".join(_fmt(total[c]) for c in columns)
-        )
+    every = {**found["size"], "total": found["total"]}
+    for name, g in [*found["by_generator"].items(), ("all", every)]:
+        cells = " ".join(_fmt(g["total"][c]) for c in columns)
+        typer.echo(f"{name:10} {g['designs']:>7} {g['groups']:>6} {cells}")
     failed = [n for n, e in found["extra"].items() if "failed" in e]
     if failed:
         typer.echo(f"{len(failed)} designs failed: {', '.join(failed)}", err=True)
