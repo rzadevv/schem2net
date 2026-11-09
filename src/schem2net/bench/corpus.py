@@ -60,6 +60,7 @@ class Corpus:
     test_share: float
     projects: list[Project]
     holdout_share: float | None = None  # of the groups, in place of the usual share
+    tier: str = "development"  # exploratory, development or independent: see bench/verify.py
 
     def split(self, project: Project) -> str:
         """dev, test or holdout, fixed by the project's group; copy for a design whose
@@ -200,6 +201,7 @@ def load(name: str, root: Path = Path("bench")) -> Corpus:
         test_share=data["test_share"],
         projects=projects,
         holdout_share=data.get("holdout_share"),
+        tier=data.get("tier", "development"),
     )
 
 

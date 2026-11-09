@@ -115,3 +115,12 @@ def resistor_page(ink, label="VIN"):
 @pytest.fixture
 def pdf_builder():
     return PdfBuilder
+
+
+@pytest.fixture
+def bench(tmp_path):
+    """A bench folder with one earlier corpus, by owner "used"."""
+    (tmp_path / "corpus_a.toml").write_text(
+        'test_share = 0.5\n[[project]]\nname = "old"\nrepo = "https://github.com/used/old"\n'
+    )
+    return tmp_path
