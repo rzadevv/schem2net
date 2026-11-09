@@ -7,6 +7,7 @@ metadata, and the repository's history. See docs/benchmark.md, "Verifying a corp
 
 import hashlib
 import json
+import math
 import re
 import subprocess
 import tomllib
@@ -24,7 +25,10 @@ REF_COVERAGE = 0.95  # of the truth's designators, printed in the PDF's text
 EXTRA_REFS = 0.05  # designators printed that the truth lacks, beyond 3
 NAME_COVERAGE = 0.8  # of the truth's chosen net names, printed
 # Names a tool makes up for an unnamed net: KiCad, Eagle, Altium, OrCAD, EasyEDA.
-AUTO_NAME = re.compile(r"^(Net-\(|unconnected-\(|N\$\d+$|Net[A-Z]+\w*_\w+$|N\d{3,}$|\$)")
+AUTO_NAME = re.compile(r"^(Net-\(|unconnected-\(|N\$\d+$|Net[A-Z]+\w*_\w+$|N\d{3,}$|Net_\d+$|\$)")
+BALL = re.compile(r"([A-HJ-NPR-Y]{1,2})(\d{1,2})")  # a ball grid's pin: rows skip I O Q S Z
+VECTOR = 50  # line or shape objects a page of a vector drawing has at least
+WORD_GAP = 0.3  # of a letter's size: letters further apart than this are two words
 TOKEN = re.compile(r"[^\s,;:(){}<>\"']+")
 
 
@@ -140,8 +144,9 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     doc = pdfium.PdfDocument(out / "schematic.pdf")
     try:
         meta = doc.get_metadata_dict(skip_empty=True)
-        text = " ".join(page.get_textpage().get_text_range() for page in doc)
+        text = " ".join(_words(page) for page in doc)
         pages = len(doc)
+        drawn = sum(1 for page in doc for _ in page.get_objects([pdfium.raw.FPDF_PAGEOBJ_PATH]))
     finally:
         doc.close()
     record["pdf"] = {
@@ -153,6 +158,8 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     record["source_version"] = _version(clone, project)
     sheets = _sheets(out)
     record["sheets"] = sheets
+    if drawn < VECTOR * pages:
+        blocking.append("not a vector drawing: an image of one, which schem2net does not read")
     if sheets and pages < sheets:
         blocking.append(f"the PDF has {pages} pages for {sheets} sheets")
 
@@ -194,21 +201,32 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
             blocking.append("the PDF is older than the source's last change")
 
     refs = {c.ref for c in truth.components if not c.ref.startswith("#")}
-    printed, spent = _joined(tokens, refs)
+    printed = set(tokens)
     if not (printed & refs) and len(tokens) < 3 * max(len(refs), 1):
         notes.append("the PDF has no usable text layer")
         return "carried netlist" if carried else "revision only"
 
     found = refs & (printed | {_base(t) for t in printed})
     prefixes = {m.group(1) for r in refs if (m := split_ref(r))}
+    # Pin names and numbers print beside pins; on a ball grid, a ball's row and column
+    # read like a designator (C14), so a grid's rows are no evidence of extra parts.
+    numbers: dict[str, set[str]] = {}
+    for ref, num in [(c.ref, q.num) for c in truth.components for q in c.pins] + [
+        tuple(q) for n in truth.nets for q in n.pins
+    ]:
+        numbers.setdefault(ref, set()).add(num)
+    pins = set().union(*numbers.values(), {q.name for c in truth.components for q in c.pins})
+    balls = [[m for n in nums if (m := BALL.fullmatch(n))] for nums in numbers.values()]
+    rows = {m.group(1) for grid in balls if len(grid) >= 8 for m in grid}
     extra = sorted(
         {
             t
-            for i, t in enumerate(tokens)
-            if i not in spent
-            and _base(t) not in refs
+            for t in printed
+            if _base(t) not in refs
+            and t not in pins
             and (m := split_ref(t))
             and m.group(1) in prefixes
+            and m.group(1) not in rows
             and not m.group(3)
         }
     )
@@ -386,17 +404,43 @@ def _base(token: str) -> str:
     return m.group(1) + m.group(2) if m else token
 
 
-def _joined(tokens: list[str], refs: set[str]) -> tuple[set[str], set[int]]:
-    """The printed words, with runs of up to three short neighbours joined, as a PDF
-    can store turned text a letter or two at a time ("R1", "0" for R10); and where a
-    joined run spells a designator, the positions it took."""
-    found, spent = set(tokens), set()
-    for i in range(len(tokens)):
-        for n in (2, 3):
-            run = tokens[i : i + n]
-            if len(run) == n and all(len(t) <= 3 for t in run):
-                word = "".join(run)
-                found.add(word)
-                if _base(word) in refs:
-                    spent.update(range(i, i + n))
-    return found, spent
+def _words(page) -> str:
+    """The page's text, a word to each run of letters along one line, as drawn: a PDF
+    may run two labels together in its text order, or store turned text a letter a
+    line. Spaces in the file part words; those the reader adds do not."""
+    text = page.get_textpage()
+    words, word, last = [], "", None
+    for i, ch in enumerate(text.get_text_range()):
+        if not ch.strip() and pdfium.raw.FPDFText_IsGenerated(text.raw, i) == 1:
+            continue  # a space the reader guessed: the letters' places decide
+        if not ch.strip():
+            words.append(word)
+            word, last = "", None
+            continue
+        loose = pdfium.raw.FS_RECTF()  # the letter's advance and the font's height
+        pdfium.raw.FPDFText_GetLooseCharBox(text.raw, i, loose)
+        box = (loose.left, loose.bottom, loose.right, loose.top)
+        way = round(math.degrees(pdfium.raw.FPDFText_GetCharAngle(text.raw, i)) / 90) % 4
+        here = (box, way)
+        if last and not _same_word(last, here):
+            words.append(word)
+            word = ""
+        word, last = word + ch, here
+    return " ".join([*words, word])
+
+
+def _same_word(a, b) -> bool:
+    """Two letters of one word: in one direction, the second just after the first in
+    it, the two sharing most of their line. Boxes are each letter's advance by the
+    font's height, so letters of a word meet."""
+    (p, way), (q, way_too) = a, b
+    if way != way_too:
+        return False
+    along, across = (1, 0) if way % 2 else (0, 1)
+    size = max(p[2] - p[0], p[3] - p[1], q[2] - q[0], q[3] - q[1])
+    # How far the second starts past the end of the first, reading right, down, left,
+    # up: pdfium turns letters clockwise.
+    step = (q[0] - p[2], p[1] - q[3], p[0] - q[2], q[1] - p[3])[way]
+    shared = min(p[across + 2], q[across + 2]) - max(p[across], q[across])
+    height = min(p[across + 2] - p[across], q[across + 2] - q[across])
+    return -0.3 * size <= step <= WORD_GAP * size and shared >= height / 2

@@ -12,11 +12,13 @@ from schem2net.ir import Component, Design, Net, Pin, Source
 from tests.conftest import PdfBuilder
 
 
-def pdf(path, words):
-    """A one-page PDF whose text layer holds these words."""
+def pdf(path, words, drawn=True):
+    """A one-page PDF whose text layer holds these words, with lines drawn or not."""
     page = PdfBuilder()
+    for k in range(60 if drawn else 0):  # a vector drawing's wires
+        page.line((100, 10 + 5 * k), (200, 10 + 5 * k))
     for i, w in enumerate(words):
-        page.text(w, 20, 780 - 12 * i)
+        page.text(*w) if isinstance(w, tuple) else page.text(w, 20, 780 - 12 * i)
     page.save(path)
 
 
@@ -83,7 +85,8 @@ def test_an_export_is_verified_and_hashed(bench):
 
 def test_a_published_pdf_must_print_the_truths_parts_and_names(bench):
     names = ["SDA", "SCL", "D3"]
-    built(bench, "good", REFS, [*REFS[:4], "U", "1A", "U2", "SDA", "SCL", "D[0..7]"], names)
+    words = ["R1", "R2", "C1", ("C", 300, 400), ("2", 307.5, 400), "U1A", "U2", "SDA", "SCL"]
+    built(bench, "good", REFS, [*words, "D[0..7]"], names)
     built(bench, "other", REFS, ["R1", "R2", "R7", "R8", "R9", "R11", "C1", "C2"])
     built(bench, "unread", REFS, [])
     projects = [
@@ -92,7 +95,7 @@ def test_a_published_pdf_must_print_the_truths_parts_and_names(bench):
     ]
     found = records(bench, projects)
     assert found["good"]["decision"] == "verified", found["good"]["reasons"]
-    assert found["good"]["text"]["refs_printed"] == 1.0  # U1 printed as "U" "1A"
+    assert found["good"]["text"]["refs_printed"] == 1.0  # C2 drawn a letter at a time
     assert found["good"]["text"]["names_printed"] == 1.0  # D3 by its bus D[0..7]
     reasons = " ".join(found["other"]["reasons"])
     assert "2 of 6 designators not in the PDF" in reasons
@@ -140,6 +143,8 @@ def test_used_sources_copies_and_missing_files_are_kept_out(bench):
         Project(name="unlicensed", license=None),
     ]
     built(bench, "unlicensed", ["R9", "R10"], [])
+    pdf(built(bench, "scan", ["R11", "R12"], []) / "schematic.pdf", ["R11", "R12"], drawn=False)
+    projects.append(Project(name="scan", license="MIT"))
     forks = {"https://github.com/me/fork": "https://github.com/used/original"}
     found = records(bench, projects, forks=forks)
     assert "the same design as" in found["copy"]["reasons"][0]
@@ -147,6 +152,7 @@ def test_used_sources_copies_and_missing_files_are_kept_out(bench):
     assert found["fork"]["reasons"] == ["a fork of https://github.com/used/original, already used"]
     assert found["absent"]["decision"] == "missing"
     assert found["unlicensed"]["reasons"] == ["no licence recorded"]
+    assert found["scan"]["reasons"][0].startswith("not a vector drawing")
 
 
 def test_an_independent_corpus_is_held_out_whole(bench):
@@ -198,3 +204,28 @@ def test_a_rendering_must_have_its_designs_netlist(bench):
     loaded = corpus(bench, projects)
     assert loaded.split(projects[1]) == loaded.split(projects[0]) != "copy"
     assert loaded.groups["bw"] == loaded.groups["base"]
+
+
+def test_printed_words_follow_lines_and_ball_grids_are_not_parts(bench):
+    # A value stacked tight on its designator, as EasyEDA prints them: two words.
+    built(bench, "stacked", REFS, [("22", 300, 409), ("R1", 300, 400), "R2", "C1", "C2", "U1"])
+    out = built(bench, "grid", ["R1", "R2", "C1", "C2", "U1", "U2"], [*REFS, "C14", "R11"])
+    balls = [Pin(num=f"{row}{k}") for row in "ABCR" for k in (1, 2)]
+    design = Design(
+        source=Source(file="x"),
+        components=[
+            Component(ref="U1", pins=balls),
+            *(Component(ref=r, pins=[Pin(num="1")]) for r in ("R1", "R2", "C1", "C2", "U2")),
+        ],
+        nets=[
+            Net(id="0", pins=[*(("U1", b.num) for b in balls), ("R1", "1")]),
+            Net(id="1", pins=[("R2", "1"), ("U2", "1")]),
+        ],
+    )
+    (out / "truth.net").write_text(export.kicad_netlist(design))
+    projects = [
+        Project(name=n, pdf="s.pdf", pcb="b.PcbDoc", license="MIT") for n in ("stacked", "grid")
+    ]
+    found = records(bench, projects)
+    assert "R1" not in found["stacked"]["text"]["refs_missing"]
+    assert found["grid"]["text"]["refs_extra"] == []  # C14 and R11 are balls of U1

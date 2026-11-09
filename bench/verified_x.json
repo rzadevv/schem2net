@@ -33,9 +33,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
@@ -77,9 +76,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
@@ -121,9 +119,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
@@ -190,7 +187,7 @@
   },
   "fork_of": null,
   "closest": {
-   "design": "bench/build/b/marsrover-battery-management-system",
+   "design": "bench/build/p/candlelight-fd-kicad8",
    "shared_nets": 0.002
   },
   "license_file": {
@@ -207,9 +204,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
@@ -322,9 +318,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
@@ -366,9 +361,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
@@ -410,9 +404,8 @@
   "sheets": null,
   "export": {
    "image": "schem2net-kicad:10.0.6",
-   "pdf": [
-    "-o",
-    "/out/schematic.pdf",
+   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+   "options": [
     "--exclude-pdf-property-popups",
     "--exclude-pdf-hierarchical-links"
    ]
