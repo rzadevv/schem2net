@@ -395,7 +395,7 @@ def evaluate(
         size = (
             (g["designs"], g["groups"])
             if g
-            else (len(found["designs"]), len(set(found["groups"].values())))
+            else (found["size"]["designs"], found["size"]["groups"])
         )
         typer.echo(
             f"{name:10} {size[0]:>7} {size[1]:>6} " + " ".join(_fmt(total[c]) for c in columns)

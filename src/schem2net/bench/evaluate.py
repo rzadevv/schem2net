@@ -129,13 +129,15 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
         "corpus": corpus.name,
         "tier": corpus.tier,
         "run": json.loads((out / "run.json").read_text()),
+        "size": {"designs": len(names), "groups": len({groups[n] for n in names})},
         "total": summary([designs[n] for n in names]),
         "intervals": intervals([designs[n] for n in names], [groups[n] for n in names]),
         "by_generator": by_generator,
         "renderings": renderings,
-        "designs": {n: asdict(c) for n, c in designs.items()},
+        "designs": {n: asdict(designs[n]) for n in names},  # what bench-compare reads
+        "rendering_counts": {n: asdict(c) for n, c in designs.items() if n not in names},
         "extra": extra,
-        "groups": groups,
+        "groups": {n: groups[n] for n in names},
     }
 
 
@@ -148,7 +150,10 @@ def _environment(library: Path | None) -> dict:
     package = Path(schem2net.__file__).parent
     code = hashlib.sha256()
     for f in sorted(package.rglob("*")):
-        if f.suffix in (".py", ".toml") and "__pycache__" not in f.parts:
+        # The extractor's code: the bench tools that read and score it may change.
+        if f.suffix in (".py", ".toml") and not {"__pycache__", "bench"} & set(
+            f.relative_to(package).parts
+        ):
             code.update(f.relative_to(package).as_posix().encode() + f.read_bytes())
     files = {n: _digest(Path(str(profile.learned_file(n)))) for n in LEARNED}
     if library:
