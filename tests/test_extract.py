@@ -264,6 +264,101 @@ def test_sheet_pin_joins_child_label():
     assert nets["SIG"].pins == [("R1", "1"), ("R2", "1")]
 
 
+def test_bus_entries_meeting_on_a_bus_are_not_joined():
+    """Two slanted entries come onto the bus from either side at one point, where a
+    straight wire, split there, crosses it: each entry joins the bus, which carries its
+    members by name, not the other wires."""
+    b = SceneBuilder()
+    b.resistor(10, 10, "R1", "1k")
+    b.resistor(30, 10, "R2", "1k")
+    b.resistor(5, 30, "R3", "1k")
+    b.resistor(35, 30, "R4", "1k")
+    b.scene.buses.append(((20, 0), (20, 10)))
+    b.scene.wires += [((10, 7.46), (17.46, 7.46)), ((17.46, 7.46), (20, 5))]
+    b.scene.wires += [((30, 7.46), (22.54, 7.46)), ((22.54, 7.46), (20, 5))]
+    b.scene.wires += [((5, 27.46), (5, 5)), ((5, 5), (20, 5)), ((20, 5), (35, 5))]
+    b.scene.wires += [((35, 5), (35, 27.46))]
+    b.scene.labels += [
+        Label("A", "local", (11, 6.2, 13, 7.4), 0.0),
+        Label("B", "local", (25, 6.2, 27, 7.4), 0.0),
+    ]
+    _, nets = netlist(b.scene)
+    assert nets["A"].pins == [("R1", "1")] and nets["B"].pins == [("R2", "1")]
+    assert [("R3", "1"), ("R4", "1")] in [n.pins for n in nets.values()]
+
+
+def test_a_label_on_the_bus_names_the_members_a_sheet_pin_passes_on():
+    """Two copies of one sheet, each with a sheet pin SFP{SFP}, on buses labelled
+    SFP0{SFP} and SFP1{SFP}: each copy's SFP.TX is its own bus's member, apart."""
+    root = SceneBuilder()
+    root.scene.path = "/"
+    for k, y in enumerate((10, 30)):
+        root.resistor(10, y, f"R{k + 1}", "1k")
+        root.scene.wires.append(((10, y - 2.54), (20, y - 2.54)))
+        root.scene.labels += [
+            Label(f"SFP{k}.TX", "local", (11, y - 3.8, 16, y - 2.6), 0.0),
+            Label(f"SFP{k}{{SFP}}", "local", (31, y - 1.4, 38, y - 0.1), 0.0),
+        ]
+        root.scene.buses.append(((30, y), (40, y)))
+        root.scene.sheets.append(
+            Sheet(f"S{k}", (40, y - 10, 60, y + 10), [SheetPin("SFP{SFP}", (40, y))])
+        )
+
+    def copy(page, path, ref):
+        b = SceneBuilder()
+        b.scene.page, b.scene.path = page, path
+        b.resistor(10, 10, ref, "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("SFP.TX", "local", (11, 6.2, 15, 7.4), 0.0))
+        b.scene.labels.append(Label("SFP{SFP}", "hier", (31, 9.3, 37, 10.6), 0.0, [(30, 10)]))
+        b.scene.buses.append(((30, 10), (40, 10)))
+        return b.scene
+
+    _, nets = netlist(root.scene, copy(2, "/S0/", "R3"), copy(3, "/S1/", "R4"))
+    assert nets["SFP0.TX"].pins == [("R1", "1"), ("R3", "1")]
+    assert nets["SFP1.TX"].pins == [("R2", "1"), ("R4", "1")]
+
+
+@pytest.mark.parametrize(
+    "members, joined",
+    [("TX RX", True), ("TX  RX", True), ("TXD RXD", False)],
+)
+def test_a_label_on_the_bus_names_a_sheet_pins_members_as_names_compare(members, joined):
+    """Two copies of a sheet with pin SFP{TX RX}, on buses labelled SFPk{...}: the label
+    names the copy's members when it lists the same ones, however the PDF spaces them.
+    A label listing others names nothing, so no copy's TX reaches SFP0.TX."""
+    root = SceneBuilder()
+    root.scene.path = "/"
+    for k, y in enumerate((10, 30)):
+        root.resistor(10, y, f"R{k + 1}", "1k")
+        root.scene.wires.append(((10, y - 2.54), (20, y - 2.54)))
+        root.scene.labels += [
+            Label(f"SFP{k}.TX", "local", (11, y - 3.8, 16, y - 2.6), 0.0),
+            Label(f"SFP{k}{{{members}}}", "local", (31, y - 1.4, 38, y - 0.1), 0.0),
+        ]
+        root.scene.buses.append(((30, y), (40, y)))
+        root.scene.sheets.append(
+            Sheet(f"S{k}", (40, y - 10, 60, y + 10), [SheetPin("SFP{TX RX}", (40, y))])
+        )
+
+    def copy(page, path, ref):
+        b = SceneBuilder()
+        b.scene.page, b.scene.path = page, path
+        b.resistor(10, 10, ref, "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("SFP.TX", "local", (11, 6.2, 15, 7.4), 0.0))
+        b.scene.labels.append(Label("SFP{TX RX}", "hier", (31, 9.3, 37, 10.6), 0.0, [(30, 10)]))
+        b.scene.buses.append(((30, 10), (40, 10)))
+        return b.scene
+
+    _, nets = netlist(root.scene, copy(2, "/S0/", "R3"), copy(3, "/S1/", "R4"))
+    if joined:
+        assert nets["SFP0.TX"].pins == [("R1", "1"), ("R3", "1")]
+        assert nets["SFP1.TX"].pins == [("R2", "1"), ("R4", "1")]
+    else:
+        assert nets["SFP0.TX"].pins == [("R1", "1")]
+
+
 def test_vector_bus_members_match_by_position():
     parent = SceneBuilder()
     parent.scene.path = "/"
@@ -799,6 +894,35 @@ def test_eagle_label_laid_on_a_wire():
 
     built = build_scene(page, profile.load("eagle"))
     assert [(lb.text, lb.kind) for lb in built.labels] == [("ETXD0", "local")]
+
+
+def test_eagle_label_hanging_from_its_wire():
+    """Eagle turns an upright label that would read downwards half a turn, so it hangs
+    from its wire by the tops of its letters. A level text hanging under a wire is
+    no label: values of the parts below a rail sit there."""
+    from schem2net.nets import _under_label
+
+    green, grey = (0, 128, 0), (128, 128, 128)
+    page = Page(1, 100, 100)
+    page.paths = [
+        Path(0, [[(10, 10), (10, 40)]], 0.15, green, None),
+        Path(1, [[(30, 20), (60, 20)]], 0.15, green, None),
+    ]
+    page.texts = [
+        Text(0, "NRB0", (10.3, 20, 11.8, 25), 2.2, 90.0, grey),  # reads upwards
+        Text(1, "SDA", (34, 20.33, 38, 22.2), 2.2, 0.0, grey),
+    ]
+    for seq, item in enumerate(page.paths + page.texts):
+        item.seq = seq
+
+    built = build_scene(page, profile.load("eagle"))
+    assert [(lb.text, lb.angle) for lb in built.labels] == [("NRB0", 270.0)]
+    assert [t.text for t in built.fields] == ["SDA"]
+    index = geometry.GridIndex()
+    for k, wire in enumerate(built.wires):
+        index.add(k, geometry.bbox_of(wire))
+    on = _under_label(built.labels[0], built.wires, index, [], None, ("w",))
+    assert built.wires[on[1]] == ((10, 10), (10, 40))
 
 
 def test_eagle_designator_outside_the_box_beats_a_pin_name_inside():
@@ -2119,6 +2243,51 @@ def test_a_sheet_whose_name_is_not_printed_is_named_by_its_pins():
     assert root.sheets[0].name == "I2C"
 
 
+def test_an_unnamed_copy_of_a_repeated_sheet_takes_the_copy_left_over():
+    """bank0, bank2 and bank3 are printed, bank1 is not; all four share their pins, so
+    the unnamed one is the child no other sheet names. With two unnamed, which is which
+    is not drawn: both stay unnamed."""
+    from schem2net.pipeline import _name_sheets
+
+    def named(banks):
+        root = Scene(page=1, path="/")
+        root.sheets = [Sheet(n, (0, 0, 20, 20), [SheetPin("OE_N", (0, 5))]) for n in banks]
+        children = []
+        for k in range(4):
+            child = Scene(page=k + 2, path=f"/bank{k}/")
+            child.labels = [Label("OE_N", "hier", (0, 0, 1, 1), 0.0)]
+            children.append(child)
+        _name_sheets([root, *children])
+        return [s.name for s in root.sheets]
+
+    assert named(["bank0", "", "bank2", "bank3"]) == ["bank0", "bank1", "bank2", "bank3"]
+    assert named(["bank0", "", "", "bank3"]) == ["bank0", "", "", "bank3"]
+
+
+def test_unnamed_sheets_do_not_share_their_pins():
+    """Two copies of one sheet, neither name printed: which child each stands for is
+    not drawn, so each copy's pin stays on its own net."""
+    from schem2net.pipeline import _name_sheets
+
+    root = SceneBuilder()
+    root.scene.path = "/"
+    for k, y in enumerate((10, 30)):
+        root.resistor(10, y, f"R{k + 1}", "1k")
+        root.scene.wires.append(((10, y - 2.54), (30, y - 2.54)))
+        root.scene.sheets.append(
+            Sheet("", (30, y - 10, 50, y + 10), [SheetPin("IN", (30, y - 2.54))])
+        )
+    children = []
+    for k in range(2):
+        child = Scene(page=k + 2, path=f"/c{k}/")
+        child.labels = [Label("IN", "hier", (0, 0, 1, 1), 0.0)]
+        children.append(child)
+    _name_sheets([root.scene, *children])
+
+    _, nets = netlist(root.scene, *children)
+    assert all(len(net.pins) == 1 for net in nets.values())
+
+
 def test_members_of_one_bus_named_twice_are_one_net():
     """DPHY0_C{DPHY} and DPHY0_P{DPHY} on the bus between two sheets name the same bus:
     DPHY0_C.C_N and DPHY0_P.C_N are one net."""
@@ -2277,6 +2446,25 @@ def test_a_label_sits_on_the_wire_at_its_baseline_however_turned(angle, wire_y):
     for k, w in enumerate(wires):
         index.add(k, geometry.bbox_of(w))
     assert _under_label(label, wires, index, [], None, ("w", 1)) == ("w", 1, 0)
+
+
+def test_a_label_does_not_sit_on_a_bus_entry():
+    """Upright wires in a row drop to a bus through slanted entries; the entry from the
+    wire left of RAM_A20's meets the bus right below RAM_A20's own wire. The label is
+    laid along its wire, not along the entry."""
+    from schem2net.nets import _under_label
+
+    label = Label("RAM_A20", "local", (127.88, 256.89, 129.77, 267.81), 90.0)
+    wires = [
+        ((129.59, 270.42), (127.03, 267.87)),  # entry from the wire to the left
+        ((127.03, 267.87), (127.03, 247.55)),
+        ((132.11, 270.42), (129.59, 267.87)),
+        ((129.59, 267.87), (129.59, 247.55)),  # RAM_A20's
+    ]
+    index = geometry.GridIndex()
+    for k, w in enumerate(wires):
+        index.add(k, geometry.bbox_of(w))
+    assert _under_label(label, wires, index, [], None, ("w",)) == ("w", 3)
 
 
 def test_easyeda_reads_a_sign_by_a_pin_as_no_number():

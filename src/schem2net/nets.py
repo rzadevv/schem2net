@@ -90,6 +90,7 @@ class Netlister:
         self.label_buses: dict[tuple[str, str], list[tuple[int, busnames.Bus]]] = defaultdict(list)
         # Nodes that name a group bus, with the bus they name: (page, node, bus)
         self.group_names: list[tuple[int, tuple, busnames.Bus]] = []
+        self.renamed: set[tuple] = set()  # sheet pins whose bus a label names
 
     def _key(self, name: str) -> str:
         """A net name as names are matched: in capitals too where case tells nothing."""
@@ -135,6 +136,15 @@ class Netlister:
         def dotted(p: Point) -> bool:
             return any(geometry.distance(p, scene.junctions[k]) <= TOL for k in dots.near(p, TOL))
 
+        buses = scene.buses
+        bus_index = GridIndex()
+        for i, seg in enumerate(buses):
+            bus_index.add(i, geometry.bbox_of(seg))
+            self.uf.find(("b", page, i))
+
+        def on_bus(p: Point) -> bool:
+            return any(_on(p, buses[j]) for j in bus_index.near(p, TOL))
+
         plain_crossings: dict[Point, bool] = {}
         for i, seg in enumerate(wires):
             for end in seg:
@@ -143,8 +153,13 @@ class Netlister:
                     plain_crossings[end] = not dotted(end) and _crosses(
                         end, [wires[j] for j in near]
                     )
+                on = on_bus(end)
                 for j in near:
                     if j != i:
+                        # A slanted bus entry joins the bus where it meets other wires on
+                        # it, not them: a bus carries its members by name.
+                        if on and (_slanted(seg) or _slanted(wires[j])):
+                            continue
                         # A PDF can split a continuous wire at a plain crossing.
                         # Its artificial end is not a T-contact with the other axis.
                         if (
@@ -167,14 +182,9 @@ class Netlister:
                 self.join(("w", page, through[0]), ("w", page, j), "junction")
 
         labelled: set[int] = set()
-        buses = scene.buses
-        bus_index = GridIndex()
         vector_labels: list[tuple[tuple, Label, busnames.Bus]] = []
         # Buses crossing sheets, named once this page's buses are joined: (node, at, key, bus)
         crossings: list[tuple[tuple, Point, tuple, busnames.Bus]] = []
-        for i, seg in enumerate(buses):
-            bus_index.add(i, geometry.bbox_of(seg))
-            self.uf.find(("b", page, i))
         for i, seg in enumerate(buses):
             for end in seg:
                 for j in bus_index.near(end, TOL):
@@ -255,7 +265,8 @@ class Netlister:
         # A sheet pin on this page is the same net as the matching label on the child page.
         self.nested |= bool(scene.sheets)
         for si, sheet in enumerate(scene.sheets if scene.path else []):
-            child = scene.path + name_key(sheet.name) + "/"
+            # An unnamed sheet stands for no known child, and not for another unnamed one.
+            child = scene.path + (name_key(sheet.name) or f"#{page}.{si}") + "/"
             for k, pin in enumerate(sheet.pins):
                 node = ("sp", page, si, k)
                 key = self._key(pin.name)
@@ -275,6 +286,8 @@ class Netlister:
         for node, at, (side, path, key), bus in crossings:
             if bus.vector:
                 bus = self._named_on_page(at, node, bus, vector_labels)
+            elif side == "sheet":
+                bus = self._labelled_on_page(page, node, bus)
             if side == "sheet":
                 self.sheet_buses.append((page, path, key, bus))
             else:
@@ -334,6 +347,24 @@ class Netlister:
             if geometry.distance_to_segment(p, buses[j]) <= TOL:
                 self.join(node, ("b", page, j), "bus")
 
+    def _labelled_on_page(self, page: int, node: tuple, bus: busnames.Bus) -> busnames.Bus:
+        """The names a group bus's members have where it meets a sheet pin: a label on
+        the bus names them, as SFP0{SFP} on the bus to a sheet pin SFP{SFP}; the sheet
+        pin's own name is what the sheet calls them."""
+        own, members = self.uf.find(node), self._key(self.names[node].partition("{")[2])
+        named = {
+            other
+            for at, label, other in self.group_names
+            if at == page
+            and label[0] == "l"
+            and self.uf.find(label) == own
+            and self._key(self.names[label].partition("{")[2]) == members
+        }
+        if len(named) != 1:
+            return bus
+        self.renamed.add(node)
+        return named.pop()
+
     def _named_on_page(self, at: Point, node: tuple, bus: busnames.Bus, labels) -> busnames.Bus:
         """The names a vector bus's members have on this page.
 
@@ -370,11 +401,13 @@ class Netlister:
 
         # One bus named twice, as DPHY0_C{DPHY} and DPHY0_P{DPHY} where it runs between
         # two sheets that call it each its own way: members of one name are one net.
-        on_bus: dict[tuple, list[tuple[int, busnames.Bus]]] = defaultdict(list)
+        on_bus: dict[tuple, list[tuple[int, tuple, busnames.Bus]]] = defaultdict(list)
         for page, node, bus in self.group_names:
-            on_bus[self.uf.find(node)].append((page, bus))
+            on_bus[self.uf.find(node)].append((page, node, bus))
         for named in on_bus.values():
-            buses = {(page, bus.prefix): (page, bus) for page, bus in named}
+            # A sheet pin whose bus a label names names only its sheet's side.
+            named = [n for n in named if n[1] not in self.renamed]
+            buses = {(page, bus.prefix): (page, bus) for page, _, bus in named}
             if len({prefix for _, prefix in buses}) < 2:
                 continue
             members = [
@@ -617,6 +650,12 @@ def _crosses(p: Point, segments: list[Segment]) -> bool:
     return len(arms) == 4
 
 
+def _slanted(seg: Segment) -> bool:
+    """Neither level nor upright, as a bus entry is."""
+    (ax, ay), (bx, by) = seg
+    return min(abs(ax - bx), abs(ay - by)) > TOL
+
+
 def _on(p: Point, seg: Segment) -> bool:
     return geometry.distance_to_segment(p, seg) <= TOL
 
@@ -661,7 +700,7 @@ def _under_label(
 
     best = None
     for seg, node in candidates:
-        if geometry.is_horizontal(seg) == vertical:
+        if geometry.is_horizontal(seg) == vertical or _slanted(seg):
             continue
         gap = geometry.dot(seg[0], across) - base
         a, b = geometry.dot(seg[0], along), geometry.dot(seg[1], along)

@@ -33,6 +33,11 @@
   of the neighbouring pin's wire.
 - The command line names the pad numbers it guessed, which exported netlists give as
   real pads.
+- An unnamed copy of a repeated sheet is named after the one child left over.
+- An upright Eagle label hanging from its wire by the tops of its letters names that wire.
+- A label names the wire laid along it, not a bus entry ending beside it.
+- A label on the bus to a sheet pin names the group bus members the sheet receives.
+- Slanted bus entries meeting at one point on a bus join the bus, not each other.
 
 - Numbered pin fragments can follow an unbranched path to a wire and stay together
   through symbol splitting.

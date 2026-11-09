@@ -291,11 +291,21 @@ def build(page: Page, profile: Profile) -> Scene:
                     continue  # a value or designator drawn over a passing wire
                 if id(text) in values:
                     continue
-                if _on_wire(text, scene.wires, wire_index, meets):
-                    scene.labels.append(
-                        Label(text.text, "local", text.bbox, text.angle, seq=text.seq)
-                    )
-                    taken.add(id(text))
+                angle = text.angle
+                if not _on_wire(text, scene.wires, wire_index, meets):
+                    # Eagle turns an upright name that would read downwards half a turn,
+                    # so it hangs from its wire by its letter tops: read it as stored.
+                    # Not a level one: values of the parts below a rail hang under it too.
+                    turned = (angle + 180) % 360
+                    if not (
+                        profile.labels_hang
+                        and round(angle) % 180 == 90
+                        and _on_wire(replace(text, angle=turned), scene.wires, wire_index, meets)
+                    ):
+                        continue
+                    angle = turned
+                scene.labels.append(Label(text.text, "local", text.bbox, angle, seq=text.seq))
+                taken.add(id(text))
         scene.fields = [t for t in scene.fields if id(t) not in taken]
         scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in taken]
     for text, outline in _outlined(label_texts["global"], outlines["global"]):
