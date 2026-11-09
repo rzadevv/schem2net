@@ -319,6 +319,46 @@ def test_a_label_on_the_bus_names_the_members_a_sheet_pin_passes_on():
     assert nets["SFP1.TX"].pins == [("R2", "1"), ("R4", "1")]
 
 
+@pytest.mark.parametrize(
+    "members, joined",
+    [("TX RX", True), ("TX  RX", True), ("TXD RXD", False)],
+)
+def test_a_label_on_the_bus_names_a_sheet_pins_members_as_names_compare(members, joined):
+    """Two copies of a sheet with pin SFP{TX RX}, on buses labelled SFPk{...}: the label
+    names the copy's members when it lists the same ones, however the PDF spaces them.
+    A label listing others names nothing, so no copy's TX reaches SFP0.TX."""
+    root = SceneBuilder()
+    root.scene.path = "/"
+    for k, y in enumerate((10, 30)):
+        root.resistor(10, y, f"R{k + 1}", "1k")
+        root.scene.wires.append(((10, y - 2.54), (20, y - 2.54)))
+        root.scene.labels += [
+            Label(f"SFP{k}.TX", "local", (11, y - 3.8, 16, y - 2.6), 0.0),
+            Label(f"SFP{k}{{{members}}}", "local", (31, y - 1.4, 38, y - 0.1), 0.0),
+        ]
+        root.scene.buses.append(((30, y), (40, y)))
+        root.scene.sheets.append(
+            Sheet(f"S{k}", (40, y - 10, 60, y + 10), [SheetPin("SFP{TX RX}", (40, y))])
+        )
+
+    def copy(page, path, ref):
+        b = SceneBuilder()
+        b.scene.page, b.scene.path = page, path
+        b.resistor(10, 10, ref, "1k")
+        b.scene.wires.append(((10, 7.46), (20, 7.46)))
+        b.scene.labels.append(Label("SFP.TX", "local", (11, 6.2, 15, 7.4), 0.0))
+        b.scene.labels.append(Label("SFP{TX RX}", "hier", (31, 9.3, 37, 10.6), 0.0, [(30, 10)]))
+        b.scene.buses.append(((30, 10), (40, 10)))
+        return b.scene
+
+    _, nets = netlist(root.scene, copy(2, "/S0/", "R3"), copy(3, "/S1/", "R4"))
+    if joined:
+        assert nets["SFP0.TX"].pins == [("R1", "1"), ("R3", "1")]
+        assert nets["SFP1.TX"].pins == [("R2", "1"), ("R4", "1")]
+    else:
+        assert nets["SFP0.TX"].pins == [("R1", "1")]
+
+
 def test_vector_bus_members_match_by_position():
     parent = SceneBuilder()
     parent.scene.path = "/"
