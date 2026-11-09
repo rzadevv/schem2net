@@ -351,14 +351,14 @@ class Netlister:
         """The names a group bus's members have where it meets a sheet pin: a label on
         the bus names them, as SFP0{SFP} on the bus to a sheet pin SFP{SFP}; the sheet
         pin's own name is what the sheet calls them."""
-        own, members = self.uf.find(node), self.names[node].partition("{")[2]
+        own, members = self.uf.find(node), self._key(self.names[node].partition("{")[2])
         named = {
             other
             for at, label, other in self.group_names
             if at == page
             and label[0] == "l"
             and self.uf.find(label) == own
-            and self.names[label].partition("{")[2] == members
+            and self._key(self.names[label].partition("{")[2]) == members
         }
         if len(named) != 1:
             return bus
