@@ -157,6 +157,49 @@ def align(predicted: Design, truth: Design) -> Aligned:
     return Aligned(true_nets, power, pred_nets, confidence, doubted, aliases, match)
 
 
+def wiring_mistakes(
+    predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDENCE
+) -> dict[str, int]:
+    """Distinct wiring mistakes, each one join or cut a reviewer would make.
+
+    Pins whose only fault is their number are left out: a pin on the net where another
+    pin of its own part belongs, that pin not being there. A predicted net holding pins
+    of k true nets is k - 1 false merges; a true net whose pins lie on m predicted nets
+    is m - 1 false splits. A mistake is silent when every net it involves has
+    confidence of at least `low_confidence` and no issue names any of its pins.
+    """
+    f = align(predicted, truth)
+    true_owner = {q: t for t, net in enumerate(f.true_nets) for q in net}
+    pred_owner = {q: p for p, net in enumerate(f.pred_nets) for q in net}
+    matched_by = {p: t for t, p in f.match.items()}
+    renumbered = set()
+    for t, net in enumerate(f.true_nets):
+        for q in net:
+            p = pred_owner.get(q)
+            if p is None or f.match.get(t) == p or p not in matched_by:
+                continue
+            if any(o[0] == q[0] and pred_owner.get(o) != p for o in f.true_nets[matched_by[p]]):
+                renumbered.add(q)
+    sure = [c >= low_confidence for c in f.confidence]
+    found = dict.fromkeys(("merges", "splits", "silent_merges", "silent_splits"), 0)
+    for kind, nets, owner in (
+        ("merges", f.pred_nets, true_owner),
+        ("splits", f.true_nets, pred_owner),
+    ):
+        for k, net in enumerate(nets):
+            parts: dict[int, set] = {}
+            for q in net - renumbered:
+                if q in owner:
+                    parts.setdefault(owner[q], set()).add(q)
+            if len(parts) < 2:
+                continue
+            found[kind] += len(parts) - 1
+            involved = [k] if kind == "merges" else list(parts)
+            if all(sure[p] for p in involved) and not set().union(*parts.values()) & f.doubted:
+                found["silent_" + kind] += len(parts) - 1
+    return found
+
+
 def score(predicted: Design, truth: Design, low_confidence: float = LOW_CONFIDENCE) -> Counts:
     found = align(predicted, truth)
     true_nets, power, pred_nets = found.true_nets, found.power, found.pred_nets
