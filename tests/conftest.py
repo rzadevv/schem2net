@@ -1,4 +1,5 @@
 import ctypes
+import math
 import os
 import re
 
@@ -33,14 +34,15 @@ class PdfBuilder:
         raw.FPDFPath_BezierTo(path, *c1, *c2, *end)
         self._stroke(path, width, (0, 0, 0))
 
-    def text(self, content, x, y, size=10.0, color=(0, 0, 0)):
+    def text(self, content, x, y, size=10.0, color=(0, 0, 0), turn=0):
         font = raw.FPDFText_LoadStandardFont(self.pdf.raw, b"Helvetica")
         obj = raw.FPDFPageObj_CreateTextObj(self.pdf.raw, font, size)
         raw.FPDFPageObj_SetFillColor(obj, *color, 255)
         encoded = (content + "\x00").encode("utf-16-le")
         buffer = ctypes.create_string_buffer(encoded, len(encoded))
         raw.FPDFText_SetText(obj, ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ushort)))
-        raw.FPDFPageObj_Transform(obj, 1, 0, 0, 1, x, y)
+        c, s = round(math.cos(math.radians(turn)), 6), round(math.sin(math.radians(turn)), 6)
+        raw.FPDFPageObj_Transform(obj, c, s, -s, c, x, y)
         raw.FPDFPage_InsertObject(self.page.raw, obj)
 
     def save(self, path, rotation=0, creator=None):
@@ -122,5 +124,6 @@ def bench(tmp_path):
     """A bench folder with one earlier corpus, by owner "used"."""
     (tmp_path / "corpus_a.toml").write_text(
         'test_share = 0.5\n[[project]]\nname = "old"\nrepo = "https://github.com/used/old"\n'
+        '[[project]]\nname = "pack"\nzip_url = "https://example.com/pack.zip"\n'
     )
     return tmp_path

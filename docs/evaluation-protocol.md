@@ -25,6 +25,8 @@ is a separate question, answered apart and never counted as more designs.
   owner or fork parent, or nine tenths of nets shared with any built design keeps it
   out. Quarantined designs are listed with their reasons and never replaced by
   looser ones after the seal.
+- The copy check reads the truth netlists of every built corpus, holdouts included,
+  and nothing else of them: no PDF, prediction or score.
 - Discovery logs every repository looked at and why it was turned away
   (`bench/discovery_<name>.json`), and never runs the extractor.
 - Groups: one per repository owner; known families and ports merge. At most two

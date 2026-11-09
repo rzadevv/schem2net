@@ -1,13 +1,15 @@
 import json
+import math
 import os
 import subprocess
 from dataclasses import replace
 
+import pypdfium2 as pdfium
 import pytest
 
 from schem2net import export
 from schem2net.bench.corpus import Corpus, Project
-from schem2net.bench.verify import check_sealed, verify
+from schem2net.bench.verify import _words, check_sealed, verify
 from schem2net.ir import Component, Design, Net, Pin, Source
 from tests.conftest import PdfBuilder
 
@@ -144,7 +146,13 @@ def test_used_sources_copies_and_missing_files_are_kept_out(bench):
     ]
     built(bench, "unlicensed", ["R9", "R10"], [])
     pdf(built(bench, "scan", ["R11", "R12"], []) / "schematic.pdf", ["R11", "R12"], drawn=False)
-    projects.append(Project(name="scan", license="MIT"))
+    (built(bench, "broken", ["R13", "R14"], []) / "schematic.pdf").write_bytes(b"%PDF-1.4 no")
+    built(bench, "zipped", ["R15", "R16"], [])
+    projects += [
+        Project(name="scan", license="MIT"),
+        Project(name="broken", license="MIT"),
+        Project(name="zipped", zip_url="https://example.com/pack.zip", license="MIT"),
+    ]
     forks = {"https://github.com/me/fork": "https://github.com/used/original"}
     found = records(bench, projects, forks=forks)
     assert "the same design as" in found["copy"]["reasons"][0]
@@ -153,6 +161,8 @@ def test_used_sources_copies_and_missing_files_are_kept_out(bench):
     assert found["absent"]["decision"] == "missing"
     assert found["unlicensed"]["reasons"] == ["no licence recorded"]
     assert found["scan"]["reasons"][0].startswith("not a vector drawing")
+    assert found["broken"]["reasons"][0].startswith("the PDF cannot be read")
+    assert found["zipped"]["reasons"] == ["repository already in corpus a"]
 
 
 def test_an_independent_corpus_is_held_out_whole(bench):
@@ -173,15 +183,28 @@ def test_sealed_hashes_catch_changed_inputs_but_not_export_times(bench):
     truth(out / "truth.net", [*REFS, "R3", "R4"])
     changed = check_sealed(list(records(bench, [project]).values()), sealed)
     assert changed == ["ok: truth changed"]
-    assert check_sealed([], sealed) == ["ok: no longer built"]
+    assert check_sealed([], sealed) == ["ok: no longer in the corpus"]
+    sealed[0]["decision"] = "quarantine"
+    assert check_sealed(list(records(bench, [project]).values()), sealed)[-1] == (
+        "ok: quarantine, now verified"
+    )
 
 
 def test_a_rendering_must_have_its_designs_netlist(bench):
     built(bench, "base", REFS, [])
     built(bench, "bw", REFS, [])
     built(bench, "v7", REFS[:4], [])
+    built(bench, "unlicensed", ["R7", "R8"], [])
+    built(bench, "unlicensed-bw", ["R7", "R8"], [])
     projects = [
         Project(name="base", repo="https://github.com/me/x", license="MIT"),
+        Project(name="unlicensed", repo="https://github.com/me/y", license=None),
+        Project(
+            name="unlicensed-bw",
+            repo="https://github.com/me/y",
+            license="MIT",
+            variant_of="unlicensed",
+        ),
         Project(
             name="bw",
             repo="https://github.com/me/x",
@@ -201,6 +224,7 @@ def test_a_rendering_must_have_its_designs_netlist(bench):
     assert found["bw"]["decision"] == "verified"
     assert found["bw"]["export"]["options"] == ["-b"]
     assert found["v7"]["reasons"] == ["its netlist differs from base's"]
+    assert found["unlicensed-bw"]["reasons"] == ["unlicensed, which it renders, is not admitted"]
     loaded = corpus(bench, projects)
     assert loaded.split(projects[1]) == loaded.split(projects[0]) != "copy"
     assert loaded.groups["bw"] == loaded.groups["base"]
@@ -229,3 +253,14 @@ def test_printed_words_follow_lines_and_ball_grids_are_not_parts(bench):
     found = records(bench, projects)
     assert "R1" not in found["stacked"]["text"]["refs_missing"]
     assert found["grid"]["text"]["refs_extra"] == []  # C14 and R11 are balls of U1
+
+
+@pytest.mark.parametrize("turn", [0, 90, 180, 270])
+def test_a_word_drawn_a_letter_at_a_time_reads_whole_however_turned(tmp_path, turn):
+    page = PdfBuilder()
+    dx, dy = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+    for k, letter in enumerate("R12"):
+        page.text(letter, 300 + 7 * k * dx, 400 + 7 * k * dy, turn=turn)
+    page.text("C5", 100, 700)
+    doc = pdfium.PdfDocument(page.save(tmp_path / "t.pdf"))
+    assert sorted(_words(doc[0]).split()) == ["C5", "R12"]

@@ -41,15 +41,22 @@ def verify(corpus: corpora.Corpus, references: list[Path], github=None) -> list[
     if tier == "independent" and corpus.holdout_share != 1.0:
         raise ValueError("an independent corpus is held out whole: holdout_share = 1.0")
     seen = ledger(corpus.root, corpus.name)
+    own = (corpus.root / "build" / corpus.name).resolve()
     others = {
         str(out): nets
         for out, nets in reference_nets(references).items()
-        if corpus.root / "build" / corpus.name not in out.parents
+        if own not in out.resolve().parents
     }
-    return [
-        _check(corpus, p, seen, others, github or _fork_of)
+    records = {
+        p.name: _check(corpus, p, seen, others, github or _fork_of)
         for p in sorted(corpus.projects, key=lambda p: p.name)
-    ]
+    }
+    for r in records.values():  # a rendering stands or falls with its design
+        base = records.get(r.get("variant_of"))
+        if base and base["decision"] != "verified" and r["decision"] == "verified":
+            r["reasons"].append(f"{base['name']}, which it renders, is not admitted")
+            r["decision"] = "quarantine"
+    return list(records.values())
 
 
 def ledger(root: Path, own: str) -> dict[str, str]:
@@ -81,14 +88,24 @@ def reference_nets(dirs: list[Path]) -> dict[Path, frozenset]:
 
 
 def check_sealed(records: list[dict], sealed: list[dict]) -> list[str]:
-    """Inputs that changed since the corpus was sealed."""
-    before = {r["name"]: r.get("files", {}) for r in sealed}
-    return [
-        f"{r['name']}: {label} changed"
-        for r in records
-        for label, digest in r.get("files", {}).items()
-        if r["name"] in before and before[r["name"]].get(label, digest) != digest
-    ] + [f"{name}: no longer built" for name in before.keys() - {r["name"] for r in records}]
+    """What changed since the corpus was sealed: inputs, and decisions."""
+    before = {r["name"]: r for r in sealed}
+    changed = [
+        f"{name}: no longer in the corpus" for name in before.keys() - {r["name"] for r in records}
+    ]
+    for r in records:
+        old = before.get(r["name"])
+        if old is None:
+            continue
+        files, old_files = r.get("files", {}), old.get("files", {})
+        changed += [
+            f"{r['name']}: {label} changed"
+            for label in sorted(files.keys() | old_files.keys())
+            if files.get(label) != old_files.get(label)
+        ]
+        if r["decision"] != old["decision"]:
+            changed.append(f"{r['name']}: {old['decision']}, now {r['decision']}")
+    return changed
 
 
 def _check(corpus, project, seen, others, fork_of) -> dict:
@@ -141,7 +158,12 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     if clone and project.license:
         record["license_file"] = _license_file(clone, project.commit)
 
-    doc = pdfium.PdfDocument(out / "schematic.pdf")
+    try:
+        doc = pdfium.PdfDocument(out / "schematic.pdf")
+    except pdfium.PdfiumError as e:
+        blocking.append(f"the PDF cannot be read: {e}")
+        record["decision"] = "quarantine"
+        return record
     try:
         meta = doc.get_metadata_dict(skip_empty=True)
         text = " ".join(_words(page) for page in doc)
@@ -252,9 +274,10 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
 
 def _lineage(project, seen, fork_of, record, blocking, notes) -> None:
     """Not a repository, owner or fork parent an earlier set used."""
-    if not project.repo:
+    url = project.repo or project.zip_url or project.pdf_url
+    if not url:
         return
-    repo = _normal(project.repo)
+    repo = _normal(url)
     owners = {_owner(r): where for r, where in seen.items() if _owner(r)}
     if repo in seen:
         blocking.append(f"repository already in {seen[repo]}")
@@ -422,25 +445,34 @@ def _words(page) -> str:
         box = (loose.left, loose.bottom, loose.right, loose.top)
         way = round(math.degrees(pdfium.raw.FPDFText_GetCharAngle(text.raw, i)) / 90) % 4
         here = (box, way)
-        if last and not _same_word(last, here):
+        order = _same_word(last, here) if last else 1
+        if not order:
             words.append(word)
             word = ""
-        word, last = word + ch, here
+        word, last = (word + ch if order >= 0 else ch + word), here
+    text.close()
     return " ".join([*words, word])
 
 
-def _same_word(a, b) -> bool:
-    """Two letters of one word: in one direction, the second just after the first in
-    it, the two sharing most of their line. Boxes are each letter's advance by the
-    font's height, so letters of a word meet."""
+def _same_word(a, b) -> int:
+    """1 if the second letter follows the first in one word, -1 if it comes before it,
+    0 if they are apart: one direction, sharing most of their line, the second just
+    after the first in it. Boxes are each letter's advance by the font's height, so
+    letters of a word meet."""
     (p, way), (q, way_too) = a, b
     if way != way_too:
-        return False
-    along, across = (1, 0) if way % 2 else (0, 1)
+        return 0
+    across = 0 if way % 2 else 1
     size = max(p[2] - p[0], p[3] - p[1], q[2] - q[0], q[3] - q[1])
-    # How far the second starts past the end of the first, reading right, down, left,
-    # up: pdfium turns letters clockwise.
-    step = (q[0] - p[2], p[1] - q[3], p[0] - q[2], q[1] - p[3])[way]
     shared = min(p[across + 2], q[across + 2]) - max(p[across], q[across])
     height = min(p[across + 2] - p[across], q[across + 2] - q[across])
-    return -0.3 * size <= step <= WORD_GAP * size and shared >= height / 2
+    # How far the second starts past the end of the first, reading right, down, left,
+    # up: pdfium turns letters clockwise.
+    steps = (q[0] - p[2], p[1] - q[3], p[0] - q[2], q[1] - p[3])
+    if shared < height / 2:
+        return 0
+    if -0.3 * size <= steps[way] <= WORD_GAP * size:
+        return 1
+    if way == 2 and -0.3 * size <= steps[0] <= WORD_GAP * size:
+        return -1  # upside-down letters, listed left to right
+    return 0
