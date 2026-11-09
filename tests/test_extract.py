@@ -2224,6 +2224,30 @@ def test_an_unnamed_copy_of_a_repeated_sheet_takes_the_copy_left_over():
     assert named(["bank0", "", "", "bank3"]) == ["bank0", "", "", "bank3"]
 
 
+def test_unnamed_sheets_do_not_share_their_pins():
+    """Two copies of one sheet, neither name printed: which child each stands for is
+    not drawn, so each copy's pin stays on its own net."""
+    from schem2net.pipeline import _name_sheets
+
+    root = SceneBuilder()
+    root.scene.path = "/"
+    for k, y in enumerate((10, 30)):
+        root.resistor(10, y, f"R{k + 1}", "1k")
+        root.scene.wires.append(((10, y - 2.54), (30, y - 2.54)))
+        root.scene.sheets.append(
+            Sheet("", (30, y - 10, 50, y + 10), [SheetPin("IN", (30, y - 2.54))])
+        )
+    children = []
+    for k in range(2):
+        child = Scene(page=k + 2, path=f"/c{k}/")
+        child.labels = [Label("IN", "hier", (0, 0, 1, 1), 0.0)]
+        children.append(child)
+    _name_sheets([root.scene, *children])
+
+    _, nets = netlist(root.scene, *children)
+    assert all(len(net.pins) == 1 for net in nets.values())
+
+
 def test_members_of_one_bus_named_twice_are_one_net():
     """DPHY0_C{DPHY} and DPHY0_P{DPHY} on the bus between two sheets name the same bus:
     DPHY0_C.C_N and DPHY0_P.C_N are one net."""

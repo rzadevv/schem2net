@@ -265,7 +265,8 @@ class Netlister:
         # A sheet pin on this page is the same net as the matching label on the child page.
         self.nested |= bool(scene.sheets)
         for si, sheet in enumerate(scene.sheets if scene.path else []):
-            child = scene.path + name_key(sheet.name) + "/"
+            # An unnamed sheet stands for no known child, and not for another unnamed one.
+            child = scene.path + (name_key(sheet.name) or f"#{page}.{si}") + "/"
             for k, pin in enumerate(sheet.pins):
                 node = ("sp", page, si, k)
                 key = self._key(pin.name)
