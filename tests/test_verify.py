@@ -168,3 +168,33 @@ def test_sealed_hashes_catch_changed_inputs_but_not_export_times(bench):
     changed = check_sealed(list(records(bench, [project]).values()), sealed)
     assert changed == ["ok: truth changed"]
     assert check_sealed([], sealed) == ["ok: no longer built"]
+
+
+def test_a_rendering_must_have_its_designs_netlist(bench):
+    built(bench, "base", REFS, [])
+    built(bench, "bw", REFS, [])
+    built(bench, "v7", REFS[:4], [])
+    projects = [
+        Project(name="base", repo="https://github.com/me/x", license="MIT"),
+        Project(
+            name="bw",
+            repo="https://github.com/me/x",
+            license="MIT",
+            export=["-b"],
+            variant_of="base",
+        ),
+        Project(
+            name="v7",
+            repo="https://github.com/me/x",
+            license="MIT",
+            image="schem2net-kicad:7.0",
+            variant_of="base",
+        ),
+    ]
+    found = records(bench, projects)
+    assert found["bw"]["decision"] == "verified"
+    assert found["bw"]["export"]["options"] == ["-b"]
+    assert found["v7"]["reasons"] == ["its netlist differs from base's"]
+    loaded = corpus(bench, projects)
+    assert loaded.split(projects[1]) == loaded.split(projects[0]) != "copy"
+    assert loaded.groups["bw"] == loaded.groups["base"]

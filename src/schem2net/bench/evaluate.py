@@ -104,10 +104,20 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
             found = {"failed": json.loads(failed.read_text())["error"]}
         designs[p.name] = counts
         extra[p.name] = {"generator": generator(p), **found}
+        if p.variant_of:
+            extra[p.name]["variant_of"] = p.variant_of
         groups[p.name] = corpus.groups[p.name]
-    names = list(designs)
+    # Renderings of a design are reported beside it, not counted as designs of their own.
+    names = [n for n in designs if "variant_of" not in extra[n]]
+    renderings: dict[str, dict] = {}
+    for n, e in extra.items():
+        if "variant_of" in e:
+            base = e["variant_of"]
+            known = designs[base].metrics()["pin_accuracy"] if base in designs else None
+            renderings.setdefault(base, {base: known})
+            renderings[base][n] = designs[n].metrics()["pin_accuracy"]
     by_generator = {}
-    for g in sorted({e["generator"] for e in extra.values()}):
+    for g in sorted({extra[n]["generator"] for n in names}):
         chosen = [n for n in names if extra[n]["generator"] == g]
         by_generator[g] = {
             "designs": len(chosen),
@@ -119,9 +129,10 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
         "corpus": corpus.name,
         "tier": corpus.tier,
         "run": json.loads((out / "run.json").read_text()),
-        "total": summary(list(designs.values())),
-        "intervals": intervals(list(designs.values()), [groups[n] for n in names]),
+        "total": summary([designs[n] for n in names]),
+        "intervals": intervals([designs[n] for n in names], [groups[n] for n in names]),
         "by_generator": by_generator,
+        "renderings": renderings,
         "designs": {n: asdict(c) for n, c in designs.items()},
         "extra": extra,
         "groups": groups,

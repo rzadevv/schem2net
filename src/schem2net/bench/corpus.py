@@ -51,6 +51,11 @@ class Project:
     commit: str | None = None
     license: str | None = None
     group: str | None = None  # projects that share a group share a split; by default, a repo
+    # A KiCad design rendered another way: the image and PDF options it is exported with,
+    # and the project it is a rendering of, whose group and split it shares.
+    image: str | None = None
+    export: list[str] | None = None
+    variant_of: str | None = None
 
 
 @dataclass(frozen=True)
@@ -85,7 +90,7 @@ class Corpus:
         true nets an earlier one has."""
         kept, copies = {}, set()
         for p in sorted(self.projects, key=lambda p: p.name):
-            if not self.is_built(p):
+            if not self.is_built(p) or p.variant_of:  # a rendering: the same nets, by design
                 continue
             found = _true_nets(self.build_dir(p))
             if found in kept.values():
@@ -104,6 +109,8 @@ class Corpus:
         found = UnionFind()
         for p in projects:
             found.union(p.name, ("group", _group(p)))
+            if p.variant_of:
+                found.union(p.name, p.variant_of)
         names = list(kept)
         for i, a in enumerate(names):
             for b in names[i + 1 :]:
@@ -237,8 +244,9 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
                 mounts = []
                 schematic = f"{KICAD_DEMOS}/{project.schematic}"
             mounts += ["-v", f"{out.resolve()}:/out"]
-            _docker(image, mounts, [*EXPORT_PDF, schematic])
-            _docker(image, mounts, [*EXPORT_NETLIST, schematic])
+            pdf = EXPORT_PDF if project.export is None else [*EXPORT_PDF[:5], *project.export]
+            _docker(project.image or image, mounts, [*pdf, schematic])
+            _docker(project.image or image, mounts, [*EXPORT_NETLIST, schematic])
             log(f"built {project.name}")
         except subprocess.CalledProcessError as e:
             failed.append(project.name)

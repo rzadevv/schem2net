@@ -122,6 +122,13 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     record["closest"] = {"design": near[1], "shared_nets": round(near[0], 3)}
     if near[0] >= corpora.SAME_DESIGN:
         blocking.append(f"the same design as {near[1]} ({near[0]:.0%} of nets)")
+    if project.variant_of:
+        record["variant_of"] = project.variant_of
+        base = next((q for q in corpus.projects if q.name == project.variant_of), None)
+        if base is None or not corpus.is_built(base):
+            blocking.append(f"{project.variant_of}, which it renders, is not built")
+        elif corpora._true_nets(corpus.build_dir(base)) != nets:
+            blocking.append(f"its netlist differs from {project.variant_of}'s")
 
     if not project.license:
         blocking.append("no licence recorded")
@@ -171,7 +178,9 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
     elif project.pcb:
         notes.append("truth from the board, which can drift from the drawing")
     if not project.pdf and not project.pdf_url and not project.pcb:
-        record["export"] = {"image": corpora.IMAGE, "pdf": corpora.EXPORT_PDF[3:]}
+        image = project.image or corpora.IMAGE
+        options = corpora.EXPORT_PDF[5:] if project.export is None else project.export
+        record["export"] = {"image": image, "image_id": _image_id(image), "options": options}
         return "export"
 
     if clone and project.pdf:
@@ -309,6 +318,17 @@ def _fork_of(repo: str) -> str | None:
         return "unchecked"
     fork, source = json.loads(found.stdout)
     return source if fork else None
+
+
+def _image_id(image: str) -> str | None:
+    try:
+        found = subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", image],
+            check=True, capture_output=True, text=True, timeout=60,
+        )  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return found.stdout.strip()
 
 
 def _clone(corpus, project) -> Path | None:
