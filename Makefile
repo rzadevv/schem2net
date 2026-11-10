@@ -93,6 +93,6 @@ eval-image:
 	diff -I '^#' $(EVAL_DIR)/requirements-runner.txt $(EVAL_DIR)/requirements-candidate.txt
 	diff -I '^#' $(EVAL_DIR)/requirements-runner.txt $(EVAL_DIR)/requirements-comparator.txt
 	cp $(EVAL_DIR)/requirements-runner.txt $(EVAL_DIR)/requirements.txt
-	docker build -q -t $(EVAL_IMAGE) -f docker/Dockerfile.eval $(EVAL_DIR)
+	docker build -q --provenance=false -t $(EVAL_IMAGE) -f docker/Dockerfile.eval $(EVAL_DIR)
 	sha256sum $(EVAL_DIR)/*/*.whl $(EVAL_DIR)/requirements.txt
 	docker image inspect $(EVAL_IMAGE) --format '{{.Id}}'
