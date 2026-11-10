@@ -3,39 +3,39 @@
   "split": "dev",
   "folds": null,
   "total": {
-    "pin_accuracy": 0.8000681198910081,
-    "signal_pin_accuracy": 0.7947269303201506,
-    "net_exact": 0.5973645680819912,
-    "connection_precision": 0.8115958801064692,
-    "connection_recall": 0.4717793474604776,
-    "connection_f1": 0.5966987152216455,
+    "pin_accuracy": 0.8010899182561307,
+    "signal_pin_accuracy": 0.7961393596986818,
+    "net_exact": 0.5988286969253295,
+    "connection_precision": 0.8131855575868373,
+    "connection_recall": 0.47877564749411367,
+    "connection_f1": 0.6027014438751747,
     "component_precision": 0.9585427135678392,
     "component_recall": 0.9431396786155748,
-    "value_accuracy": 0.8141135972461274,
-    "flag_recall": 0.5284280936454849,
-    "flag_precision": 0.7348837209302326,
+    "value_accuracy": 0.8519793459552496,
+    "flag_recall": 0.5254237288135594,
+    "flag_precision": 0.7311320754716981,
     "perfect_designs": 0.07692307692307693,
     "silent_error_rate": 0.01430517711171662,
-    "pin_flag_recall": 0.8116591928251121,
-    "missed_pin_rate": 0.12397820163487738,
+    "pin_flag_recall": 0.8064516129032258,
+    "missed_pin_rate": 0.125,
     "extra_pin_rate": 0.0020435967302452314,
-    "review_items_per_100_pins": 17.23433242506812,
-    "review_precision": 0.49407114624505927,
+    "review_items_per_100_pins": 17.132152588555858,
+    "review_precision": 0.4850894632206759,
     "designs_without_silent_errors": 0.6153846153846154,
-    "macro_pin_accuracy": 0.8485768404838712,
-    "macro_connection_f1": 0.7794923084732364
+    "macro_pin_accuracy": 0.8489448934835031,
+    "macro_connection_f1": 0.7800782462076512
   },
   "intervals": {
     "pin_accuracy": [
-      0.6913779452991321,
+      0.6941937213798065,
       0.8942549591207613
     ],
     "signal_pin_accuracy": [
-      0.6797460151430146,
+      0.6829727381365055,
       0.8987705198358413
     ],
     "net_exact": [
-      0.44432388948354296,
+      0.44775635336829367,
       0.7405983095726303
     ],
     "connection_precision": [
@@ -43,11 +43,11 @@
       0.9664015811461436
     ],
     "connection_recall": [
-      0.426954490261337,
+      0.4349435515607924,
       0.8076542439173845
     ],
     "connection_f1": [
-      0.552297215938601,
+      0.5593128490490548,
       0.8771766541645757
     ],
     "component_precision": [
@@ -59,16 +59,16 @@
       0.9796351105513573
     ],
     "value_accuracy": [
-      0.7064294158023184,
+      0.7568841104512595,
       0.9551995798319327
     ],
     "flag_recall": [
       0.28243296144059504,
-      0.660973370064279
+      0.6599438040345822
     ],
     "flag_precision": [
       0.4268203012912482,
-      0.9245333739095151
+      0.9222249190938512
     ],
     "perfect_designs": [
       0.0,
@@ -79,36 +79,36 @@
       0.029413989498976584
     ],
     "pin_flag_recall": [
-      0.6249594155844156,
+      0.6187417763157895,
       0.960236369234214
     ],
     "missed_pin_rate": [
       0.06939800561870768,
-      0.17902389018570106
+      0.18200936186229236
     ],
     "extra_pin_rate": [
       0.0,
       0.005259278922255712
     ],
     "review_items_per_100_pins": [
-      12.195686809321115,
-      23.50678095364414
+      12.09798813691667,
+      23.48131705512393
     ],
     "review_precision": [
       0.2645105558839501,
-      0.7210885967089863
+      0.7016656909736196
     ],
     "designs_without_silent_errors": [
       0.38461538461538464,
       0.8461538461538461
     ],
     "macro_pin_accuracy": [
-      0.7728069117538087,
-      0.9134926140766508
+      0.7739012837101769,
+      0.9135025821787242
     ],
     "macro_connection_f1": [
-      0.6452487753003966,
-      0.8894971074961736
+      0.6462899947391526,
+      0.8899923257149716
     ]
   },
   "designs": {
@@ -416,30 +416,30 @@
       "designs": 1,
       "perfect_designs": 0,
       "pins": 627,
-      "pins_correct": 391,
+      "pins_correct": 394,
       "signal_pins": 562,
-      "signal_pins_correct": 338,
+      "signal_pins_correct": 341,
       "nets": 138,
-      "nets_exact": 44,
+      "nets_exact": 45,
       "pairs_true": 12561,
-      "pairs_predicted": 6614,
-      "pairs_correct": 5277,
+      "pairs_predicted": 6725,
+      "pairs_correct": 5381,
       "refs_true": 231,
       "refs_predicted": 224,
       "refs_common": 204,
       "values_known": 204,
-      "values_correct": 141,
-      "wrong_nets": 110,
-      "flagged_nets": 73,
-      "wrong_flagged": 73,
-      "pins_wrong": 80,
-      "pins_wrong_flagged": 57,
-      "pins_missed": 156,
+      "values_correct": 163,
+      "wrong_nets": 106,
+      "flagged_nets": 70,
+      "wrong_flagged": 70,
+      "pins_wrong": 74,
+      "pins_wrong_flagged": 51,
+      "pins_missed": 159,
       "pins_missed_flagged": 5,
       "pins_extra": 6,
       "designs_without_silent_errors": 0,
       "pin_issues": 47,
-      "pin_issues_wrong": 30,
+      "pin_issues_wrong": 27,
       "pages_failed": 0
     },
     "stm32f103-minimal-system-pcb-sch-schematic1-1-2025-12-13": {
