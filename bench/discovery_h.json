@@ -1,0 +1,31 @@
+{
+ "corpus": "h",
+ "tier": "independent",
+ "protocol": "docs/evaluation-protocol.md at 9dc3540, section Discovery",
+ "registered": "2026-11-10, committed before any search below is run",
+ "searches": {
+  "run_on": "2026-11-10 (UTC)",
+  "api": "GitHub REST code search, GET /search/code?q=QUERY&per_page=100&page=1..10, default sort; raw responses kept locally in bench/out/discovery-h/search",
+  "order": "repositories in order of their first result; each is looked at in that order",
+  "queries": {
+   "kicad": "\"kicad_pro\" extension:kicad_pro",
+   "eagle": "\"eagle.dtd\" extension:sch",
+   "easyeda": "\"editorVersion\" \"docType\" extension:json",
+   "altium": "\"DocumentPath\" extension:PrjPcb",
+   "orcad": "\"ExpressProject\" extension:opj"
+  },
+  "known_limits": "code search covers default branches, files under 384 KB and few forks; KiCad 5 projects (.pro) and EasyEDA Pro are not searched"
+ },
+ "rules": [
+  "Exclusions, first that applies: the repository, its owner or its fork parent is in a corpus manifest (A to G, P, X) or the November 5 panel (verify.ledger, GitHub fork parent); the repository is named in bench/discovery_p.json, as looked at for the exploratory pilot; a port or copy of an excluded design under another owner, named by hand.",
+  "A circuit is: kicad, a .kicad_pro with its root .kicad_sch and a .kicad_pcb in the same folder, its PDF exported by kicad-cli as corpus P's are; eagle, an XML .sch with its schematic PDF; easyeda, a Std schematic JSON with its schematic PDF; altium, a .PcbDoc with its schematic PDF; orcad, an Allegro .brd with its schematic PDF.",
+  "A PDF pairs with a source when its name or folder names the same design. Two or more PDFs that could be it, with nothing to say which: excluded, ambiguous pair. Renderings are not collected.",
+  "At most two circuits per repository, the first in the order the search listed their files, then by path; at most three per group. Group: the repository owner; known families and ports merge.",
+  "Commit: the default branch head when the repository is looked at.",
+  "Licence: GitHub's SPDX id; where it is NOASSERTION, the licence file or README read and named; no grant anywhere: none; otherwise not determined, and excluded.",
+  "Unavailable (deleted, private, Git LFS pointers, cannot be cloned or built): logged as such, never replaced out of order.",
+  "Candidates are pinned in bench/corpus_h.toml, built with build-corpus h, and admitted or not by verify-corpus h --against bench/out/release-2026-11-05/pairs-v2. Quarantined designs stay listed. No extractor runs during discovery.",
+  "A generator stops at its 12th admitted design (15 for altium and orcad) in search order, or when its results run out. Designs after the stop leave the manifest and are logged as past the stop."
+ ],
+ "repositories": []
+}
