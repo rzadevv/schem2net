@@ -2,8 +2,8 @@
  "status": "prepared: the runner is re-pinned to the commit that merges this record, and the image rebuilt, before discovery begins",
  "protocol": "docs/evaluation-protocol.md",
  "runner": {
-  "commit": "24ae24c77c87f8bed944525926ab1b578b23ad13",
-  "wheel_sha256": "380b9060b4d9c83e4c53c5888c5a8bef33369f68f6d001986740b83706afcaea"
+  "commit": "5dae3e54f2aa041aa4557b49a0ccb29aac545801",
+  "wheel_sha256": "36a54d6e67df70072323877266f56d31ec53151c9195aad984491ab6609cf0ea"
  },
  "candidate": {
   "commit": "56caa0617197408626479692f8de46d2058a954a",
@@ -31,7 +31,7 @@
   "dockerfile": "docker/Dockerfile.eval",
   "build": "make eval-image",
   "base_image": "python:3.13.15-slim-trixie@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b",
-  "image_id": "sha256:dfc5b7f003b5b2827ee152cc5aef8d3612d288963d67ddae22afa3694e1a8bd7",
+  "image_id": "sha256:6cef40302a410774e105ef2e5f9771595aee35c7a4f535aaac60aa4217d80056",
   "os": "Debian 13.7, linux/amd64",
   "requirements_sha256": "a62cd9367da6c2a791e1aceca57ebc6966c19fd9061379d5d0bd4726affd6a62",
   "python": "3.13.15",
