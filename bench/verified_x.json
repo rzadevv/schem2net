@@ -1,418 +1,568 @@
-[
- {
-  "name": "cbm-ultipet",
+{
+ "settings": {
   "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/fachat/cbm_ultipet",
-  "repo": "https://github.com/fachat/cbm_ultipet",
-  "commit": "215c853c21f749ff9fe1cfac7385c1361da609d9",
-  "license": "GPL-3.0",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "91e67ca7b12a948a221dd228b6af55bd62234daa8dc1d70dc84d2571270ef7f8",
-   "truth": "9452ffc177bcafdf944717efefb9734aa4503e19096fce0b6fdeaa5c259b5f2c",
-   "schematic_file": "git:59de668149d4a6240c203c79dc96392c8546a2f3"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/build/g/sparkfun-openlog_artemis",
-   "shared_nets": 0.002
-  },
-  "license_file": {
-   "path": "LICENSE",
-   "blob": "git:f288702d2fa16d3cdf0035b15a9fcbc552cd88e7"
-  },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:44",
-   "pages": 17
-  },
-  "source_version": "9.0",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
+  "test_share": 0.0,
+  "holdout_share": 0.0,
+  "checks": {
+   "ref_coverage": 0.95,
+   "extra_refs": 0.05,
+   "name_coverage": 0.8,
+   "same_design": 0.9,
+   "word_gap": 0.3,
+   "vector": 50
+  }
  },
- {
-  "name": "cobra-xp",
-  "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/ceteras/Cobra-XP",
-  "repo": "https://github.com/ceteras/Cobra-XP",
-  "commit": "12c035e9556cd1ba115d8ad2b77deb7ec17b5f12",
-  "license": "MIT",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "f72c8867af47d4e9f7ce2a1b7cb6b812ce6a89d1b7058a713aa4a24ef5b853c6",
-   "truth": "bbbd50ca0c3c059e47f324533f70728f1de85438b7ed1323de03129c5cd1dc8a",
-   "schematic_file": "git:628385b570e95596cfe81089f630a1d77a34b6c9"
+ "designs": [
+  {
+   "name": "cbm-ultipet",
+   "generator": "kicad",
+   "group": "https://github.com/fachat/cbm_ultipet",
+   "manifest": {
+    "name": "cbm-ultipet",
+    "schematic": "Board/cbm_ultipet_v1.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/fachat/cbm_ultipet",
+    "commit": "215c853c21f749ff9fe1cfac7385c1361da609d9",
+    "license": "GPL-3.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "91e67ca7b12a948a221dd228b6af55bd62234daa8dc1d70dc84d2571270ef7f8",
+    "truth": "9452ffc177bcafdf944717efefb9734aa4503e19096fce0b6fdeaa5c259b5f2c",
+    "schematic_file": "git:59de668149d4a6240c203c79dc96392c8546a2f3"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/g/sparkfun-openlog_artemis",
+    "shared_nets": 0.002
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:f288702d2fa16d3cdf0035b15a9fcbc552cd88e7"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:44",
+    "pages": 17
+   },
+   "source_version": "9.0",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
   },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/build/a/seatalk-wifi",
-   "shared_nets": 0.002
+  {
+   "name": "cobra-xp",
+   "generator": "kicad",
+   "group": "https://github.com/ceteras/Cobra-XP",
+   "manifest": {
+    "name": "cobra-xp",
+    "schematic": "kicad/main.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/ceteras/Cobra-XP",
+    "commit": "12c035e9556cd1ba115d8ad2b77deb7ec17b5f12",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "f72c8867af47d4e9f7ce2a1b7cb6b812ce6a89d1b7058a713aa4a24ef5b853c6",
+    "truth": "bbbd50ca0c3c059e47f324533f70728f1de85438b7ed1323de03129c5cd1dc8a",
+    "schematic_file": "git:628385b570e95596cfe81089f630a1d77a34b6c9"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/a/seatalk-wifi",
+    "shared_nets": 0.002
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:b76cc5bc74fb47bc3648cf74796f71e6e972ada7"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:24",
+    "pages": 14
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
   },
-  "license_file": {
-   "path": "LICENSE",
-   "blob": "git:b76cc5bc74fb47bc3648cf74796f71e6e972ada7"
+  {
+   "name": "dragon32-secam",
+   "generator": "kicad",
+   "group": "https://github.com/jimbro1000/Dragon32Issue2aSecam",
+   "manifest": {
+    "name": "dragon32-secam",
+    "schematic": "Dragon32Issue2ASecam.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/jimbro1000/Dragon32Issue2aSecam",
+    "commit": "700ef4b76f432cae878524609cd4605ff6d8f300",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "82f6ea0f882b771edeb270a134c32af1efaf3737b437a754bc4834cd1ffd46ab",
+    "truth": "bb648fb4ddb68e78ec8938fa4bb6961b4343845ce9b6c010db97cd3a1234c833",
+    "schematic_file": "git:d2ca42a85d50f138e17b9c00bb9fcae1b532ddc4"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE.md",
+    "blob": "git:2598bfef7faeef0a79953fec0ae10aa73e06ee94"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:39",
+    "pages": 9
+   },
+   "source_version": "8.0",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
   },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:24",
-   "pages": 14
-  },
-  "source_version": "20230121",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
- },
- {
-  "name": "dragon32-secam",
-  "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/jimbro1000/Dragon32Issue2aSecam",
-  "repo": "https://github.com/jimbro1000/Dragon32Issue2aSecam",
-  "commit": "700ef4b76f432cae878524609cd4605ff6d8f300",
-  "license": "MIT",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "82f6ea0f882b771edeb270a134c32af1efaf3737b437a754bc4834cd1ffd46ab",
-   "truth": "bb648fb4ddb68e78ec8938fa4bb6961b4343845ce9b6c010db97cd3a1234c833",
-   "schematic_file": "git:d2ca42a85d50f138e17b9c00bb9fcae1b532ddc4"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
-   "shared_nets": 0.0
-  },
-  "license_file": {
-   "path": "LICENSE.md",
-   "blob": "git:2598bfef7faeef0a79953fec0ae10aa73e06ee94"
-  },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:39",
-   "pages": 9
-  },
-  "source_version": "8.0",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
- },
- {
-  "name": "immunity-cocomemjr",
-  "tier": "exploratory",
-  "generator": "eagle",
-  "group": "https://github.com/go4retro/iMMUnity",
-  "repo": "https://github.com/go4retro/iMMUnity",
-  "commit": "bae56b927f0a372be02b3fb68772ee2a76c96cba",
-  "license": "CC-BY-SA-4.0",
-  "reasons": [],
-  "notes": [
-   "the PDF has no usable text layer"
-  ],
-  "files": {
-   "pdf": "c3a0b9832faaeb41118b9dc358a39b4c538837d2313e794a2e91b4cbd4ee24e4",
-   "truth": "c964e54cb7028ae7d5b93b7017cab425e45d1eb2222613e5fdc0d2c76c39b07d",
-   "schematic_file": "git:302b4f371b1b40a03187888a4ff53d35900df813",
-   "pdf_file": "git:1caa8ed51216febbe77e44129e85ccd6211ebf0b"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/build/c/sparkfun-led_ringcoder_breakout",
-   "shared_nets": 0.006
-  },
-  "license_file": {
-   "path": "LICENSE_CC_BY_SA_4.0.txt",
-   "blob": "git:fe8dbc50fccf64ebbed70cdd718b27782670a1ef"
-  },
-  "pdf": {
-   "producer": "Qt 5.6.0",
-   "creator": "EAGLE Version 7.7.0 Copyright (c) 1988-2016 CadSoft",
-   "created": "D:20211207044039",
-   "pages": 4
-  },
-  "source_version": "7.7.0",
-  "sheets": 4,
-  "last_changed": {
-   "schematic_file": 1756531629,
-   "pdf_file": 1756531629
-  },
-  "evidence": "revision only",
-  "decision": "verified"
- },
- {
-  "name": "maxi030",
-  "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/aslak3/MAXI030",
-  "repo": "https://github.com/aslak3/MAXI030",
-  "commit": "22ecace2ac17e8802fb8fa876d4e2d54cbd8b771",
-  "license": "GPL-2.0",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "efa7b5793ee60cc492e1d72328feb8c24f3cb250e9f2fcb9873134c2a4c962a9",
-   "truth": "665d9915945e8cf68b02b8cb41e2dbd32c4ac65dc9f0aafa6f38eb2587d8c8a4",
-   "schematic_file": "git:11d281ab6f7263c5744a5bfdaf2afe591a07a3ce"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/build/p/candlelight-fd-kicad8",
-   "shared_nets": 0.002
-  },
-  "license_file": {
-   "path": "LICENCE",
-   "blob": "git:d6a93266f748d606b884f9434ff662fe80b9dc21"
-  },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:49",
-   "pages": 14
-  },
-  "source_version": "20211123",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
- },
- {
-  "name": "noise-toaster",
-  "tier": "exploratory",
-  "generator": "altium",
-  "group": "https://github.com/dw2wrigh/noise-toaster",
-  "repo": "https://github.com/dw2wrigh/noise-toaster",
-  "commit": "30d116106247dc5791e030e2ef7ccedbe4a7ad29",
-  "license": "GPL-3.0",
-  "reasons": [
-   "mismatch: the PDF names 16 parts the truth lacks"
-  ],
-  "notes": [
-   "the PDF carries its netlist: read it drawing-only"
-  ],
-  "files": {
-   "pdf": "53d5591643f4098cc9f78a1132f8bbda92dc3d8c89d5faf8690283bc970bbe57",
-   "truth": "5bd418a4291d449d69a400142471a719702fa84ce31e64a170de68510ba9cf54",
-   "board": "87da446520ecb229abd0b12004154f84e2885cfb360913a42f3e8d5d2074a87e",
-   "pdf_file": "git:32929d0c54ace1eb7b0d84a82c75f2f077f305cd",
-   "pcb_file": "git:4a30d9349977ebd6d1ba0e95720373db3dd78d27"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
-   "shared_nets": 0.0
-  },
-  "license_file": {
-   "path": "LICENSE",
-   "blob": "git:f288702d2fa16d3cdf0035b15a9fcbc552cd88e7"
-  },
-  "pdf": {
-   "producer": "llPDFLib 3.x",
-   "creator": "Altium Designer",
-   "created": "D:20260122000000",
-   "pages": 10
-  },
-  "source_version": null,
-  "sheets": null,
-  "board_agreement": 0.571,
-  "last_changed": {
-   "pdf_file": 1771867848,
-   "pcb_file": 1771867848
-  },
-  "text": {
-   "refs": 126,
-   "refs_printed": 1.0,
-   "refs_missing": [],
-   "refs_unprinted": [],
-   "refs_channel": [],
-   "refs_extra": [
-    "J1",
-    "R1",
-    "R13",
-    "R20",
-    "R28",
-    "R29",
-    "R38",
-    "R49",
-    "R51",
-    "R53",
-    "R66",
-    "S10",
-    "S3",
-    "S6",
-    "S8",
-    "S9"
+  {
+   "name": "immunity-cocomemjr",
+   "generator": "eagle",
+   "group": "https://github.com/go4retro/iMMUnity",
+   "manifest": {
+    "name": "immunity-cocomemjr",
+    "schematic": null,
+    "pdf": "pcb/CocoMEMJr_v1.01.pdf",
+    "pcb": null,
+    "eagle": "pcb/CocoMEMJr_v1.01.sch",
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/go4retro/iMMUnity",
+    "commit": "bae56b927f0a372be02b3fb68772ee2a76c96cba",
+    "license": "CC-BY-SA-4.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "the PDF has no usable text layer"
    ],
-   "names": 6,
-   "names_printed": 1.0
+   "files": {
+    "pdf": "c3a0b9832faaeb41118b9dc358a39b4c538837d2313e794a2e91b4cbd4ee24e4",
+    "truth": "c964e54cb7028ae7d5b93b7017cab425e45d1eb2222613e5fdc0d2c76c39b07d",
+    "schematic_file": "git:302b4f371b1b40a03187888a4ff53d35900df813",
+    "pdf_file": "git:1caa8ed51216febbe77e44129e85ccd6211ebf0b"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/c/sparkfun-led_ringcoder_breakout",
+    "shared_nets": 0.006
+   },
+   "license_file": {
+    "path": "LICENSE_CC_BY_SA_4.0.txt",
+    "blob": "git:fe8dbc50fccf64ebbed70cdd718b27782670a1ef"
+   },
+   "pdf": {
+    "producer": "Qt 5.6.0",
+    "creator": "EAGLE Version 7.7.0 Copyright (c) 1988-2016 CadSoft",
+    "created": "D:20211207044039",
+    "pages": 4
+   },
+   "source_version": "7.7.0",
+   "sheets": 4,
+   "last_changed": {
+    "schematic_file": 1756531629,
+    "pdf_file": 1756531629
+   },
+   "evidence": "revision only",
+   "decision": "verified"
   },
-  "evidence": "carried netlist",
-  "decision": "quarantine"
- },
- {
-  "name": "radio-86rk",
-  "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/skiselev/radio-86rk",
-  "repo": "https://github.com/skiselev/radio-86rk",
-  "commit": "c5e9cb7950deacb87d65b59b0dfdf96159d4b98c",
-  "license": "GPL-3.0",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "aae69bd98e37a7200e66eb919248341962160f80c195bc5e581d44c77e22fb1e",
-   "truth": "1f33020864574a19213320f1d5fec7a80807a274eda58cfb1299a506b1e3e2f0",
-   "schematic_file": "git:c6e9b738eabb5cce0804c14c434ae7be20edafd5"
+  {
+   "name": "maxi030",
+   "generator": "kicad",
+   "group": "https://github.com/aslak3/MAXI030",
+   "manifest": {
+    "name": "maxi030",
+    "schematic": "MAXI030.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/aslak3/MAXI030",
+    "commit": "22ecace2ac17e8802fb8fa876d4e2d54cbd8b771",
+    "license": "GPL-2.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "efa7b5793ee60cc492e1d72328feb8c24f3cb250e9f2fcb9873134c2a4c962a9",
+    "truth": "665d9915945e8cf68b02b8cb41e2dbd32c4ac65dc9f0aafa6f38eb2587d8c8a4",
+    "schematic_file": "git:11d281ab6f7263c5744a5bfdaf2afe591a07a3ce"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/p/candlelight-fd-kicad8",
+    "shared_nets": 0.002
+   },
+   "license_file": {
+    "path": "LICENCE",
+    "blob": "git:d6a93266f748d606b884f9434ff662fe80b9dc21"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:49",
+    "pages": 14
+   },
+   "source_version": "20211123",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
   },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/build/a/iot12-power",
-   "shared_nets": 0.005
+  {
+   "name": "noise-toaster",
+   "generator": "altium",
+   "group": "https://github.com/dw2wrigh/noise-toaster",
+   "manifest": {
+    "name": "noise-toaster",
+    "schematic": null,
+    "pdf": "Project Outputs for Noise Toaster/Noise Toaster Schematics.pdf",
+    "pcb": "Noise Toaster.PcbDoc",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/dw2wrigh/noise-toaster",
+    "commit": "30d116106247dc5791e030e2ef7ccedbe4a7ad29",
+    "license": "GPL-3.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [
+    "mismatch: the PDF names 16 parts the truth lacks"
+   ],
+   "notes": [
+    "the PDF carries its netlist: read it drawing-only"
+   ],
+   "files": {
+    "pdf": "53d5591643f4098cc9f78a1132f8bbda92dc3d8c89d5faf8690283bc970bbe57",
+    "truth": "5bd418a4291d449d69a400142471a719702fa84ce31e64a170de68510ba9cf54",
+    "board": "87da446520ecb229abd0b12004154f84e2885cfb360913a42f3e8d5d2074a87e",
+    "pdf_file": "git:32929d0c54ace1eb7b0d84a82c75f2f077f305cd",
+    "pcb_file": "git:4a30d9349977ebd6d1ba0e95720373db3dd78d27"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:f288702d2fa16d3cdf0035b15a9fcbc552cd88e7"
+   },
+   "pdf": {
+    "producer": "llPDFLib 3.x",
+    "creator": "Altium Designer",
+    "created": "D:20260122000000",
+    "pages": 10
+   },
+   "source_version": null,
+   "sheets": null,
+   "board_agreement": 0.571,
+   "last_changed": {
+    "pdf_file": 1771867848,
+    "pcb_file": 1771867848
+   },
+   "text": {
+    "refs": 126,
+    "refs_printed": 1.0,
+    "refs_missing": [],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [
+     "J1",
+     "R1",
+     "R13",
+     "R20",
+     "R28",
+     "R29",
+     "R38",
+     "R49",
+     "R51",
+     "R53",
+     "R66",
+     "S10",
+     "S3",
+     "S6",
+     "S8",
+     "S9"
+    ],
+    "names": 6,
+    "names_printed": 1.0
+   },
+   "evidence": "carried netlist",
+   "decision": "quarantine"
   },
-  "license_file": {
-   "path": "LICENSE",
-   "blob": "git:f288702d2fa16d3cdf0035b15a9fcbc552cd88e7"
+  {
+   "name": "radio-86rk",
+   "generator": "kicad",
+   "group": "https://github.com/skiselev/radio-86rk",
+   "manifest": {
+    "name": "radio-86rk",
+    "schematic": "KiCad/Radio-86RK.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/skiselev/radio-86rk",
+    "commit": "c5e9cb7950deacb87d65b59b0dfdf96159d4b98c",
+    "license": "GPL-3.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "aae69bd98e37a7200e66eb919248341962160f80c195bc5e581d44c77e22fb1e",
+    "truth": "1f33020864574a19213320f1d5fec7a80807a274eda58cfb1299a506b1e3e2f0",
+    "schematic_file": "git:c6e9b738eabb5cce0804c14c434ae7be20edafd5"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/a/iot12-power",
+    "shared_nets": 0.005
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:f288702d2fa16d3cdf0035b15a9fcbc552cd88e7"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:19",
+    "pages": 5
+   },
+   "source_version": "20211123",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
   },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:19",
-   "pages": 5
+  {
+   "name": "slothpu-register-file",
+   "generator": "kicad",
+   "group": "https://github.com/freesurfer-rge/slothpu",
+   "manifest": {
+    "name": "slothpu-register-file",
+    "schematic": "pcbs/Register File/Register File.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/freesurfer-rge/slothpu",
+    "commit": "1c8d69e2a7a2eb5d6a5867587582d75442118b70",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "e8f4e899e59fa90b364e02644f11cb56bcee5d5a4577d103a2b7fa5db7626681",
+    "truth": "7c699fe170084563d5e0f2a18f8f9e9be947e98ac13ea0e80b8f19c60a5ef86d",
+    "schematic_file": "git:543e7d20456c3b571c37251de07fcd68d59b4e07"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:55416f236b83627a261b4cabd48423f2ccc96cc5"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:35",
+    "pages": 10
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
   },
-  "source_version": "20211123",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
- },
- {
-  "name": "slothpu-register-file",
-  "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/freesurfer-rge/slothpu",
-  "repo": "https://github.com/freesurfer-rge/slothpu",
-  "commit": "1c8d69e2a7a2eb5d6a5867587582d75442118b70",
-  "license": "MIT",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "e8f4e899e59fa90b364e02644f11cb56bcee5d5a4577d103a2b7fa5db7626681",
-   "truth": "7c699fe170084563d5e0f2a18f8f9e9be947e98ac13ea0e80b8f19c60a5ef86d",
-   "schematic_file": "git:543e7d20456c3b571c37251de07fcd68d59b4e07"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
-   "shared_nets": 0.0
-  },
-  "license_file": {
-   "path": "LICENSE",
-   "blob": "git:55416f236b83627a261b4cabd48423f2ccc96cc5"
-  },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:35",
-   "pages": 10
-  },
-  "source_version": "20230121",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
- },
- {
-  "name": "zest",
-  "tier": "exploratory",
-  "generator": "kicad",
-  "group": "https://github.com/BerkeleyLab/Zest",
-  "repo": "https://github.com/BerkeleyLab/Zest",
-  "commit": "abbbb3610970ca570d49cd2b61e20887058db8e5",
-  "license": "CERN-OHL-1.2",
-  "reasons": [],
-  "notes": [],
-  "files": {
-   "pdf": "23997ec9d3d11edb1b6360f1c066304d2e00ac68fabe918c8c55c212b8732ea7",
-   "truth": "9210979ff92e2158325fb63c865d45c0d9972c4ff037fa3abefd9b3249dcde2a",
-   "schematic_file": "git:a3c955a2ca2505d0849052dfb68ee0c81632636a"
-  },
-  "fork_of": null,
-  "closest": {
-   "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
-   "shared_nets": 0.0
-  },
-  "license_file": {
-   "path": "License",
-   "blob": "git:11e370f3f791065b6d92bbe6d3712637d668f8db"
-  },
-  "pdf": {
-   "producer": "KiCad PDF",
-   "creator": "Eeschema-PDF",
-   "created": "D:2026:11:09:22:20:30",
-   "pages": 35
-  },
-  "source_version": "10.0",
-  "sheets": null,
-  "export": {
-   "image": "schem2net-kicad:10.0.6",
-   "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
-   "options": [
-    "--exclude-pdf-property-popups",
-    "--exclude-pdf-hierarchical-links"
-   ]
-  },
-  "evidence": "export",
-  "decision": "verified"
- }
-]
+  {
+   "name": "zest",
+   "generator": "kicad",
+   "group": "https://github.com/BerkeleyLab/Zest",
+   "manifest": {
+    "name": "zest",
+    "schematic": "board/zest.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/BerkeleyLab/Zest",
+    "commit": "abbbb3610970ca570d49cd2b61e20887058db8e5",
+    "license": "CERN-OHL-1.2",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "23997ec9d3d11edb1b6360f1c066304d2e00ac68fabe918c8c55c212b8732ea7",
+    "truth": "9210979ff92e2158325fb63c865d45c0d9972c4ff037fa3abefd9b3249dcde2a",
+    "schematic_file": "git:a3c955a2ca2505d0849052dfb68ee0c81632636a"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "License",
+    "blob": "git:11e370f3f791065b6d92bbe6d3712637d668f8db"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:22:20:30",
+    "pages": 35
+   },
+   "source_version": "10.0",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  }
+ ]
+}

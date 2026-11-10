@@ -21,7 +21,7 @@ from pathlib import Path
 from schem2net import kicad
 from schem2net.bench import corpus as corpora
 from schem2net.bench.score import intervals, score, summary, wiring_mistakes
-from schem2net.bench.verify import content_sha, generator
+from schem2net.bench.verify import content_sha, drift, generator
 from schem2net.ir import Design
 
 MEMORY = 4 * 1024**3  # bytes of address space a design may take
@@ -31,7 +31,7 @@ LEARNED = ("roles.npz", "designators.npz", "groups.npz", "eagle_font.json", "eag
 
 def _records(corpus: corpora.Corpus) -> dict[str, dict]:
     path = corpus.root / f"verified_{corpus.name}.json"
-    return {r["name"]: r for r in json.loads(path.read_text())}
+    return {r["name"]: r for r in json.loads(path.read_text())["designs"]}
 
 
 def admitted(corpus: corpora.Corpus) -> list[corpora.Project]:
@@ -39,6 +39,11 @@ def admitted(corpus: corpora.Corpus) -> list[corpora.Project]:
     path = corpus.root / f"verified_{corpus.name}.json"
     if not path.exists():
         raise ValueError(f"{path} is missing: run verify-corpus {corpus.name} first")
+    # The corpus must be the one sealed: no design added, removed or regrouped, no
+    # source moved to another revision, no setting changed.
+    changed = drift(corpus, json.loads(path.read_text()))
+    if changed:
+        raise ValueError(f"{path} does not seal this corpus: {'; '.join(changed[:5])}")
     records = _records(corpus)
     split = "holdout" if corpus.tier == "independent" else "all"
     found = []
@@ -91,7 +96,7 @@ def extract(corpus: corpora.Corpus, out: Path, workers: int = 2, library: Path |
 def report(corpus: corpora.Corpus, out: Path) -> dict:
     """Scores of the saved predictions: per design, generator and group, with grouped
     intervals, in the form bench-compare reads."""
-    designs, extra, groups = {}, {}, {}
+    designs, observable, extra, groups = {}, {}, {}, {}
     records = _records(corpus)
     for p in admitted(corpus):
         truth = kicad.read_netlist(corpus.build_dir(p) / "truth.net")
@@ -114,6 +119,13 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
             found = {"failed": record["error"]}
         designs[p.name] = counts
         text = records[p.name].get("text") or {}
+        # Secondary: only the parts a drawing can name, without those the source does
+        # not print and the instances of a channel drawn once.
+        hidden = {*text.get("refs_unprinted", []), *text.get("refs_channel", [])}
+        seen = _without(truth, hidden)
+        observable[p.name] = score(
+            predicted if saved.exists() else Design(source=truth.source), seen
+        )
         extra[p.name] = {
             "generator": generator(p),
             "evidence": records[p.name]["evidence"],
@@ -164,12 +176,27 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
         "intervals": intervals([designs[n] for n in names], [groups[n] for n in names]),
         "by_generator": by_generator,
         "by_evidence": by_evidence,
+        "observable": summary([observable[n] for n in names]),
+        "observable_designs": {n: asdict(observable[n]) for n in names},
         "renderings": renderings,
         "designs": {n: asdict(designs[n]) for n in names},  # what bench-compare reads
         "rendering_counts": {n: asdict(c) for n, c in designs.items() if n not in names},
         "extra": extra,
         "groups": {n: groups[n] for n in names},
     }
+
+
+def _without(truth: Design, refs: set[str]) -> Design:
+    """The truth without these parts and their pins."""
+    return truth.model_copy(
+        update={
+            "components": [c for c in truth.components if c.ref not in refs],
+            "nets": [
+                n.model_copy(update={"pins": [q for q in n.pins if q[0] not in refs]})
+                for n in truth.nets
+            ],
+        }
+    )
 
 
 def _probe(env: dict, library: Path | None) -> dict:

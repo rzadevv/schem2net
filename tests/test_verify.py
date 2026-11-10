@@ -65,14 +65,17 @@ def corpus(bench, projects, tier="exploratory", holdout_share=0.0):
     )
 
 
-def records(bench, projects, refs=(), tier="exploratory", holdout_share=0.0, forks=None):
+def seal(bench, projects, refs=(), tier="exploratory", holdout_share=0.0, forks=None):
     projects = [replace(p, group=p.group or p.name) for p in projects]
-    found = verify(
+    return verify(
         corpus(bench, projects, tier, holdout_share),
         [bench / "build", *refs],
         github=lambda repo: (forks or {}).get(repo),
     )
-    return {r["name"]: r for r in found}
+
+
+def records(bench, projects, *args, **kwargs):
+    return {r["name"]: r for r in seal(bench, projects, *args, **kwargs)["designs"]}
 
 
 REFS = ["R1", "R2", "C1", "C2", "U1", "U2"]
@@ -167,7 +170,11 @@ def test_used_sources_copies_and_missing_files_are_kept_out(bench):
         "provenance: a fork of https://github.com/used/original, already used"
     ]
     assert found["absent"]["decision"] == "missing"
-    assert found["unlicensed"]["reasons"] == ["provenance: no licence recorded"]
+    assert found["unlicensed"]["reasons"] == ["provenance: licence not determined"]
+    built(bench, "grant", ["R17", "R18"], [])
+    for license, decision in (("none", "verified"), ("NOASSERTION", "quarantine")):
+        granted = records(bench, [Project(name="grant", license=license)])["grant"]
+        assert granted["decision"] == decision  # granted none, or never determined
     assert found["scan"]["reasons"][0].startswith("scope: not a vector drawing")
     assert found["broken"]["reasons"][0].startswith("scope: the PDF cannot be read")
     assert found["zipped"]["reasons"] == ["provenance: repository already in corpus a"]
@@ -180,22 +187,37 @@ def test_an_independent_corpus_is_held_out_whole(bench):
         records(bench, [], tier="final")
 
 
-def test_sealed_hashes_catch_changed_inputs_but_not_export_times(bench):
+def test_a_seal_holds_the_corpus_whole(bench):
     out = built(bench, "ok", REFS, [])
+    built(bench, "other", ["R7", "R8"], [])
     text = (out / "truth.net").read_text()
     (out / "truth.net").write_text(text.replace("(design", '(design (date "2026-11-09T22:54:18")'))
-    project = Project(name="ok", license="MIT")
-    sealed = json.loads(json.dumps(list(records(bench, [project]).values())))
+    ok, other = (Project(name=n, repo=f"https://github.com/me/{n}", commit="a" * 40,
+                         license="MIT") for n in ("ok", "other"))  # fmt: skip
+    sealed = json.loads(json.dumps(seal(bench, [ok, other])))
+
+    # Rebuilt from the same source: only the export time differs.
     (out / "truth.net").write_text(text.replace("(design", '(design (date "2026-11-10T08:00:00")'))
-    assert check_sealed(list(records(bench, [project]).values()), sealed) == []
+    assert check_sealed(seal(bench, [ok, other]), sealed) == []
+
+    assert check_sealed(seal(bench, [ok]), sealed) == ["other: no longer in the corpus"]
+    built(bench, "new", ["R9", "R10"], [])
+    added = Project(name="new", license="MIT")
+    assert check_sealed(seal(bench, [ok, other, added]), sealed) == ["new: not in the seal"]
+    moved = replace(other, commit="b" * 40)
+    assert check_sealed(seal(bench, [ok, moved]), sealed) == ["other: manifest changed"]
+    regrouped = replace(other, group="ok")
+    assert check_sealed(seal(bench, [ok, regrouped]), sealed) == [
+        "other: manifest changed",
+        "other: group changed",
+    ]
+    held = check_sealed(seal(bench, [ok, other], tier="development"), sealed)
+    assert held == ["settings: tier changed"]
     truth(out / "truth.net", [*REFS, "R3", "R4"])
-    changed = check_sealed(list(records(bench, [project]).values()), sealed)
-    assert changed == ["ok: truth changed"]
-    assert check_sealed([], sealed) == ["ok: no longer in the corpus"]
-    sealed[0]["decision"] = "quarantine"
-    assert check_sealed(list(records(bench, [project]).values()), sealed)[-1] == (
-        "ok: quarantine, now verified"
-    )
+    assert check_sealed(seal(bench, [ok, other]), sealed) == ["ok: truth changed"]
+    (out / "truth.net").write_text(text.replace("(design", '(design (date "2026-11-11T09:00:00")'))
+    sealed["designs"][0]["decision"] = "quarantine"
+    assert check_sealed(seal(bench, [ok, other]), sealed) == ["ok: quarantine, now verified"]
 
 
 def test_a_rendering_must_have_its_designs_netlist(bench):

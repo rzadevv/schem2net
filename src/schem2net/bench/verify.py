@@ -11,6 +11,7 @@ import math
 import re
 import subprocess
 import tomllib
+from dataclasses import asdict
 from pathlib import Path
 
 import pypdfium2 as pdfium
@@ -32,9 +33,10 @@ WORD_GAP = 0.3  # of a letter's size: letters further apart than this are two wo
 TOKEN = re.compile(r"[^\s,;:(){}<>\"']+")
 
 
-def verify(corpus: corpora.Corpus, references: list[Path], github=None) -> list[dict]:
-    """A record for each project of the corpus: what it is, its files' hashes, the
-    evidence that its PDF and truth are one design, and whether it is admitted."""
+def verify(corpus: corpora.Corpus, references: list[Path], github=None) -> dict:
+    """The corpus's seal: its settings and a record for each project, of what it is, its
+    files' hashes, the evidence that its PDF and truth are one design, and whether it is
+    admitted."""
     tier = corpus.tier
     if tier not in TIERS:
         raise ValueError(f"tier {tier!r} is not one of {', '.join(TIERS)}")
@@ -56,7 +58,37 @@ def verify(corpus: corpora.Corpus, references: list[Path], github=None) -> list[
         if base and base["decision"] != "verified" and r["decision"] == "verified":
             r["reasons"].append(f"rendering: {base['name']}, which it renders, is not admitted")
             r["decision"] = "quarantine"
-    return list(records.values())
+    return {"settings": settings(corpus), "designs": list(records.values())}
+
+
+def settings(corpus: corpora.Corpus) -> dict:
+    """What decides which designs a corpus holds and admits, beside its manifest."""
+    return {
+        "tier": corpus.tier,
+        "test_share": corpus.test_share,
+        "holdout_share": corpus.holdout_share,
+        "checks": {
+            "ref_coverage": REF_COVERAGE,
+            "extra_refs": EXTRA_REFS,
+            "name_coverage": NAME_COVERAGE,
+            "same_design": corpora.SAME_DESIGN,
+            "word_gap": WORD_GAP,
+            "vector": VECTOR,
+        },
+    }
+
+
+def drift(corpus: corpora.Corpus, sealed: dict) -> list[str]:
+    """How the corpus as it stands differs from its seal, short of reading its files
+    again: settings, designs added or removed, and each design's manifest and group."""
+    current = {
+        "settings": settings(corpus),
+        "designs": [
+            {"name": p.name, "manifest": asdict(p), "group": _group_of(corpus, p)}
+            for p in corpus.projects
+        ],
+    }
+    return check_sealed(current, sealed, ("manifest", "group"))
 
 
 def ledger(root: Path, own: str) -> dict[str, str]:
@@ -87,37 +119,50 @@ def reference_nets(dirs: list[Path]) -> dict[Path, frozenset]:
     }
 
 
-def check_sealed(records: list[dict], sealed: list[dict]) -> list[str]:
-    """What changed since the corpus was sealed: inputs, and decisions."""
-    before = {r["name"]: r for r in sealed}
+def check_sealed(
+    seal: dict, sealed: dict, keys=("manifest", "group", "files", "decision")
+) -> list[str]:
+    """What changed since the corpus was sealed: its settings, the designs it holds,
+    and each design's manifest, group, input files and decision."""
+    now, then = seal["settings"], sealed["settings"]
     changed = [
-        f"{name}: no longer in the corpus" for name in before.keys() - {r["name"] for r in records}
+        f"settings: {k} changed"
+        for k in sorted(now.keys() | then.keys())
+        if now.get(k) != then.get(k)
     ]
-    for r in records:
-        old = before.get(r["name"])
-        if old is None:
-            continue
-        files, old_files = r.get("files", {}), old.get("files", {})
-        changed += [
-            f"{r['name']}: {label} changed"
-            for label in sorted(files.keys() | old_files.keys())
-            if files.get(label) != old_files.get(label)
-        ]
-        if r["decision"] != old["decision"]:
-            changed.append(f"{r['name']}: {old['decision']}, now {r['decision']}")
+    after = {r["name"]: r for r in seal["designs"]}
+    before = {r["name"]: r for r in sealed["designs"]}
+    changed += [f"{n}: not in the seal" for n in sorted(after.keys() - before.keys())]
+    changed += [f"{n}: no longer in the corpus" for n in sorted(before.keys() - after.keys())]
+    for n in sorted(after.keys() & before.keys()):
+        new, old = after[n], before[n]
+        for key in keys:
+            if key == "files":
+                files, old_files = new.get("files", {}), old.get("files", {})
+                changed += [
+                    f"{n}: {label} changed"
+                    for label in sorted(files.keys() | old_files.keys())
+                    if files.get(label) != old_files.get(label)
+                ]
+            elif key == "decision" and new["decision"] != old["decision"]:
+                changed.append(f"{n}: {old['decision']}, now {new['decision']}")
+            elif key not in ("files", "decision") and new.get(key) != old.get(key):
+                changed.append(f"{n}: {key} changed")
     return changed
+
+
+def _group_of(corpus, project) -> str | None:
+    return corpus.groups.get(project.name) if corpus.is_built(project) else None
 
 
 def _check(corpus, project, seen, others, fork_of) -> dict:
     out = corpus.build_dir(project)
     record = {
         "name": project.name,
-        "tier": corpus.tier,
         "generator": generator(project),
-        "group": corpus.groups.get(project.name) if corpus.is_built(project) else None,
-        "repo": project.repo or project.zip_url,
-        "commit": project.commit,
-        "license": project.license,
+        "group": _group_of(corpus, project),
+        "manifest": asdict(project),
+        "tier": corpus.tier,
     }
     blocking, notes = [], []
     record["reasons"], record["notes"] = blocking, notes
@@ -153,10 +198,11 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
         elif corpora._true_nets(corpus.build_dir(base)) != nets:
             blocking.append(f"mismatch: its netlist differs from {project.variant_of}'s")
 
-    if not project.license:
-        blocking.append("provenance: no licence recorded")
-    elif project.license.lower() in ("none", "noassertion"):
-        notes.append("no licence: score locally, never redistribute")
+    # "none": the source grants no licence. Absent or undetermined is no answer at all.
+    if not project.license or project.license.lower() in ("noassertion", "unknown"):
+        blocking.append("provenance: licence not determined")
+    elif project.license.lower() == "none":
+        notes.append("no licence granted: score locally, never redistribute")
     if clone and project.license:
         record["license_file"] = _license_file(clone, project.commit)
 
@@ -282,7 +328,7 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
         "refs_printed": round(len(found) / len(refs), 3) if refs else None,
         "refs_missing": sorted(missing)[:20],
         "refs_unprinted": sorted(unprinted),
-        "refs_channel": sorted(channels)[:20],
+        "refs_channel": sorted(channels),
         "refs_extra": extra[:20],
         "names": len(names),
         "names_printed": round(len(named) / len(names), 3) if names else None,

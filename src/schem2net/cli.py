@@ -349,17 +349,18 @@ def verify_corpus(
     from schem2net.bench import verify
 
     loaded = corpora.load(corpus, bench_dir)
-    records = verify.verify(loaded, [bench_dir / "build", *(against or [])])
+    found = verify.verify(loaded, [bench_dir / "build", *(against or [])])
+    records = found["designs"]
     path = bench_dir / f"verified_{corpus}.json"
-    changed = verify.check_sealed(records, json.loads(path.read_text())) if path.exists() else []
+    changed = verify.check_sealed(found, json.loads(path.read_text())) if path.exists() else []
     for line in changed:
         typer.echo(line, err=True)
     for r in records:
         typer.echo(f"{r['decision']:10} {r['generator']:8} {r['name']}: {'; '.join(r['reasons'])}")
     if changed and not seal:
-        typer.echo(f"inputs changed since {path} was written; --seal to accept", err=True)
+        typer.echo(f"the corpus changed since {path} was written; --seal to accept", err=True)
         raise typer.Exit(1)
-    path.write_text(json.dumps(records, indent=1) + "\n")
+    path.write_text(json.dumps(found, indent=1) + "\n")
     admitted = sum(r["decision"] == "verified" for r in records)
     typer.echo(f"{admitted} of {len(records)} verified; {path}")
 

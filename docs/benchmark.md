@@ -310,7 +310,8 @@ hashes to `bench/verified_<corpus>.json`:
   grid's rows.
 - Where it comes from: repository, commit, git blobs of the source, PDF and board,
   licence and licence file, source format version, PDF producer, export image and
-  options. Unlicensed and non-commercial designs are scored locally only.
+  options. A licence must be determined: an SPDX id, or `none` where the source grants
+  none; `none` and non-commercial designs are scored locally only, never redistributed.
 - That it is new: not a repository, owner or fork parent of another corpus manifest
   or the November 5 panel, and sharing less than nine tenths of its true nets with
   any built design (`--against` adds folders, such as the November 5 pairs).
@@ -319,8 +320,12 @@ Each reason for keeping a design out names its kind: `mismatch` (the PDF, source
 truth disagree), `provenance` (used before, a copy, no licence), `scope` (not built,
 unreadable, an image rather than a vector drawing) or `rendering`.
 
-Hashes leave out the export time KiCad writes, so a design rebuilt from its source
-hashes alike; a rerun that finds other inputs fails until resealed with `--seal`.
+The record is the corpus's seal: its settings (tier, shares, the checks' thresholds)
+and, for every design of the manifest, its manifest entry, group, input hashes and
+decision. Hashes leave out the export time KiCad writes, so a design rebuilt from its
+source hashes alike. A rerun that finds any difference, a design added or removed
+included, fails until resealed with `--seal`, and `evaluate` refuses to read or score
+a corpus that differs from its seal.
 A corpus's `tier` is `exploratory` (inspected while choosing algorithms),
 `development` (the default) or `independent`, which must be held out whole
 (`holdout_share = 1.0`) so it is read only with `SCHEM2NET_HOLDOUT=1`.
@@ -341,7 +346,9 @@ models, drawing only, under 4 GiB, and writes each prediction once; scoring read
 only saved predictions. Its report gives the bench figures by generator and group,
 with grouped intervals, in the form `bench-compare` reads, and per design the
 seconds, peak memory, pages failed, wiring mistakes, evidence, and the parts the
-source does not print with the pins they hold, also totalled by evidence. A design
+source does not print with the pins they hold, also totalled by evidence. Scoring is
+strict, every true pin counting; `observable` gives the same figures without the
+parts the source does not print and the instances of a channel drawn once. A design
 that fails whole scores no pins.
 
 ## Metrics
