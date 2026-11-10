@@ -1,0 +1,17 @@
+# The independent evaluation's reading environment: one pinned Python, one locked set of
+# dependencies, no fonts. PDFium then stands in for fonts a PDF does not embed with its
+# own built-in ones, wherever the image runs. Built by `make eval-image`.
+FROM python:3.13.15-slim-trixie@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b
+COPY requirements.txt /opt/eval/requirements.txt
+COPY runner/ /opt/eval/runner/
+COPY candidate/ /opt/eval/candidate/
+COPY comparator/ /opt/eval/comparator/
+RUN for side in runner candidate comparator; do \
+      python -m venv /opt/$side \
+      && /opt/$side/bin/pip install --no-cache-dir --no-deps --require-hashes \
+           -r /opt/eval/requirements.txt \
+      && /opt/$side/bin/pip install --no-cache-dir --no-deps /opt/eval/$side/*.whl; \
+    done \
+    && test -z "$(find / -xdev \( -name '*.ttf' -o -name '*.otf' -o -name '*.pfb' \) -print -quit)"
+ENV PYTHONDONTWRITEBYTECODE=1 HOME=/tmp
+WORKDIR /work
