@@ -1,9 +1,10 @@
 {
- "status": "prepared: the runner is re-pinned to the commit that merges this record, and the image rebuilt, before discovery begins",
+ "status": "pinned: runner at the commit that merged the protocol, image built and archived; the panel manifest, discovery log and seal join it in the commit that freezes the panel",
  "protocol": "docs/evaluation-protocol.md",
  "runner": {
-  "commit": "5dae3e54f2aa041aa4557b49a0ccb29aac545801",
-  "wheel_sha256": "36a54d6e67df70072323877266f56d31ec53151c9195aad984491ab6609cf0ea"
+  "commit": "0b1b6911d50322433df11171a0ed87b6c9b2cad6",
+  "wheel_sha256": "e5f15cd308af09e3e3e2524992b4ed26fccdefb5492bc02792fb3971f58570d1",
+  "code_sha256": "f19cc8e73405f4c5900f3c007e9628ab9e4a2226c09cc8b000959e3acd3f6c0f"
  },
  "candidate": {
   "commit": "56caa0617197408626479692f8de46d2058a954a",
@@ -27,12 +28,21 @@
   "eagle-symbols.json.gz": "fe5ebd5844fdd6febe114fd3a41113e37f7af255d965efe7fffa14ff6c6c7019",
   "kicad-symbols.json.gz": "65926129267a375dd72cfab70fb685a889218f860e56e89f68b82f0e8c6b4d66"
  },
+ "library_indexes_from": "the November 5 copies, bench/out/release-2026-11-05/libraries (local); the older ones in ~/.cache/schem2net differ and are not read",
  "environment": {
   "dockerfile": "docker/Dockerfile.eval",
   "build": "make eval-image",
   "base_image": "python:3.13.15-slim-trixie@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b",
-  "image_id": "sha256:e3954501b4312d872138e09c968a050ad148f2f33c270a4d07c202b30de06be1",
-  "image_note": "the linux/amd64 image manifest, built without provenance; a build with provenance wraps it in an index whose digest changes with each build",
+  "image_id": "sha256:701ef31a619297551ed61683b02b1306f1c6db7584ea08af7c0a97dfd47a6e35",
+  "image_note": "the linux/amd64 image manifest, built with --provenance=false; a cached rebuild gives the same ID",
+  "image_config": "sha256:6172905a0492e02f847e58017c847c82efe2a9656714360d4587b2e22d3c4e09",
+  "image_tag": "schem2net-eval:0b1b691-56caa06-5d2417c",
+  "image_archive": {
+   "made_by": "docker save schem2net-eval:0b1b691-56caa06-5d2417c",
+   "sha256": "fb68c8ae58c18a82e3bc144869e28210b859fb926ad31c469a0de7418dea5489",
+   "bytes": 312180224,
+   "kept": "locally, not redistributed"
+  },
   "os": "Debian 13.7, linux/amd64",
   "requirements_sha256": "a62cd9367da6c2a791e1aceca57ebc6966c19fd9061379d5d0bd4726affd6a62",
   "python": "3.13.15",
