@@ -2,7 +2,15 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from schem2net.bench.score import Counts, compare, intervals, score, summary, wiring_mistakes
+from schem2net.bench.score import (
+    Counts,
+    compare,
+    intervals,
+    score,
+    summary,
+    verdict,
+    wiring_mistakes,
+)
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 
 
@@ -375,3 +383,20 @@ def test_wiring_mistakes_count_joins_and_cuts_not_renumbered_pins():
     truth = design({"N1": [("U1", "1"), ("R1", "1")], "N2": [("U1", "2"), ("R2", "1")]})
     renumbered = design({"N1": [("U1", "2"), ("R1", "1")], "N2": [("R2", "1"), ("R5", "1")]})
     assert sum(wiring_mistakes(renumbered, truth).values()) == 0
+
+
+def test_verdict_says_not_shown_where_the_interval_decides_nothing():
+    def changes(pin, silent):
+        return {"pin_accuracy": (0, 0, 0, *pin), "silent_error_rate": (0, 0, 0, *silent)}
+
+    assert verdict(changes((0.001, 0.01), (-0.002, 0.0005))) == {
+        "pin accuracy": "higher", "pin accuracy no worse": "shown",
+        "silent errors no worse": "shown",
+    }  # fmt: skip
+    wide = verdict(changes((-0.01, 0.01), (-0.002, 0.0015)))
+    assert wide == {
+        "pin accuracy": "not shown different", "pin accuracy no worse": "not shown",
+        "silent errors no worse": "not shown",
+    }  # fmt: skip
+    assert verdict(changes((-0.03, -0.01), (0, 0.001)))["pin accuracy"] == "lower"
+    assert verdict(changes((-0.03, -0.01), (0, 0.001)))["silent errors no worse"] == "shown"

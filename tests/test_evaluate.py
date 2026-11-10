@@ -41,7 +41,7 @@ def test_only_verified_unchanged_designs_are_scored(pilot, tmp_path):
     assert [p.name for p in evaluate.admitted(loaded)] == ["failed", "ok"]
     preds = tmp_path / "preds"
     preds.mkdir()
-    (preds / "run.json").write_text("{}")
+    (preds / "run.json").write_text(json.dumps({"seal": evaluate._seal(loaded)}))
     evaluate._write(preds / "ok.json", reading(out, kicad.read_netlist(out / "truth.net")))
     with pytest.raises(FileExistsError):
         evaluate._write(preds / "ok.json", {})
@@ -68,7 +68,11 @@ def test_only_verified_unchanged_designs_are_scored(pilot, tmp_path):
         if r["name"] == "ok":
             r["files"]["pdf"] = content_sha(out / "schematic.pdf")  # resealed
     (loaded.root / "verified_p.json").write_text(json.dumps(record))
-    with pytest.raises(ValueError, match="ok was read from another PDF"):
+    with pytest.raises(ValueError, match="read under another seal"):  # resealing voids readings
+        evaluate.report(loaded, preds)
+    (preds / "run.json").unlink()
+    (preds / "run.json").write_text(json.dumps({"seal": evaluate._seal(loaded)}))
+    with pytest.raises(ValueError, match="ok was read from another PDF"):  # even if run.json is
         evaluate.report(loaded, preds)
     (out / "truth.net").write_text((out / "truth.net").read_text().replace("R1", "R7"))
     with pytest.raises(ValueError, match="ok: truth changed since it was verified"):
@@ -122,7 +126,7 @@ def test_observable_pins_leave_out_parts_no_drawing_names(pilot, tmp_path):
     path.write_text(json.dumps(sealed))
     preds = tmp_path / "preds"
     preds.mkdir()
-    (preds / "run.json").write_text("{}")
+    (preds / "run.json").write_text(json.dumps({"seal": evaluate._seal(loaded)}))
     evaluate._write(preds / "ok.json", reading(out, kicad.read_netlist(out / "truth.net")))
     evaluate._write(preds / "failed.failed.json", {"pdf": "x", "error": "x"})
     with pytest.raises(ValueError):  # the failure is tied to another PDF

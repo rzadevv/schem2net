@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from collections import Counter
 from dataclasses import asdict
 from enum import StrEnum
@@ -372,6 +373,9 @@ def evaluate(
     bench_dir: BenchDir = Path("bench"),
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
     library_dir: LibraryOption = None,
+    python: Annotated[
+        str, typer.Option(help="Read with the schem2net installed for this Python.")
+    ] = sys.executable,
 ) -> None:
     """Read each verified design of a corpus in a process of its own, then score the
     saved predictions into OUT/report.json, by design, generator and group."""
@@ -380,7 +384,7 @@ def evaluate(
 
     loaded = corpora.load(corpus, bench_dir)
     try:
-        evaluation.extract(loaded, out, workers, library_dir)
+        evaluation.extract(loaded, out, workers, library_dir, python)
         found = evaluation.report(loaded, out)
     except ValueError as e:
         typer.echo(str(e), err=True)
@@ -480,7 +484,7 @@ def bench(
 def bench_compare(before: Path, after: Path) -> None:
     """Compare two bench runs design by design. Fails when pin accuracy is surely lower
     or silent errors are higher."""
-    from schem2net.bench.score import Counts, compare
+    from schem2net.bench.score import Counts, compare, verdict
 
     loaded = [json.loads(path.read_text()) for path in (before, after)]
     runs = [run["designs"] for run in loaded]
@@ -513,6 +517,9 @@ def bench_compare(before: Path, after: Path) -> None:
         failed.append("more pages failed")
     if pins and pins[3] > 0:
         typer.echo("pin accuracy is higher")
+    if pins and silent:
+        for name, outcome in verdict(changes).items():
+            typer.echo(f"protocol: {name}: {outcome}")
     for line in failed:
         typer.echo(line, err=True)
     if failed:
