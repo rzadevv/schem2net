@@ -417,9 +417,8 @@ def test_bench_compare_refuses_readings_taken_apart(tmp_path):
             cli.app, ["bench-compare", *(str(tmp_path / f"{n}.json") for n in "ab")]
         )
 
-    # Other code, models or declared dependencies: the candidate and comparator differ so.
-    alike = {"code": "new", "files": {"roles.npz": "s"}, "dependencies": {"numpy": "2", "x": "1"}}
-    assert compare({"run": probe | alike}).exit_code == 0
+    # Other code or models: the candidate and comparator differ so.
+    assert compare({"run": probe | {"code": "new", "files": {"roles.npz": "s"}}}).exit_code == 0
     for changed in (
         {"seal": "t"},
         {"python": "3.12"},
@@ -427,6 +426,8 @@ def test_bench_compare_refuses_readings_taken_apart(tmp_path):
         {"pdfium": "154"},
         {"fonts": {"count": 3}},
         {"dependencies": {"numpy": "3"}},
+        {"dependencies": {"numpy": "2", "scipy": "1"}},
+        {"dependencies": {}},
         {"files": {"roles.npz": "r", "kicad-symbols.json.gz": "k"}},
     ):
         result = compare({"run": probe | changed})
