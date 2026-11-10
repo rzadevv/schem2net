@@ -1,3 +1,4 @@
+import hashlib
 import json
 import subprocess
 from dataclasses import replace
@@ -12,8 +13,10 @@ from tests.test_verify import REFS, built, corpus, seal
 
 
 def reading(out, prediction):
+    seal = out.parents[2] / "verified_p.json"  # bench/build/p/<name>
     return {
         "pdf": content_sha(out / "schematic.pdf"),
+        "seal": hashlib.sha256(seal.read_bytes()).hexdigest(),
         "stats": {"seconds": 1.0, "peak_rss_mb": 100},
         "prediction": prediction.model_dump(mode="json", by_alias=True),
     }
@@ -49,12 +52,16 @@ def test_only_verified_unchanged_designs_are_scored(pilot, tmp_path):
     with pytest.raises(ValueError, match="failed has not been read"):
         evaluate.report(loaded, preds)
     failed = loaded.build_dir(loaded.projects[2]) / "schematic.pdf"
-    evaluate._write(preds / "failed.failed.json", {"pdf": "0" * 64, "error": "MemoryError"})
+    evaluate._write(
+        preds / "failed.failed.json",
+        {"pdf": "0" * 64, "seal": evaluate._seal(loaded), "error": "MemoryError"},
+    )
     with pytest.raises(ValueError, match="failed failed on another PDF"):
         evaluate.report(loaded, preds)
     (preds / "failed.failed.json").unlink()
     evaluate._write(
-        preds / "failed.failed.json", {"pdf": content_sha(failed), "error": "MemoryError"}
+        preds / "failed.failed.json",
+        {"pdf": content_sha(failed), "seal": evaluate._seal(loaded), "error": "MemoryError"},
     )
     report = evaluate.report(loaded, preds)
     assert report["designs"]["ok"]["pins_correct"] == report["designs"]["ok"]["pins"] == 6
@@ -72,8 +79,8 @@ def test_only_verified_unchanged_designs_are_scored(pilot, tmp_path):
         evaluate.report(loaded, preds)
     (preds / "run.json").unlink()
     (preds / "run.json").write_text(json.dumps({"seal": evaluate._seal(loaded)}))
-    with pytest.raises(ValueError, match="ok was read from another PDF"):  # even if run.json is
-        evaluate.report(loaded, preds)
+    with pytest.raises(ValueError, match="under another seal"):  # each reading
+        evaluate.report(loaded, preds)  # keeps its seal: a fresh run.json changes nothing
     (out / "truth.net").write_text((out / "truth.net").read_text().replace("R1", "R7"))
     with pytest.raises(ValueError, match="ok: truth changed since it was verified"):
         evaluate.admitted(loaded)
@@ -139,12 +146,17 @@ def test_observable_pins_leave_out_parts_no_drawing_names(pilot, tmp_path):
     preds.mkdir()
     (preds / "run.json").write_text(json.dumps({"seal": evaluate._seal(loaded)}))
     evaluate._write(preds / "ok.json", reading(out, kicad.read_netlist(out / "truth.net")))
-    evaluate._write(preds / "failed.failed.json", {"pdf": "x", "error": "x"})
+    evaluate._write(
+        preds / "failed.failed.json", {"pdf": "x", "seal": evaluate._seal(loaded), "error": "x"}
+    )
     with pytest.raises(ValueError):  # the failure is tied to another PDF
         evaluate.report(loaded, preds)
     (preds / "failed.failed.json").unlink()
     failed = loaded.build_dir(loaded.projects[2]) / "schematic.pdf"
-    evaluate._write(preds / "failed.failed.json", {"pdf": content_sha(failed), "error": "x"})
+    evaluate._write(
+        preds / "failed.failed.json",
+        {"pdf": content_sha(failed), "seal": evaluate._seal(loaded), "error": "x"},
+    )
     report = evaluate.report(loaded, preds)
     assert report["designs"]["ok"]["pins"] == 6  # strict: every true pin
     assert report["observable_designs"]["ok"]["pins"] == 4  # without U1 and U2

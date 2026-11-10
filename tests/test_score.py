@@ -385,18 +385,20 @@ def test_wiring_mistakes_count_joins_and_cuts_not_renumbered_pins():
     assert sum(wiring_mistakes(renumbered, truth).values()) == 0
 
 
-def test_verdict_says_not_shown_where_the_interval_decides_nothing():
+def test_verdict_tests_the_outcomes_in_order():
     def changes(pin, silent):
         return {"pin_accuracy": (0, 0, 0, *pin), "silent_error_rate": (0, 0, 0, *silent)}
 
-    assert verdict(changes((0.001, 0.01), (-0.002, 0.0005))) == {
-        "pin accuracy": "higher", "pin accuracy no worse": "shown",
-        "silent errors no worse": "shown",
-    }  # fmt: skip
-    wide = verdict(changes((-0.01, 0.01), (-0.002, 0.0015)))
-    assert wide == {
-        "pin accuracy": "not shown different", "pin accuracy no worse": "not shown",
-        "silent errors no worse": "not shown",
-    }  # fmt: skip
-    assert verdict(changes((-0.03, -0.01), (0, 0.001)))["pin accuracy"] == "lower"
-    assert verdict(changes((-0.03, -0.01), (0, 0.001)))["silent errors no worse"] == "shown"
+    names = ["silent errors no worse", "pin accuracy no worse", "pin accuracy higher"]
+    assert list(verdict(changes((0.001, 0.01), (-0.002, 0.0005)))) == names
+    assert list(verdict(changes((0.001, 0.01), (-0.002, 0.0005))).values()) == ["shown"] * 3
+    # Silent errors not shown no worse: nothing after it is tested, however high pins go.
+    assert list(verdict(changes((0.001, 0.01), (0, 0.005))).values()) == [
+        "not shown", "not tested", "not tested",
+    ]  # fmt: skip
+    assert list(verdict(changes((-0.001, 0.01), (0, 0.001))).values()) == [
+        "shown", "shown", "not shown",
+    ]  # fmt: skip
+    assert list(verdict(changes((-0.01, 0.01), (0, 0.001))).values()) == [
+        "shown", "not shown", "not tested",
+    ]  # fmt: skip

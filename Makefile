@@ -83,8 +83,9 @@ EVAL_DIR := dist/eval-$(EVAL_RUNNER)-$(EVAL_CANDIDATE)-$(EVAL_COMPARATOR)
 
 eval-image:
 	test ! -e $(EVAL_DIR) || { echo "$(EVAL_DIR) exists: move it away to rebuild"; exit 1; }
-	for side in runner:$(EVAL_RUNNER) candidate:$(EVAL_CANDIDATE) comparator:$(EVAL_COMPARATOR); do \
+	set -e; for side in runner:$(EVAL_RUNNER) candidate:$(EVAL_CANDIDATE) comparator:$(EVAL_COMPARATOR); do \
 	  name=$${side%%:*}; rev=$${side#*:}; src=$(EVAL_DIR)/src-$$name; mkdir -p $$src; \
+	  git rev-parse --verify --quiet "$$rev^{commit}" >/dev/null; \
 	  git archive $$rev | tar -x -C $$src; \
 	  SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct $$rev) uv build -q --wheel $$src -o $(EVAL_DIR)/$$name; \
 	  uv export -q --frozen --no-dev --no-emit-project --no-header --project $$src -o $(EVAL_DIR)/requirements-$$name.txt; \

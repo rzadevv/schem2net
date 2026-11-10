@@ -25,7 +25,7 @@ from schem2net.bench.verify import content_sha, drift, generator
 from schem2net.ir import Design
 
 SECONDS = 1800  # a design still being read after this has failed
-READER = str(Path(reader.__file__))
+READER = reader.__file__
 
 
 def _records(corpus: corpora.Corpus) -> dict[str, dict]:
@@ -68,10 +68,13 @@ def extract(
     """Read each admitted design not read yet into out/<name>.json, with the schem2net
     installed for `python`: the candidate's own, or a comparator's."""
     out.mkdir(parents=True, exist_ok=True)
-    env = {k: v for k, v in os.environ.items() if k != "SCHEM2NET_LIBRARY"}
+    # Another release is read as installed: no source tree of the runner's may shadow it.
+    dropped = {"SCHEM2NET_LIBRARY"} | ({"PYTHONPATH"} if python != sys.executable else set())
+    env = {k: v for k, v in os.environ.items() if k not in dropped}
     env.update(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", PYTHONHASHSEED="0")
     record = out / "run.json"
-    expected = {**_probe(env, python, library), "seal": _seal(corpus)}
+    seal = _seal(corpus)
+    expected = {**_probe(env, python, library), "seal": seal}
     if not record.exists():
         _write(record, expected)
     if json.loads(record.read_text()) != expected:
@@ -83,7 +86,7 @@ def extract(
             return
         pdf = corpus.build_dir(project) / "schematic.pdf"
         reading = target.with_suffix(".json")
-        cmd = [python, "-P", READER, str(pdf), content_sha(pdf), str(reading)]
+        cmd = [python, "-P", READER, str(pdf), content_sha(pdf), seal, str(reading)]
         try:
             done = subprocess.run(
                 cmd + ([str(library)] if library else []),
@@ -93,12 +96,13 @@ def extract(
         except subprocess.TimeoutExpired:
             done, error = None, f"still reading after {SECONDS} s"
         if done is None or done.returncode:
-            _write(target.with_suffix(".failed.json"), {"pdf": content_sha(pdf), "error": error})
+            failed = {"pdf": content_sha(pdf), "seal": seal, "error": error}
+            _write(target.with_suffix(".failed.json"), failed)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(one, admitted(corpus)))
-    if json.loads(record.read_text()) != {**_probe(env, python, library), "seal": _seal(corpus)}:
-        raise ValueError(f"the code, models or library changed while {out} was read")
+    if json.loads(record.read_text()) != expected:
+        raise ValueError(f"the code, models, library or platform changed while {out} was read")
 
 
 def report(corpus: corpora.Corpus, out: Path) -> dict:
@@ -114,6 +118,8 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
         saved = out / f"{p.name}.json"
         if saved.exists():
             reading = json.loads(saved.read_text())
+            if reading.get("seal") != run["seal"]:
+                raise ValueError(f"{p.name} was read under another seal of the corpus")
             if reading["pdf"] != content_sha(corpus.build_dir(p) / "schematic.pdf"):
                 raise ValueError(f"{p.name} was read from another PDF than the one verified")
             predicted = Design.model_validate(reading["prediction"])
@@ -124,6 +130,8 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
             if not failed.exists():
                 raise ValueError(f"{p.name} has not been read")
             record = json.loads(failed.read_text())
+            if record.get("seal") != run["seal"]:
+                raise ValueError(f"{p.name} failed under another seal of the corpus")
             if record["pdf"] != content_sha(corpus.build_dir(p) / "schematic.pdf"):
                 raise ValueError(f"{p.name} failed on another PDF than the one verified")
             counts = score(Design(source=truth.source), truth)

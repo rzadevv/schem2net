@@ -88,7 +88,7 @@ environments (`/opt/runner`, `/opt/candidate`, `/opt/comparator`), and no fonts 
 no fontconfig. A PDF that does not embed a font is drawn with PDFium's own built-in
 stand-ins, so text boxes do not depend on the fonts a machine happens to have: with
 the host's fonts mounted, one EasyEDA design of corpus E reads 391 right pins
-instead of 394. `run.json` records the reading interpreter's Python, platform,
+instead of 394. `run.json` records the reading interpreter's Python, machine architecture,
 dependency versions, PDFium version and font inventory, and `evaluate` refuses to
 continue a reading on any other.
 
@@ -110,7 +110,8 @@ After the reading, the image is kept with `docker save` and its archive hashed.
 - Each extractor is read once, in the image above, with the shipped models, drawing
   only, no library; 2 designs at once, 4 GiB of address space and 1800 s per design.
   A second, separately reported reading uses the frozen library indexes.
-- Readings are written once, each with the hash of the PDF it read. A design that
+- Readings are written once, each with the hashes of the PDF it read and of the seal
+  it was read under. A design that
   fails (an error, a memory or time limit, a crash) is recorded as failed and scores
   no pins; a page that fails leaves its pins missing. Failures stay in every figure,
   for both extractors alike, and are listed. A run that is interrupted before a
@@ -143,8 +144,8 @@ After the reading, the image is kept with `docker save` and its archive hashed.
      (wrong pins nothing flags, over all pins) is at most +0.001;
   2. pin accuracy no worse: the lower bound of the pin-accuracy change is above −0.002;
   3. pin accuracy higher: the lower bound is above 0.
-  An interval that shows none of these says "not shown": it is not evidence that the
-  two extractors are alike, and is reported as inconclusive.
+  An outcome after one not shown is "not tested". "Not shown" is not evidence that
+  the two extractors are alike, and is reported as inconclusive.
 - Everything else (secondary metrics, observable pins, evidence levels, generators,
   the library reading) is descriptive: point estimates with intervals, no tests, no
   adjustment for multiplicity, and no claim.

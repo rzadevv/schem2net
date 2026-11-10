@@ -12,6 +12,6 @@ RUN for side in runner candidate comparator; do \
            -r /opt/eval/requirements.txt \
       && /opt/$side/bin/pip install --no-cache-dir --no-deps /opt/eval/$side/*.whl; \
     done \
-    && test -z "$(find / -xdev \( -name '*.ttf' -o -name '*.otf' -o -name '*.pfb' \) -print -quit)"
+    && test -z "$(find / -xdev -regextype egrep -iregex '.*\.(ttf|ttc|otf|pf[ab]|woff2?)' -print -quit)"
 ENV PYTHONDONTWRITEBYTECODE=1 HOME=/tmp
 WORKDIR /work

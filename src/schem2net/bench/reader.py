@@ -5,7 +5,7 @@ nothing here imports from the package at module level, so an older release that 
 no evaluation tools of its own is read and probed exactly as the candidate is.
 
     python -P reader.py --environment [LIBRARY]
-    python -P reader.py PDF PDF_SHA256 TARGET [LIBRARY]
+    python -P reader.py PDF PDF_SHA256 SEAL_SHA256 TARGET [LIBRARY]
 """
 
 import hashlib
@@ -62,7 +62,7 @@ def environment(library: str | None) -> dict:
     }
 
 
-def read(pdf: str, pdf_sha256: str, target: str, library: str | None) -> None:
+def read(pdf: str, pdf_sha256: str, seal: str, target: str, library: str | None) -> None:
     resource.setrlimit(resource.RLIMIT_AS, (MEMORY, MEMORY))
     from schem2net import pipeline, profile
 
@@ -78,7 +78,8 @@ def read(pdf: str, pdf_sha256: str, target: str, library: str | None) -> None:
         "pages_failed": sum(i.kind == "page_failed" for i in design.issues),
     }
     prediction = design.model_dump(mode="json", by_alias=True)
-    write(Path(target), {"pdf": pdf_sha256, "stats": stats, "prediction": prediction})
+    reading = {"pdf": pdf_sha256, "seal": seal, "stats": stats, "prediction": prediction}
+    write(Path(target), reading)
 
 
 def write(path: Path, value) -> None:
@@ -103,4 +104,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "--environment":
         print(json.dumps(environment(sys.argv[2] if len(sys.argv) > 2 else None)))
     else:
-        read(*sys.argv[1:4], sys.argv[4] if len(sys.argv) > 4 else None)
+        read(*sys.argv[1:5], sys.argv[5] if len(sys.argv) > 5 else None)
