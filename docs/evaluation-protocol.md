@@ -1,6 +1,6 @@
 # Independent evaluation across generators: protocol draft
 
-Status: draft, not registered. It is frozen by committing it, unchanged, together with
+Status: final draft, not registered. It is frozen by committing it, unchanged, together with
 the panel manifest and before any design of the panel is read by the extractor. It
 follows the [November 5 protocol](release-2026-11-05-protocol.md) and does not
 change that evaluation or its results.
@@ -36,8 +36,7 @@ is a separate question, answered apart and never counted as more designs.
   a looser pair after the seal.
 - The copy check reads the truth netlists of every built corpus, holdouts included,
   and nothing else of them: no PDF, prediction or score.
-- Discovery logs every repository looked at and why it was turned away
-  (`bench/discovery_<name>.json`), and never runs the extractor.
+- Discovery follows "Discovery" below, and never runs the extractor.
 - Groups: one per repository owner; known families and ports merge. At most two
   circuits per repository and three per group. Different PDFs of one circuit are one
   design; a revision sharing nine tenths of its nets is the same group.
@@ -54,52 +53,105 @@ is a separate question, answered apart and never counted as more designs.
 
 ## Freeze
 
-Before reading, one commit holds this protocol, the manifest, the discovery log and
-the seal, `verified_<name>.json`. The seal holds the corpus whole: its settings (tier,
-shares, the checker's thresholds), every design of the manifest with its manifest
-entry (repository, commit, paths, licence, group, rendering), its group, its input
-hashes and its eligibility decision. `verify-corpus` fails on any difference until
-resealed, and `evaluate` refuses a corpus that differs from its seal (a design added,
-removed or regrouped, a source moved, a setting changed) or a file whose hash
-changed. Resealing an independent corpus after its first reading voids it. The
-freeze commit names:
+Before reading, one commit holds this protocol, the manifest, the discovery log, the
+seal `verified_<name>.json` and the freeze record `docs/evaluation-freeze.json`.
 
-- the candidate commit, installed as a wheel built from it with `uv.lock`;
-- the hashes of the five learned files (`evaluate` records them in `run.json` and
-  refuses a second reading with other code, models or library);
-- the comparator: the November 5 frozen extractor `5d2417c`, read the same way;
-- the scorer: `schem2net.bench.score` at the candidate commit, unchanged; no
-  definition may change after the seal.
+The seal holds the corpus whole: its settings (tier, shares, the checker's
+thresholds), every design of the manifest with its manifest entry (repository,
+commit, paths, licence, group, rendering), its group, its input hashes and its
+eligibility decision. `verify-corpus` fails on any difference until resealed;
+`evaluate` refuses a corpus that differs from its seal, a file whose hash changed,
+and readings taken under another seal. Resealing an independent corpus after its
+first reading voids it.
+
+The freeze record names three wheels, each built from its commit by
+`make eval-image` (`SOURCE_DATE_EPOCH` at the commit's time, so a rebuild is
+byte-identical):
+
+- the candidate extractor, `56caa06`;
+- the comparator, the November 5 frozen extractor `5d2417c`, whose rebuilt wheel
+  holds the same files as the one read on November 5;
+- the runner: `evaluate` and its scorer, `schem2net.bench.score`, at the commit that
+  carries this protocol. Both extractors are read and scored by it; no definition
+  changes after the seal.
+
+and the environment both are read in: the image, its base image digest, the locked
+requirements with hashes (the runner's, which must equal the candidate's and the
+comparator's: the build fails otherwise), the five learned files' hashes, the
+library indexes' hashes, and resource limits.
+
+## Environment
+
+`docker/Dockerfile.eval`: Debian 13 `python:3.13.15-slim` pinned by digest, the
+locked core dependencies installed with `--require-hashes` into three virtual
+environments (`/opt/runner`, `/opt/candidate`, `/opt/comparator`), and no fonts and
+no fontconfig. A PDF that does not embed a font is drawn with PDFium's own built-in
+stand-ins, so text boxes do not depend on the fonts a machine happens to have: with
+the host's fonts mounted, one EasyEDA design of corpus E reads 391 right pins
+instead of 394. `run.json` records the reading interpreter's Python, platform,
+dependency versions, PDFium version and font inventory, and `evaluate` refuses to
+continue a reading on any other.
+
+```sh
+make eval-image   # prints the wheel, requirements and image hashes
+run() { docker run --rm --network=none --read-only --tmpfs /tmp --cpus 2 --memory 8g \
+          --user "$(id -u):$(id -g)" -e SCHEM2NET_HOLDOUT=1 \
+          -v "$PWD/bench:/work/bench:ro" -v "$PWD/OUT:/out" "$IMAGE" "$@"; }
+run /opt/runner/bin/schem2net evaluate NAME /out/candidate --python /opt/candidate/bin/python
+run /opt/runner/bin/schem2net evaluate NAME /out/comparator --python /opt/comparator/bin/python
+run /opt/runner/bin/schem2net bench-compare /out/comparator/report.json /out/candidate/report.json
+```
+
+The library reading mounts the frozen indexes read-only and adds `--library`.
+After the reading, the image is kept with `docker save` and its archive hashed.
 
 ## Reading and scoring
 
-- `schem2net evaluate <name> OUT` with `SCHEM2NET_HOLDOUT=1`, once per extractor:
-  shipped models, drawing only, no library, 4 GiB, 1800 s per design; a second,
-  separately reported reading with the frozen library indexes.
-- Predictions are written once. A design or page that fails stays failed: it scores
-  no pins and is listed. Nothing is re-read, cropped or repaired.
+- Each extractor is read once, in the image above, with the shipped models, drawing
+  only, no library; 2 designs at once, 4 GiB of address space and 1800 s per design.
+  A second, separately reported reading uses the frozen library indexes.
+- Readings are written once, each with the hash of the PDF it read. A design that
+  fails (an error, a memory or time limit, a crash) is recorded as failed and scores
+  no pins; a page that fails leaves its pins missing. Failures stay in every figure,
+  for both extractors alike, and are listed. A run that is interrupted before a
+  design is recorded reads that design when resumed; a recorded reading or failure
+  is final. Nothing is re-read, cropped or repaired, and reports are rebuilt from
+  saved readings only.
 - Primary scoring is strict: every pin of the truth counts, those of parts the source
-  does not print and of repeated-channel instances included. Secondary, reported
-  beside it and never in its place: the same figures over observable pins, without
-  those parts (`observable`), and the number of pins they hold.
-- Report, by generator and pooled: pin accuracy, correct, missed and wrong pins,
-  silent wrong pins, exact nets, connection precision, recall and F1, false merges
-  and splits (silent ones apart), flag recall and precision, review items per 100
-  pins and their precision, component precision (designators not in the truth),
-  extra pins, seconds and peak memory, pages and designs failed.
-- Uncertainty: 95% intervals from 2,000 bootstrap draws over groups, candidate
-  against comparator paired on the same draws (`bench-compare`), on the pooled
-  panel. Prespecified criteria for the candidate against the comparator:
-  - better: the interval of the pin-accuracy change lies above 0;
-  - pin accuracy no worse: its lower bound is above −0.002;
-  - silent errors no worse: the upper bound of the interval of the change in
-    `silent_error_rate` (wrong pins nothing flags, over all pins) is at most +0.001,
-    an absolute 0.1 percentage point.
-  The primary claim is pooled. Per-generator figures are descriptive, given with
-  their intervals; a generator is claimed better or no worse on its own only with
-  at least 8 groups and 1,000 scored pins, and never from fewer.
-- Renderings (colour and black and white, KiCad 7, 8 and 10, a published PDF) are
-  read as a separate study: the spread of pin accuracy across one design's renderings.
+  does not print and of repeated-channel instances included. Secondary, beside it and
+  never in its place: the same figures over observable pins (`observable`), and the
+  pins those parts hold, per design.
+- All verified designs count in the primary result, revision-only ones (PDFs whose
+  text cannot be read) included. Results are also given by evidence level (export,
+  carried netlist, text, revision only) and by generator. Renderings are a separate
+  study and never count as designs or groups.
+- Report: pin accuracy (primary), correct, missed, wrong and extra pins, silent wrong
+  pins, exact nets, connection precision, recall and F1, false merges and splits
+  (silent ones apart), flag recall and precision, review items per 100 pins and their
+  precision, component precision and recall, seconds and peak memory, pages and
+  designs failed.
+
+## Statistics
+
+- Unit of resampling: the source group. 2,000 bootstrap draws of groups with
+  replacement, seed 0, each design counted as often as its group is drawn; candidate
+  and comparator use the same draws, so every interval is of the paired change.
+  Intervals are 95% percentile intervals.
+- Prespecified outcomes on the pooled panel (`bench-compare` prints them as
+  `protocol:` lines), tested in this order, each only if the one before is shown:
+  1. silent errors no worse: the upper bound of the change in `silent_error_rate`
+     (wrong pins nothing flags, over all pins) is at most +0.001;
+  2. pin accuracy no worse: the lower bound of the pin-accuracy change is above −0.002;
+  3. pin accuracy higher: the lower bound is above 0.
+  An interval that shows none of these says "not shown": it is not evidence that the
+  two extractors are alike, and is reported as inconclusive.
+- Everything else (secondary metrics, observable pins, evidence levels, generators,
+  the library reading) is descriptive: point estimates with intervals, no tests, no
+  adjustment for multiplicity, and no claim.
+- A generator gets a statement of its own only with at least 8 groups and 1,000
+  scored pins, and then only as a descriptive interval; with fewer, its figures are
+  listed as too few to judge. With 8 to 12 groups an interval is wide and unstable;
+  per-generator figures are never ranked or compared with each other.
 
 ## After the reading
 
@@ -124,10 +176,35 @@ from 0.847 to 0.783: excluding what is hard to read flatters the result.
 Published KiCad PDFs that outline their text are admitted on their revision; the
 extractor reads nothing from them. Licensed Altium and OrCAD pairs were scarce.
 
-## Decisions before registering
+## Discovery
 
-- Supply per generator, from discovery alone: at the pilot's yield, about 12
-  candidates for 8 groups, 15 or more for Altium and OrCAD.
-- Whether revision-only designs count in the headline figure or only in their
-  stratum (recommended: in the headline, with the stratum reported).
-- The machine and session the candidate and comparator are read in, recorded.
+The panel is drawn up from public sources by a fixed procedure, before any reading.
+
+1. Exclusions (`verify.ledger` and `verify-corpus`): every repository of a corpus
+   manifest (A to G, P, X) or of the November 5 panel, every owner of one, every
+   fork whose parent is one, and every design sharing nine tenths of its true nets
+   with any built design, the November 5 pairs included (`--against`). Ports and
+   copies under another owner that the net check cannot see (a re-drawn board) are
+   named in the discovery log and excluded by hand.
+2. Search: for each generator, the queries and the date they were run are written in
+   the discovery log before results are looked at (GitHub code and repository search
+   for the generator's source file types beside a PDF). Results are taken in the
+   order returned.
+3. Each repository looked at is logged in `bench/discovery_<name>.json` with its URL,
+   commit, generator, decision and reason, admitted or not: fork, used owner, no PDF,
+   PDF older than its source, licence not determined, more than two circuits taken
+   from it, more than three from its group.
+4. A candidate is pinned to a commit; its paths, licence (SPDX, or `none`) and
+   generator are written to the manifest; it is built and `verify-corpus` decides.
+   Quarantined designs stay listed with their reasons.
+5. Discovery for a generator stops when it has 12 admitted candidates (15 for Altium
+   and OrCAD, whose pairs fail more often), or when its queries are exhausted. A
+   generator short of 8 groups is reported short; eligibility is never loosened to
+   fill it.
+
+## Before collection
+
+- Rebuild the image from the commit that merges this protocol and write its hashes
+  to the freeze record, then commit the record before the first search.
+- Supply per generator is unknown until discovery: at the pilot's yield about 12
+  candidates give 8 groups.

@@ -98,6 +98,17 @@ def test_a_reading_that_dies_is_recorded_once(pilot, tmp_path, monkeypatch):
     evaluate.extract(loaded, preds)  # read again: nothing left to read
     assert len(calls) == 2
 
+    run_json = preds / "run.json"
+    record = json.loads(run_json.read_text())
+    run_json.unlink()
+    run_json.write_text(json.dumps({**record, "fonts": {"count": 1049, "sha256": "x"}}))
+    with pytest.raises(ValueError, match="platform or seal"):  # another machine's fonts
+        evaluate.extract(loaded, preds)
+    run_json.unlink()
+    run_json.write_text(json.dumps({**record, "seal": "0" * 64}))
+    with pytest.raises(ValueError, match="platform or seal"):  # read under an older seal
+        evaluate.extract(loaded, preds)
+
 
 def test_a_corpus_that_drifted_from_its_seal_is_not_scored(pilot):
     loaded, _ = pilot
@@ -138,3 +149,23 @@ def test_observable_pins_leave_out_parts_no_drawing_names(pilot, tmp_path):
     assert report["designs"]["ok"]["pins"] == 6  # strict: every true pin
     assert report["observable_designs"]["ok"]["pins"] == 4  # without U1 and U2
     assert report["extra"]["ok"]["unprinted_pins"] == 1
+
+
+def test_renderings_are_reported_beside_their_design_never_counted(bench, tmp_path):
+    outs = {n: built(bench, n, REFS, []) for n in ("board", "board-bw")}
+    projects = [
+        Project(name="board", group="board", license="MIT"),
+        Project(name="board-bw", group="board", license="MIT", variant_of="board"),
+    ]
+    loaded = corpus(bench, projects)
+    (bench / "verified_p.json").write_text(json.dumps(seal(bench, projects)))
+    preds = tmp_path / "preds"
+    preds.mkdir()
+    (preds / "run.json").write_text(json.dumps({"seal": evaluate._seal(loaded)}))
+    for name, out in outs.items():
+        evaluate._write(preds / f"{name}.json", reading(out, kicad.read_netlist(out / "truth.net")))
+    report = evaluate.report(loaded, preds)
+    assert report["size"] == {"designs": 1, "groups": 1}
+    assert list(report["designs"]) == ["board"] and list(report["rendering_counts"]) == ["board-bw"]
+    assert report["renderings"] == {"board": {"board": 1.0, "board-bw": 1.0}}
+    assert report["by_generator"]["kicad"]["designs"] == 1
