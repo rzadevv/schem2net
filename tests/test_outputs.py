@@ -390,6 +390,31 @@ def test_bench_compare_refuses_to_drop_a_design(tmp_path):
     assert "bad" in result.output and "different designs" in result.output
 
 
+def test_bench_compare_refuses_readings_taken_apart(tmp_path):
+    import json
+    from dataclasses import asdict
+
+    from typer.testing import CliRunner
+
+    from schem2net import cli
+    from schem2net.bench.score import Counts
+
+    designs = {"d": asdict(Counts(designs=1, pins=100, pins_correct=90))}
+    probe = {"seal": "s", "fonts": {"count": 0}, "dependencies": {"numpy": "2"}}
+
+    def compare(**changed):
+        for name, run in (("a.json", probe | {"code": "old"}), ("b.json", probe | changed)):
+            (tmp_path / name).write_text(json.dumps({"designs": designs, "run": run}))
+        return CliRunner().invoke(
+            cli.app, ["bench-compare", *(str(tmp_path / f"{n}.json") for n in "ab")]
+        )
+
+    assert compare(code="new").exit_code == 0
+    for changed in ({"seal": "t"}, {"fonts": {"count": 3}}, {"dependencies": {"numpy": "3"}}):
+        result = compare(**changed)
+        assert result.exit_code == 1 and "read apart" in result.output
+
+
 def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():
     """The drawing shows what the pin connects to, though not which pad it is."""
     led = symbols.Symbol([], (0, 0, 4, 4), [symbols.Pin(0, ((2, 2), (2, 0)))], ref="D1")

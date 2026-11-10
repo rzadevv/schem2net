@@ -102,6 +102,11 @@ run /opt/runner/bin/schem2net evaluate NAME /out/comparator --python /opt/compar
 run /opt/runner/bin/schem2net bench-compare /out/comparator/report.json /out/candidate/report.json
 ```
 
+The primary result holds for this image: its fonts (none), PDFium, Python and
+dependencies, on linux/amd64. It is not claimed for other machines, fonts or
+dependency versions; a reading elsewhere is a different measurement. `bench-compare`
+refuses two readings taken under different seals or platforms.
+
 The library reading mounts the frozen indexes read-only and adds `--library`.
 After the reading, the image is kept with `docker save` and its archive hashed.
 

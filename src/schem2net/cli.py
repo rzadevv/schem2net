@@ -498,6 +498,16 @@ def bench_compare(before: Path, after: Path) -> None:
     if not names:
         typer.echo("no designs in common", err=True)
         raise typer.Exit(1)
+    # Two `evaluate` readings compare only under one seal, on one platform.
+    probes = [run.get("run") for run in loaded]
+    if all(probes):
+        deps = [p.get("dependencies", {}) for p in probes]
+        apart = [k for k in ("seal", "python", "machine", "pdfium", "fonts", "embedded")
+                 if probes[0].get(k) != probes[1].get(k)]  # fmt: skip
+        apart += [d for d in deps[0].keys() & deps[1].keys() if deps[0][d] != deps[1][d]]
+        if apart:
+            typer.echo(f"cannot compare runs read apart: {', '.join(sorted(apart))}", err=True)
+            raise typer.Exit(1)
     # Runs written before groups were kept count each design as a group of its own.
     known = loaded[1].get("groups") or loaded[0].get("groups") or {}
     groups = [known.get(n, n) for n in names]
