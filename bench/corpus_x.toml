@@ -1,0 +1,72 @@
+# Corpus X: designs inspected while choosing the connectivity fixes of November 2026
+# (bench/out/connectivity-2026-11-07). Exploratory: development evidence only, and
+# excluded from any later independent set. Only references are stored here.
+
+tier = "exploratory"
+test_share = 0.0
+holdout_share = 0.0
+
+[[project]]
+name = "radio-86rk"  # 42 points where bus entries from both sides meet
+repo = "https://github.com/skiselev/radio-86rk"
+commit = "c5e9cb7950deacb87d65b59b0dfdf96159d4b98c"
+schematic = "KiCad/Radio-86RK.kicad_sch"
+license = "GPL-3.0"
+
+[[project]]
+name = "cobra-xp"  # both-side entries in Z80_CPU; D[0..7] and bA[0..15] sheet pins
+repo = "https://github.com/ceteras/Cobra-XP"
+commit = "12c035e9556cd1ba115d8ad2b77deb7ec17b5f12"
+schematic = "kicad/main.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "zest"  # se_diff 8x, thermo_bridge 4x; group-bus sheet pins
+repo = "https://github.com/BerkeleyLab/Zest"
+commit = "abbbb3610970ca570d49cd2b61e20887058db8e5"
+schematic = "board/zest.kicad_sch"
+license = "CERN-OHL-1.2"
+
+[[project]]
+name = "slothpu-register-file"  # register sheet 8x, each with A/B/C[0..7] bus pins
+repo = "https://github.com/freesurfer-rge/slothpu"
+commit = "1c8d69e2a7a2eb5d6a5867587582d75442118b70"
+schematic = "pcbs/Register File/Register File.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "dragon32-secam"  # buses stroked in a colour of their own
+repo = "https://github.com/jimbro1000/Dragon32Issue2aSecam"
+commit = "700ef4b76f432cae878524609cd4605ff6d8f300"
+schematic = "Dragon32Issue2ASecam.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "cbm-ultipet"  # T-touches without junctions; many plain crossings
+repo = "https://github.com/fachat/cbm_ultipet"
+commit = "215c853c21f749ff9fe1cfac7385c1361da609d9"
+schematic = "Board/cbm_ultipet_v1.kicad_sch"
+license = "GPL-3.0"
+
+[[project]]
+name = "maxi030"  # two identical bus entries on one point
+repo = "https://github.com/aslak3/MAXI030"
+commit = "22ecace2ac17e8802fb8fa876d4e2d54cbd8b771"
+schematic = "MAXI030.kicad_sch"
+license = "GPL-2.0"
+
+[[project]]
+name = "immunity-cocomemjr"  # Eagle 7.7 with buses; PDF printed by Eagle
+repo = "https://github.com/go4retro/iMMUnity"
+commit = "bae56b927f0a372be02b3fb68772ee2a76c96cba"
+eagle = "pcb/CocoMEMJr_v1.01.sch"
+pdf = "pcb/CocoMEMJr_v1.01.pdf"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "noise-toaster"  # Altium; buses and entries; Protel netlist in the same commit
+repo = "https://github.com/dw2wrigh/noise-toaster"
+commit = "30d116106247dc5791e030e2ef7ccedbe4a7ad29"
+pdf = "Project Outputs for Noise Toaster/Noise Toaster Schematics.pdf"
+pcb = "Noise Toaster.PcbDoc"
+license = "GPL-3.0"

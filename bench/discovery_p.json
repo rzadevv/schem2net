@@ -1,0 +1,258 @@
+[
+ {
+  "repo": "adafruit/*",
+  "reason": "Adafruit boards excluded by instruction"
+ },
+ {
+  "repo": "arachnidlabs/reload",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "AzidoPP/HVCCPS",
+  "reason": "no EasyEDA source or PDF in tree"
+ },
+ {
+  "repo": "b1scuitdev/E07xESP32C5",
+  "reason": "PDF only, no EasyEDA source"
+ },
+ {
+  "repo": "bitaxeorg/bitaxeGamma",
+  "reason": "derivative of skot/bitaxe (skot in ledger)"
+ },
+ {
+  "repo": "bitaxeorg/BitaxeGT",
+  "reason": "derivative of skot/bitaxe (skot in ledger)"
+ },
+ {
+  "repo": "Blinkinlabs/JTAG_hat",
+  "reason": "not checked further; Altium quota filled"
+ },
+ {
+  "repo": "carletz/DOMIX-Open-Source-Modular-Home-Automation-System",
+  "reason": "schematic PDFs only, no EasyEDA source"
+ },
+ {
+  "repo": "d-el/PS3604L",
+  "reason": "no Allegro .brd"
+ },
+ {
+  "repo": "dabonetn/ti99psu-replacement",
+  "reason": "valid pair (V1.04 json + PDF, same commit 169605d) but no licence; reserve"
+ },
+ {
+  "repo": "dereulenspiegel/cbpi_hat",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "dmolinagarcia/74HCT6526",
+  "reason": "no licence; repo 246 MB"
+ },
+ {
+  "repo": "dweggg/inverter",
+  "reason": "DSN are simulations, no .brd"
+ },
+ {
+  "repo": "EchoHeim/Allwinner-H616",
+  "reason": "vendor reference designs; tree truncated"
+ },
+ {
+  "repo": "feecat/XMC4300_EtherCAT_CoreBoard",
+  "reason": "PDFs but no EasyEDA source"
+ },
+ {
+  "repo": "fellowgeek/wemos-d1-mini-dev-board",
+  "reason": "valid pair (same commit 16aceb2, MIT, editorVersion 6.5.5) ; reserve, EasyEDA quota filled"
+ },
+ {
+  "repo": "fenlogic/vga666",
+  "reason": "no Allegro .brd"
+ },
+ {
+  "repo": "freetserv/freetserv",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "GeorgeHahn/Avalon",
+  "reason": "Schematic.pdf 20 min older than AVALON.DSN (2013-12-02T11:34 vs 11:54)"
+ },
+ {
+  "repo": "GOROman/nes-rom-reader",
+  "reason": "no EasyEDA source or PDF in tree"
+ },
+ {
+  "repo": "hallard/WeMos-TIC",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "holts/lcr",
+  "reason": "no schematic PDF (datasheets only)"
+ },
+ {
+  "repo": "https://github.com/xianxuhappy/A33_M2",
+  "reason": "two schematic PDFs in one commit; nothing shows which one the board is"
+ },
+ {
+  "repo": "JannikB5825/Shoc",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "jsloan256/titan",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "kicksat/sprite",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "kurt-schaefer/owl-clock",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "lab11/signpost",
+  "reason": "DSN is a simulation; .brd are Eagle"
+ },
+ {
+  "repo": "laqieer/lceda-gamepaks",
+  "reason": "no schematic source/PDF pair"
+ },
+ {
+  "repo": "Lin-Chengqiu/LCEDA_TUYA_Demo",
+  "reason": "PDF only"
+ },
+ {
+  "repo": "LowPowerLab/Moteino (R4 pair)",
+  "reason": "PDF older than sch; MEGA pair accepted"
+ },
+ {
+  "repo": "lukeweston/SimpleFMCWRadar (RFBoard pair)",
+  "reason": "PDF older than sch; GainBlock pair from same repo accepted"
+ },
+ {
+  "repo": "M17-Project/LinHT-hw",
+  "reason": "KiCad 10 format (version 20260306) and CC-BY-NC-SA-4.0"
+ },
+ {
+  "repo": "marqs85/ossc_pcb",
+  "reason": "no licence (metadata only)"
+ },
+ {
+  "repo": "mck1117/proteus",
+  "reason": "rusEFI ECU (rusefi in ledger); no licence"
+ },
+ {
+  "repo": "MehverOSHW/QuarkNPi",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "Mental-Noise/Synapse",
+  "reason": "only PDF is a 12.8 MB document, no schematic export matching the json"
+ },
+ {
+  "repo": "mesh-iit/electronics-boards-public",
+  "reason": "PDFs are Git LFS pointers (130 bytes)"
+ },
+ {
+  "repo": "Modular-X-01/diy-tuya-cloud-sw",
+  "reason": "no hardware files"
+ },
+ {
+  "repo": "nonolith/CEE",
+  "reason": "PDF older than sch (2012-01-11 vs 2013-06-05)"
+ },
+ {
+  "repo": "parallella/parallella-hw (main board)",
+  "reason": "parallella_schematic.pdf older than .dsn (2016-02-04 vs 2017-01-07); AAFM pair accepted"
+ },
+ {
+  "repo": "Patsch91/NerdOCTAXE-Gamma",
+  "reason": "bitaxe derivative (skot in ledger)"
+ },
+ {
+  "repo": "piecol/CM5_MINIMA_REV3",
+  "reason": "not inspected beyond metadata; KiCad quota filled"
+ },
+ {
+  "repo": "planeturban/ubeswitch",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "randomplum/sdrewire",
+  "reason": "not inspected beyond search; KiCad quota filled"
+ },
+ {
+  "repo": "RetroRejuvenation/A3640",
+  "reason": ".brd files are Eagle; DSN is an original third-party design"
+ },
+ {
+  "repo": "Rufus31415/arduino-pro-portenta-h7-carrier-board",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "rusefi/hw_microRusEfi",
+  "reason": "ledger owner rusefi"
+ },
+ {
+  "repo": "schlae/cm5-reveng",
+  "reason": "no licence; KiCad quota filled"
+ },
+ {
+  "repo": "Severson-Group/AMDC-Hardware",
+  "reason": "not checked further (mixed KiCad/Altium, many revisions)"
+ },
+ {
+  "repo": "sinara-hw/Urukul",
+  "reason": "no PDF in tree"
+ },
+ {
+  "repo": "skot/bitaxe",
+  "reason": "ledger owner skot"
+ },
+ {
+  "repo": "solokeys/solo-hw",
+  "reason": "no schematic PDF"
+ },
+ {
+  "repo": "sonyxperiadev/CDB-Assist",
+  "reason": "PDF older than SchDoc (2016-02-03 vs 2020-11-18)"
+ },
+ {
+  "repo": "TekNoiseLab/dirty-video-mixer",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "TheForgotensoul/3D-printed_Myo-electric-prosthetic-hand",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "TobleMiner/oled-nametag",
+  "reason": "same owner as accepted TobleMiner/DC-UPS"
+ },
+ {
+  "repo": "tomcircuit/hd6309sbc",
+  "reason": "no Allegro .brd"
+ },
+ {
+  "repo": "TomWhitwell/TH-VCO1",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "WestfW/4chipZ80",
+  "reason": "only PDF is an original scan, not an export of the .sch"
+ },
+ {
+  "repo": "yanranxiaoxi/4-USB-2.0-Hub-based-on-SL2.1A",
+  "reason": "no PDF"
+ },
+ {
+  "repo": "ZakKemble/RPi4-PCIe-Bridge",
+  "reason": "only PDF is a package drawing, no schematic PDF"
+ },
+ {
+  "repo": "zglue/zip-orcad-design",
+  "reason": "no .brd; example design"
+ },
+ {
+  "repo": "Zubax/bugface_bf1",
+  "reason": "PDF (bmpm_v2_1c) does not match DCP23.sch"
+ }
+]

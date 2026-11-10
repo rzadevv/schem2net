@@ -2,7 +2,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from schem2net.bench.score import Counts, compare, intervals, score, summary
+from schem2net.bench.score import Counts, compare, intervals, score, summary, wiring_mistakes
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 
 
@@ -353,3 +353,25 @@ def test_a_group_is_drawn_whole():
     together = intervals(designs, ["a", "a", "a", "b", "c", "d"])["pin_accuracy"]
     assert together[1] - together[0] > apart[1] - apart[0]
     assert intervals(designs, list(range(6))) == intervals(designs)
+
+
+def test_wiring_mistakes_count_joins_and_cuts_not_renumbered_pins():
+    truth = design({"A": [("R1", "1"), ("R2", "1")], "B": [("R3", "1"), ("R4", "1")]})
+    merged = design({"AB": [("R1", "1"), ("R2", "1"), ("R3", "1"), ("R4", "1")]})
+    assert wiring_mistakes(merged, truth) == {
+        "merges": 1, "splits": 0, "silent_merges": 1, "silent_splits": 0,
+    }  # fmt: skip
+    named = merged.model_copy(update={"issues": [Issue(kind="x", pins=[("R3", "1")])]})
+    assert wiring_mistakes(named, truth)["silent_merges"] == 0
+
+    cut = design({"A1": [("R1", "1")], "A2": [("R2", "1")], "B": [("R3", "1"), ("R4", "1")]})
+    doubtful = design({"A1": [("R1", "1")], "A2": [("R2", "1")]}, confidence={"A1": 0.5})
+    assert wiring_mistakes(cut, truth) == {
+        "merges": 0, "splits": 1, "silent_merges": 0, "silent_splits": 1,
+    }  # fmt: skip
+    assert wiring_mistakes(doubtful, truth)["silent_splits"] == 0
+
+    # U1.2 drawn where U1.1 belongs: a wrong number, not a merge and a split.
+    truth = design({"N1": [("U1", "1"), ("R1", "1")], "N2": [("U1", "2"), ("R2", "1")]})
+    renumbered = design({"N1": [("U1", "2"), ("R1", "1")], "N2": [("R2", "1"), ("R5", "1")]})
+    assert sum(wiring_mistakes(renumbered, truth).values()) == 0

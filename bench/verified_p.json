@@ -1,0 +1,1931 @@
+{
+ "settings": {
+  "tier": "exploratory",
+  "test_share": 0.0,
+  "holdout_share": 0.0,
+  "checks": {
+   "ref_coverage": 0.95,
+   "extra_refs": 0.05,
+   "name_coverage": 0.8,
+   "same_design": 0.9,
+   "word_gap": 0.3,
+   "vector": 50
+  }
+ },
+ "designs": [
+  {
+   "name": "active-probe",
+   "generator": "altium",
+   "group": "https://github.com/jmwilson/oshw-active-probe",
+   "manifest": {
+    "name": "active-probe",
+    "schematic": null,
+    "pdf": "board/Mfg/Schematic Prints.PDF",
+    "pcb": "board/Probe.PcbDoc",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/jmwilson/oshw-active-probe",
+    "commit": "2e700ca44e1152f0c7e2052371260f490f6cef0b",
+    "license": "CERN-OHL-S-2.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "the PDF carries its netlist: read it drawing-only"
+   ],
+   "files": {
+    "pdf": "b961ab3453d748401b5d7037748b710c426320ae53b75109a295bda2045931ea",
+    "truth": "a8a092dea04fe046b1493797560809a89fee91ce3bfb71a062a7b16db2b3eecb",
+    "board": "998dc5208afa0256111370ab90d420d37a3fb277045a4c55c037a9c68534076d",
+    "pdf_file": "git:2746e75626b520e5b6637d1ce659a9c6456580bb",
+    "pcb_file": "git:1fc33dc709d440474071d63b21bbc6bc210ff4dd"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/c/sparkfun-qwiic_fm_transceiver_si4721",
+    "shared_nets": 0.016
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:0f1092207caa645ff426e0cc40b7eaad69caecb1"
+   },
+   "pdf": {
+    "producer": "llPDFLib 3.x",
+    "creator": "Altium Designer",
+    "created": "D:20240516000000",
+    "pages": 2
+   },
+   "source_version": null,
+   "sheets": null,
+   "board_agreement": 0.987,
+   "last_changed": {
+    "pdf_file": 1715904491,
+    "pcb_file": 1715473265
+   },
+   "text": {
+    "refs": 57,
+    "refs_printed": 0.982,
+    "refs_missing": [
+     "D1"
+    ],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 7,
+    "names_printed": 1.0
+   },
+   "evidence": "carried netlist",
+   "decision": "verified"
+  },
+  {
+   "name": "bsc",
+   "generator": "kicad",
+   "group": "https://github.com/shining-man/bsc_hw",
+   "manifest": {
+    "name": "bsc",
+    "schematic": "bsc.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/shining-man/bsc_hw",
+    "commit": "bde0a1f4e098756d6f5df828465298059879e6a6",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "25dbca99c8e253b916c40e60f0e69273d81f4df86b76cd59780b07d74ac4f07b",
+    "truth": "980b06711b6a7203b8755186ca73888068ba1ac769792a69ef04f318322025e0",
+    "schematic_file": "git:31b4248ec54a1677e66a68d7898388b71672713e"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/x/maxi030",
+    "shared_nets": 0.002
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:84d3674a2108c314660333104262422072e71b63"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:22:28",
+    "pages": 5
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "bsc-published",
+   "generator": "kicad",
+   "group": "https://github.com/shining-man/bsc_hw",
+   "manifest": {
+    "name": "bsc-published",
+    "schematic": "bsc.kicad_sch",
+    "pdf": "circuit.pdf",
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/shining-man/bsc_hw",
+    "commit": "bde0a1f4e098756d6f5df828465298059879e6a6",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": "bsc"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "the PDF has no usable text layer"
+   ],
+   "files": {
+    "pdf": "530cb3e3b57e1a34f487dd27d14bc0c4628ab0dde6b823b81876adea71af4e30",
+    "truth": "980b06711b6a7203b8755186ca73888068ba1ac769792a69ef04f318322025e0",
+    "schematic_file": "git:31b4248ec54a1677e66a68d7898388b71672713e",
+    "pdf_file": "git:122cc2bdbe92c1ec816e8fae91026473a38c5b75"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/x/maxi030",
+    "shared_nets": 0.002
+   },
+   "variant_of": "bsc",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:84d3674a2108c314660333104262422072e71b63"
+   },
+   "pdf": {
+    "producer": "Microsoft: Print To PDF",
+    "creator": null,
+    "created": "D:20240416060019+02'00'",
+    "pages": 5
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "last_changed": {
+    "schematic_file": 1713368690,
+    "pdf_file": 1713368690
+   },
+   "evidence": "revision only",
+   "decision": "verified"
+  },
+  {
+   "name": "candlelight-fd",
+   "generator": "kicad",
+   "group": "https://github.com/linux-automation/candleLightFD",
+   "manifest": {
+    "name": "candlelight-fd",
+    "schematic": "candleLightfd-S01.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/linux-automation/candleLightFD",
+    "commit": "76479c447ac21fadaa089d196ed7bc3833aa87ec",
+    "license": "CERN-OHL-1.2",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "9794eafec276b7a15034946618f7d2492eed7f6c2fad36689fc0944a6e87633f",
+    "truth": "3f40716eb7e1806a340cbaba32d9ffc47a5e0dad59eb1e31f543a623988fe8a3",
+    "schematic_file": "git:ab33c6ea5acbfb6d042441cb1817653abdbdc9b6"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/e/stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19",
+    "shared_nets": 0.022
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:8db78bcf7c8a9f9458e8d451f194839aa3427a6a"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:22:16",
+    "pages": 4
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "candlelight-fd-bw",
+   "generator": "kicad",
+   "group": "https://github.com/linux-automation/candleLightFD",
+   "manifest": {
+    "name": "candlelight-fd-bw",
+    "schematic": "candleLightfd-S01.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/linux-automation/candleLightFD",
+    "commit": "76479c447ac21fadaa089d196ed7bc3833aa87ec",
+    "license": "CERN-OHL-1.2",
+    "group": null,
+    "image": null,
+    "export": [
+     "--black-and-white"
+    ],
+    "variant_of": "candlelight-fd"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "e05eff6de097e9211a09ab859e2976aa27c03f6a3628b98a223a393eb1eeb2a8",
+    "truth": "3f40716eb7e1806a340cbaba32d9ffc47a5e0dad59eb1e31f543a623988fe8a3",
+    "schematic_file": "git:ab33c6ea5acbfb6d042441cb1817653abdbdc9b6"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/e/stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19",
+    "shared_nets": 0.022
+   },
+   "variant_of": "candlelight-fd",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:8db78bcf7c8a9f9458e8d451f194839aa3427a6a"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:22:19",
+    "pages": 4
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--black-and-white"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "candlelight-fd-kicad7",
+   "generator": "kicad",
+   "group": "https://github.com/linux-automation/candleLightFD",
+   "manifest": {
+    "name": "candlelight-fd-kicad7",
+    "schematic": "candleLightfd-S01.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/linux-automation/candleLightFD",
+    "commit": "76479c447ac21fadaa089d196ed7bc3833aa87ec",
+    "license": "CERN-OHL-1.2",
+    "group": null,
+    "image": "schem2net-kicad:7.0",
+    "export": [],
+    "variant_of": "candlelight-fd"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "25d5a2ff3f373b3a481842816c46e9b7a0ca20a610286a3c8340d7a49c8d1b44",
+    "truth": "1ab8348c5787b0f2846e0e4c35b2f298bab8a3a28f7b7e11c2d50531066f7bce",
+    "schematic_file": "git:ab33c6ea5acbfb6d042441cb1817653abdbdc9b6"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/e/stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19",
+    "shared_nets": 0.022
+   },
+   "variant_of": "candlelight-fd",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:8db78bcf7c8a9f9458e8d451f194839aa3427a6a"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:20261109232225",
+    "pages": 4
+   },
+   "source_version": "20230121",
+   "sheets": 4,
+   "export": {
+    "image": "schem2net-kicad:7.0",
+    "image_id": "sha256:d7f0c8df4d73d25f93deff93768960dd12e81bdc0169202c2b3fb601c94e727c",
+    "options": []
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "candlelight-fd-kicad8",
+   "generator": "kicad",
+   "group": "https://github.com/linux-automation/candleLightFD",
+   "manifest": {
+    "name": "candlelight-fd-kicad8",
+    "schematic": "candleLightfd-S01.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/linux-automation/candleLightFD",
+    "commit": "76479c447ac21fadaa089d196ed7bc3833aa87ec",
+    "license": "CERN-OHL-1.2",
+    "group": null,
+    "image": "schem2net-kicad:8.0",
+    "export": [
+     "--exclude-pdf-property-popups"
+    ],
+    "variant_of": "candlelight-fd"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "b857f6a260c0fee08965fd35d238bd2283e477f3769760f0960d90d98d2dd4d0",
+    "truth": "1d95cafae11680adfef902220011d2c7ec1c90e1e4c4c793be2b0eb6375d96f6",
+    "schematic_file": "git:ab33c6ea5acbfb6d042441cb1817653abdbdc9b6"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/e/stm32f722-flight-controller-pcb-sch-schematic1-2026-08-19",
+    "shared_nets": 0.022
+   },
+   "variant_of": "candlelight-fd",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:8db78bcf7c8a9f9458e8d451f194839aa3427a6a"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:20261109232222",
+    "pages": 4
+   },
+   "source_version": "20230121",
+   "sheets": 4,
+   "export": {
+    "image": "schem2net-kicad:8.0",
+    "image_id": "sha256:148c7866bc98cc9c7ef4ff8f501f5291da8308c6c3a2f6e565e6a2503f630acc",
+    "options": [
+     "--exclude-pdf-property-popups"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "dc-ups",
+   "generator": "kicad",
+   "group": "https://github.com/TobleMiner/DC-UPS",
+   "manifest": {
+    "name": "dc-ups",
+    "schematic": "dc-usv.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/TobleMiner/DC-UPS",
+    "commit": "b2555e9479831a2fa25f27c711e8ef9edd86a332",
+    "license": "CERN-OHL-P-2.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "3d06d9506ed89077f83b15b3a265c7895ef247256c668796ce63dacc196e31b5",
+    "truth": "1caf54fd3107e7e61809cb0de532463ad9ae5ded67f90b12f668d9c8881366c5",
+    "schematic_file": "git:93a83c4612ed3846ee60fd95ebe3e9546e45b528"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/b/uwarg-m3-tracking-antenna-controller-rev-2",
+    "shared_nets": 0.004
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:4fe041e077a8179e50d8d068fb5803cf1f80abba"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:22:35",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "dc-ups-bw",
+   "generator": "kicad",
+   "group": "https://github.com/TobleMiner/DC-UPS",
+   "manifest": {
+    "name": "dc-ups-bw",
+    "schematic": "dc-usv.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/TobleMiner/DC-UPS",
+    "commit": "b2555e9479831a2fa25f27c711e8ef9edd86a332",
+    "license": "CERN-OHL-P-2.0",
+    "group": null,
+    "image": null,
+    "export": [
+     "--black-and-white"
+    ],
+    "variant_of": "dc-ups"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "ef8bcdfb36e8b31d43539852efac13f917d149ccabed5bca605d032f6470660d",
+    "truth": "1caf54fd3107e7e61809cb0de532463ad9ae5ded67f90b12f668d9c8881366c5",
+    "schematic_file": "git:93a83c4612ed3846ee60fd95ebe3e9546e45b528"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/b/uwarg-m3-tracking-antenna-controller-rev-2",
+    "shared_nets": 0.004
+   },
+   "variant_of": "dc-ups",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:4fe041e077a8179e50d8d068fb5803cf1f80abba"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:22:39",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--black-and-white"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "dc-ups-kicad7",
+   "generator": "kicad",
+   "group": "https://github.com/TobleMiner/DC-UPS",
+   "manifest": {
+    "name": "dc-ups-kicad7",
+    "schematic": "dc-usv.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/TobleMiner/DC-UPS",
+    "commit": "b2555e9479831a2fa25f27c711e8ef9edd86a332",
+    "license": "CERN-OHL-P-2.0",
+    "group": null,
+    "image": "schem2net-kicad:7.0",
+    "export": [],
+    "variant_of": "dc-ups"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "9ee3b456ba57e1bae1c0b11766729675ac22dc28944e086c6d2dc03afbe8f4c9",
+    "truth": "d36ece772260b596369592c1df3101a2a2bcb5deef05eaa60942a7a5564ee6dc",
+    "schematic_file": "git:93a83c4612ed3846ee60fd95ebe3e9546e45b528"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/b/uwarg-m3-tracking-antenna-controller-rev-2",
+    "shared_nets": 0.004
+   },
+   "variant_of": "dc-ups",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:4fe041e077a8179e50d8d068fb5803cf1f80abba"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:20261109232246",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": 11,
+   "export": {
+    "image": "schem2net-kicad:7.0",
+    "image_id": "sha256:d7f0c8df4d73d25f93deff93768960dd12e81bdc0169202c2b3fb601c94e727c",
+    "options": []
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "dc-ups-kicad8",
+   "generator": "kicad",
+   "group": "https://github.com/TobleMiner/DC-UPS",
+   "manifest": {
+    "name": "dc-ups-kicad8",
+    "schematic": "dc-usv.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/TobleMiner/DC-UPS",
+    "commit": "b2555e9479831a2fa25f27c711e8ef9edd86a332",
+    "license": "CERN-OHL-P-2.0",
+    "group": null,
+    "image": "schem2net-kicad:8.0",
+    "export": [
+     "--exclude-pdf-property-popups"
+    ],
+    "variant_of": "dc-ups"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "f117875a01b163267d1069c15eaacf5f3659d8108ae8d2a01eb3d2d5458fada0",
+    "truth": "3a82268f6a8822a938967094b76dbe69b07d6803c49a5f4d1e9f6964cec8acae",
+    "schematic_file": "git:93a83c4612ed3846ee60fd95ebe3e9546e45b528"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/b/uwarg-m3-tracking-antenna-controller-rev-2",
+    "shared_nets": 0.004
+   },
+   "variant_of": "dc-ups",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:4fe041e077a8179e50d8d068fb5803cf1f80abba"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:20261109232242",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": 11,
+   "export": {
+    "image": "schem2net-kicad:8.0",
+    "image_id": "sha256:148c7866bc98cc9c7ef4ff8f501f5291da8308c6c3a2f6e565e6a2503f630acc",
+    "options": [
+     "--exclude-pdf-property-popups"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "dc-ups-published",
+   "generator": "kicad",
+   "group": "https://github.com/TobleMiner/DC-UPS",
+   "manifest": {
+    "name": "dc-ups-published",
+    "schematic": "dc-usv.kicad_sch",
+    "pdf": "fab/RevC/schematic.pdf",
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/TobleMiner/DC-UPS",
+    "commit": "b2555e9479831a2fa25f27c711e8ef9edd86a332",
+    "license": "CERN-OHL-P-2.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": "dc-ups"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "the PDF has no usable text layer"
+   ],
+   "files": {
+    "pdf": "58b3d240983fd545e2960aa3416608462d5f84b26dda434cbdb0860d2eca0d8b",
+    "truth": "1caf54fd3107e7e61809cb0de532463ad9ae5ded67f90b12f668d9c8881366c5",
+    "schematic_file": "git:93a83c4612ed3846ee60fd95ebe3e9546e45b528",
+    "pdf_file": "git:e88f7fd5862bf2f6c684b5dfd3e1a2777829c5f3"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/b/uwarg-m3-tracking-antenna-controller-rev-2",
+    "shared_nets": 0.004
+   },
+   "variant_of": "dc-ups",
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:4fe041e077a8179e50d8d068fb5803cf1f80abba"
+   },
+   "pdf": {
+    "producer": "cairo 1.18.0 (https://cairographics.org)",
+    "creator": null,
+    "created": "D:20240509224243+02'00",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "last_changed": {
+    "schematic_file": 1685754945,
+    "pdf_file": 1715287465
+   },
+   "evidence": "revision only",
+   "decision": "verified"
+  },
+  {
+   "name": "diebiems",
+   "generator": "altium",
+   "group": null,
+   "manifest": {
+    "name": "diebiems",
+    "schematic": null,
+    "pdf": "Project Outputs for DB10005_DieBieMS/DB10005_DieBieMS.PDF",
+    "pcb": "DB10005_BMS.PcbDoc",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/DieBieEngineering/DieBieMS",
+    "commit": "c876ef5d362eda8d50ee0a36611fe6d50c8bc49e",
+    "license": "none",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [
+    "scope: not built: no schematic.pdf or truth.net"
+   ],
+   "notes": [],
+   "decision": "missing"
+  },
+  {
+   "name": "diff-probe",
+   "generator": "eagle",
+   "group": "https://github.com/wingel/diff-probe",
+   "manifest": {
+    "name": "diff-probe",
+    "schematic": null,
+    "pdf": "diff-probe.pdf",
+    "pcb": null,
+    "eagle": "diff-probe.sch",
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/wingel/diff-probe",
+    "commit": "fe6f03afa4de1ea88e26a10800d6e80c87ae8b04",
+    "license": "none",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "no licence granted: score locally, never redistribute"
+   ],
+   "files": {
+    "pdf": "182de09ffb65f21feb27c1d650f5587468211112b1c65def5799fdfeac87c943",
+    "truth": "7c17872897cc2b4a3d3501748fa80a72e156044198db602ff2e3e59b3d93d275",
+    "schematic_file": "git:3e159b9cdc3aaa6c3a9d9c2a9a17fe7507997565",
+    "pdf_file": "git:55a678652ee11a52f9fcad3c77ffc3c12179255e"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": null,
+   "pdf": {
+    "producer": "Qt 4.8.6",
+    "creator": "EAGLE Version 7.2.0 Copyright (c) 1988-2014 CadSoft",
+    "created": "D:20170515111549",
+    "pages": 1
+   },
+   "source_version": "7.2.0",
+   "sheets": 1,
+   "last_changed": {
+    "schematic_file": 1494847027,
+    "pdf_file": 1494847027
+   },
+   "text": {
+    "refs": 133,
+    "refs_printed": 1.0,
+    "refs_missing": [],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 3,
+    "names_printed": 1.0
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "easypdk-lite",
+   "generator": "easyeda",
+   "group": "https://github.com/free-pdk/easy-pdk-programmer-lite-hardware",
+   "manifest": {
+    "name": "easypdk-lite",
+    "schematic": null,
+    "pdf": "Schematics/Schematic_EasyPDKPROGlite_2020-07-26_13-36-43.pdf",
+    "pcb": null,
+    "eagle": null,
+    "easyeda": "EasyEDA/EasyPDKPROGlite_2020-07-26_13-36-49.json",
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/free-pdk/easy-pdk-programmer-lite-hardware",
+    "commit": "d676edaf20180a07c388a0ff1911d6e0f538443f",
+    "license": "CC-BY-SA-4.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "5 parts the source does not print"
+   ],
+   "files": {
+    "pdf": "269d6d6d45636aa9ec9784c2a13b968cbaa370d3b76973310ea1f26f19f8553b",
+    "truth": "3ab034f09debda38fe0ce06d4a6e2828f3f59d21ed1055abe9800307777e8d1e",
+    "schematic_file": "git:f27fbe7cdfb63a15931482c5b7b9eb3bfa1c4c88",
+    "pdf_file": "git:04ae6530761631a78ce4a4d7f7c14badcf864dbb"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:dc4e6e0b725e77da5088954e2a8cbcc119d6c68e"
+   },
+   "pdf": {
+    "producer": "jsPDF 0.0.0",
+    "creator": null,
+    "created": "D:20200726133643+02'00'",
+    "pages": 1
+   },
+   "source_version": "6.3.53",
+   "sheets": null,
+   "last_changed": {
+    "schematic_file": 1604346566,
+    "pdf_file": 1604346566
+   },
+   "text": {
+    "refs": 55,
+    "refs_printed": 0.909,
+    "refs_missing": [],
+    "refs_unprinted": [
+     "R18",
+     "R19",
+     "R20",
+     "R21",
+     "R22"
+    ],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 4,
+    "names_printed": 1.0
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "fmcw-gainblock",
+   "generator": "eagle",
+   "group": "https://github.com/lukeweston/SimpleFMCWRadar",
+   "manifest": {
+    "name": "fmcw-gainblock",
+    "schematic": null,
+    "pdf": "GainBlock-schematic.pdf",
+    "pcb": null,
+    "eagle": "GainBlock.sch",
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/lukeweston/SimpleFMCWRadar",
+    "commit": "49a8f7b0813ed68c14357b601e6144cd0b3574b8",
+    "license": "CERN-OHL-1.1",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "the PDF has no usable text layer"
+   ],
+   "files": {
+    "pdf": "ecdac09dd229498ec9fc5fca5f69eb022742f2bf2360b2a6a8278a8479cc4b27",
+    "truth": "c2cf4ea48f9947dab093e2252b6fdb8d02f18757149a2f7de205fd38ccfd786a",
+    "schematic_file": "git:e41a10ca0cc155f8d79d073db191911d395469dc",
+    "pdf_file": "git:8b0e8a71aab0eeeb6a838f76b9091807d42c4790"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/c/sparkfun-ftdi_basic_breakout-5v",
+    "shared_nets": 0.045
+   },
+   "license_file": {
+    "path": "license.txt",
+    "blob": "git:3e07029ba46183ed9b5aecbb01d245344ae0b514"
+   },
+   "pdf": {
+    "producer": "Qt 4.8.4 (C) 2011 Nokia Corporation and/or its subsidiary(-ies)",
+    "creator": "EAGLE Version 6.5.0 Copyright (c) 1988-2013 CadSoft",
+    "created": "D:20140929074512",
+    "pages": 1
+   },
+   "source_version": "6.5.0",
+   "sheets": 1,
+   "last_changed": {
+    "schematic_file": 1411977126,
+    "pdf_file": 1411977126
+   },
+   "evidence": "revision only",
+   "decision": "verified"
+  },
+  {
+   "name": "moteino-mega",
+   "generator": "eagle",
+   "group": "https://github.com/LowPowerLab/Moteino",
+   "manifest": {
+    "name": "moteino-mega",
+    "schematic": null,
+    "pdf": "MEGA/MoteinoMEGA_Schematic.pdf",
+    "pcb": null,
+    "eagle": "MEGA/MoteinoMEGA.sch",
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/LowPowerLab/Moteino",
+    "commit": "0f3083066d601e05bdd0e4688e9d2e32847463b5",
+    "license": "none",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [
+    "scope: not a vector drawing: an image of one, which schem2net does not read"
+   ],
+   "notes": [
+    "no licence granted: score locally, never redistribute",
+    "the PDF has no usable text layer"
+   ],
+   "files": {
+    "pdf": "527981246ffacf878520f0f7496cc74af6c2db17e4933ad4586a6e4a82e0466c",
+    "truth": "e5fd293f8548dcbd0f4a09f6f066501b4d1de4d8451c7ff7077a1b95f19de49d",
+    "schematic_file": "git:0a63f30aa907fc2244c72349681a5d7ab729ae21",
+    "pdf_file": "git:805e5add28056608212f8585d7ffeb32460d0251"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": null,
+   "pdf": {
+    "producer": "GPL Ghostscript 9.07",
+    "creator": "PDFCreator Version 1.7.1",
+    "created": "D:20140809081940-04'00'",
+    "pages": 1
+   },
+   "source_version": "6.5.0",
+   "sheets": 1,
+   "last_changed": {
+    "schematic_file": 1407587115,
+    "pdf_file": 1407587115
+   },
+   "evidence": "revision only",
+   "decision": "quarantine"
+  },
+  {
+   "name": "neo-m9n",
+   "generator": "orcad",
+   "group": "https://github.com/KenLagoni/NEO-M9N_GPS",
+   "manifest": {
+    "name": "neo-m9n",
+    "schematic": null,
+    "pdf": "V1_00/GPS-NEO-M9N_25x25_Schematic_V1_00.pdf",
+    "pcb": "V1_00/Design Files/GPS-NEO-M9N_25x25_V1_00.brd",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/KenLagoni/NEO-M9N_GPS",
+    "commit": "2e398beed1cb6c87e499773b471c91f1fb67916e",
+    "license": "none",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "no licence granted: score locally, never redistribute",
+    "truth from the board, which can drift from the drawing"
+   ],
+   "files": {
+    "pdf": "35493c93f90505708425ec6e4e62c76737eadbefb141ad88a714fb2663ec9034",
+    "truth": "5ff4e8cbb0e4240f25b86b3c2b536cd783e8198d4c2caa967f4bfe6392b15c5e",
+    "board": "5ff4e8cbb0e4240f25b86b3c2b536cd783e8198d4c2caa967f4bfe6392b15c5e",
+    "pdf_file": "git:820528dde9ca38737b4f26da067f258343c269e3",
+    "pcb_file": "git:f7f5264fed1f0df70b0e6925931ee14e4551d386"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/c/sparkfun-qwiic_motor_driver",
+    "shared_nets": 0.029
+   },
+   "license_file": null,
+   "pdf": {
+    "producer": "GPL Ghostscript 9.52",
+    "creator": "PScript5.dll Version 5.2.2",
+    "created": "D:20220511101217+02'00'",
+    "pages": 2
+   },
+   "source_version": null,
+   "sheets": null,
+   "last_changed": {
+    "pdf_file": 1652273902,
+    "pcb_file": 1652273902
+   },
+   "text": {
+    "refs": 12,
+    "refs_printed": 1.0,
+    "refs_missing": [],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 2,
+    "names_printed": 1.0
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "neuromems",
+   "generator": "easyeda",
+   "group": "https://github.com/max-talanov/memCPG",
+   "manifest": {
+    "name": "neuromems",
+    "schematic": null,
+    "pdf": "easyEDA/Schematic_NeuroMems_V2.10_2025-06-07.pdf",
+    "pcb": null,
+    "eagle": null,
+    "easyeda": "easyEDA/SCH_NeuroMems_V2.10_2025-06-07.json",
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/max-talanov/memCPG",
+    "commit": "d80caa61e9c39f5f4e25fc16c12b812b08494209",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "b3708237fffc2861ed0c611b1ddc22b42081546892f2f01e1b976c48eb132cc4",
+    "truth": "6829e9f8bfe0bfb0aeabc0fe8370f778a6d14d34dcde89ce57f4e6001b0f2dc7",
+    "schematic_file": "git:972f2e9f41b48840410d2748f9187e6b0628a1c5",
+    "pdf_file": "git:2c013736c86730ee721cb785b329a9b45b9fcf03"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:fb676dc2911f1f33ab2f1b6acf80e7502d5be49b"
+   },
+   "pdf": {
+    "producer": "jsPDF 0.0.0",
+    "creator": null,
+    "created": "D:20250607150650+03'00'",
+    "pages": 1
+   },
+   "source_version": "6.5.50",
+   "sheets": null,
+   "last_changed": {
+    "schematic_file": 1749302963,
+    "pdf_file": 1749302963
+   },
+   "text": {
+    "refs": 75,
+    "refs_printed": 1.0,
+    "refs_missing": [],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 12,
+    "names_printed": 1.0
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "nixie-in12",
+   "generator": "altium",
+   "group": "https://github.com/MightyDevices/IN-12-Nixie-Clock",
+   "manifest": {
+    "name": "nixie-in12",
+    "schematic": null,
+    "pdf": "Altium/Nixie.pdf",
+    "pcb": "Altium/Nixie.PcbDoc",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/MightyDevices/IN-12-Nixie-Clock",
+    "commit": "6d336ff82d95d0203aa011cba9feefa5ef68a635",
+    "license": "none",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "no licence granted: score locally, never redistribute",
+    "truth from the board, which can drift from the drawing"
+   ],
+   "files": {
+    "pdf": "deaa6dc80097efb02ea5bacce992f39a1b5a63fa3fa621684d24445fe1989f47",
+    "truth": "63c0d8c90564c311915659a75d55585acde041dbb7a78111dc8966ef69e5a104",
+    "board": "63c0d8c90564c311915659a75d55585acde041dbb7a78111dc8966ef69e5a104",
+    "pdf_file": "git:e2e284390808a4df76198d215911914cb9f233f3",
+    "pcb_file": "git:b54e10e1d33d4251015e4f605e372b4530374ceb"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/b/marsrover-spi-lvds-master",
+    "shared_nets": 0.008
+   },
+   "license_file": null,
+   "pdf": {
+    "producer": "llPDFLib 3.x",
+    "creator": "Altium Designer Release 10",
+    "created": "D:20150101000000",
+    "pages": 1
+   },
+   "source_version": null,
+   "sheets": null,
+   "last_changed": {
+    "pdf_file": 1471771118,
+    "pcb_file": 1419884776
+   },
+   "text": {
+    "refs": 103,
+    "refs_printed": 0.961,
+    "refs_missing": [
+     "MH1",
+     "MH2",
+     "MH3",
+     "MH4"
+    ],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 40,
+    "names_printed": 0.975
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "odrive-v2",
+   "generator": "altium",
+   "group": "https://github.com/odriverobotics/ODriveHardware",
+   "manifest": {
+    "name": "odrive-v2",
+    "schematic": null,
+    "pdf": "v2/Inverter.PDF",
+    "pcb": "v2/Inverter.PcbDoc",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/odriverobotics/ODriveHardware",
+    "commit": "079f30ac58f193226fcc552e4d6ba24553027ee1",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "the PDF carries its netlist: read it drawing-only",
+    "8 instances of repeated channels, drawn once"
+   ],
+   "files": {
+    "pdf": "34bff34c3350dca80db753cc52c7a113ceeeaedf140abfa09cf1a01316d5a2fe",
+    "truth": "49abb2cdc10dc1f1ef4fb41e799a008030f13b0201e1a98e6052e8996eb07b3d",
+    "board": "0f90d2288a5e760ad87fe32d89a9247e55a1b0c24cb201389a7a5987ba074283",
+    "pdf_file": "git:bb588a516739a459cc8fa09e2afea56a7923016f",
+    "pcb_file": "git:c0de9b4532b60bf88fc98e286271d4e270ba0e95"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/c/sparkfun-opto_isolator_breakout",
+    "shared_nets": 0.008
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:9eeab46be5c05561b03767668ebb59cb64d3212f"
+   },
+   "pdf": {
+    "producer": "llPDFLib 3.x",
+    "creator": "Altium Designer",
+    "created": "D:20150324000000",
+    "pages": 9
+   },
+   "source_version": null,
+   "sheets": null,
+   "board_agreement": 0.379,
+   "last_changed": {
+    "pdf_file": 1464731108,
+    "pcb_file": 1464731108
+   },
+   "text": {
+    "refs": 380,
+    "refs_printed": 0.974,
+    "refs_missing": [
+     "DC-",
+     "ENC_VSEL"
+    ],
+    "refs_unprinted": [],
+    "refs_channel": [
+     "1U1",
+     "1U2",
+     "1U3",
+     "2U1",
+     "2U2",
+     "2U3",
+     "3U1",
+     "3U2"
+    ],
+    "refs_extra": [
+     "R0005"
+    ],
+    "names": 67,
+    "names_printed": 0.955
+   },
+   "evidence": "carried netlist",
+   "decision": "verified"
+  },
+  {
+   "name": "openeit",
+   "generator": "eagle",
+   "group": "https://github.com/OpenEIT/EIT_EE",
+   "manifest": {
+    "name": "openeit",
+    "schematic": null,
+    "pdf": "EIT_schematic.pdf",
+    "pcb": null,
+    "eagle": "EIT.sch",
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/OpenEIT/EIT_EE",
+    "commit": "c3d40a1e08c13728ee8e9ce2fa1d02b52685fb5e",
+    "license": "CC-BY-NC-SA-4.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "6de4590b1ca9b42587cb20821853b6bd6ad6b4352a9d34450194e8e79c184af8",
+    "truth": "a61e58b575567e8f6ccf709a402f30f1f7e0a4ff159e0e6245e95dcac52cad3b",
+    "schematic_file": "git:fd15845e93f2b16710c94c8e70785a80a3e54cf8",
+    "pdf_file": "git:5e2d0d1a03f6ccdbfa9e966e4eb5624aa21b1733"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE.txt",
+    "blob": "git:42d614e5c086b89525e94ff72a10175ff5805645"
+   },
+   "pdf": {
+    "producer": "Qt 5.6.0",
+    "creator": "EAGLE Version 7.7.0 Copyright (c) 1988-2016 CadSoft",
+    "created": "D:20180117205540",
+    "pages": 8
+   },
+   "source_version": "7.7.0",
+   "sheets": 8,
+   "last_changed": {
+    "schematic_file": 1511380601,
+    "pdf_file": 1516222735
+   },
+   "text": {
+    "refs": 77,
+    "refs_printed": 0.974,
+    "refs_missing": [
+     "U$10",
+     "U$11"
+    ],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [
+     "L14",
+     "L15",
+     "L2"
+    ],
+    "names": 59,
+    "names_printed": 0.898
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "parallella-aafm",
+   "generator": "orcad",
+   "group": "https://github.com/parallella/parallella-hw",
+   "manifest": {
+    "name": "parallella-aafm",
+    "schematic": null,
+    "pdf": "aafm/docs/hb01-aafm_schematic.pdf",
+    "pcb": "aafm/src/HB1A-AAFM.brd",
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/parallella/parallella-hw",
+    "commit": "a6bcdf844c56366525bef73d3355c75bba19e3f5",
+    "license": "CC-BY-SA-3.0-US",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "truth from the board, which can drift from the drawing"
+   ],
+   "files": {
+    "pdf": "be41e2c2d542e5bd071ccd636d6a0a45071172b58602e72f051c4f67adfee4a0",
+    "truth": "36d27869dbb035f78b7ff4f0b7b02abbb9e8341e09d98c0efcce681bfeb349c4",
+    "board": "36d27869dbb035f78b7ff4f0b7b02abbb9e8341e09d98c0efcce681bfeb349c4",
+    "pdf_file": "git:d98d56ec191324e1d6a53b1d8469531f3d323ec2",
+    "pcb_file": "git:bb24af86c8fb4881eb1a6053379e21a0eb760ab3"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/c/sparkfun-wireless_motor_driver_shield",
+    "shared_nets": 0.001
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:8451b54e7e40d4b88c6db42275136226dc304af0"
+   },
+   "pdf": {
+    "producer": "GPL Ghostscript 9.02",
+    "creator": "PDFCreator Version 1.2.1",
+    "created": "D:20120309155147-05'00'",
+    "pages": 22
+   },
+   "source_version": null,
+   "sheets": null,
+   "last_changed": {
+    "pdf_file": 1474651734,
+    "pcb_file": 1474651734
+   },
+   "text": {
+    "refs": 610,
+    "refs_printed": 1.0,
+    "refs_missing": [],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [],
+    "names": 608,
+    "names_printed": 0.946
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "sh-esp32",
+   "generator": "kicad",
+   "group": "https://github.com/hatlabs/SH-ESP32-hardware",
+   "manifest": {
+    "name": "sh-esp32",
+    "schematic": "SH-ESP32.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/hatlabs/SH-ESP32-hardware",
+    "commit": "167981ac8c3e1a7a0104c20cf9b487b4d722fc60",
+    "license": "CC-BY-4.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "fc1c7e64463aa433d2ce1e236cb93478647fdae4e8e43e3ec9e57ab0f5c8adbc",
+    "truth": "fd05de23380563e87f951eb1dee32d869af990107190a0592541ced11399170c",
+    "schematic_file": "git:dbb474a76bec229a9d3dfc46c86c8daee09e8f83"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE.md",
+    "blob": "git:37607166a73a39826f1629b030ae17102b5050f8"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:22:12",
+    "pages": 10
+   },
+   "source_version": "8.0",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "simplefoc-shield",
+   "generator": "easyeda",
+   "group": "https://github.com/simplefoc/Arduino-SimpleFOCShield",
+   "manifest": {
+    "name": "simplefoc-shield",
+    "schematic": null,
+    "pdf": "Schematic_SimpleFOCShield-v3_2024-06-23.pdf",
+    "pcb": null,
+    "eagle": null,
+    "easyeda": "EasyEDA/SCH_SimpleFOCShield-v3_2024-06-23.json",
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/simplefoc/Arduino-SimpleFOCShield",
+    "commit": "2a83626b86debd5fc5f309ba06b3fb36e3b25533",
+    "license": "MIT",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "9b3bd0e23d0d57a440eec1194efb92bb421c1f75e233ef0482f50aafa4383c16",
+    "truth": "40b4be93964dbf414e9db9b41a0b7922d7a3f33836d52e65b660a6ccc8814ab3",
+    "schematic_file": "git:2f6a93a9988abbb923c5a2d5b2fcf89a51058a7e",
+    "pdf_file": "git:0fc238744539ce36d19ce283bd7c19c728664d0a"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/e/pcb-design-easyeda-schematic-circular-led-2022-01-28",
+    "shared_nets": 0.014
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:99139d361af874ec303bb46f1f8ffcce2858a849"
+   },
+   "pdf": {
+    "producer": "jsPDF 0.0.0",
+    "creator": null,
+    "created": "D:20240623114448+02'00'",
+    "pages": 1
+   },
+   "source_version": "6.5.42",
+   "sheets": null,
+   "last_changed": {
+    "schematic_file": 1719137662,
+    "pdf_file": 1719137662
+   },
+   "text": {
+    "refs": 47,
+    "refs_printed": 1.0,
+    "refs_missing": [],
+    "refs_unprinted": [],
+    "refs_channel": [],
+    "refs_extra": [
+     "L7808"
+    ],
+    "names": 43,
+    "names_printed": 1.0
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "tonuino-battery",
+   "generator": "easyeda",
+   "group": "https://github.com/tenbaht/tonuino-battery-board",
+   "manifest": {
+    "name": "tonuino-battery",
+    "schematic": null,
+    "pdf": "easyeda/Schematic_TonUino_2020-10-22_20-16-16.pdf",
+    "pcb": null,
+    "eagle": null,
+    "easyeda": "easyeda/TonUino_2020-10-22_20-16-25.json",
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/tenbaht/tonuino-battery-board",
+    "commit": "dc583292e2764f140e634881cd6db80dc43a5bd5",
+    "license": "CC0-1.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [
+    "4 parts the source does not print"
+   ],
+   "files": {
+    "pdf": "9de318bedc3a5ec6cb8d08653e4d2163207130e9cb118798c549f7a8205cb312",
+    "truth": "f3f4dcabc22f1d43e5adb740acf31879e82c57013357b99817772d9c304e2f18",
+    "schematic_file": "git:cff8b2b454369944ec53d55bd17f6bace32e75dc",
+    "pdf_file": "git:e01595e75d553eaa3b490d177643da997862ee06"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/d/olimex-mod-esp32-c5-hardware_mod_esp32_c5_rev_a_mod_esp32_c5_rev_a",
+    "shared_nets": 0.027
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:0e259d42c996742e9e3cba14c677129b2c1b6311"
+   },
+   "pdf": {
+    "producer": "jsPDF 0.0.0",
+    "creator": null,
+    "created": "D:20201022201616+02'00'",
+    "pages": 1
+   },
+   "source_version": "6.4.7",
+   "sheets": null,
+   "last_changed": {
+    "schematic_file": 1605883236,
+    "pdf_file": 1605883236
+   },
+   "text": {
+    "refs": 66,
+    "refs_printed": 0.939,
+    "refs_missing": [],
+    "refs_unprinted": [
+     "H1",
+     "H2",
+     "H3",
+     "H4"
+    ],
+    "refs_channel": [],
+    "refs_extra": [
+     "TP4056"
+    ],
+    "names": 27,
+    "names_printed": 1.0
+   },
+   "evidence": "text",
+   "decision": "verified"
+  },
+  {
+   "name": "urti-mainboard",
+   "generator": "kicad",
+   "group": "https://github.com/greatscottgadgets/urti-mainboard",
+   "manifest": {
+    "name": "urti-mainboard",
+    "schematic": "mainboard.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/greatscottgadgets/urti-mainboard",
+    "commit": "425fb4f29f3681c2436a3112cc356fc1a33f16b6",
+    "license": "CERN-OHL-P-2.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "b5c82d200573deb55d4fd583259fb4d1254bed98a4cd6a51cd650175ac19f4c3",
+    "truth": "ed9b580047ec8045eb2b33a82ed1a432294d0d32cb96c733edfd96fc6d4a0bb0",
+    "schematic_file": "git:f6a205f80068af4749d47343d49f5557621a70ca"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/out/release-2026-11-05/pairs-v2/zukaitis_midi_grid_Hardware_midi_grid_sch",
+    "shared_nets": 0.0
+   },
+   "license_file": {
+    "path": "LICENSE",
+    "blob": "git:84e00571ece07d152443bdb6cc73b967e48da878"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:21:48",
+    "pages": 19
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "yellow",
+   "generator": "kicad",
+   "group": "https://github.com/NabuCasa/yellow",
+   "manifest": {
+    "name": "yellow",
+    "schematic": "Yellow.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/NabuCasa/yellow",
+    "commit": "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4",
+    "license": "CERN-OHL-W-2.0",
+    "group": null,
+    "image": null,
+    "export": null,
+    "variant_of": null
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "4e464386434da7aac89c5995b0c9c88be82541468bc34387bd6d3dd41985a697",
+    "truth": "74172b07272308da2a1f7c466aba468a12753273b55bbc8f36f3adb6d4202e9c",
+    "schematic_file": "git:69b68f1e6d83bdaa97fb058d6481b087a5bae30b"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/g/sparkfun-sparkfun_u-blox_neo-d9s",
+    "shared_nets": 0.004
+   },
+   "license_file": {
+    "path": "LICENSE.md",
+    "blob": "git:e123d79d239691b1d3dd6680778c4b2dcc5910b4"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:21:54",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--exclude-pdf-property-popups",
+     "--exclude-pdf-hierarchical-links"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "yellow-bw",
+   "generator": "kicad",
+   "group": "https://github.com/NabuCasa/yellow",
+   "manifest": {
+    "name": "yellow-bw",
+    "schematic": "Yellow.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/NabuCasa/yellow",
+    "commit": "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4",
+    "license": "CERN-OHL-W-2.0",
+    "group": null,
+    "image": null,
+    "export": [
+     "--black-and-white"
+    ],
+    "variant_of": "yellow"
+   },
+   "tier": "exploratory",
+   "reasons": [],
+   "notes": [],
+   "files": {
+    "pdf": "608d8e07636ea603cb7d2aadbde8c498e21b19d031cc302c5f55f5d4e0195bab",
+    "truth": "74172b07272308da2a1f7c466aba468a12753273b55bbc8f36f3adb6d4202e9c",
+    "schematic_file": "git:69b68f1e6d83bdaa97fb058d6481b087a5bae30b"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/g/sparkfun-sparkfun_u-blox_neo-d9s",
+    "shared_nets": 0.004
+   },
+   "variant_of": "yellow",
+   "license_file": {
+    "path": "LICENSE.md",
+    "blob": "git:e123d79d239691b1d3dd6680778c4b2dcc5910b4"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:2026:11:09:23:21:58",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": null,
+   "export": {
+    "image": "schem2net-kicad:10.0.6",
+    "image_id": "sha256:2b3cd995d544f09ad34f04b34d046c3604b15aa98f43d381adbef50d63c95675",
+    "options": [
+     "--black-and-white"
+    ]
+   },
+   "evidence": "export",
+   "decision": "verified"
+  },
+  {
+   "name": "yellow-kicad7",
+   "generator": "kicad",
+   "group": "https://github.com/NabuCasa/yellow",
+   "manifest": {
+    "name": "yellow-kicad7",
+    "schematic": "Yellow.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/NabuCasa/yellow",
+    "commit": "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4",
+    "license": "CERN-OHL-W-2.0",
+    "group": null,
+    "image": "schem2net-kicad:7.0",
+    "export": [],
+    "variant_of": "yellow"
+   },
+   "tier": "exploratory",
+   "reasons": [
+    "mismatch: its netlist differs from yellow's"
+   ],
+   "notes": [],
+   "files": {
+    "pdf": "914e92c854bf20847eee251b452fb58419aa29b7e9b913ed60be08129416fb88",
+    "truth": "c234110b7786ed8a7a51550eda62c8c3aaddfdfec53b6eef5c22eed963f4245e",
+    "schematic_file": "git:69b68f1e6d83bdaa97fb058d6481b087a5bae30b"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/g/sparkfun-sparkfun_u-blox_neo-d9s",
+    "shared_nets": 0.004
+   },
+   "variant_of": "yellow",
+   "license_file": {
+    "path": "LICENSE.md",
+    "blob": "git:e123d79d239691b1d3dd6680778c4b2dcc5910b4"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:20261109232209",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": 11,
+   "export": {
+    "image": "schem2net-kicad:7.0",
+    "image_id": "sha256:d7f0c8df4d73d25f93deff93768960dd12e81bdc0169202c2b3fb601c94e727c",
+    "options": []
+   },
+   "evidence": "export",
+   "decision": "quarantine"
+  },
+  {
+   "name": "yellow-kicad8",
+   "generator": "kicad",
+   "group": "https://github.com/NabuCasa/yellow",
+   "manifest": {
+    "name": "yellow-kicad8",
+    "schematic": "Yellow.kicad_sch",
+    "pdf": null,
+    "pcb": null,
+    "eagle": null,
+    "easyeda": null,
+    "pdf_url": null,
+    "zip_url": null,
+    "sha256": null,
+    "repo": "https://github.com/NabuCasa/yellow",
+    "commit": "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4",
+    "license": "CERN-OHL-W-2.0",
+    "group": null,
+    "image": "schem2net-kicad:8.0",
+    "export": [
+     "--exclude-pdf-property-popups"
+    ],
+    "variant_of": "yellow"
+   },
+   "tier": "exploratory",
+   "reasons": [
+    "mismatch: its netlist differs from yellow's"
+   ],
+   "notes": [],
+   "files": {
+    "pdf": "ec8928072315c758a874d42f8fea6cae074ae4ee161d2b026c5a6b2afd76c9d2",
+    "truth": "fb5486f4a1c92df3bf872eb1b5ef759828e0e6f32baf0cdb743a563589201a8f",
+    "schematic_file": "git:69b68f1e6d83bdaa97fb058d6481b087a5bae30b"
+   },
+   "fork_of": null,
+   "closest": {
+    "design": "bench/build/g/sparkfun-sparkfun_u-blox_neo-d9s",
+    "shared_nets": 0.004
+   },
+   "variant_of": "yellow",
+   "license_file": {
+    "path": "LICENSE.md",
+    "blob": "git:e123d79d239691b1d3dd6680778c4b2dcc5910b4"
+   },
+   "pdf": {
+    "producer": "KiCad PDF",
+    "creator": "Eeschema-PDF",
+    "created": "D:20261109232204",
+    "pages": 11
+   },
+   "source_version": "20230121",
+   "sheets": 11,
+   "export": {
+    "image": "schem2net-kicad:8.0",
+    "image_id": "sha256:148c7866bc98cc9c7ef4ff8f501f5291da8308c6c3a2f6e565e6a2503f630acc",
+    "options": [
+     "--exclude-pdf-property-popups"
+    ]
+   },
+   "evidence": "export",
+   "decision": "quarantine"
+  }
+ ]
+}

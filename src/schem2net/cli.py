@@ -333,6 +333,73 @@ def build_corpus(corpus: CorpusName = "a", bench_dir: BenchDir = Path("bench")) 
         raise typer.Exit(1)
 
 
+@app.command("verify-corpus", hidden=True)
+def verify_corpus(
+    corpus: CorpusName,
+    bench_dir: BenchDir = Path("bench"),
+    against: Annotated[
+        list[Path] | None,
+        typer.Option(help="More built designs to check for copies; bench/build is always."),
+    ] = None,
+    seal: Annotated[bool, typer.Option(help="Write the record even if inputs changed.")] = False,
+) -> None:
+    """Check each built design's PDF, source and truth are one design, without reading
+    the extractor's output, and record the evidence in bench/verified_<corpus>.json."""
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import verify
+
+    loaded = corpora.load(corpus, bench_dir)
+    found = verify.verify(loaded, [bench_dir / "build", *(against or [])])
+    records = found["designs"]
+    path = bench_dir / f"verified_{corpus}.json"
+    changed = verify.check_sealed(found, json.loads(path.read_text())) if path.exists() else []
+    for line in changed:
+        typer.echo(line, err=True)
+    for r in records:
+        typer.echo(f"{r['decision']:10} {r['generator']:8} {r['name']}: {'; '.join(r['reasons'])}")
+    if changed and not seal:
+        typer.echo(f"the corpus changed since {path} was written; --seal to accept", err=True)
+        raise typer.Exit(1)
+    path.write_text(json.dumps(found, indent=1) + "\n")
+    admitted = sum(r["decision"] == "verified" for r in records)
+    typer.echo(f"{admitted} of {len(records)} verified; {path}")
+
+
+@app.command(hidden=True)
+def evaluate(
+    corpus: CorpusName,
+    out: Annotated[Path, typer.Argument(help="Where predictions are written, once each.")],
+    bench_dir: BenchDir = Path("bench"),
+    workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
+    library_dir: LibraryOption = None,
+) -> None:
+    """Read each verified design of a corpus in a process of its own, then score the
+    saved predictions into OUT/report.json, by design, generator and group."""
+    from schem2net.bench import corpus as corpora
+    from schem2net.bench import evaluate as evaluation
+
+    loaded = corpora.load(corpus, bench_dir)
+    try:
+        evaluation.extract(loaded, out, workers, library_dir)
+        found = evaluation.report(loaded, out)
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1) from e
+    (out / "report.json").write_text(json.dumps(found, indent=1) + "\n")
+    columns = ["pin_accuracy", "net_exact", "connection_f1", "silent_error_rate"]
+    typer.echo(
+        f"{'generator':10} {'designs':>7} {'groups':>6} "
+        + " ".join(f"{c[:12]:>12}" for c in columns)
+    )
+    every = {**found["size"], "total": found["total"]}
+    for name, g in [*found["by_generator"].items(), ("all", every)]:
+        cells = " ".join(_fmt(g["total"][c]) for c in columns)
+        typer.echo(f"{name:10} {g['designs']:>7} {g['groups']:>6} {cells}")
+    failed = [n for n, e in found["extra"].items() if "failed" in e]
+    if failed:
+        typer.echo(f"{len(failed)} designs failed: {', '.join(failed)}", err=True)
+
+
 @app.command(hidden=True)
 def bench(
     corpus: CorpusName = "a",

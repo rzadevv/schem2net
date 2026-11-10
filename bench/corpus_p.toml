@@ -1,0 +1,270 @@
+# Corpus P: an exploratory pilot of the source-verified evaluation, November 2026.
+# Owners new to every earlier set (bench/discovery_p.json lists what was turned away).
+# Development evidence only: never an independent result. Only references are stored.
+# `schem2net verify-corpus p` admits designs; `schem2net evaluate p OUT` reads them.
+# Renderings use KiCad images made as schem2net-kicad:10.0.6 is, from kicad/kicad:7.0
+# and :8.0: printf 'FROM kicad/kicad:8.0\nENV HOME=/tmp\nWORKDIR /work\nENTRYPOINT ["kicad-cli"]\n'
+#   | docker build -t schem2net-kicad:8.0 -
+
+tier = "exploratory"
+test_share = 0.0
+holdout_share = 0.0
+
+[[project]]
+name = "urti-mainboard"  # SDR mainboard: FPGA banks split over sheets (bank0_1, bank2_3, bank6_7, bank8_co
+repo = "https://github.com/greatscottgadgets/urti-mainboard"
+commit = "425fb4f29f3681c2436a3112cc356fc1a33f16b6"
+schematic = "mainboard.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "yellow"  # CM4 carrier: CM4 connector, PoE, PCIe, USB, Ethernet, radio sheets; dense connec
+repo = "https://github.com/NabuCasa/yellow"
+commit = "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4"
+schematic = "Yellow.kicad_sch"
+license = "CERN-OHL-W-2.0"
+
+[[project]]
+name = "yellow-bw"
+repo = "https://github.com/NabuCasa/yellow"
+commit = "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4"
+schematic = "Yellow.kicad_sch"
+export = ["--black-and-white"]
+variant_of = "yellow"
+license = "CERN-OHL-W-2.0"
+
+[[project]]
+name = "yellow-kicad8"
+repo = "https://github.com/NabuCasa/yellow"
+commit = "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4"
+schematic = "Yellow.kicad_sch"
+image = "schem2net-kicad:8.0"
+export = ["--exclude-pdf-property-popups"]
+variant_of = "yellow"
+license = "CERN-OHL-W-2.0"
+
+[[project]]
+name = "yellow-kicad7"
+repo = "https://github.com/NabuCasa/yellow"
+commit = "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4"
+schematic = "Yellow.kicad_sch"
+image = "schem2net-kicad:7.0"
+export = []
+variant_of = "yellow"
+license = "CERN-OHL-W-2.0"
+
+[[project]]
+name = "sh-esp32"  # ESP32 marine board: CAN, onewire, optocouplers, I2C, power-input sheets; KiCad 8
+repo = "https://github.com/hatlabs/SH-ESP32-hardware"
+commit = "167981ac8c3e1a7a0104c20cf9b487b4d722fc60"
+schematic = "SH-ESP32.kicad_sch"
+license = "CC-BY-4.0"
+
+[[project]]
+name = "candlelight-fd"  # USB-CAN FD adapter: MCU, PSU, transceiver sheets; small, clean
+repo = "https://github.com/linux-automation/candleLightFD"
+commit = "76479c447ac21fadaa089d196ed7bc3833aa87ec"
+schematic = "candleLightfd-S01.kicad_sch"
+license = "CERN-OHL-1.2"
+
+[[project]]
+name = "candlelight-fd-bw"
+repo = "https://github.com/linux-automation/candleLightFD"
+commit = "76479c447ac21fadaa089d196ed7bc3833aa87ec"
+schematic = "candleLightfd-S01.kicad_sch"
+export = ["--black-and-white"]
+variant_of = "candlelight-fd"
+license = "CERN-OHL-1.2"
+
+[[project]]
+name = "candlelight-fd-kicad8"
+repo = "https://github.com/linux-automation/candleLightFD"
+commit = "76479c447ac21fadaa089d196ed7bc3833aa87ec"
+schematic = "candleLightfd-S01.kicad_sch"
+image = "schem2net-kicad:8.0"
+export = ["--exclude-pdf-property-popups"]
+variant_of = "candlelight-fd"
+license = "CERN-OHL-1.2"
+
+[[project]]
+name = "candlelight-fd-kicad7"
+repo = "https://github.com/linux-automation/candleLightFD"
+commit = "76479c447ac21fadaa089d196ed7bc3833aa87ec"
+schematic = "candleLightfd-S01.kicad_sch"
+image = "schem2net-kicad:7.0"
+export = []
+variant_of = "candlelight-fd"
+license = "CERN-OHL-1.2"
+
+[[project]]
+name = "bsc"  # Battery safety controller: large root sheet plus io, io2, serial, ai sheets; man
+repo = "https://github.com/shining-man/bsc_hw"
+commit = "bde0a1f4e098756d6f5df828465298059879e6a6"
+schematic = "bsc.kicad_sch"
+license = "MIT"
+
+[[project]]
+name = "bsc-published"  # the PDF the authors committed
+repo = "https://github.com/shining-man/bsc_hw"
+commit = "bde0a1f4e098756d6f5df828465298059879e6a6"
+schematic = "bsc.kicad_sch"
+pdf = "circuit.pdf"
+variant_of = "bsc"
+license = "MIT"
+
+[[project]]
+name = "dc-ups"  # DC UPS: charger, pack, logic, output, usb_out sheets; power-heavy
+repo = "https://github.com/TobleMiner/DC-UPS"
+commit = "b2555e9479831a2fa25f27c711e8ef9edd86a332"
+schematic = "dc-usv.kicad_sch"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "dc-ups-bw"
+repo = "https://github.com/TobleMiner/DC-UPS"
+commit = "b2555e9479831a2fa25f27c711e8ef9edd86a332"
+schematic = "dc-usv.kicad_sch"
+export = ["--black-and-white"]
+variant_of = "dc-ups"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "dc-ups-kicad8"
+repo = "https://github.com/TobleMiner/DC-UPS"
+commit = "b2555e9479831a2fa25f27c711e8ef9edd86a332"
+schematic = "dc-usv.kicad_sch"
+image = "schem2net-kicad:8.0"
+export = ["--exclude-pdf-property-popups"]
+variant_of = "dc-ups"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "dc-ups-kicad7"
+repo = "https://github.com/TobleMiner/DC-UPS"
+commit = "b2555e9479831a2fa25f27c711e8ef9edd86a332"
+schematic = "dc-usv.kicad_sch"
+image = "schem2net-kicad:7.0"
+export = []
+variant_of = "dc-ups"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "dc-ups-published"  # the PDF the authors committed
+repo = "https://github.com/TobleMiner/DC-UPS"
+commit = "b2555e9479831a2fa25f27c711e8ef9edd86a332"
+schematic = "dc-usv.kicad_sch"
+pdf = "fab/RevC/schematic.pdf"
+variant_of = "dc-ups"
+license = "CERN-OHL-P-2.0"
+
+[[project]]
+name = "diff-probe"  # Differential probe, one sheet, analog; PDF has text layer
+repo = "https://github.com/wingel/diff-probe"
+commit = "fe6f03afa4de1ea88e26a10800d6e80c87ae8b04"
+eagle = "diff-probe.sch"
+pdf = "diff-probe.pdf"
+license = "none"
+
+[[project]]
+name = "openeit"  # EIT tomography front end: 8 sheets, mux-heavy analog
+repo = "https://github.com/OpenEIT/EIT_EE"
+commit = "c3d40a1e08c13728ee8e9ce2fa1d02b52685fb5e"
+eagle = "EIT.sch"
+pdf = "EIT_schematic.pdf"
+license = "CC-BY-NC-SA-4.0"
+
+[[project]]
+name = "fmcw-gainblock"  # Small RF gain block, one sheet; PDF text layer nearly empty (72 chars)
+repo = "https://github.com/lukeweston/SimpleFMCWRadar"
+commit = "49a8f7b0813ed68c14357b601e6144cd0b3574b8"
+eagle = "GainBlock.sch"
+pdf = "GainBlock-schematic.pdf"
+license = "CERN-OHL-1.1"
+
+[[project]]
+name = "moteino-mega"  # ATmega1284P + RFM69 module; PDF via PDF printer, no text layer (weakest Eagle pi
+repo = "https://github.com/LowPowerLab/Moteino"
+commit = "0f3083066d601e05bdd0e4688e9d2e32847463b5"
+eagle = "MEGA/MoteinoMEGA.sch"
+pdf = "MEGA/MoteinoMEGA_Schematic.pdf"
+license = "none"
+
+[[project]]
+name = "simplefoc-shield"  # BLDC driver shield: L6234 bridge, Arduino headers, current sense
+repo = "https://github.com/simplefoc/Arduino-SimpleFOCShield"
+commit = "2a83626b86debd5fc5f309ba06b3fb36e3b25533"
+easyeda = "EasyEDA/SCH_SimpleFOCShield-v3_2024-06-23.json"
+pdf = "Schematic_SimpleFOCShield-v3_2024-06-23.pdf"
+license = "MIT"
+
+[[project]]
+name = "easypdk-lite"  # Padauk MCU programmer lite: STM32 + analog supply generation
+repo = "https://github.com/free-pdk/easy-pdk-programmer-lite-hardware"
+commit = "d676edaf20180a07c388a0ff1911d6e0f538443f"
+easyeda = "EasyEDA/EasyPDKPROGlite_2020-07-26_13-36-49.json"
+pdf = "Schematics/Schematic_EasyPDKPROGlite_2020-07-26_13-36-43.pdf"
+license = "CC-BY-SA-4.0"
+
+[[project]]
+name = "tonuino-battery"  # Audio player battery board: charger, Arduino Nano, DFPlayer
+repo = "https://github.com/tenbaht/tonuino-battery-board"
+commit = "dc583292e2764f140e634881cd6db80dc43a5bd5"
+easyeda = "easyeda/TonUino_2020-10-22_20-16-25.json"
+pdf = "easyeda/Schematic_TonUino_2020-10-22_20-16-16.pdf"
+license = "CC0-1.0"
+
+[[project]]
+name = "neuromems"  # Memristor neuron board; repo is mostly research code (96 MB)
+repo = "https://github.com/max-talanov/memCPG"
+commit = "d80caa61e9c39f5f4e25fc16c12b812b08494209"
+easyeda = "easyEDA/SCH_NeuroMems_V2.10_2025-06-07.json"
+pdf = "easyEDA/Schematic_NeuroMems_V2.10_2025-06-07.pdf"
+license = "MIT"
+
+[[project]]
+name = "diebiems"  # BMS: 10 sheets, hierarchical top level, cell stack monitor, CAN; PDF may include
+repo = "https://github.com/DieBieEngineering/DieBieMS"
+commit = "c876ef5d362eda8d50ee0a36611fe6d50c8bc49e"
+pdf = "Project Outputs for DB10005_DieBieMS/DB10005_DieBieMS.PDF"
+pcb = "DB10005_BMS.PcbDoc"
+license = "none"
+
+[[project]]
+name = "active-probe"  # Active scope probe: 2 sheets, RF analog
+repo = "https://github.com/jmwilson/oshw-active-probe"
+commit = "2e700ca44e1152f0c7e2052371260f490f6cef0b"
+pdf = "board/Mfg/Schematic Prints.PDF"
+pcb = "board/Probe.PcbDoc"
+license = "CERN-OHL-S-2.0"
+
+[[project]]
+name = "odrive-v2"  # ODrive v2 (older design, not v3): hierarchical top + FPGA, M0, power, analog, au
+repo = "https://github.com/odriverobotics/ODriveHardware"
+commit = "079f30ac58f193226fcc552e4d6ba24553027ee1"
+pdf = "v2/Inverter.PDF"
+pcb = "v2/Inverter.PcbDoc"
+license = "MIT"
+
+[[project]]
+name = "nixie-in12"  # Nixie clock, one dense sheet, HV supply; PcbDoc last changed 2014-12-29
+repo = "https://github.com/MightyDevices/IN-12-Nixie-Clock"
+commit = "6d336ff82d95d0203aa011cba9feefa5ef68a635"
+pdf = "Altium/Nixie.pdf"
+pcb = "Altium/Nixie.PcbDoc"
+license = "none"
+
+[[project]]
+name = "parallella-aafm"  # Parallella AAFM daughter board: 22-page schematic, dense FPGA/connector; .brd 13
+repo = "https://github.com/parallella/parallella-hw"
+commit = "a6bcdf844c56366525bef73d3355c75bba19e3f5"
+pdf = "aafm/docs/hb01-aafm_schematic.pdf"
+pcb = "aafm/src/HB1A-AAFM.brd"
+license = "CC-BY-SA-3.0-US"
+
+[[project]]
+name = "neo-m9n"  # GPS module board, 2 pages; DSN is 28 MB (embedded libraries)
+repo = "https://github.com/KenLagoni/NEO-M9N_GPS"
+commit = "2e398beed1cb6c87e499773b471c91f1fb67916e"
+pdf = "V1_00/GPS-NEO-M9N_25x25_Schematic_V1_00.pdf"
+pcb = "V1_00/Design Files/GPS-NEO-M9N_25x25_V1_00.brd"
+license = "none"

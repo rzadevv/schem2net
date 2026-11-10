@@ -286,6 +286,71 @@ schem2net bench a --split dev --json bench/baseline_a_dev.json
 schem2net bench e --split dev --json bench/baseline_e_dev.json
 ```
 
+## Verifying a corpus
+
+A PDF beside a schematic in one folder does not show they are one design. Before a
+corpus is read, `verify-corpus` checks each built design without the extractor, so
+admission cannot favour designs it reads well, and writes the evidence and file
+hashes to `bench/verified_<corpus>.json`:
+
+- How the PDF is known to show the truth: exported from the source with it, carrying
+  the schematic's own netlist (Altium; read drawing-only), agreeing in printed text,
+  or, where its text cannot be read (outlined, or drawn as strokes), its revision
+  alone: committed with or after the source's last change. A PDF that is hard to read
+  is not turned away for it; evaluations report results by this evidence.
+- That nothing shows a mismatch. A published PDF may leave out no more than 5% of the
+  truth's designators and 20% of its chosen net names (bus members count when their
+  bus is printed), print no more than three, or 5%, designators the truth lacks, not
+  predate the source's last change and have no fewer pages than the source has sheets.
+  Not counted as left out: designators the source hides (EasyEDA, KiCad), printed run
+  into their own value (`R100100.0`), and instances of a repeated channel drawn once
+  (`1U3` where `U3` is printed); they are listed, and the truth keeps them. Printed
+  words are rebuilt from pdfium's letter boxes, a word to each run of letters along
+  one line; pin numbers and names are not taken for designators, nor are a ball
+  grid's rows.
+- Where it comes from: repository, commit, git blobs of the source, PDF and board,
+  licence and licence file, source format version, PDF producer, export image and
+  options. A licence must be determined: an SPDX id, or `none` where the source grants
+  none; `none` and non-commercial designs are scored locally only, never redistributed.
+- That it is new: not a repository, owner or fork parent of another corpus manifest
+  or the November 5 panel, and sharing less than nine tenths of its true nets with
+  any built design (`--against` adds folders, such as the November 5 pairs).
+
+Each reason for keeping a design out names its kind: `mismatch` (the PDF, source and
+truth disagree), `provenance` (used before, a copy, no licence), `scope` (not built,
+unreadable, an image rather than a vector drawing) or `rendering`.
+
+The record is the corpus's seal: its settings (tier, shares, the checks' thresholds)
+and, for every design of the manifest, its manifest entry, group, input hashes and
+decision. Hashes leave out the export time KiCad writes, so a design rebuilt from its
+source hashes alike. A rerun that finds any difference, a design added or removed
+included, fails until resealed with `--seal`, and `evaluate` refuses to read or score
+a corpus that differs from its seal.
+A corpus's `tier` is `exploratory` (inspected while choosing algorithms),
+`development` (the default) or `independent`, which must be held out whole
+(`holdout_share = 1.0`) so it is read only with `SCHEM2NET_HOLDOUT=1`.
+
+A KiCad design may be rendered other ways, as projects naming its `variant_of`, the
+`image` and PDF `export` options, or a `pdf` the authors published: each is admitted
+only if its own netlist equals the design's, shares its group and is reported beside
+it (`renderings`, `rendering_counts`), never among the designs.
+
+```sh
+schem2net build-corpus p
+schem2net verify-corpus p --against bench/out/release-2026-11-05/pairs-v2
+schem2net evaluate p bench/out/eval-p      # reads once, then writes report.json
+```
+
+`evaluate` reads each admitted design in a process of its own, with the shipped
+models, drawing only, under 4 GiB, and writes each prediction once; scoring reads
+only saved predictions. Its report gives the bench figures by generator and group,
+with grouped intervals, in the form `bench-compare` reads, and per design the
+seconds, peak memory, pages failed, wiring mistakes, evidence, and the parts the
+source does not print with the pins they hold, also totalled by evidence. Scoring is
+strict, every true pin counting; `observable` gives the same figures without the
+parts the source does not print and the instances of a channel drawn once. A design
+that fails whole scores no pins.
+
 ## Metrics
 
 Nets are sets of `(refdes, pin)` pairs. Predicted nets are matched one-to-one
@@ -315,6 +380,13 @@ Corpus totals are summed over pins, not averaged over designs. Connection F1
 counts pairs of pins, so one large net merged by mistake can set a corpus's figure
 alone; `macro_pin_accuracy` and `macro_connection_f1` give the mean over designs
 beside the pooled figures.
+
+Wiring mistakes (`wiring_mistakes`) count each join or cut a reviewer would make, apart
+from pins whose only fault is their number (a pin on the net where another pin of its
+own part belongs, that pin not being there): a predicted net holding pins of k true
+nets is k − 1 false merges, a true net spread over m predicted nets m − 1 false
+splits. One is silent when every net it involves has confidence of at least 0.8 and no
+issue names its pins.
 
 Accuracy alone says little about whether a netlist can be used: a board 95% right
 whose errors no one can find is worse than one 90% right whose doubtful pins are
