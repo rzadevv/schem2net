@@ -1,0 +1,69 @@
+{
+ "status": "prepared: the runner is re-pinned to the commit that merges this record, and the image rebuilt, before discovery begins",
+ "protocol": "docs/evaluation-protocol.md",
+ "runner": {
+  "commit": "5dae3e54f2aa041aa4557b49a0ccb29aac545801",
+  "wheel_sha256": "36a54d6e67df70072323877266f56d31ec53151c9195aad984491ab6609cf0ea"
+ },
+ "candidate": {
+  "commit": "56caa0617197408626479692f8de46d2058a954a",
+  "wheel_sha256": "82f063afde30215bb8e032ff090190435f363138c4668c781faba4580cb8ac92",
+  "code_sha256": "41976192f317461d05aa0bc0c45e5d2256a06f62b57133c7f418c6f2fdd271bf"
+ },
+ "comparator": {
+  "commit": "5d2417c3bd93559255ccf40aee803411f841af24",
+  "wheel_sha256": "691529f97575a0b26b78a6feb3821b429015fbd5a0ceb8e19c0f75d9dbb76117",
+  "code_sha256": "acfacb0012b8455f4e9a945c56ab4ab9fcca9289e0cdc35825f84994815cf2a8",
+  "note": "same file contents as the November 5 wheel ac23324fbae8c1dc28080735197e9bfdf8b5788c36222d5b390c417ecac53c0a; zip timestamps differ"
+ },
+ "learned_files": {
+  "roles.npz": "20fb10407b4fb8799fb54b4337ac9429db3ccf911aed3c836e4206f9d9da2e3b",
+  "designators.npz": "194d40d215ae4d4b5663ba1925d6f0737eda1cf03a49679107669edda667ae1d",
+  "groups.npz": "df76d056da2aebf2b2440b392b7d8db1bdc9c94dbe912b995c93594cddbd27be",
+  "eagle_font.json": "077d5e32a5091ab94c4802c06bde316dfa900204724c52d969526e61ee7a7221",
+  "eagle_fills.json": "c10c8a8bf5e73123b6f200d99a2827c517cefa61495efaca8a5e4b772f0b7d6a"
+ },
+ "library_indexes": {
+  "eagle-symbols.json.gz": "fe5ebd5844fdd6febe114fd3a41113e37f7af255d965efe7fffa14ff6c6c7019",
+  "kicad-symbols.json.gz": "65926129267a375dd72cfab70fb685a889218f860e56e89f68b82f0e8c6b4d66"
+ },
+ "environment": {
+  "dockerfile": "docker/Dockerfile.eval",
+  "build": "make eval-image",
+  "base_image": "python:3.13.15-slim-trixie@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b",
+  "image_id": "sha256:e3954501b4312d872138e09c968a050ad148f2f33c270a4d07c202b30de06be1",
+  "image_note": "the linux/amd64 image manifest, built without provenance; a build with provenance wraps it in an index whose digest changes with each build",
+  "os": "Debian 13.7, linux/amd64",
+  "requirements_sha256": "a62cd9367da6c2a791e1aceca57ebc6966c19fd9061379d5d0bd4726affd6a62",
+  "python": "3.13.15",
+  "dependencies": {
+   "numpy": "2.5.3",
+   "pydantic": "2.13.5",
+   "pypdfium2": "5.13.0",
+   "scipy": "1.18.1",
+   "typer": "0.27.2"
+  },
+  "pdfium": "153.0.7999.0",
+  "fonts": "none installed, no fontconfig: PDFium's built-in stand-ins only",
+  "font_inventory": {
+   "count": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limits": {
+   "workers": 2,
+   "address_space_bytes": 4294967296,
+   "seconds_per_design": 1800,
+   "docker": "--network=none --read-only --cpus 2 --memory 8g",
+   "threads": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONHASHSEED=0"
+  },
+  "validated_on": "AMD Ryzen 5 5600H, CachyOS host; corpus A and E dev identical design by design to the CI baselines (GitHub ubuntu-26.04 runner)"
+ },
+ "statistics": {
+  "resampling": "source groups",
+  "draws": 2000,
+  "seed": 0,
+  "interval": "95% percentile, paired",
+  "silent_margin": 0.001,
+  "pin_margin": -0.002
+ }
+}

@@ -390,6 +390,52 @@ def test_bench_compare_refuses_to_drop_a_design(tmp_path):
     assert "bad" in result.output and "different designs" in result.output
 
 
+def test_bench_compare_refuses_readings_taken_apart(tmp_path):
+    import json
+    from dataclasses import asdict
+
+    from typer.testing import CliRunner
+
+    from schem2net import cli
+    from schem2net.bench.score import Counts
+
+    designs = {"d": asdict(Counts(designs=1, pins=100, pins_correct=90))}
+    probe = {
+        "seal": "s",
+        "python": "3.13.15",
+        "machine": "x86_64",
+        "pdfium": "153",
+        "fonts": {"count": 0},
+        "dependencies": {"numpy": "2"},
+        "files": {"roles.npz": "r"},
+    }
+
+    def compare(after):
+        for name, run in (("a.json", {"run": probe}), ("b.json", after)):
+            (tmp_path / name).write_text(json.dumps({"designs": designs, **run}))
+        return CliRunner().invoke(
+            cli.app, ["bench-compare", *(str(tmp_path / f"{n}.json") for n in "ab")]
+        )
+
+    # Other code or models: the candidate and comparator differ so.
+    assert compare({"run": probe | {"code": "new", "files": {"roles.npz": "s"}}}).exit_code == 0
+    for changed in (
+        {"seal": "t"},
+        {"python": "3.12"},
+        {"machine": "aarch64"},
+        {"pdfium": "154"},
+        {"fonts": {"count": 3}},
+        {"dependencies": {"numpy": "3"}},
+        {"dependencies": {"numpy": "2", "scipy": "1"}},
+        {"dependencies": {}},
+        {"files": {"roles.npz": "r", "kicad-symbols.json.gz": "k"}},
+    ):
+        result = compare({"run": probe | changed})
+        assert result.exit_code == 1 and "read apart" in result.output, changed
+    result = compare({})
+    assert result.exit_code == 1 and "with a bench run" in result.output
+
+
 def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():
     """The drawing shows what the pin connects to, though not which pad it is."""
     led = symbols.Symbol([], (0, 0, 4, 4), [symbols.Pin(0, ((2, 2), (2, 0)))], ref="D1")

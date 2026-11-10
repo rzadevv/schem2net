@@ -330,6 +330,27 @@ def compare(
     return out
 
 
+# The independent evaluation's prespecified margins (docs/evaluation-protocol.md).
+PIN_MARGIN = -0.002  # pin accuracy change whose interval must lie above this
+SILENT_MARGIN = 0.001  # silent error rate change the interval must not reach past
+
+
+def verdict(changes: dict) -> dict[str, str]:
+    """The protocol's three outcomes from `compare`'s paired intervals, tested in order,
+    each only if the one before is shown. "not shown" is no evidence the two are alike."""
+    low = changes["pin_accuracy"][3]
+    tests = {
+        "silent errors no worse": changes["silent_error_rate"][4] <= SILENT_MARGIN,
+        "pin accuracy no worse": low > PIN_MARGIN,
+        "pin accuracy higher": low > 0,
+    }
+    out, open_ = {}, True
+    for name, shown in tests.items():
+        out[name] = ("shown" if shown else "not shown") if open_ else "not tested"
+        open_ = open_ and shown
+    return out
+
+
 def intervals(
     designs: list[Counts], groups: list[str] | None = None, resamples: int = 2000, seed: int = 0
 ) -> dict[str, tuple[float, float]]:

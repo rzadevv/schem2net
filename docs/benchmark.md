@@ -349,7 +349,11 @@ seconds, peak memory, pages failed, wiring mistakes, evidence, and the parts the
 source does not print with the pins they hold, also totalled by evidence. Scoring is
 strict, every true pin counting; `observable` gives the same figures without the
 parts the source does not print and the instances of a channel drawn once. A design
-that fails whole scores no pins.
+that fails whole scores no pins. `--python` reads with another installed release, a
+comparator, through the same runner and scorer; `run.json` records what the reading
+depended on (code, learned files, Python, dependencies, PDFium, fonts, seal), and a
+reading resumed under anything else is refused. `bench-compare` prints the
+independent evaluation's prespecified outcomes (`docs/evaluation-protocol.md`).
 
 ## Metrics
 
