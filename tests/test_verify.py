@@ -7,7 +7,7 @@ from dataclasses import replace
 import pypdfium2 as pdfium
 import pytest
 
-from schem2net import export
+from schem2net import export, kicad
 from schem2net.bench.corpus import Corpus, Project
 from schem2net.bench.verify import _words, check_sealed, verify
 from schem2net.ir import Component, Design, Net, Pin, Source
@@ -102,10 +102,8 @@ def test_a_published_pdf_must_print_the_truths_parts_and_names(bench):
     reasons = " ".join(found["other"]["reasons"])
     assert "2 of 6 designators not in the PDF" in reasons
     assert "names 4 parts the truth lacks" in reasons
-    assert found["unread"]["evidence"] == "revision only"
-    assert found["unread"]["decision"] == "verified"  # exploratory: allowed, but noted
-    independent = records(bench, projects[2:], tier="independent", holdout_share=1.0)
-    assert independent["unread"]["decision"] == "quarantine"
+    assert found["unread"]["evidence"] == "revision only"  # no commit ties it to a source
+    assert found["unread"]["reasons"][0].startswith("evidence: no readable text")
 
 
 def test_a_pdf_older_than_its_source_is_quarantined(bench):
@@ -125,9 +123,17 @@ def test_a_pdf_older_than_its_source_is_quarantined(bench):
         eagle="board.sch", pdf="board.pdf", license="CERN-OHL-S-2.0",
     )  # fmt: skip
     found = records(bench, [project])["stale"]
-    assert "the PDF is older than the source's last change" in found["reasons"]
+    assert "mismatch: the PDF is older than the source's last change" in found["reasons"]
     assert found["files"]["schematic_file"].startswith("git:")
     assert found["source_version"] == "9.6.2" and found["license_file"] is None
+
+    # Printed again after the change, its text outlined: hard to read, not a mismatch.
+    (repo / "board.pdf").write_text("new print")
+    git(repo, "commit", "-qam", "print", when="2026-03-01T00:00:00")
+    fresh = replace(project, name="fresh", commit=git(repo, "rev-parse", "HEAD"))
+    built(bench, "fresh", ["R7", "R8"], [])
+    found = records(bench, [fresh], tier="independent", holdout_share=1.0)["fresh"]
+    assert found["decision"] == "verified" and found["evidence"] == "revision only"
 
 
 def test_used_sources_copies_and_missing_files_are_kept_out(bench):
@@ -156,13 +162,15 @@ def test_used_sources_copies_and_missing_files_are_kept_out(bench):
     forks = {"https://github.com/me/fork": "https://github.com/used/original"}
     found = records(bench, projects, forks=forks)
     assert "the same design as" in found["copy"]["reasons"][0]
-    assert found["same-owner"]["reasons"] == ["owner already in corpus a"]
-    assert found["fork"]["reasons"] == ["a fork of https://github.com/used/original, already used"]
+    assert found["same-owner"]["reasons"] == ["provenance: owner already in corpus a"]
+    assert found["fork"]["reasons"] == [
+        "provenance: a fork of https://github.com/used/original, already used"
+    ]
     assert found["absent"]["decision"] == "missing"
-    assert found["unlicensed"]["reasons"] == ["no licence recorded"]
-    assert found["scan"]["reasons"][0].startswith("not a vector drawing")
-    assert found["broken"]["reasons"][0].startswith("the PDF cannot be read")
-    assert found["zipped"]["reasons"] == ["repository already in corpus a"]
+    assert found["unlicensed"]["reasons"] == ["provenance: no licence recorded"]
+    assert found["scan"]["reasons"][0].startswith("scope: not a vector drawing")
+    assert found["broken"]["reasons"][0].startswith("scope: the PDF cannot be read")
+    assert found["zipped"]["reasons"] == ["provenance: repository already in corpus a"]
 
 
 def test_an_independent_corpus_is_held_out_whole(bench):
@@ -223,8 +231,10 @@ def test_a_rendering_must_have_its_designs_netlist(bench):
     found = records(bench, projects)
     assert found["bw"]["decision"] == "verified"
     assert found["bw"]["export"]["options"] == ["-b"]
-    assert found["v7"]["reasons"] == ["its netlist differs from base's"]
-    assert found["unlicensed-bw"]["reasons"] == ["unlicensed, which it renders, is not admitted"]
+    assert found["v7"]["reasons"] == ["mismatch: its netlist differs from base's"]
+    assert found["unlicensed-bw"]["reasons"] == [
+        "rendering: unlicensed, which it renders, is not admitted"
+    ]
     loaded = corpus(bench, projects)
     assert loaded.split(projects[1]) == loaded.split(projects[0]) != "copy"
     assert loaded.groups["bw"] == loaded.groups["base"]
@@ -264,3 +274,21 @@ def test_a_word_drawn_a_letter_at_a_time_reads_whole_however_turned(tmp_path, tu
     page.text("C5", 100, 700)
     doc = pdfium.PdfDocument(page.save(tmp_path / "t.pdf"))
     assert sorted(_words(doc[0]).split()) == ["C5", "R12"]
+
+
+def test_parts_not_printed_by_design_are_no_mismatch(bench):
+    refs = ["R1", "R2", "R100", "R101", "U1", "U2", "1U3", "2U3", "H1", "H2"]
+    words = ["R1", "R2", "R100100.0", "U1", "U2", "U3"]  # R101 run into another value
+    out = built(bench, "board", refs, words)
+    design = kicad.read_netlist(out / "truth.net")
+    for c in design.components:
+        c.value = "100.0" if c.ref.startswith("R10") else None
+    (out / "truth.net").write_text(export.kicad_netlist(design))
+    (out / "schematic.json").write_text(
+        "T~L~0~0~0~#000080~Arial~~~~~comment~H1~0~start~g1~0~"
+        "T~L~0~0~0~#000080~Arial~~~~~comment~H2~0~start~g2~0~"
+    )
+    project = Project(name="board", easyeda="b.json", pdf="b.pdf", license="MIT")
+    text = records(bench, [project])["board"]["text"]
+    assert text["refs_unprinted"] == ["H1", "H2"] and text["refs_channel"] == ["1U3", "2U3"]
+    assert text["refs_missing"] == ["R101"]

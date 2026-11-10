@@ -222,7 +222,7 @@
   "commit": "30d116106247dc5791e030e2ef7ccedbe4a7ad29",
   "license": "GPL-3.0",
   "reasons": [
-   "the PDF names 16 parts the truth lacks"
+   "mismatch: the PDF names 16 parts the truth lacks"
   ],
   "notes": [
    "the PDF carries its netlist: read it drawing-only"
@@ -260,6 +260,8 @@
    "refs": 126,
    "refs_printed": 1.0,
    "refs_missing": [],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [
     "J1",
     "R1",

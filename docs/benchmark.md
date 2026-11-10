@@ -294,23 +294,30 @@ admission cannot favour designs it reads well, and writes the evidence and file
 hashes to `bench/verified_<corpus>.json`:
 
 - How the PDF is known to show the truth: exported from the source with it, carrying
-  the schematic's own netlist (Altium; read drawing-only), or agreeing in printed
-  text. Published PDFs must print 95% of the truth's designators and 80% of its chosen
-  net names (bus members count when their bus is printed), may print no more than
-  three, or 5%, designators the truth lacks, must not predate the source's last
-  change in the repository, and must have no fewer pages than the source has sheets.
-  Printed words are rebuilt from pdfium's letter boxes, a word to each run of letters
-  along one line, as PDFs store text a letter at a time or run labels together. Pin
-  numbers and names are not taken for designators, nor are a ball grid's rows. A PDF
-  with no text layer rests on its revision alone: allowed for exploratory designs,
-  never for an independent set. A page that is an image of a drawing, not a vector
-  drawing, is never admitted.
+  the schematic's own netlist (Altium; read drawing-only), agreeing in printed text,
+  or, where its text cannot be read (outlined, or drawn as strokes), its revision
+  alone: committed with or after the source's last change. A PDF that is hard to read
+  is not turned away for it; evaluations report results by this evidence.
+- That nothing shows a mismatch. A published PDF may leave out no more than 5% of the
+  truth's designators and 20% of its chosen net names (bus members count when their
+  bus is printed), print no more than three, or 5%, designators the truth lacks, not
+  predate the source's last change and have no fewer pages than the source has sheets.
+  Not counted as left out: designators the source hides (EasyEDA, KiCad), printed run
+  into their own value (`R100100.0`), and instances of a repeated channel drawn once
+  (`1U3` where `U3` is printed); they are listed, and the truth keeps them. Printed
+  words are rebuilt from pdfium's letter boxes, a word to each run of letters along
+  one line; pin numbers and names are not taken for designators, nor are a ball
+  grid's rows.
 - Where it comes from: repository, commit, git blobs of the source, PDF and board,
   licence and licence file, source format version, PDF producer, export image and
   options. Unlicensed and non-commercial designs are scored locally only.
 - That it is new: not a repository, owner or fork parent of another corpus manifest
   or the November 5 panel, and sharing less than nine tenths of its true nets with
   any built design (`--against` adds folders, such as the November 5 pairs).
+
+Each reason for keeping a design out names its kind: `mismatch` (the PDF, source and
+truth disagree), `provenance` (used before, a copy, no licence), `scope` (not built,
+unreadable, an image rather than a vector drawing) or `rendering`.
 
 Hashes leave out the export time KiCad writes, so a design rebuilt from its source
 hashes alike; a rerun that finds other inputs fails until resealed with `--seal`.
@@ -333,8 +340,9 @@ schem2net evaluate p bench/out/eval-p      # reads once, then writes report.json
 models, drawing only, under 4 GiB, and writes each prediction once; scoring reads
 only saved predictions. Its report gives the bench figures by generator and group,
 with grouped intervals, in the form `bench-compare` reads, and per design the
-seconds, peak memory, pages failed and wiring mistakes. A design that fails whole
-scores no pins.
+seconds, peak memory, pages failed, wiring mistakes, evidence, and the parts the
+source does not print with the pins they hold, also totalled by evidence. A design
+that fails whole scores no pins.
 
 ## Metrics
 

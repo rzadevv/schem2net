@@ -46,6 +46,8 @@
    "refs_missing": [
     "D1"
    ],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 7,
    "names_printed": 1.0
@@ -531,7 +533,7 @@
   "commit": "c876ef5d362eda8d50ee0a36611fe6d50c8bc49e",
   "license": "none",
   "reasons": [
-   "not built: no schematic.pdf or truth.net"
+   "scope: not built: no schematic.pdf or truth.net"
   ],
   "notes": [],
   "decision": "missing"
@@ -576,6 +578,8 @@
    "refs": 133,
    "refs_printed": 1.0,
    "refs_missing": [],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 3,
    "names_printed": 1.0
@@ -591,10 +595,10 @@
   "repo": "https://github.com/free-pdk/easy-pdk-programmer-lite-hardware",
   "commit": "d676edaf20180a07c388a0ff1911d6e0f538443f",
   "license": "CC-BY-SA-4.0",
-  "reasons": [
-   "5 of 55 designators not in the PDF"
+  "reasons": [],
+  "notes": [
+   "5 parts the source does not print"
   ],
-  "notes": [],
   "files": {
    "pdf": "269d6d6d45636aa9ec9784c2a13b968cbaa370d3b76973310ea1f26f19f8553b",
    "truth": "3ab034f09debda38fe0ce06d4a6e2828f3f59d21ed1055abe9800307777e8d1e",
@@ -625,19 +629,21 @@
   "text": {
    "refs": 55,
    "refs_printed": 0.909,
-   "refs_missing": [
+   "refs_missing": [],
+   "refs_unprinted": [
     "R18",
     "R19",
     "R20",
     "R21",
     "R22"
    ],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 4,
    "names_printed": 1.0
   },
   "evidence": "text",
-  "decision": "quarantine"
+  "decision": "verified"
  },
  {
   "name": "fmcw-gainblock",
@@ -690,7 +696,7 @@
   "commit": "0f3083066d601e05bdd0e4688e9d2e32847463b5",
   "license": "none",
   "reasons": [
-   "not a vector drawing: an image of one, which schem2net does not read"
+   "scope: not a vector drawing: an image of one, which schem2net does not read"
   ],
   "notes": [
    "no licence: score locally, never redistribute",
@@ -765,6 +771,8 @@
    "refs": 12,
    "refs_printed": 1.0,
    "refs_missing": [],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 2,
    "names_printed": 1.0
@@ -813,6 +821,8 @@
    "refs": 75,
    "refs_printed": 1.0,
    "refs_missing": [],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 12,
    "names_printed": 1.0
@@ -867,6 +877,8 @@
     "MH3",
     "MH4"
    ],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 40,
    "names_printed": 0.975
@@ -884,7 +896,8 @@
   "license": "MIT",
   "reasons": [],
   "notes": [
-   "the PDF carries its netlist: read it drawing-only"
+   "the PDF carries its netlist: read it drawing-only",
+   "8 instances of repeated channels, drawn once"
   ],
   "files": {
    "pdf": "34bff34c3350dca80db753cc52c7a113ceeeaedf140abfa09cf1a01316d5a2fe",
@@ -919,6 +932,11 @@
    "refs": 380,
    "refs_printed": 0.974,
    "refs_missing": [
+    "DC-",
+    "ENC_VSEL"
+   ],
+   "refs_unprinted": [],
+   "refs_channel": [
     "1U1",
     "1U2",
     "1U3",
@@ -926,9 +944,7 @@
     "2U2",
     "2U3",
     "3U1",
-    "3U2",
-    "DC-",
-    "ENC_VSEL"
+    "3U2"
    ],
    "refs_extra": [
     "R0005"
@@ -983,6 +999,8 @@
     "U$10",
     "U$11"
    ],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [
     "L14",
     "L15",
@@ -1002,9 +1020,7 @@
   "repo": "https://github.com/parallella/parallella-hw",
   "commit": "a6bcdf844c56366525bef73d3355c75bba19e3f5",
   "license": "CC-BY-SA-3.0-US",
-  "reasons": [
-   "149 of 610 designators not in the PDF"
-  ],
+  "reasons": [],
   "notes": [
    "truth from the board, which can drift from the drawing"
   ],
@@ -1038,35 +1054,16 @@
   },
   "text": {
    "refs": 610,
-   "refs_printed": 0.756,
-   "refs_missing": [
-    "R100",
-    "R101",
-    "R102",
-    "R103",
-    "R104",
-    "R105",
-    "R106",
-    "R107",
-    "R108",
-    "R109",
-    "R110",
-    "R111",
-    "R112",
-    "R113",
-    "R114",
-    "R115",
-    "R116",
-    "R117",
-    "R118",
-    "R119"
-   ],
+   "refs_printed": 1.0,
+   "refs_missing": [],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [],
    "names": 608,
    "names_printed": 0.946
   },
   "evidence": "text",
-  "decision": "quarantine"
+  "decision": "verified"
  },
  {
   "name": "sh-esp32",
@@ -1150,11 +1147,10 @@
   },
   "text": {
    "refs": 47,
-   "refs_printed": 0.957,
-   "refs_missing": [
-    "SCT1",
-    "SCTI1"
-   ],
+   "refs_printed": 1.0,
+   "refs_missing": [],
+   "refs_unprinted": [],
+   "refs_channel": [],
    "refs_extra": [
     "L7808"
    ],
@@ -1172,10 +1168,10 @@
   "repo": "https://github.com/tenbaht/tonuino-battery-board",
   "commit": "dc583292e2764f140e634881cd6db80dc43a5bd5",
   "license": "CC0-1.0",
-  "reasons": [
-   "4 of 66 designators not in the PDF"
+  "reasons": [],
+  "notes": [
+   "4 parts the source does not print"
   ],
-  "notes": [],
   "files": {
    "pdf": "9de318bedc3a5ec6cb8d08653e4d2163207130e9cb118798c549f7a8205cb312",
    "truth": "f3f4dcabc22f1d43e5adb740acf31879e82c57013357b99817772d9c304e2f18",
@@ -1206,12 +1202,14 @@
   "text": {
    "refs": 66,
    "refs_printed": 0.939,
-   "refs_missing": [
+   "refs_missing": [],
+   "refs_unprinted": [
     "H1",
     "H2",
     "H3",
     "H4"
    ],
+   "refs_channel": [],
    "refs_extra": [
     "TP4056"
    ],
@@ -1219,7 +1217,7 @@
    "names_printed": 1.0
   },
   "evidence": "text",
-  "decision": "quarantine"
+  "decision": "verified"
  },
  {
   "name": "urti-mainboard",
@@ -1359,7 +1357,7 @@
   "commit": "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4",
   "license": "CERN-OHL-W-2.0",
   "reasons": [
-   "its netlist differs from yellow's"
+   "mismatch: its netlist differs from yellow's"
   ],
   "notes": [],
   "files": {
@@ -1402,7 +1400,7 @@
   "commit": "c3d51b80e40ea01e34ef65c7d0aecc16a37980d4",
   "license": "CERN-OHL-W-2.0",
   "reasons": [
-   "its netlist differs from yellow's"
+   "mismatch: its netlist differs from yellow's"
   ],
   "notes": [],
   "files": {

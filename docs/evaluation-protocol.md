@@ -19,12 +19,15 @@ is a separate question, answered apart and never counted as more designs.
 - A corpus manifest `bench/corpus_<name>.toml` with `tier = "independent"` and
   `holdout_share = 1.0`. It stores references only: repository, commit, paths,
   licence.
-- Eligibility comes before any reading: `verify-corpus` admits a design only with
-  export, carried-netlist or text evidence (docs/benchmark.md, "Verifying a corpus").
-  Revision-only evidence, an unchecked fork, a missing licence, a used repository,
-  owner or fork parent, or nine tenths of nets shared with any built design keeps it
-  out. Quarantined designs are listed with their reasons and never replaced by
-  looser ones after the seal.
+- Eligibility comes before any reading and never depends on how well schem2net could
+  read a design: `verify-corpus` (docs/benchmark.md, "Verifying a corpus") keeps a
+  design out only for a mismatch between PDF, source and truth, for provenance (used
+  repository, owner or fork parent; nine tenths of nets shared with any built
+  design; no licence; fork status unchecked), or for scope (not built, unreadable
+  file, an image rather than a vector drawing). Outlined or stroked text, unusual
+  fonts and colours are no reason: such a PDF rests on its revision, and results are
+  reported by evidence. Every exclusion is listed with its kind and never replaced by
+  a looser pair after the seal.
 - The copy check reads the truth netlists of every built corpus, holdouts included,
   and nothing else of them: no PDF, prediction or score.
 - Discovery logs every repository looked at and why it was turned away
@@ -32,9 +35,16 @@ is a separate question, answered apart and never counted as more designs.
 - Groups: one per repository owner; known families and ports merge. At most two
   circuits per repository and three per group. Different PDFs of one circuit are one
   design; a revision sharing nine tenths of its nets is the same group.
-- Board-derived truth (OrCAD, some Altium) needs printed-text agreement; where the
-  PDF carries the schematic's netlist, that netlist is the truth and the board only
-  a cross-check.
+- Truth is never edited to agree with a drawing or the extractor. Three cases:
+  - Parts the source does not print (hidden designators, as mounting holes): kept in
+    the truth and scored like any part; the report gives their pins per design.
+  - A repeated channel drawn once (an Altium "logical" print shows `U3` for `1U3`,
+    `2U3`): kept, every instance in the truth; the design is admitted and named in
+    the report, as no drawing of it can name the instances.
+  - Board-derived truth (OrCAD, some Altium): admitted only with printed-text
+    agreement both ways, as any published PDF. Where the PDF carries the schematic's
+    netlist, that is the truth and the board only a cross-check. A drawing that
+    shows parts the truth lacks (front-panel parts off the board) is a mismatch.
 
 ## Freeze
 
@@ -77,27 +87,23 @@ repository; NC or unlicensed designs are scored locally and named as such.
 ## Lessons of the pilot (corpus P)
 
 The exploratory pilot (bench/corpus_p.toml, 20 designs from 20 new owners, 11
-renderings) admitted 15 designs and 9 renderings. Its verifier kept out:
+renderings) admitted 18 designs and 9 renderings. Kept out: a raster PDF and an
+Altium board KiCad could not import (scope), and the KiCad 7 and 8 renderings of a
+KiCad 10-era design, whose own netlists differ from the design's (mismatch). In
+corpus X an Altium PDF's carried netlist lacks the panel parts its drawing shows.
 
-- a PDF exported seconds before parts were added to the source (EasyEDA);
-- a board-derived truth 149 designators away from its PDF (OrCAD), and in corpus X an
-  Altium PDF whose carried netlist lacks the panel parts the drawing shows;
-- mounting holes connected in the truth whose names the PDF does not print;
-- a raster PDF; an Altium board KiCad could not import (out of memory);
-- KiCad 7 and 8 renderings of a KiCad 10-era design, whose own netlists differ from
-  the design's: an older version reads one of its nets otherwise.
+A first version of the checker also turned away three hard but valid designs: two
+EasyEDA PDFs whose sources hide some designators, and an OrCAD print that runs each
+designator into its value. Admitted, they lowered the pilot's pooled pin accuracy
+from 0.847 to 0.783: excluding what is hard to read flatters the result.
 
-Published KiCad PDFs that outline their text were admitted as renderings on their
-revision alone; the extractor reads nothing from them. Licensed Altium and OrCAD
-pairs were scarce: 3 of 4 Altium and 1 of 3 OrCAD candidates were admitted.
+Published KiCad PDFs that outline their text are admitted on their revision; the
+extractor reads nothing from them. Licensed Altium and OrCAD pairs were scarce.
 
-## Open before registering
+## Decisions before registering
 
-- Each generator's eligible pool, measured by discovery alone; at the pilot's yield
-  (about 3 of 4 candidates admitted, fewer for OrCAD), 8 groups per generator needs
-  roughly 12 candidates each, 15 or more for OrCAD and Altium.
-- Whether designs whose truth names unprinted parts (mounting holes) should be
-  admitted with those parts left out of scoring, decided before discovery.
-- Margins and minimum sample per generator for a claim.
-- A rule for repeated channels drawn once (Altium "logical" prints): admitted now,
-  the truth holding every channel.
+- Supply per generator, from discovery alone: at the pilot's yield, about 12
+  candidates for 8 groups, 15 or more for Altium and OrCAD.
+- Margins and the minimum number of groups per generator for a claim of its own.
+- Whether revision-only designs count in the headline figure or only in their
+  stratum.

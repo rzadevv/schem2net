@@ -29,12 +29,17 @@ SECONDS = 1800  # a design still being read after this has failed
 LEARNED = ("roles.npz", "designators.npz", "groups.npz", "eagle_font.json", "eagle_fills.json")
 
 
+def _records(corpus: corpora.Corpus) -> dict[str, dict]:
+    path = corpus.root / f"verified_{corpus.name}.json"
+    return {r["name"]: r for r in json.loads(path.read_text())}
+
+
 def admitted(corpus: corpora.Corpus) -> list[corpora.Project]:
     """The corpus's designs verify-corpus admitted, each checked to be unchanged."""
     path = corpus.root / f"verified_{corpus.name}.json"
     if not path.exists():
         raise ValueError(f"{path} is missing: run verify-corpus {corpus.name} first")
-    records = {r["name"]: r for r in json.loads(path.read_text())}
+    records = _records(corpus)
     split = "holdout" if corpus.tier == "independent" else "all"
     found = []
     for p in sorted(corpus.projects, key=lambda p: p.name):
@@ -87,6 +92,7 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
     """Scores of the saved predictions: per design, generator and group, with grouped
     intervals, in the form bench-compare reads."""
     designs, extra, groups = {}, {}, {}
+    records = _records(corpus)
     for p in admitted(corpus):
         truth = kicad.read_netlist(corpus.build_dir(p) / "truth.net")
         saved = out / f"{p.name}.json"
@@ -107,7 +113,21 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
             counts = score(Design(source=truth.source), truth)
             found = {"failed": record["error"]}
         designs[p.name] = counts
-        extra[p.name] = {"generator": generator(p), **found}
+        text = records[p.name].get("text") or {}
+        extra[p.name] = {
+            "generator": generator(p),
+            "evidence": records[p.name]["evidence"],
+            "unprinted": text.get("refs_unprinted", []),
+            # Scored as any pin: the truth is not changed, but how many there are is shown.
+            "unprinted_pins": sum(
+                ref in text.get("refs_unprinted", [])
+                for n in truth.nets
+                if len(set(n.pins)) >= 2
+                for ref, _ in set(n.pins)
+            ),
+            "channels": text.get("refs_channel", []),
+            **found,
+        }
         if p.variant_of:
             extra[p.name]["variant_of"] = p.variant_of
         groups[p.name] = corpus.groups[p.name]
@@ -131,6 +151,10 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
             "total": summary([designs[n] for n in chosen]),
             "failed": sum("failed" in extra[n] for n in chosen),
         }
+    by_evidence = {
+        e: summary([designs[n] for n in names if extra[n]["evidence"] == e])
+        for e in sorted({extra[n]["evidence"] for n in names})
+    }
     return {
         "corpus": corpus.name,
         "tier": corpus.tier,
@@ -139,6 +163,7 @@ def report(corpus: corpora.Corpus, out: Path) -> dict:
         "total": summary([designs[n] for n in names]),
         "intervals": intervals([designs[n] for n in names], [groups[n] for n in names]),
         "by_generator": by_generator,
+        "by_evidence": by_evidence,
         "renderings": renderings,
         "designs": {n: asdict(designs[n]) for n in names},  # what bench-compare reads
         "rendering_counts": {n: asdict(c) for n, c in designs.items() if n not in names},

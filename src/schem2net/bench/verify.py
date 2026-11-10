@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pypdfium2 as pdfium
 
-from schem2net import kicad
+from schem2net import kicad, sexpr
 from schem2net.bench import corpus as corpora
 from schem2net.bench.score import score
 from schem2net.refdes import split_ref
@@ -54,7 +54,7 @@ def verify(corpus: corpora.Corpus, references: list[Path], github=None) -> list[
     for r in records.values():  # a rendering stands or falls with its design
         base = records.get(r.get("variant_of"))
         if base and base["decision"] != "verified" and r["decision"] == "verified":
-            r["reasons"].append(f"{base['name']}, which it renders, is not admitted")
+            r["reasons"].append(f"rendering: {base['name']}, which it renders, is not admitted")
             r["decision"] = "quarantine"
     return list(records.values())
 
@@ -122,7 +122,7 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     blocking, notes = [], []
     record["reasons"], record["notes"] = blocking, notes
     if not corpus.is_built(project):
-        blocking.append("not built: no schematic.pdf or truth.net")
+        blocking.append("scope: not built: no schematic.pdf or truth.net")
         record["decision"] = "missing"
         return record
 
@@ -138,23 +138,23 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     truth = kicad.read_netlist(out / "truth.net")
     nets = corpora._true_nets(out)
     if not nets:
-        blocking.append("the truth has no connected nets")
+        blocking.append("scope: the truth has no connected nets")
     near = max(((corpora._jaccard(nets, n), k) for k, n in others.items()), default=(0.0, None))
     record["closest"] = {"design": near[1], "shared_nets": round(near[0], 3)}
     if near[0] >= corpora.SAME_DESIGN:
-        blocking.append(f"the same design as {near[1]} ({near[0]:.0%} of nets)")
+        blocking.append(f"provenance: the same design as {near[1]} ({near[0]:.0%} of nets)")
     if project.variant_of:
         record["variant_of"] = project.variant_of
         base = next((q for q in corpus.projects if q.name == project.variant_of), None)
         if base is not None and base.variant_of:
-            blocking.append(f"{project.variant_of} is itself a rendering")
+            blocking.append(f"rendering: {project.variant_of} is itself a rendering")
         elif base is None or not corpus.is_built(base):
-            blocking.append(f"{project.variant_of}, which it renders, is not built")
+            blocking.append(f"rendering: {project.variant_of}, which it renders, is not built")
         elif corpora._true_nets(corpus.build_dir(base)) != nets:
-            blocking.append(f"its netlist differs from {project.variant_of}'s")
+            blocking.append(f"mismatch: its netlist differs from {project.variant_of}'s")
 
     if not project.license:
-        blocking.append("no licence recorded")
+        blocking.append("provenance: no licence recorded")
     elif project.license.lower() in ("none", "noassertion"):
         notes.append("no licence: score locally, never redistribute")
     if clone and project.license:
@@ -163,7 +163,7 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     try:
         doc = pdfium.PdfDocument(out / "schematic.pdf")
     except pdfium.PdfiumError as e:
-        blocking.append(f"the PDF cannot be read: {e}")
+        blocking.append(f"scope: the PDF cannot be read: {e}")
         record["decision"] = "quarantine"
         return record
     try:
@@ -183,14 +183,16 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     sheets = _sheets(out)
     record["sheets"] = sheets
     if drawn < VECTOR * pages:
-        blocking.append("not a vector drawing: an image of one, which schem2net does not read")
+        blocking.append(
+            "scope: not a vector drawing: an image of one, which schem2net does not read"
+        )
     if sheets and pages < sheets:
-        blocking.append(f"the PDF has {pages} pages for {sheets} sheets")
+        blocking.append(f"mismatch: the PDF has {pages} pages for {sheets} sheets")
 
     tokens = TOKEN.findall(text)
     record["evidence"] = _evidence(project, out, truth, tokens, clone, record, blocking, notes)
-    if corpus.tier == "independent" and record["evidence"] == "revision only":
-        blocking.append("no text layer to check the PDF against its truth")
+    if record["evidence"] == "revision only" and not (clone and project.pdf):
+        blocking.append("evidence: no readable text, and no commit ties the PDF to its source")
     record["decision"] = "quarantine" if blocking else "verified"
     return record
 
@@ -222,7 +224,7 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
         record["last_changed"] = changed
         pdf_time = changed.get("pdf_file")
         if pdf_time and any(t and t > pdf_time for k, t in changed.items() if k != "pdf_file"):
-            blocking.append("the PDF is older than the source's last change")
+            blocking.append("mismatch: the PDF is older than the source's last change")
 
     refs = {c.ref for c in truth.components if not c.ref.startswith("#")}
     printed = set(tokens)
@@ -231,6 +233,24 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
         return "carried netlist" if carried else "revision only"
 
     found = refs & (printed | {_base(t) for t in printed})
+    # A designator run into its own value, as some printers set them: R100100.0.
+    values = {c.ref: c.value.split()[0] for c in truth.components if c.value and c.value.split()}
+    for t in printed:
+        for k in range(2, min(len(t), 12)):
+            if t[:k] in values and t[k:].startswith(values[t[:k]]):
+                found.add(t[:k])
+    # Not printed by design: designators the source hides, and a repeated channel's
+    # instances (1U1, U1_CH2) where the channel's own designator (U1) is printed.
+    unprinted = (refs - found) & _hidden(project, out, clone)
+    drawn = {t for t in printed if split_ref(t)}
+    channels = {
+        r
+        for r in refs - found - unprinted
+        for b in drawn
+        if r != b
+        and (re.fullmatch(r"\d+_?", r[: -len(b)]) and r.endswith(b) or r.startswith(b + "_"))
+    }
+    missing = refs - found - unprinted - channels
     prefixes = {m.group(1) for r in refs if (m := split_ref(r))}
     # Pin names and numbers print beside pins; on a ball grid, a ball's row and column
     # read like a designator (C14), so a grid's rows are no evidence of extra parts.
@@ -260,17 +280,25 @@ def _evidence(project, out, truth, tokens, clone, record, blocking, notes) -> st
     record["text"] = {
         "refs": len(refs),
         "refs_printed": round(len(found) / len(refs), 3) if refs else None,
-        "refs_missing": sorted(refs - found)[:20],
+        "refs_missing": sorted(missing)[:20],
+        "refs_unprinted": sorted(unprinted),
+        "refs_channel": sorted(channels)[:20],
         "refs_extra": extra[:20],
         "names": len(names),
         "names_printed": round(len(named) / len(names), 3) if names else None,
     }
-    if refs and len(found) < REF_COVERAGE * len(refs):
-        blocking.append(f"{len(refs) - len(found)} of {len(refs)} designators not in the PDF")
+    if unprinted:
+        notes.append(f"{len(unprinted)} parts the source does not print")
+    if channels:
+        notes.append(f"{len(channels)} instances of repeated channels, drawn once")
+    if refs and len(missing) > (1 - REF_COVERAGE) * len(refs):
+        blocking.append(f"mismatch: {len(missing)} of {len(refs)} designators not in the PDF")
     if len(extra) > max(3, EXTRA_REFS * len(refs)):
-        blocking.append(f"the PDF names {len(extra)} parts the truth lacks")
+        blocking.append(f"mismatch: the PDF names {len(extra)} parts the truth lacks")
     if names and len(named) < NAME_COVERAGE * len(names):
-        blocking.append(f"{len(names) - len(named)} of {len(names)} net names not in the PDF")
+        blocking.append(
+            f"mismatch: {len(names) - len(named)} of {len(names)} net names not in the PDF"
+        )
     return "carried netlist" if carried else "text"
 
 
@@ -282,17 +310,17 @@ def _lineage(project, seen, fork_of, record, blocking, notes) -> None:
     repo = _normal(url)
     owners = {_owner(r): where for r, where in seen.items() if _owner(r)}
     if repo in seen:
-        blocking.append(f"repository already in {seen[repo]}")
+        blocking.append(f"provenance: repository already in {seen[repo]}")
     elif _owner(repo) in owners:
-        blocking.append(f"owner already in {owners[_owner(repo)]}")
+        blocking.append(f"provenance: owner already in {owners[_owner(repo)]}")
     parent = fork_of(repo)
     record["fork_of"] = parent
     if parent == "unchecked":
         notes.append("fork status unchecked")
         if record["tier"] == "independent":
-            blocking.append("fork status unchecked")
+            blocking.append("provenance: fork status unchecked")
     elif parent and (_normal(parent) in seen or _owner(_normal(parent)) in owners):
-        blocking.append(f"a fork of {parent}, already used")
+        blocking.append(f"provenance: a fork of {parent}, already used")
 
 
 def generator(project) -> str:
@@ -321,6 +349,38 @@ def _sheets(out: Path) -> int | None:
         return len(re.findall(r"<sheet>", (out / "schematic.sch").read_text(errors="replace")))
     found = re.findall(r"\(sheet \(number ", (out / "truth.net").read_text(errors="replace"))
     return len(found) or None
+
+
+def _hidden(project, out: Path, clone: Path | None) -> set[str]:
+    """Designators the source draws hidden: EasyEDA's text flag, KiCad's `hide`."""
+    if project.easyeda:
+        text = (out / "schematic.json").read_text(errors="replace")
+        return set(re.findall(r"~comment~([^~]+)~0~", text))
+    if not (project.schematic and clone):
+        return set()  # Eagle, Altium and OrCAD sources are not read here
+    found = set()
+    for path in clone.rglob("*.kicad_sch"):
+        for symbol in sexpr.children(sexpr.parse(path.read_text(errors="replace")), "symbol"):
+            ref = next((p for p in sexpr.children(symbol, "property") if p[1] == "Reference"), None)
+            if ref is not None and _hides(ref):
+                found |= {ref[2], *_find_all(symbol, "reference")}
+    return found
+
+
+def _hides(node) -> bool:
+    """A KiCad node marked hidden: a bare `hide`, or `(hide yes)`, at any depth."""
+    return any(
+        n == "hide" or (isinstance(n, list) and (n[:2] == ["hide", "yes"] or _hides(n)))
+        for n in node[1:]
+    )
+
+
+def _find_all(node, head: str) -> list[str]:
+    found = []
+    for n in node:
+        if isinstance(n, list):
+            found += [n[1]] if n and n[0] == head and len(n) > 1 else _find_all(n, head)
+    return found
 
 
 def _version(clone, project) -> str | None:
