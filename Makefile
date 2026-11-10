@@ -87,7 +87,7 @@ eval-image:
 	  name=$${side%%:*}; rev=$${side#*:}; src=$(EVAL_DIR)/src-$$name; mkdir -p $$src; \
 	  git archive $$rev | tar -x -C $$src; \
 	  SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct $$rev) uv build -q --wheel $$src -o $(EVAL_DIR)/$$name; \
-	  uv export -q --frozen --no-dev --no-emit-project --project $$src -o $(EVAL_DIR)/requirements-$$name.txt; \
+	  uv export -q --frozen --no-dev --no-emit-project --no-header --project $$src -o $(EVAL_DIR)/requirements-$$name.txt; \
 	done
 	diff -I '^#' $(EVAL_DIR)/requirements-runner.txt $(EVAL_DIR)/requirements-candidate.txt
 	diff -I '^#' $(EVAL_DIR)/requirements-runner.txt $(EVAL_DIR)/requirements-comparator.txt
