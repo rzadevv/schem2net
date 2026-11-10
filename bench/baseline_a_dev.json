@@ -3,52 +3,52 @@
   "split": "dev",
   "folds": null,
   "total": {
-    "pin_accuracy": 0.9220707049117257,
-    "signal_pin_accuracy": 0.944541174953247,
-    "net_exact": 0.8926319936958235,
-    "connection_precision": 0.9982353022274714,
-    "connection_recall": 0.8984856820221792,
-    "connection_f1": 0.9457375478927204,
+    "pin_accuracy": 0.9248920617278673,
+    "signal_pin_accuracy": 0.9487973173405558,
+    "net_exact": 0.9036643026004728,
+    "connection_precision": 0.9988008270158512,
+    "connection_recall": 0.8991971343362605,
+    "connection_f1": 0.9463854648036935,
     "component_precision": 0.9957199109741482,
     "component_recall": 0.9724126400267514,
     "value_accuracy": 0.44505683775404753,
-    "flag_recall": 0.3401709401709402,
-    "flag_precision": 0.8652173913043478,
+    "flag_recall": 0.3416030534351145,
+    "flag_precision": 0.8523809523809524,
     "perfect_designs": 0.30612244897959184,
-    "silent_error_rate": 0.002607617663403582,
-    "pin_flag_recall": 0.7781818181818182,
+    "silent_error_rate": 0.000598469627666396,
+    "pin_flag_recall": 0.9330143540669856,
     "missed_pin_rate": 0.06617364168768435,
     "extra_pin_rate": 0.00017099132219039885,
-    "review_items_per_100_pins": 2.6033428803488223,
-    "review_precision": 0.4121510673234811,
-    "designs_without_silent_errors": 0.8775510204081632,
-    "macro_pin_accuracy": 0.9439111515753411,
-    "macro_connection_f1": 0.9210720723517576
+    "review_items_per_100_pins": 2.5734193989655023,
+    "review_precision": 0.38704318936877075,
+    "designs_without_silent_errors": 0.8979591836734694,
+    "macro_pin_accuracy": 0.9443455071413952,
+    "macro_connection_f1": 0.9218308797904285
   },
   "intervals": {
     "pin_accuracy": [
-      0.8776384435384481,
-      0.9555685780840419
+      0.8778894405007338,
+      0.9603136195363433
     ],
     "signal_pin_accuracy": [
-      0.9035123650516774,
-      0.9669522286656083
+      0.9043981529144998,
+      0.9726376799958358
     ],
     "net_exact": [
-      0.8471627172479617,
-      0.9206448513643498
+      0.8485116915785446,
+      0.9414936035408901
     ],
     "connection_precision": [
-      0.9683143417417169,
-      0.9991196971836245
+      0.970609899479001,
+      0.9996127017194508
     ],
     "connection_recall": [
       0.39775878083141186,
-      0.9318737003845803
+      0.9326413487275863
     ],
     "connection_f1": [
-      0.5664675505549533,
-      0.9640387195591965
+      0.5669687629913214,
+      0.9646842657754846
     ],
     "component_precision": [
       0.9919455607512123,
@@ -63,11 +63,11 @@
       0.824139714227029
     ],
     "flag_recall": [
-      0.217620794255115,
-      0.4856730245437759
+      0.21263061650992685,
+      0.5064978354978354
     ],
     "flag_precision": [
-      0.7863152289669861,
+      0.7289113945661186,
       0.9448289437958186
     ],
     "perfect_designs": [
@@ -75,12 +75,12 @@
       0.44680851063829785
     ],
     "silent_error_rate": [
-      0.00044206304757850366,
-      0.0047293206977006156
+      0.0001541685237770388,
+      0.0014508118374520586
     ],
     "pin_flag_recall": [
-      0.6626075493806495,
-      0.9549857292532244
+      0.8446601941747572,
+      0.9818236254763201
     ],
     "missed_pin_rate": [
       0.030019192960822484,
@@ -91,24 +91,24 @@
       0.0004804507739379747
     ],
     "review_items_per_100_pins": [
-      1.6121157420330552,
-      4.736246521486587
+      1.5041015098053345,
+      4.814863792064062
     ],
     "review_precision": [
-      0.2710206291315249,
-      0.5738325722175022
+      0.25555101199782476,
+      0.5446880350190842
     ],
     "designs_without_silent_errors": [
-      0.7799444444444444,
-      0.96
+      0.8,
+      0.9791666666666666
     ],
     "macro_pin_accuracy": [
-      0.9220079698018587,
-      0.9616619318657263
+      0.9226063006877606,
+      0.962175859368272
     ],
     "macro_connection_f1": [
-      0.8682115197204678,
-      0.9587358218620816
+      0.8691977536056884,
+      0.9593827662048781
     ]
   },
   "designs": {
@@ -416,29 +416,29 @@
       "designs": 1,
       "perfect_designs": 0,
       "pins": 734,
-      "pins_correct": 676,
+      "pins_correct": 685,
       "signal_pins": 496,
-      "signal_pins_correct": 475,
+      "signal_pins_correct": 484,
       "nets": 209,
-      "nets_exact": 190,
+      "nets_exact": 196,
       "pairs_true": 421,
-      "pairs_predicted": 429,
+      "pairs_predicted": 397,
       "pairs_correct": 397,
       "refs_true": 160,
       "refs_predicted": 154,
       "refs_common": 154,
       "values_known": 154,
       "values_correct": 152,
-      "wrong_nets": 22,
+      "wrong_nets": 19,
       "flagged_nets": 14,
       "wrong_flagged": 14,
-      "pins_wrong": 19,
-      "pins_wrong_flagged": 11,
+      "pins_wrong": 10,
+      "pins_wrong_flagged": 10,
       "pins_missed": 39,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
-      "designs_without_silent_errors": 0,
-      "pin_issues": 13,
+      "designs_without_silent_errors": 1,
+      "pin_issues": 15,
       "pin_issues_wrong": 6,
       "pages_failed": 0
     },
@@ -738,7 +738,7 @@
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
-      "pin_issues": 5,
+      "pin_issues": 8,
       "pin_issues_wrong": 2,
       "pages_failed": 0
     },
@@ -836,30 +836,30 @@
       "designs": 1,
       "perfect_designs": 0,
       "pins": 6318,
-      "pins_correct": 6095,
+      "pins_correct": 6152,
       "signal_pins": 4789,
-      "signal_pins_correct": 4631,
+      "signal_pins_correct": 4688,
       "nets": 1307,
-      "nets_exact": 1227,
+      "nets_exact": 1277,
       "pairs_true": 215107,
-      "pairs_predicted": 200805,
-      "pairs_correct": 200648,
+      "pairs_predicted": 200886,
+      "pairs_correct": 200820,
       "refs_true": 1507,
       "refs_predicted": 1482,
       "refs_common": 1466,
       "values_known": 1466,
       "values_correct": 199,
-      "wrong_nets": 85,
-      "flagged_nets": 44,
-      "wrong_flagged": 32,
-      "pins_wrong": 103,
-      "pins_wrong_flagged": 62,
+      "wrong_nets": 27,
+      "flagged_nets": 24,
+      "wrong_flagged": 12,
+      "pins_wrong": 46,
+      "pins_wrong_flagged": 44,
       "pins_missed": 120,
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 0,
-      "pin_issues": 0,
-      "pin_issues_wrong": 0,
+      "pin_issues": 2,
+      "pin_issues_wrong": 1,
       "pages_failed": 0
     },
     "dmxsun-baseboard": {
@@ -978,7 +978,7 @@
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
-      "pin_issues": 4,
+      "pin_issues": 5,
       "pin_issues_wrong": 0,
       "pages_failed": 0
     },
@@ -1128,8 +1128,8 @@
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
-      "pin_issues": 14,
-      "pin_issues_wrong": 2,
+      "pin_issues": 15,
+      "pin_issues_wrong": 3,
       "pages_failed": 0
     },
     "mackerel-08": {
@@ -1188,7 +1188,7 @@
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
-      "pin_issues": 8,
+      "pin_issues": 9,
       "pin_issues_wrong": 0,
       "pages_failed": 0
     },
@@ -1488,7 +1488,7 @@
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
-      "pin_issues": 1,
+      "pin_issues": 3,
       "pin_issues_wrong": 1,
       "pages_failed": 0
     },
@@ -1578,7 +1578,7 @@
       "pins_missed_flagged": 0,
       "pins_extra": 0,
       "designs_without_silent_errors": 1,
-      "pin_issues": 68,
+      "pin_issues": 69,
       "pin_issues_wrong": 0,
       "pages_failed": 0
     }
