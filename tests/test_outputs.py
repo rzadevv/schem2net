@@ -400,19 +400,39 @@ def test_bench_compare_refuses_readings_taken_apart(tmp_path):
     from schem2net.bench.score import Counts
 
     designs = {"d": asdict(Counts(designs=1, pins=100, pins_correct=90))}
-    probe = {"seal": "s", "fonts": {"count": 0}, "dependencies": {"numpy": "2"}}
+    probe = {
+        "seal": "s",
+        "python": "3.13.15",
+        "machine": "x86_64",
+        "pdfium": "153",
+        "fonts": {"count": 0},
+        "dependencies": {"numpy": "2"},
+        "files": {"roles.npz": "r"},
+    }
 
-    def compare(**changed):
-        for name, run in (("a.json", probe | {"code": "old"}), ("b.json", probe | changed)):
-            (tmp_path / name).write_text(json.dumps({"designs": designs, "run": run}))
+    def compare(after):
+        for name, run in (("a.json", {"run": probe}), ("b.json", after)):
+            (tmp_path / name).write_text(json.dumps({"designs": designs, **run}))
         return CliRunner().invoke(
             cli.app, ["bench-compare", *(str(tmp_path / f"{n}.json") for n in "ab")]
         )
 
-    assert compare(code="new").exit_code == 0
-    for changed in ({"seal": "t"}, {"fonts": {"count": 3}}, {"dependencies": {"numpy": "3"}}):
-        result = compare(**changed)
-        assert result.exit_code == 1 and "read apart" in result.output
+    # Other code, models or declared dependencies: the candidate and comparator differ so.
+    alike = {"code": "new", "files": {"roles.npz": "s"}, "dependencies": {"numpy": "2", "x": "1"}}
+    assert compare({"run": probe | alike}).exit_code == 0
+    for changed in (
+        {"seal": "t"},
+        {"python": "3.12"},
+        {"machine": "aarch64"},
+        {"pdfium": "154"},
+        {"fonts": {"count": 3}},
+        {"dependencies": {"numpy": "3"}},
+        {"files": {"roles.npz": "r", "kicad-symbols.json.gz": "k"}},
+    ):
+        result = compare({"run": probe | changed})
+        assert result.exit_code == 1 and "read apart" in result.output, changed
+    result = compare({})
+    assert result.exit_code == 1 and "with a bench run" in result.output
 
 
 def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():

@@ -498,13 +498,21 @@ def bench_compare(before: Path, after: Path) -> None:
     if not names:
         typer.echo("no designs in common", err=True)
         raise typer.Exit(1)
-    # Two `evaluate` readings compare only under one seal, on one platform.
+    # Two `evaluate` readings compare only under one seal, on one platform, both with the
+    # same library or none; never with a `bench` run.
     probes = [run.get("run") for run in loaded]
+    if any(probes) and not all(probes):
+        typer.echo("cannot compare an evaluate reading with a bench run", err=True)
+        raise typer.Exit(1)
     if all(probes):
+        from schem2net.bench.reader import LEARNED
+
         deps = [p.get("dependencies", {}) for p in probes]
+        libs = [{k: v for k, v in p.get("files", {}).items() if k not in LEARNED} for p in probes]
         apart = [k for k in ("seal", "python", "machine", "pdfium", "fonts", "embedded")
                  if probes[0].get(k) != probes[1].get(k)]  # fmt: skip
         apart += [d for d in deps[0].keys() & deps[1].keys() if deps[0][d] != deps[1][d]]
+        apart += ["library"] * (libs[0] != libs[1])
         if apart:
             typer.echo(f"cannot compare runs read apart: {', '.join(sorted(apart))}", err=True)
             raise typer.Exit(1)
