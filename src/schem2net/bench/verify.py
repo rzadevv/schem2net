@@ -446,9 +446,10 @@ def _version(clone, project) -> str | None:
 
 
 def _license_file(clone, commit) -> dict | None:
-    names = _git(clone, "ls-tree", "--name-only", commit).split()
-    for name in names:
-        if re.match(r"(licen[cs]e|copying)", name, re.I):
+    # NUL-separated: names may hold spaces ("Eagle Licence/"); only files are licences.
+    for entry in _git(clone, "ls-tree", "-z", commit).split("\0"):
+        info, _, name = entry.partition("\t")
+        if info.split()[1:2] == ["blob"] and re.match(r"(licen[cs]e|copying)", name, re.I):
             return {"path": name, "blob": _blob(clone, commit, name)}
     return None
 
