@@ -7791,14 +7791,8 @@
    "generator": "orcad",
    "rank": 237,
    "repo": "https://github.com/tjd33/team14",
-   "commit": "c96b583e79fc5dea3a5f7e4499791793223eaf5b",
-   "license": "none",
-   "source": "docs/research/Debug_Devpack/swrc305/Cadence/Allegro/DevPack_Debug.brd",
-   "pdf": "docs/research/Debug_Devpack/swrc305/DevPack Debug_Schematic.pdf",
-   "decision": "admitted",
-   "name": "team14",
-   "group": "ti",
-   "reason": "hit has no PDF; first pair by path: TI's Debug DevPack, grouped as ti; no grant to TI's files"
+   "decision": "excluded",
+   "reason": "provenance: TI's Debug DevPack (SWRC305) shares TI's XDS110 debugger design family (TM4C1294) with corpus F's LAUNCHXL-CC1310 (SWRC319); excluded under the conservative design-family rule on 2026-11-11, before either extractor read the panel; not replaced"
   },
   {
    "generator": "orcad",
@@ -8993,10 +8987,10 @@
   "orcad": {
    "results": 392,
    "screened": 392,
-   "candidates": 32,
-   "admitted": 9,
-   "groups": 9,
-   "stopped": "results exhausted with 9 admitted"
+   "candidates": 31,
+   "admitted": 8,
+   "groups": 8,
+   "stopped": "results exhausted with 8 admitted"
   }
  },
  "notes": [
@@ -9010,16 +9004,17 @@
   "tjd33/team14 is a TI reference design; corpus F holds a different TI board taken from a third-party copy, so no exclusion rule applies.",
   "A naming clash left one build folder holding another design (pillforge/hardware held PW-Sat2/hardware's files); it was rebuilt from its own repository and re-verified before sealing, and every built published PDF was then checked against its manifest blob (104 of 104 equal). verify-corpus does not itself compare the built PDF with the manifest's blob.",
   "tjd33/team14 was checked against corpus F's TI LAUNCHXL-CC1310 (SWRC319): it is TI's Debug DevPack (SWRC305), a one-page XDS110 debugger board, against a four-page CC1310 LaunchPad; they share no net (net Jaccard 0.0) and only common passive and connector values, though both build TI's XDS110 debugger around a TM4C1294. Kept as a distinct design.",
-  "After verify-corpus learned to check builds against the manifest (#12), every design was rebuilt and re-verified on 2026-11-11: all decisions, reasons and content hashes are unchanged; only the 12 KiCad exports' PDF creation times differ, so the seal file was rewritten and its hash in the freeze record updated."
+  "After verify-corpus learned to check builds against the manifest (#12), every design was rebuilt and re-verified on 2026-11-11: all decisions, reasons and content hashes are unchanged; only the 12 KiCad exports' PDF creation times differ, so the seal file was rewritten and its hash in the freeze record updated.",
+  "2026-11-11, before either extractor read the panel: tjd33/team14 (TI Debug DevPack, SWRC305) was excluded under a conservative design-family rule, because it implements TI's XDS110 debugger (TM4C1294) as corpus F's LAUNCHXL-CC1310 (SWRC319) does; differing net sets do not show the subcircuits are independent. It was not replaced; the manifest dropped it, the seal was regenerated, and the other 129 records are unchanged."
  ],
  "totals": {
   "repositories_in_results": 2640,
   "looked_at": 1143,
   "not_reached": 1497,
-  "admitted": 60,
+  "admitted": 59,
   "quarantined": 56,
   "not_built": 14,
-  "excluded": 657,
+  "excluded": 658,
   "unavailable": 0,
   "past_the_stop": 38,
   "after_the_stop_not_judged": 318

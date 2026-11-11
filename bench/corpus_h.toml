@@ -1041,15 +1041,6 @@ license = "GPL-3.0"
 group = "shellalbert"
 
 [[project]]
-name = "team14"  # orcad, tjd33/team14
-repo = "https://github.com/tjd33/team14"
-commit = "c96b583e79fc5dea3a5f7e4499791793223eaf5b"
-pdf = "docs/research/Debug_Devpack/swrc305/DevPack Debug_Schematic.pdf"
-pcb = "docs/research/Debug_Devpack/swrc305/Cadence/Allegro/DevPack_Debug.brd"
-license = "none"
-group = "ti"
-
-[[project]]
 name = "maxome-mpcie-hw"  # orcad, mmbnetworks/Maxome_mPCIe_HW
 repo = "https://github.com/mmbnetworks/Maxome_mPCIe_HW"
 commit = "1b9a067300c4553072c0d5f6afceadafe50260bf"
