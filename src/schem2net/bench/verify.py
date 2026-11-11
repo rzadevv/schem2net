@@ -178,6 +178,8 @@ def _check(corpus, project, seen, others, fork_of) -> dict:
     for label, path in _sources(project).items():
         files[label] = _blob(clone, project.commit, path) if clone else None
     record["files"] = files
+    if project.repo:
+        blocking += _built_from(project, out, files, clone)
 
     _lineage(project, seen, fork_of, record, blocking, notes)
     truth = kicad.read_netlist(out / "truth.net")
@@ -486,9 +488,29 @@ def _clone(corpus, project) -> Path | None:
         return None
     slug = re.sub(r"[^A-Za-z0-9]+", "_", project.repo.removeprefix("https://github.com/"))
     for d in (corpus.root / "cache" / project.name, corpus.root / "cache" / "repos" / slug):
-        if (d / ".git").exists():
+        if (d / ".git").exists() and corpora._origin(d) == project.repo:
             return d
     return None
+
+
+def _built_from(project, out: Path, files: dict, clone: Path | None) -> list[str]:
+    """That the build is of the manifest's files at its commit: a published PDF byte for
+    byte, and every source the build recorded using (generated PDFs, boards, truths)."""
+    found = [] if clone else ["provenance: no clone of the manifest's repository to check against"]
+    if files.get("pdf_file") and corpora.git_blob(out / "schematic.pdf") != files["pdf_file"]:
+        found.append("provenance: the built PDF is not the manifest's PDF at its commit")
+    path = out / corpora.INPUTS
+    if not path.exists():
+        return [*found, "provenance: the build does not record what it was made from; rebuild it"]
+    used = json.loads(path.read_text())
+    if (used.get("repo"), used.get("commit")) != (project.repo, project.commit):
+        found.append("provenance: built from another repository or commit than the manifest's")
+    found += [
+        f"provenance: the built {label.removesuffix('_file')} is not the manifest's at its commit"
+        for label in _sources(project)
+        if label != "pdf_file" and used.get("files", {}).get(label) != files.get(label)
+    ]
+    return found
 
 
 def _blob(clone: Path, commit: str, path: str) -> str:
