@@ -9,6 +9,7 @@ stored in this repository.
 """
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -34,6 +35,7 @@ EXPORT_PDF = [
 ]  # fmt: skip
 EXPORT_NETLIST = ["sch", "export", "netlist", "-o", "/out/truth.net"]
 PCB_NETLIST = Path(__file__).with_name("pcb_netlist.py")
+INPUTS = "inputs.json"  # the repository, commit and file contents a build was made from
 
 
 @dataclass(frozen=True)
@@ -234,6 +236,8 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
                 shutil.copyfile(src / project.pdf, out / "schematic.pdf")
                 mounts = ["-v", f"{src.resolve()}:/src", "-v", f"{out.resolve()}:/out"]
                 _docker(image, mounts, [*EXPORT_NETLIST, f"/src/{project.schematic}"])
+                used = {"schematic_file": src / project.schematic, "pdf_file": src / project.pdf}
+                _record_inputs(project, out, used)
                 log(f"built {project.name}")
                 continue
             if project.repo:
@@ -247,6 +251,8 @@ def build(corpus: Corpus, image: str = IMAGE, log: Callable[[str], None] = print
             pdf = EXPORT_PDF if project.export is None else [*EXPORT_PDF[:5], *project.export]
             _docker(project.image or image, mounts, [*pdf, schematic])
             _docker(project.image or image, mounts, [*EXPORT_NETLIST, schematic])
+            used = {"schematic_file": src / project.schematic} if project.repo else {}
+            _record_inputs(project, out, used)
             log(f"built {project.name}")
         except subprocess.CalledProcessError as e:
             failed.append(project.name)
@@ -272,7 +278,9 @@ def _build_from_board(project: Project, cache: Path, out: Path, image: str) -> s
     mounts = ["-v", f"{pcb.parent.resolve()}:/w", "-v", f"{out.resolve()}:/out"]
     mounts += ["-v", f"{PCB_NETLIST.parent.resolve()}:/tools:ro", "--entrypoint", "python3"]
     _docker(image, mounts, [f"/tools/{PCB_NETLIST.name}", f"/w/{pcb.name}", "/out/board.net"])
-    return _choose_truth(out)
+    note = _choose_truth(out)
+    _record_inputs(project, out, {"pdf_file": pdf, "pcb_file": pcb})
+    return note
 
 
 def _build_from_eagle(project: Project, cache: Path, out: Path) -> None:
@@ -295,6 +303,8 @@ def _build_from_eagle(project: Project, cache: Path, out: Path) -> None:
             raise ValueError(f"{project.pdf_url} has sha256 {found}, not {project.sha256}")
     truth = eagle.read(source) if project.eagle else easyeda.read(source)
     (out / "truth.net").write_text(export.kicad_netlist(truth))
+    used = {"schematic_file": source} | ({"pdf_file": out / "schematic.pdf"} if project.pdf else {})
+    _record_inputs(project, out, used)
 
 
 def _choose_truth(out: Path) -> str:
@@ -346,12 +356,37 @@ def _show(repo: Path, commit: str, path: str, dest: Path) -> Path:
 
 
 def _checkout(project: Project, dest: Path) -> Path:
+    # The cache is named after the project: never build from another repository's.
+    if dest.exists() and (origin := _origin(dest)) != project.repo:
+        raise ValueError(f"{dest} holds {origin or 'no clone'}, not {project.repo}: remove it")
     if not dest.exists():
         _run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout", project.repo, str(dest)])
         patterns = SPARSE_PATTERNS + ([project.pdf] if project.pdf else [])
         _run(["git", "-C", str(dest), "sparse-checkout", "set", "--no-cone", *patterns])
     _run(["git", "-C", str(dest), "checkout", "--quiet", project.commit])
     return dest
+
+
+def _origin(clone: Path) -> str:
+    found = subprocess.run(
+        ["git", "-C", str(clone), "remote", "get-url", "origin"], capture_output=True, text=True
+    )
+    return found.stdout.strip()
+
+
+def _record_inputs(project: Project, out: Path, used: dict[str, Path]) -> None:
+    """Write what a build was made from, so verify-corpus can check it against the manifest."""
+    files = {label: git_blob(path) for label, path in used.items()}
+    record = {"repo": project.repo, "commit": project.commit, "files": files}
+    (out / INPUTS).write_text(json.dumps(record, indent=1) + "\n")
+
+
+def git_blob(path: Path) -> str:
+    """A file's git blob id, as the repository it came from names its contents."""
+    found = subprocess.run(
+        ["git", "hash-object", "--no-filters", str(path)], check=True, capture_output=True
+    )
+    return "git:" + found.stdout.decode().strip()
 
 
 def _docker(image: str, options: list[str], args: list[str]) -> None:

@@ -312,6 +312,10 @@ hashes to `bench/verified_<corpus>.json`:
   licence and licence file, source format version, PDF producer, export image and
   options. A licence must be determined: an SPDX id, or `none` where the source grants
   none; `none` and non-commercial designs are scored locally only, never redistributed.
+- That the build is of the manifest's files: a published PDF equal byte for byte to
+  the file at the pinned commit, and the repository, commit and input files the build
+  recorded using (`inputs.json`: source, published PDF, board) equal to the manifest's.
+  A KiCad design's sub-sheets are tied to it by the commit, not hashed one by one.
 - That it is new: not a repository, owner or fork parent of another corpus manifest
   or the November 5 panel, and sharing less than nine tenths of its true nets with
   any built design (`--against` adds folders, such as the November 5 pairs).
