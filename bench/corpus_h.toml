@@ -1,0 +1,1158 @@
+# Corpus H: the independent panel across generators, November 2026.
+# Drawn up by the registered procedure in bench/discovery_h.json, which lists every
+# repository looked at. Only references are stored; nothing here is redistributed.
+# `schem2net verify-corpus h` admits designs; it is read once, by `evaluate`, in the
+# image docs/evaluation-freeze.json records.
+
+tier = "independent"
+test_share = 0.0
+holdout_share = 1.0
+
+[[project]]
+name = "watchy-hardware"  # kicad, sqfmi/watchy-hardware
+repo = "https://github.com/sqfmi/watchy-hardware"
+commit = "5f147972aa2148d4971f3c41fc3ce39ff8c48131"
+schematic = "Watchy.kicad_sch"
+license = "MIT"
+group = "sqfmi"
+
+[[project]]
+name = "lofive"  # kicad, mwelling/lofive
+repo = "https://github.com/mwelling/lofive"
+commit = "5fc40cf4dac614c5fad7ead5ae921530e3aaff5b"
+schematic = "lofive.kicad_sch"
+license = "CERN-OHL-1.2"
+group = "mwelling"
+
+[[project]]
+name = "openmd"  # kicad, CrabLabsLLC/OpenMD
+repo = "https://github.com/CrabLabsLLC/OpenMD"
+commit = "eb1391f8835dba4dacc9a02d61a9661879741760"
+schematic = "OpenMD.kicad_sch"
+license = "CERN-OHL-W-2.0"
+group = "crablabsllc"
+
+[[project]]
+name = "neptune"  # kicad, Board-Folk/Neptune
+repo = "https://github.com/Board-Folk/Neptune"
+commit = "0592d4f2e3f2fa0fae207f9401185fb60e7a8757"
+schematic = "Neptune.kicad_sch"
+license = "LicenseRef-Neptune-README"
+group = "board-folk"
+
+[[project]]
+name = "c64-250407-replica-kicad"  # kicad, bwack/C64-250407-Replica-KiCad
+repo = "https://github.com/bwack/C64-250407-Replica-KiCad"
+commit = "9bf17bb868248b12fb12210d66be3a37ec4ab832"
+schematic = "250407_.kicad_sch"
+license = "CERN-OHL-1.2"
+group = "bwack"
+
+[[project]]
+name = "lmn-3-ecad"  # kicad, FundamentalFrequency/LMN-3-ECAD
+repo = "https://github.com/FundamentalFrequency/LMN-3-ECAD"
+commit = "50d2c45e16e1ee7fad9bb02201d868b20618fb32"
+schematic = "LMN.kicad_sch"
+license = "CC-BY-SA-4.0"
+group = "fundamentalfrequency"
+
+[[project]]
+name = "lu-i-neuron-pcb"  # kicad, giant-axon/lu.i-neuron-pcb
+repo = "https://github.com/giant-axon/lu.i-neuron-pcb"
+commit = "0b2c0193595873fb41765e0a5293f15f4c8057b1"
+schematic = "neuron.kicad_sch"
+license = "CERN-OHL-S-2.0"
+group = "giant-axon"
+
+[[project]]
+name = "ucm4"  # kicad, v3l0c1r4pt0r/ucm4
+repo = "https://github.com/v3l0c1r4pt0r/ucm4"
+commit = "89e54ad828bee31be3e238a52130e9f1f85247aa"
+schematic = "uCM4.kicad_sch"
+license = "CC-BY-4.0"
+group = "v3l0c1r4pt0r"
+
+[[project]]
+name = "synth-diy"  # kicad, tpcarlson/synth-diy
+repo = "https://github.com/tpcarlson/synth-diy"
+commit = "5feb309ec455806043c22cf91e54053d5b05a9ec"
+schematic = "d6/d6.kicad_sch"
+license = "CC-BY-NC-SA-4.0"
+group = "tpcarlson"
+
+[[project]]
+name = "kim-1"  # kicad, eduardocasino/kim-1
+repo = "https://github.com/eduardocasino/kim-1"
+commit = "7b356b6386422cc6f7154b3524b0a9011ce33bfb"
+schematic = "kim-1.kicad_sch"
+license = "CC-BY-4.0"
+group = "eduardocasino"
+
+[[project]]
+name = "voltlink"  # kicad, voltlog/VoltLink
+repo = "https://github.com/voltlog/VoltLink"
+commit = "5126a32b2f90aeaa2bb9ea8ffe1bd5db8b5b7410"
+schematic = "link.kicad_sch"
+license = "none"
+group = "voltlog"
+
+[[project]]
+name = "dasbob"  # kicad, GroooveBob/DASBOB
+repo = "https://github.com/GroooveBob/DASBOB"
+commit = "3f49ddac9fb9662ea49f08911d3c19c4b817b7bf"
+schematic = "dasbob.kicad_sch"
+license = "MIT"
+group = "grooovebob"
+
+[[project]]
+name = "hoverboard-board-hack"  # eagle, salviador/Hoverboard-Board-Hack
+repo = "https://github.com/salviador/Hoverboard-Board-Hack"
+commit = "c15b124d3175eac06ffee515198df17567ac7890"
+eagle = "BOARD- VIEW.sch"
+pdf = "BOARD- VIEW.pdf"
+license = "none"
+group = "salviador"
+
+[[project]]
+name = "c64-magic-desk-512k"  # eagle, msolajic/c64-magic-desk-512k
+repo = "https://github.com/msolajic/c64-magic-desk-512k"
+commit = "11ffbb46bfd3ebc6e025625bfb1f5a85a7e93b15"
+eagle = "MDCC_512k.sch"
+pdf = "MDCC_512k_sch.pdf"
+license = "GPL-3.0"
+group = "msolajic"
+
+[[project]]
+name = "easycontroller2"  # eagle, pgrady3/EasyController2
+repo = "https://github.com/pgrady3/EasyController2"
+commit = "77c4033c304ca197fab796da4d254a0c4c5c44bc"
+eagle = "board/main.sch"
+pdf = "board/main.pdf"
+license = "Unlicense"
+group = "pgrady3"
+
+[[project]]
+name = "signalsurge"  # eagle, rfrht/SignalSurge
+repo = "https://github.com/rfrht/SignalSurge"
+commit = "18696e7a2bf36473ef5ba8927e7aec3931c24f85"
+eagle = "CAD/SS.sch"
+pdf = "others/SS.pdf"
+license = "GPL-3.0"
+group = "rfrht"
+
+[[project]]
+name = "nrf8001-breakout-board"  # eagle, nabilt/nRF8001-Breakout-Board
+repo = "https://github.com/nabilt/nRF8001-Breakout-Board"
+commit = "934d5c9fef5e4db8ab3cc1d7a887e3bdadb1648d"
+eagle = "bluetooth.sch"
+pdf = "bluetooth_sch.pdf"
+license = "CC-BY-SA-3.0"
+group = "nabilt"
+
+[[project]]
+name = "haasoscopepro"  # eagle, drandyhaas/HaasoscopePro
+repo = "https://github.com/drandyhaas/HaasoscopePro"
+commit = "1dc91b5127e5f80aa8170788289d3c5871640ff1"
+eagle = "adc board/haasoscope_pro_adc_fpga_board.sch"
+pdf = "adc board/haasoscope_pro_adc_fpga_board_schematics.pdf"
+license = "MIT"
+group = "drandyhaas"
+
+[[project]]
+name = "raspi-pico-aprs-tnc"  # eagle, eleccoder/raspi-pico-aprs-tnc
+repo = "https://github.com/eleccoder/raspi-pico-aprs-tnc"
+commit = "bc291e2ec9ccd0bf4829b5a75c486fd84b0d95e9"
+eagle = "doc/schematic_EAGLE/APRS_Pico_with_Baofeng_UV-5R.sch"
+pdf = "doc/schematic_EAGLE/APRS_Pico_with_Baofeng_UV-5R.pdf"
+license = "GPL-3.0"
+group = "eleccoder"
+
+[[project]]
+name = "c64-diagnostic-rev-586220-harness"  # eagle, svenpetersen1965/C64-Diagnostic-Rev.-586220-Harness
+repo = "https://github.com/svenpetersen1965/C64-Diagnostic-Rev.-586220-Harness"
+commit = "f034f0be37e35127125c29b435b8c969559221a7"
+eagle = "Diag586220_Harness/Diag586220_Cassette_Port/Rev.0/Eagle/Diag_586220_Cassette.sch"
+pdf = "Diag586220_Harness/Diag586220_Cassette_Port/Rev.0/pdf/Diag_586220_Cassette_Rev.0.pdf"
+license = "GPL-3.0"
+group = "svenpetersen1965"
+
+[[project]]
+name = "flutterhardware"  # eagle, flutterwireless/FlutterHardware
+repo = "https://github.com/flutterwireless/FlutterHardware"
+commit = "81af572ec84769b6ba83a88866aa30c2a3dda4c5"
+eagle = "Boards/FlutterBasic/Flutter_ARM_R5_Basic.sch"
+pdf = "doc/Flutter_Basic_Schematic.pdf"
+license = "CC-BY-SA-4.0"
+group = "flutterwireless"
+
+[[project]]
+name = "midibox"  # eagle, novski/Midibox
+repo = "https://github.com/novski/Midibox"
+commit = "07e3059ac51130ba27bd332caf2415e49230155f"
+eagle = "VLR-MBHP_CORE_LPC17/MBHP_CORE_LPC17v1.5.1.sch"
+pdf = "VLR-MBHP_CORE_LPC17/MBHP_CORE_LPC17v1.5.1.pdf"
+license = "LicenseRef-TAPR-NCL-1.0"
+group = "novski"
+
+[[project]]
+name = "photoduino"  # eagle, kalanda/photoduino
+repo = "https://github.com/kalanda/photoduino"
+commit = "c0a139e2dac4ca5f764925775bd3a6539859a9de"
+eagle = "hardware/photoduino.solenoid.valve.interface.1.0/photoduino.solenoid.valve.interface.v.1.0.sch"
+pdf = "hardware/photoduino.solenoid.valve.interface.1.0/pdf/photoduino.solenoid.valve.interface.v.1.0.schema.pdf"
+license = "none"
+group = "kalanda"
+
+[[project]]
+name = "flipper-zero-files"  # eagle, ADolbyB/flipper-zero-files
+repo = "https://github.com/ADolbyB/flipper-zero-files"
+commit = "64149dd0bf2bfdf4816de22dc58fdcf906384512"
+eagle = "fapSource/Tools/dap_link/lib/free-dap/hardware/d11_micro_usb_std_v2/d11_micro_usb_std_v2.sch"
+pdf = "fapSource/Tools/dap_link/lib/free-dap/hardware/d11_micro_usb_std_v2/d11_micro_usb_std_v2.pdf"
+license = "BSD-3-Clause"
+group = "ataradov"
+
+[[project]]
+name = "circuit-tree-designs"  # eagle, makarandkapoor/Circuit_Tree_Designs
+repo = "https://github.com/makarandkapoor/Circuit_Tree_Designs"
+commit = "e0996f2a2ef3a1e589ee5916aaa2923a2c3e6814"
+eagle = "Development_boards/Small_drone_board/CT_schematic_latest_HM_V4.sch"
+pdf = "Development_boards/Small_drone_board/CT_schematic_latest_HM_V4.pdf"
+license = "none"
+group = "makarandkapoor"
+
+[[project]]
+name = "openlrs-apm"  # eagle, Timvrakas/OpenLRS-APM
+repo = "https://github.com/Timvrakas/OpenLRS-APM"
+commit = "b5167eafedeb78881d06f76316a33fa64f8d6f6b"
+eagle = "openLRS-APM/openLRS-APM.sch"
+pdf = "openLRS-APM/openLRS-APM.sch.pdf"
+license = "GPL-2.0"
+group = "timvrakas"
+
+[[project]]
+name = "nsp2017-flightcom-hardware"  # eagle, ASFM-HLM-STEMLAB/NSP2017-FlightCom-Hardware
+repo = "https://github.com/ASFM-HLM-STEMLAB/NSP2017-FlightCom-Hardware"
+commit = "e34339d1086bffbc3b8c6afc3342d33654be44a4"
+eagle = "HLM1_Outsourced_V2.sch"
+pdf = "HLM1_Outsourced_V2.pdf"
+license = "MIT"
+group = "asfm-hlm-stemlab"
+
+[[project]]
+name = "gatekeeper-eagle"  # eagle, NottingHack/Gatekeeper-eagle
+repo = "https://github.com/NottingHack/Gatekeeper-eagle"
+commit = "6f7c3380d7175149075cfa581714931f9357f043"
+eagle = "v2.0 Door.sch"
+pdf = "v2.0 Door.pdf"
+license = "none"
+group = "nottinghack"
+
+[[project]]
+name = "uvicorn"  # eagle, touchtechio/UVicorn
+repo = "https://github.com/touchtechio/UVicorn"
+commit = "1721fbf0948ea70303907f63214e4434eca546e3"
+eagle = "kit-build-instructions/UVicorn-kit.sch"
+pdf = "kit-build-instructions/UVicorn-kit_schmatic.pdf"
+license = "Apache-2.0"
+group = "touchtechio"
+
+[[project]]
+name = "oshpark-benchmark"  # eagle, kuym/OSHPark-Benchmark
+repo = "https://github.com/kuym/OSHPark-Benchmark"
+commit = "5b02db36b1f2b1d16f2b2365e5e6dc6a56e3c2e8"
+eagle = "BGA64-500um/Eagle/STM64.sch"
+pdf = "BGA64-500um/Doc/STM64-schematics.pdf"
+license = "none"
+group = "kuym"
+
+[[project]]
+name = "hl-electronics"  # eagle, HardlightVR/HL-electronics
+repo = "https://github.com/HardlightVR/HL-electronics"
+commit = "8c5795d6b7f0ba03f709a92d7dc7da799b266bf0"
+eagle = "MarkIIIA/BATTERY_09_26_2017/battery_board/battery_09_26_2017.sch"
+pdf = "MarkIIIA/BATTERY_09_26_2017/battery_board/battery_09_26_2017_sch.pdf"
+license = "MIT"
+group = "hardlightvr"
+
+[[project]]
+name = "rebeltechnology"  # eagle, RebelTechnology/RebelTechnology
+repo = "https://github.com/RebelTechnology/RebelTechnology"
+commit = "f01210b2c0205c6b628b6d103750c731dde8d92d"
+eagle = "Gonies/schematics/Gonies.sch"
+pdf = "Gonies/drawings/Gonies.pdf"
+license = "GPL-3.0"
+group = "rebeltechnology"
+
+[[project]]
+name = "botmod"  # eagle, JGAguado/BotMod
+repo = "https://github.com/JGAguado/BotMod"
+commit = "c02c71966a325b7370e76afc01c9d3f47157553d"
+eagle = "Design/BotMod.sch"
+pdf = "Documentation/Schematics/Schematic.pdf"
+license = "CC-BY-NC-SA-4.0"
+group = "jgaguado"
+
+[[project]]
+name = "devbds"  # eagle, codeshelf/DEVBDS
+repo = "https://github.com/codeshelf/DEVBDS"
+commit = "9f2a660811690b618e69f65f708292fdf101d0f6"
+eagle = "USB_SWD_PROGRAMMER/SWD_PROGRAMMER_minimal_modified.sch"
+pdf = "USB_SWD_PROGRAMMER/SWD_PROGRAMMER_minimal_modified.pdf"
+license = "none"
+group = "codeshelf"
+
+[[project]]
+name = "inktime"  # eagle, 1ul1/InkTime
+repo = "https://github.com/1ul1/InkTime"
+commit = "44461919f28d2759fcbda9a0b46f79cb2d201424"
+eagle = "Hardware/Schematic.sch"
+pdf = "Hardware/Schematic.pdf"
+license = "MIT"
+group = "1ul1"
+
+[[project]]
+name = "pcb-design"  # eagle, AlanFromJapan/pcb-design
+repo = "https://github.com/AlanFromJapan/pcb-design"
+commit = "7d45ece0512f17137a971ca6a53d51c31ec8b7d0"
+eagle = "GameboyLink/Gameboy-Link-Clock.sch"
+pdf = "GameboyLink/Gameboy-Link-Clock.pdf"
+license = "MIT"
+group = "alanfromjapan"
+
+[[project]]
+name = "pcb-prototyping"  # eagle, davidabevan/PCB-Prototyping
+repo = "https://github.com/davidabevan/PCB-Prototyping"
+commit = "45fc23dad8dfe90ae3c6aaa6178e1a853a445285"
+eagle = "Arduino 3 way tactile switch/switchv1.sch"
+pdf = "Arduino 3 way tactile switch/switchv1.pdf"
+license = "none"
+group = "davidabevan"
+
+[[project]]
+name = "32-bit-controller"  # eagle, NYUAD-LabOps/32-bit-controller
+repo = "https://github.com/NYUAD-LabOps/32-bit-controller"
+commit = "b5188271448836352162f383df0209f0daa3ba03"
+eagle = "Callisto_Limit_Switch_PX/Callisto_Limit_Switch_PX.sch"
+pdf = "Callisto_Limit_Switch_PX/Callisto_Limit_Switch_PX.sch.pdf"
+license = "none"
+group = "nyuad-labops"
+
+[[project]]
+name = "qwiic-tof-module-rfd77402"  # eagle, ZIOCC/Qwiic_TOF_Module_RFD77402
+repo = "https://github.com/ZIOCC/Qwiic_TOF_Module_RFD77402"
+commit = "eda10dbb0acd7959db70c62ebedff3f0d1005a74"
+eagle = "EAGLE/Zio TOF Distance Sensor RFD77402.sch"
+pdf = "Zio TOF Distance Sensor RFD77402.sch.pdf"
+license = "none"
+group = "ziocc"
+
+[[project]]
+name = "eagle"  # eagle, dungjk/Eagle
+repo = "https://github.com/dungjk/Eagle"
+commit = "6632d5ac0c1d98d8ecb578cd6dcd778fb1e3f374"
+eagle = "L297+L298 Stepper Motor Driver/stepdrv.sch"
+pdf = "L297+L298 Stepper Motor Driver/stepdrv.pdf"
+license = "none"
+group = "dungjk"
+
+[[project]]
+name = "maya"  # eagle, MrPerfekt/Maya
+repo = "https://github.com/MrPerfekt/Maya"
+commit = "bea5f28d08ee1d0fab12a43a53d082ce1380f014"
+eagle = "eagle/pendulum00/circuitPendulumBrushes.sch"
+pdf = "eagle/pendulum00/circuitPendulumBrushes.pdf"
+license = "none"
+group = "mrperfekt"
+
+[[project]]
+name = "3d-printer-projects"  # eagle, FPGA-Computer/3D-Printer-projects
+repo = "https://github.com/FPGA-Computer/3D-Printer-projects"
+commit = "03211689778b6cff7e263bd721c3aeec977aee8d"
+eagle = "Creality Ender V3 KE/Lightbar/lightbar control.sch"
+pdf = "Creality Ender V3 KE/Lightbar/lightbar control.pdf"
+license = "none"
+group = "fpga-computer"
+
+[[project]]
+name = "stm32f401-breakout"  # eagle, rctsang/stm32f401-breakout
+repo = "https://github.com/rctsang/stm32f401-breakout"
+commit = "f08512c38ac6f7cd600ac6ab09d98ec4f78eec35"
+eagle = "STM32F401_QFP64_Breakout/BreakoutDiagram.sch"
+pdf = "STM32F401_QFP64_Breakout/BreakoutDiagram.pdf"
+license = "none"
+group = "rctsang"
+
+[[project]]
+name = "big-bits"  # eagle, wes06/Big-Bits
+repo = "https://github.com/wes06/Big-Bits"
+commit = "9da3c4ba3af192b029d7c0a64f8a005095e899fb"
+eagle = "eagle/little bits/INPUT/LB_BIT_i1-SLIDESWITCH/LB-BIT-i1-slideSwitch-v02(rev1).sch"
+pdf = "eagle/little bits/INPUT/LB_BIT_i1-SLIDESWITCH/LB-BIT-i1-slideSwitch-v02(rev1).pdf"
+license = "none"
+group = "littlebits"
+
+[[project]]
+name = "the-inductor"  # eagle, arcasoy/The-Inductor
+repo = "https://github.com/arcasoy/The-Inductor"
+commit = "6f1de1d91822762de59a0748b39b231303b98f0e"
+eagle = "Electrical/InductorSchem/Seeed-XIAO-nRF52840-v1.0-SCH/Seeed XIAO nRF52840 v1.0.sch"
+pdf = "Electrical/InductorSchem/Seeed-XIAO-nRF52840-v1.0-SCH/Seeed XIAO nRF52840 v1.0.pdf"
+license = "none"
+group = "seeed"
+
+[[project]]
+name = "maiana"  # eagle, peterantypas/maiana
+repo = "https://github.com/peterantypas/maiana"
+commit = "152427359493baccbabba23ad414ad84b6cc3849"
+eagle = "latest/CAD/Board-10.9/transponder-10.9.0.sch"
+pdf = "latest/CAD/Board-10.9/transponder-10.9.0-schematic.pdf"
+license = "GPL-3.0"
+group = "peterantypas"
+
+[[project]]
+name = "eagle-files"  # eagle, littlebitselectronics/eagle-files
+repo = "https://github.com/littlebitselectronics/eagle-files"
+commit = "bf0eef574955c6eb809f0bfe21496f3248c0aa91"
+eagle = "OUTPUT/LB_BIT_o13_FAN/LB_BIT_o13_FAN-v02(rev1)/LB_BIT_o13_FAN-v02(rev1).sch"
+pdf = "OUTPUT/LB_BIT_o13_FAN/LB_BIT_o13_FAN-v02(rev1)/LB_BIT_o13_FAN-v02(rev1).pdf"
+license = "CERN-OHL-1.2"
+group = "littlebits"
+
+[[project]]
+name = "sparklemotion"  # eagle, baaahs/sparklemotion
+repo = "https://github.com/baaahs/sparklemotion"
+commit = "d1cc60397a62b869f1af4cb4d7bc4eb225e63fb1"
+eagle = "brain/hw/BAAAHS-BRN01-C/BAAAHS-BRN01-C.sch"
+pdf = "brain/hw/BAAAHS-BRN01-C/files/BAAAHS-BRN01-C_Schematic.pdf"
+license = "MIT"
+group = "baaahs"
+
+[[project]]
+name = "pyr0piezo"  # eagle, pyr0ball/pyr0piezo
+repo = "https://github.com/pyr0ball/pyr0piezo"
+commit = "8826b14248044f37231b098a53dad11265a700d4"
+eagle = "Hardware/Eagle_Files/USB-UART-Wiring-Example.sch"
+pdf = "docs/schematics/other/USB-UART-Wiring-Example.pdf"
+license = "CC-BY-SA-4.0"
+group = "pyr0ball"
+
+[[project]]
+name = "rip-diy"  # eagle, whimsicalraps/RIP_DIY
+repo = "https://github.com/whimsicalraps/RIP_DIY"
+commit = "9b03b72482f765c39c309dc1dc722308b56aa6ab"
+eagle = "rip_base_2018.sch"
+pdf = "rip_diy.pdf"
+license = "none"
+group = "whimsicalraps"
+
+[[project]]
+name = "keurigparticleio"  # eagle, moranbf/KeurigParticleIo
+repo = "https://github.com/moranbf/KeurigParticleIo"
+commit = "004e5d9e553272f9758ab7c6edc6b68d61464b2b"
+eagle = "Keurig.sch"
+pdf = "KeurigParticlePhoton.pdf"
+license = "GPL-3.0"
+group = "moranbf"
+
+[[project]]
+name = "monjolo"  # eagle, lab11/monjolo
+repo = "https://github.com/lab11/monjolo"
+commit = "68fae7b20c9596dd3ec664bbeea859e6b38ac8f6"
+eagle = "hardware/hotspring/rev_a/hot_spring.sch"
+pdf = "hardware/hotspring/rev_a/hot_spring.pdf"
+license = "none"
+group = "lab11"
+
+[[project]]
+name = "konnektinghardware"  # eagle, KONNEKTING/KonnektingHardware
+repo = "https://github.com/KONNEKTING/KonnektingHardware"
+commit = "3c7e87ef89bb7f7b054b17bc806decf4fa10051a"
+eagle = "Universal-Flush-Interface/UFI PCB Rev1.sch"
+pdf = "Universal-Flush-Interface/Universal Flush Interface.pdf"
+license = "none"
+group = "konnekting"
+
+[[project]]
+name = "hardware"  # eagle, pillforge/hardware
+repo = "https://github.com/pillforge/hardware"
+commit = "c5884cbfe8060f588005dd46c3e1579bfd43304e"
+eagle = "Sensing modules/8CHADC/8chADC.sch"
+pdf = "Sensing modules/8CHADC/8chADC.pdf"
+license = "none"
+group = "pillforge"
+
+[[project]]
+name = "open-gamma-detector"  # easyeda, OpenGammaProject/Open-Gamma-Detector
+repo = "https://github.com/OpenGammaProject/Open-Gamma-Detector"
+commit = "685173d8091ce5e1a90327eb50320cb20544d778"
+easyeda = "hardware/SCH_Project_EasyEDA.json"
+pdf = "hardware/schematic.pdf"
+license = "GPL-3.0"
+group = "opengammaproject"
+
+[[project]]
+name = "esphome-powmr-hybrid-inverter"  # easyeda, odya/esphome-powmr-hybrid-inverter
+repo = "https://github.com/odya/esphome-powmr-hybrid-inverter"
+commit = "cd841713c0a7c9c90b90ac897e2c5268f0775ea4"
+easyeda = "pcb/advanced/sch.easyeda.json"
+pdf = "pcb/advanced/sch.pdf"
+license = "MIT"
+group = "odya"
+
+[[project]]
+name = "modxo"  # easyeda, Team-Resurgent/Modxo
+repo = "https://github.com/Team-Resurgent/Modxo"
+commit = "b25d692b54b08e580514bebb8613dea4d2a74c85"
+easyeda = "schematics/EasyEDS-SCH_Modxo.json"
+pdf = "schematics/Schematic_Modxo.pdf"
+license = "GPL-3.0"
+group = "team-resurgent"
+
+[[project]]
+name = "tiny-blackbox"  # easyeda, alexeystn/tiny-blackbox
+repo = "https://github.com/alexeystn/tiny-blackbox"
+commit = "f1494a93e5cea8dde2f4032a2af9ac2973fdd956"
+easyeda = "Hardware/EasyEDA/schematic.json"
+pdf = "Hardware/Schematic.pdf"
+license = "GPL-3.0"
+group = "alexeystn"
+
+[[project]]
+name = "easyeda2kicad6"  # easyeda, yaybee/easyeda2kicad6
+repo = "https://github.com/yaybee/easyeda2kicad6"
+commit = "217d5063b0b4425df21f71af1292282bd5cd592a"
+easyeda = "examples/complex/c_sch.json"
+pdf = "examples/complex/Schematic_ERC_errors_explained_for_c_sch.pdf"
+license = "MIT"
+group = "yaybee"
+
+[[project]]
+name = "pico-pedal"  # easyeda, ilcardella/pico-pedal
+repo = "https://github.com/ilcardella/pico-pedal"
+commit = "86dad43d4ab7bbaf71760dbcc4fdf82d7241baaf"
+easyeda = "pcb/pico-pedal_2021-05-01.json"
+pdf = "pcb/Schematic_pico-pedal_2021-05-01.pdf"
+license = "MIT"
+group = "ilcardella"
+
+[[project]]
+name = "busraider"  # easyeda, robdobsn/BusRaider
+repo = "https://github.com/robdobsn/BusRaider"
+commit = "ce6e473ad0e6be1fd6d329aaaa4314d56ad1a902"
+easyeda = "PCB/V2-2/BusRaider 2.2.json"
+pdf = "PCB/V2-2/Schematic_BusRaider 2.2_BusRaider_SCH_V2_2_20200415150708.pdf"
+license = "MIT"
+group = "robdobsn"
+
+[[project]]
+name = "blackeye"  # easyeda, Dimsmary/BlackEye
+repo = "https://github.com/Dimsmary/BlackEye"
+commit = "5df1f84fac1762b6394c1fb4349f84d77e6674da"
+easyeda = "PCB/Master/BLACKEYE_CTRL.json"
+pdf = "PCB/Master/Schematic_BLACKEYE_CTRL_sch copy_20191211122542.pdf"
+license = "MIT"
+group = "dimsmary"
+
+[[project]]
+name = "usbtinyisp"  # easyeda, julianschuler/USBtinyISP
+repo = "https://github.com/julianschuler/USBtinyISP"
+commit = "cf00607e0c26ce446900d8f9b620da74c726b4f1"
+easyeda = "PCB/EasyEDA-Schematic.json"
+pdf = "Documention/Schematic.pdf"
+license = "GPL-3.0"
+group = "julianschuler"
+
+[[project]]
+name = "usb-c-pps"  # easyeda, z4yx/USB-C-PPS
+repo = "https://github.com/z4yx/USB-C-PPS"
+commit = "61b017f889673fe08db88337e9db7d7dcdc111d1"
+easyeda = "Schematics/1-Schematic_UC2DC-Seg7.json"
+pdf = "Schematics/Schematic_UC2DC-Seg7_2021-05-01.pdf"
+license = "BSD-3-Clause"
+group = "z4yx"
+
+[[project]]
+name = "0xcb-1337"  # easyeda, 0xCB-dev/0xCB-1337
+repo = "https://github.com/0xCB-dev/0xCB-1337"
+commit = "57ba92df4066021aaa12e2c691135becd04037e7"
+easyeda = "rev1.1/Schematic_1337.json"
+pdf = "rev1.1/Schematic_1337.pdf"
+license = "CERN-OHL-S-2.0"
+group = "0xcb-dev"
+
+[[project]]
+name = "wand-controller"  # easyeda, HadesVR/Wand-Controller
+repo = "https://github.com/HadesVR/Wand-Controller"
+commit = "82112570fb4df46f8d80b51eee4ed1ec609fd702"
+easyeda = "Hardware/PCB/SCH_EASYEDA.json"
+pdf = "Hardware/PCB/SCH.pdf"
+license = "MIT"
+group = "hadesvr"
+
+[[project]]
+name = "stm8-max6675-lcd"  # easyeda, sunhaoqin/stm8_max6675_LCD
+repo = "https://github.com/sunhaoqin/stm8_max6675_LCD"
+commit = "723f8da97a0518959fd855cfe6e91142049c7496"
+easyeda = "HW/SCH_max6675_2022-08-12.json"
+pdf = "HW/Schematic_max6675_2022-08-12.pdf"
+license = "none"
+group = "sunhaoqin"
+
+[[project]]
+name = "rgblight"  # easyeda, DawningW/RGBLight
+repo = "https://github.com/DawningW/RGBLight"
+commit = "bd829376b5877244a75c4f8a035f07de9e8eabbd"
+easyeda = "pcb/1-Schematic_light_panel.json"
+pdf = "pcb/Schematic_light_panel.pdf"
+license = "GPL-3.0"
+group = "dawningw"
+
+[[project]]
+name = "saroo"  # altium, tpunix/SAROO
+repo = "https://github.com/tpunix/SAROO"
+commit = "594a15e59de12fd75b8fa9dd4431d743005b6cf3"
+pdf = "old/HW_v11/ssmaster.pdf"
+pcb = "old/HW_v11/ssmaster.PcbDoc"
+license = "GPL-3.0-only"
+group = "tpunix"
+
+[[project]]
+name = "qwave-raspberry-pi-cm4-altium-library"  # altium, QWaveSystems/QWAVE_Raspberry-Pi-CM4-Altium-Library
+repo = "https://github.com/QWaveSystems/QWAVE_Raspberry-Pi-CM4-Altium-Library"
+commit = "e77d0a0a6500644cf0d62da4505071a2aa2a33fb"
+pdf = "CM4.pdf"
+pcb = "CM4-Main.PcbDoc"
+license = "MIT"
+group = "qwavesystems"
+
+[[project]]
+name = "mxiot"  # altium, jaydcarlson/mxiot
+repo = "https://github.com/jaydcarlson/mxiot"
+commit = "a2609526c92cef2a3d541aaa6edb1b32d0cab53b"
+pdf = "docs/schematic.pdf"
+pcb = "pcb/mxiot.PcbDoc"
+license = "CC-BY-SA-4.0"
+group = "jaydcarlson"
+
+[[project]]
+name = "stlink-uart"  # altium, solosky/stlink-uart
+repo = "https://github.com/solosky/stlink-uart"
+commit = "f27601ab7790b9352b6fd2180b3014a3b440c5e2"
+pdf = "STLinkUART.PDF"
+pcb = "STLinkUART.PcbDoc"
+license = "Apache-2.0"
+group = "solosky"
+
+[[project]]
+name = "battman-hardware"  # altium, raphaelchang/battman-hardware
+repo = "https://github.com/raphaelchang/battman-hardware"
+commit = "db5ae48d09e9ec9523387e2190fd14671a0646ca"
+pdf = "BMS/Project Outputs for Battman/PDF/Battman.pdf"
+pcb = "BMS/BMS.PcbDoc"
+license = "LGPL-3.0"
+group = "raphaelchang"
+
+[[project]]
+name = "pyboardcn"  # altium, micropython-Chinese-Community/pyboardCN
+repo = "https://github.com/micropython-Chinese-Community/pyboardCN"
+commit = "d9b403985d42c5e92ab8ee5cff0ec75165bb187d"
+pdf = "V1/pboard_eeworld.pdf"
+pcb = "V1/pcb.PcbDoc"
+license = "MIT"
+group = "micropython-chinese-community"
+
+[[project]]
+name = "gbpp"  # altium, marshallh/gbpp
+repo = "https://github.com/marshallh/gbpp"
+commit = "2aa972bf83e98fc7a51883871083fc8d2f710924"
+pdf = "001/gbpp.pdf"
+pcb = "001/main.PcbDoc"
+license = "MIT"
+group = "marshallh"
+
+[[project]]
+name = "rk3328"  # altium, ArmanArvand/RK3328
+repo = "https://github.com/ArmanArvand/RK3328"
+commit = "830d51b80c77aba6c7570d273521770dfeeee0f9"
+pdf = "docs/Schematic.pdf"
+pcb = "RK3328.PcbDoc"
+license = "TAPR-OHL-1.0"
+group = "armanarvand"
+
+[[project]]
+name = "rm-usb2can"  # altium, rm-controls/rm_usb2can
+repo = "https://github.com/rm-controls/rm_usb2can"
+commit = "d1b1335065ebdc5208f7ab43b1d73c406fbe0e91"
+pdf = "circuit/USB2CAN.pdf"
+pcb = "circuit/USB2CAN.PcbDoc"
+license = "MIT"
+group = "rm-controls"
+
+[[project]]
+name = "pcb"  # altium, qfsae/pcb
+repo = "https://github.com/qfsae/pcb"
+commit = "5ab9b30c747ebd20fe6e3dd880ba6c6d596ce8dd"
+pdf = "DevKit/schematics/schematic.PDF"
+pcb = "DevKit/DevKit.PcbDoc"
+license = "MIT"
+group = "qfsae"
+
+[[project]]
+name = "usc-auv-passive-sonar"  # altium, cheehieu/usc-auv-passive-sonar
+repo = "https://github.com/cheehieu/usc-auv-passive-sonar"
+commit = "28381d999cb0714d651aa518f02075b2e2f0bf07"
+pdf = "hw/Altium/sonar.pdf"
+pcb = "hw/Altium/sonar.PcbDoc"
+license = "GPL-2.0"
+group = "cheehieu"
+
+[[project]]
+name = "infinity-hardware"  # altium, raphaelchang/infinity-hardware
+repo = "https://github.com/raphaelchang/infinity-hardware"
+commit = "2fde236207781acdfcb818a552eedbf06d97a6c2"
+pdf = "ESC/Project Outputs for Infinity/PDF/Infinity.pdf"
+pcb = "ESC/ESC.PcbDoc"
+license = "LGPL-3.0"
+group = "raphaelchang"
+
+[[project]]
+name = "pw-sat2-hardware"  # altium, PW-Sat2/hardware
+repo = "https://github.com/PW-Sat2/hardware"
+commit = "f8f06545fddeafd5fbe2e3f29c6d3403b86c510c"
+pdf = "OBC/pcb/Project-Documentation/OBC.pdf"
+pcb = "OBC/pcb/OBC.PcbDoc"
+license = "AGPL-3.0"
+group = "pw-sat2"
+
+[[project]]
+name = "hdlab-fpga-development-board"  # altium, alialaei1/HDLab-FPGA-Development-Board
+repo = "https://github.com/alialaei1/HDLab-FPGA-Development-Board"
+commit = "8222ca348099905bf8c129008aa4b7ec4e8b8d81"
+pdf = "PCB/HDLab-schematics.pdf"
+pcb = "PCB/HDLab-v1.PcbDoc"
+license = "MIT"
+group = "alialaei1"
+
+[[project]]
+name = "to-220-buck"  # altium, ketszim97/TO_220_Buck
+repo = "https://github.com/ketszim97/TO_220_Buck"
+commit = "f3bc6c4744b96b9f2d46340741206c6b47bb35ba"
+pdf = "TO_220_Buck.pdf"
+pcb = "TO_220_Buck.PcbDoc"
+license = "none"
+group = "ketszim97"
+
+[[project]]
+name = "universalunipolarsteppercontroller"  # altium, IRNAS/UniversalUnipolarStepperController
+repo = "https://github.com/IRNAS/UniversalUnipolarStepperController"
+commit = "04736dcd450f143f1e75892e04ebd13567cd2e9a"
+pdf = "StepperDriverV2.PDF"
+pcb = "StepperDriverV2.PcbDoc"
+license = "CERN-OHL-1.2"
+group = "irnas"
+
+[[project]]
+name = "duckuino"  # altium, afonsus1997/Duckuino
+repo = "https://github.com/afonsus1997/Duckuino"
+commit = "9f615e652a3572949f0dc434f785f62cc4caacfd"
+pdf = "schematic.pdf"
+pcb = "Duckuino.PcbDoc"
+license = "none"
+group = "afonsus1997"
+
+[[project]]
+name = "stlink-v2"  # altium, parsamalekpour/STLINK-V2
+repo = "https://github.com/parsamalekpour/STLINK-V2"
+commit = "25dc702e75a4c10b5c43a0b01ff6802596b691f5"
+pdf = "STLINKV2.pdf"
+pcb = "PCB/STLINL.PcbDoc"
+license = "none"
+group = "parsamalekpour"
+
+[[project]]
+name = "enchante"  # altium, badrbouslikhin/Enchante
+repo = "https://github.com/badrbouslikhin/Enchante"
+commit = "be655931cd5d3e04a52bffb212fae026d6b9d083"
+pdf = "Project Outputs for Enchante/Enchante.pdf"
+pcb = "Enchante.PcbDoc"
+license = "none"
+group = "badrbouslikhin"
+
+[[project]]
+name = "teensycam-hw"  # altium, icboredman/TeensyCam-HW
+repo = "https://github.com/icboredman/TeensyCam-HW"
+commit = "37feb7c309a21f0275da17d870a5a412607e8145"
+pdf = "Project Outputs for Camera/Printouts/Schematic Prints.PDF"
+pcb = "Camera_pcb.PcbDoc"
+license = "CC-BY-SA-4.0"
+group = "icboredman"
+
+[[project]]
+name = "lantern-compute-pcb"  # altium, Othernet-Project/lantern-compute-pcb
+repo = "https://github.com/Othernet-Project/lantern-compute-pcb"
+commit = "bda8bd63628927ee24b0777226d133bd839342e0"
+pdf = "CSB540otn_sch_v1.0.pdf"
+pcb = "CSB540otn.PcbDoc"
+license = "GPL-3.0"
+group = "othernet-project"
+
+[[project]]
+name = "bldc-drv11873"  # altium, weifengdq/BLDC_DRV11873
+repo = "https://github.com/weifengdq/BLDC_DRV11873"
+commit = "ae2555781fc02606787b7c6cc797d0216136c1f0"
+pdf = "BLDC_MainBoard_V1.1.pdf"
+pcb = "PCB/BLDC1.PcbDoc"
+license = "none"
+group = "weifengdq"
+
+[[project]]
+name = "pigeon"  # altium, mo10/Pigeon
+repo = "https://github.com/mo10/Pigeon"
+commit = "a3c8aa1042c212c2031a767bd93876c7c3aa2d41"
+pdf = "Hardware/sch.pdf"
+pcb = "Hardware/Pigeon.PcbDoc"
+license = "MIT"
+group = "mo10"
+
+[[project]]
+name = "actibms-module-circuit"  # altium, actiBMS/actiBMS_module_circuit
+repo = "https://github.com/actiBMS/actiBMS_module_circuit"
+commit = "7f469b457e49a50e6eca0427bfaddc90c44c0bce"
+pdf = "Outputs/Schematics.PDF"
+pcb = "board.PcbDoc"
+license = "CC-BY-NC-SA-2.0-UK"
+group = "actibms"
+
+[[project]]
+name = "picobob-dlx"  # altium, Expatria-Technologies/PicoBOB-DLX
+repo = "https://github.com/Expatria-Technologies/PicoBOB-DLX"
+commit = "9c12a5101d355b37791993de278613e4b0c7581f"
+pdf = "PicoBOB_DLX_Schematic_A3.PDF"
+pcb = "Layout/PicoBOB_DLX.pcbdoc"
+license = "CERN-OHL-S-2.0"
+group = "expatria-technologies"
+
+[[project]]
+name = "reboostv2-hardware"  # altium, TjitteS/ReboostV2-Hardware
+repo = "https://github.com/TjitteS/ReboostV2-Hardware"
+commit = "3a635ffac0621f94c4b2259931f43290f4ca0a0b"
+pdf = "Outputs/Reboost V0.2.1/Schematic Prints.PDF"
+pcb = "ReboostV2.1.PcbDoc"
+license = "GPL-3.0"
+group = "tjittes"
+
+[[project]]
+name = "fpga1394"  # altium, jhu-cisst/FPGA1394
+repo = "https://github.com/jhu-cisst/FPGA1394"
+commit = "b0a9dbfd8af3fb902fd05d26375927e0d125713d"
+pdf = "FPGA1394-Schematics.pdf"
+pcb = "FPGA.PcbDoc"
+license = "none"
+group = "jhu-cisst"
+
+[[project]]
+name = "ax5043-module"  # altium, 2ftg/AX5043_module
+repo = "https://github.com/2ftg/AX5043_module"
+commit = "2a37748f3ed92c2f6c816285fc9b17da108d406a"
+pdf = "Project Outputs for AX5043_module/AX5043_module_schematics.PDF"
+pcb = "AX5043_module_pcb.PcbDoc"
+license = "MIT"
+group = "2ftg"
+
+[[project]]
+name = "apollo2"  # altium, WsLink/Apollo2
+repo = "https://github.com/WsLink/Apollo2"
+commit = "6a3afb4ac8f3772b24fa6b06b8bbcce4f27e2cd8"
+pdf = "Ap2-Core.pdf"
+pcb = "AP2-Core.PcbDoc"
+license = "MIT"
+group = "wslink"
+
+[[project]]
+name = "oak-hardware"  # altium, luxonis/oak-hardware
+repo = "https://github.com/luxonis/oak-hardware"
+commit = "3c24531dca1ac0e7595f7a9e5c4d3826990ab80d"
+pdf = "SL6996_OAK-FFC_15pin-RPi/Docs/Schematic PDF/Production.PDF"
+pcb = "SL6996_OAK-FFC_15pin-RPi/PCB/SL6996.PcbDoc"
+license = "MIT"
+group = "luxonis"
+
+[[project]]
+name = "bbear-balance-car"  # orcad, bigbearishappy/BBear_balance_car
+repo = "https://github.com/bigbearishappy/BBear_balance_car"
+commit = "db8ef62d28d6e5491c388e3536e03ac88f5f2e93"
+pdf = "PCB_MOTOR/bbear_balance_car_motor.pdf"
+pcb = "PCB_MOTOR/pcb/bbear_balance_car_motor.brd"
+license = "none"
+group = "bigbearishappy"
+
+[[project]]
+name = "creatable-d3"  # orcad, AteamVentures/CREATABLE_D3
+repo = "https://github.com/AteamVentures/CREATABLE_D3"
+commit = "e88341446109f16e9c14426649b1389b68e461ea"
+pdf = "Hardware/MainBoard/1st/Mainboard.pdf"
+pcb = "Hardware/MainBoard/1st/Mainboard.brd"
+license = "CC-BY-SA-4.0"
+group = "ateamventures"
+
+[[project]]
+name = "mic-array"  # orcad, PhanLeSon03/Mic_Array
+repo = "https://github.com/PhanLeSon03/Mic_Array"
+commit = "d03b7b714a6ef005709938630623578364478078"
+pdf = "Hardware/8Mics/8mics.pdf"
+pcb = "Hardware/8Mics/allegro/8MICS_V021.brd"
+license = "none"
+group = "phanleson03"
+
+[[project]]
+name = "batterymeter"  # orcad, hb020/batterymeter
+repo = "https://github.com/hb020/batterymeter"
+commit = "662ed3b2db807c4c84a78b9970c87f20019e6185"
+pdf = "doc/CN0510/CN0510-DesignSupport/schematic.pdf"
+pcb = "doc/CN0510/CN0510-DesignSupport/08_047456d.brd"
+license = "none"
+group = "analog-devices"
+
+[[project]]
+name = "satrot"  # orcad, Ahmad138/SatRot
+repo = "https://github.com/Ahmad138/SatRot"
+commit = "6b979b8ba8fa27e5fc6e45d6cca5cd18e3bcf890"
+pdf = "Electronics and Electrical/SatRot-2/satrot-2.pdf"
+pcb = "Electronics and Electrical/SatRot-2/allegro/SATROT-2.brd"
+license = "MIT"
+group = "ahmad138"
+
+[[project]]
+name = "pofdualcam"  # orcad, ShellAlbert/PoFDualCAM
+repo = "https://github.com/ShellAlbert/PoFDualCAM"
+commit = "37c8e2ac4e94e0f35410f56490760d5c541a20b2"
+pdf = "1-PSU/Schematic/SCH-PSU-C1.pdf"
+pcb = "1-PSU/PCB/PSU-C1-6Layers.brd"
+license = "GPL-3.0"
+group = "shellalbert"
+
+[[project]]
+name = "echolink-hardware"  # orcad, ucscarc/echolink_hardware
+repo = "https://github.com/ucscarc/echolink_hardware"
+commit = "633bec567df6f2990aa964cd9c4c1dc2125daa29"
+pdf = "LinkingInterface/v2_13/fromChris/linkinginterface/Schematics/LinkingInterfaceV2_13.pdf"
+pcb = "LinkingInterface/v2_13/fromChris/linkinginterface/linkinginterface/pcb/LinkingInterfaceV2_13.brd"
+license = "none"
+group = "ucscarc"
+
+[[project]]
+name = "mithril"  # orcad, athakkar1/mithril
+repo = "https://github.com/athakkar1/mithril"
+commit = "912a5085969d15e2d6a42360cab2bbb4fd7e01de"
+pdf = "Schematics/mithril2.pdf"
+pcb = "ORCad/mithrilpoosack_alt.brd"
+license = "none"
+group = "athakkar1"
+
+[[project]]
+name = "sea2-zephyr"  # orcad, Agustin586/SEA2_ZEPHYR
+repo = "https://github.com/Agustin586/SEA2_ZEPHYR"
+commit = "9707d5aa801d81f8480a5650586523debe7c8318"
+pdf = "Documentacion/FRDM-MCXC444-DESIGNFILES/FRDM-MCX C444/PDF/SPF-93440_A.pdf"
+pcb = "Documentacion/FRDM-MCXC444-DESIGNFILES/FRDM-MCX C444/Design Files/LAY-93440_A.brd"
+license = "none"
+group = "nxp"
+
+[[project]]
+name = "clay"  # orcad, ah-cog/Clay
+repo = "https://github.com/ah-cog/Clay"
+commit = "31a84237d09eb93affb9b2587ff1d5b9a2b8c6a6"
+pdf = "Circuit/R6/CLAYR6.pdf"
+pcb = "Circuit/R6/allegro/CLAYR6.brd"
+license = "MIT"
+group = "ah-cog"
+
+[[project]]
+name = "asmv-pcb"  # orcad, ronak314/ASMV_PCB
+repo = "https://github.com/ronak314/ASMV_PCB"
+commit = "ad26b9faf94d6f6f9e0d573edf4f7b712ef3dc86"
+pdf = "Documentation/AMVSCH_rpai.pdf"
+pcb = "allegro/pcb_tutorial_rpai.brd"
+license = "none"
+group = "ronak314"
+
+[[project]]
+name = "emrick"  # orcad, eduxstad/Emrick
+repo = "https://github.com/eduxstad/Emrick"
+commit = "80b3d3744c846b0d42509b068875c9331d54fe82"
+pdf = "referencedesign/LAUNCHXL-CC1310_Schematic.pdf"
+pcb = "referencedesign/Cadence/Allegro/LAUNCHXL-CC1310.brd"
+license = "none"
+group = "ti"
+
+[[project]]
+name = "ape-singleboardcomputer"  # orcad, shikhakath/APE-SingleBoardComputer
+repo = "https://github.com/shikhakath/APE-SingleBoardComputer"
+commit = "a0a72b6d8b24ceb94349ed17e5d1ed6f579cc979"
+pdf = "reference/2_PROC142A/1_SCHEMATIC/PDF/Backup_SK_Schematic_For_Reference/PROC142A(002)_sch.pdf"
+pcb = "reference/2_PROC142A/3_BoardFile/Allegro/PROC142A_BRD.brd"
+license = "none"
+group = "shikhakath"
+
+[[project]]
+name = "debugtool"  # orcad, xxxlzjxxx/DebugTool
+repo = "https://github.com/xxxlzjxxx/DebugTool"
+commit = "0530fb2f80348d5d2343fae50464c13106e41659"
+pdf = "HARDWARE/HY_TYPEC_DBUG_V10C/SCH/hy_typec_dbug_v10c.pdf"
+pcb = "HARDWARE/HY_TYPEC_DBUG_V10C/PCB/HY_TYPEC_DBUG_V10C.brd"
+license = "Apache-2.0"
+group = "xxxlzjxxx"
+
+[[project]]
+name = "starrysky"  # orcad, maksyuki/StarrySky
+repo = "https://github.com/maksyuki/StarrySky"
+commit = "154d58a9e5d0af1790cadd6467ed35493dc93243"
+pdf = "CAD/V1.2/STARRYSKY_SCH.pdf"
+pcb = "PCB/V1.2/STARRYSKY.brd"
+license = "GPL-3.0"
+group = "maksyuki"
+
+[[project]]
+name = "khu-ucl-eit"  # orcad, Jimbles/KHU-UCL-EIT
+repo = "https://github.com/Jimbles/KHU-UCL-EIT"
+commit = "13a91aa710a7f855ce67e9b7caf9b66ba6208954"
+pdf = "Doc/Power_Supply/Schematics/PWR_ANALOGUE.pdf"
+pcb = "Doc/Power_Supply/Layout/PWR_ANALOGUE_allegro/32CH_PWR_ANALOGUE.brd"
+license = "GPL-3.0"
+group = "jimbles"
+
+[[project]]
+name = "multi-modbus-master-on-stm32f4-with-ethe"  # orcad, thanhtam98/Multi-Modbus-Master-on-STM32F4-with-Ethernet-support
+repo = "https://github.com/thanhtam98/Multi-Modbus-Master-on-STM32F4-with-Ethernet-support"
+commit = "6351bca1c7cbbf4b7830fbbee984c9dbc8cdf465"
+pdf = "01_Schematic/Rfid_controller.pdf"
+pcb = "03_layout/controller.brd"
+license = "none"
+group = "thanhtam98"
+
+[[project]]
+name = "tinycirculartmr"  # orcad, ShellAlbert/TinyCircularTMR
+repo = "https://github.com/ShellAlbert/TinyCircularTMR"
+commit = "a46da9d393c2bf2262e8e3d742438045a436a5e2"
+pdf = "FrontendTMR/SCH_FrontendTMR_A1.pdf"
+pcb = "FrontendTMR/PCB/TMR_Tiny_Jun-3.brd"
+license = "GPL-3.0"
+group = "shellalbert"
+
+[[project]]
+name = "maxome-mpcie-hw"  # orcad, mmbnetworks/Maxome_mPCIe_HW
+repo = "https://github.com/mmbnetworks/Maxome_mPCIe_HW"
+commit = "1b9a067300c4553072c0d5f6afceadafe50260bf"
+pdf = "0p1/901-00107-01_DSB05PA30_Schematic_0p1.pdf"
+pcb = "0p1/allegro/maxome_mpcie_0p1.brd"
+license = "none"
+group = "mmbnetworks"
+
+[[project]]
+name = "avc"  # orcad, wavenumber-eng/avc
+repo = "https://github.com/wavenumber-eng/avc"
+commit = "e0ef4bec8a6cfc9487a045005865164516fc2ea5"
+pdf = "docs/FRDM-MCXN947/FRDM-MCXN947-Design-Files/PDF/spf-90818_b2.pdf"
+pcb = "docs/FRDM-MCXN947/FRDM-MCXN947-Design-Files/Design Files/LAY-90818_B.brd"
+license = "none"
+group = "nxp"
+
+[[project]]
+name = "triangle-terahertz"  # orcad, hasanzadeh99/Triangle-TeraHertz
+repo = "https://github.com/hasanzadeh99/Triangle-TeraHertz"
+commit = "b9e0833dd98454f496797489f499db75d616b125"
+pdf = "Sensor/Schematic.pdf"
+pcb = "Sensor/Sensor.brd"
+license = "none"
+group = "hasanzadeh99"
+
+[[project]]
+name = "bldc-motor-driver-platform"  # orcad, alexzirnea/bldc_motor_driver_platform
+repo = "https://github.com/alexzirnea/bldc_motor_driver_platform"
+commit = "b9f45e47efd28b0ca71bbb8bf8c8152b3ee6b77c"
+pdf = "Hardware/OrCad Project/power_board/SCH/bldc_motor_driver.pdf"
+pcb = "Hardware/OrCad Project/power_board/PCB/motherboard.brd"
+license = "GPL-3.0"
+group = "alexzirnea"
+
+[[project]]
+name = "ttk4155-ping-pong-project"  # orcad, PizzaAllTheWay/TTK4155_Ping_Pong_Project
+repo = "https://github.com/PizzaAllTheWay/TTK4155_Ping_Pong_Project"
+commit = "3593ecc2b0c483715d43cd5e646c857b8918cc45"
+pdf = "PCB-Node1/byggernnode1 SCHEMATIC.pdf"
+pcb = "PCB-Node1/Project/byggernnode1/allegro/byggernnode1.brd"
+license = "none"
+group = "pizzaalltheway"
+
+[[project]]
+name = "omnichip-dk-pcb"  # orcad, zglue/omnichip-dk-pcb
+repo = "https://github.com/zglue/omnichip-dk-pcb"
+commit = "0967a5a96b4cd7877393d3f7a4351ad246b8b27b"
+pdf = "pcb/istanbul_omnichip_dedicated_lga_1p1.pdf"
+pcb = "pcb/Istanbul_Omnichip_LGA_DEVKIT_Rev_1P1.brd"
+license = "LicenseRef-zOH-1.0"
+group = "zglue"
+
+[[project]]
+name = "wrist-synth"  # orcad, makers-upv/wrist-synth
+repo = "https://github.com/makers-upv/wrist-synth"
+commit = "d9a78f17fec4a1261585b2fe12089fdb42643c08"
+pdf = "electronics/1. Schematic/wrist-synth - Schematic rev1.pdf"
+pcb = "electronics/2. PCB/wrsit-shynth.brd"
+license = "none"
+group = "makers-upv"
+
+[[project]]
+name = "steppernug-simple-stepper-controller"  # orcad, OpenCapitalist/StepperNug_Simple_Stepper_Controller
+repo = "https://github.com/OpenCapitalist/StepperNug_Simple_Stepper_Controller"
+commit = "1792ec0050d1d1b26393f0074d8007045b70bea7"
+pdf = "001-StepperNug_OSE_v1.1.pdf"
+pcb = "allegro/steppernug ose v1_1.brd"
+license = "none"
+group = "opencapitalist"
+
+[[project]]
+name = "manufacturing"  # orcad, cardreaderfactory/manufacturing
+repo = "https://github.com/cardreaderfactory/manufacturing"
+commit = "cd112c71076c42c2aa5d7488cea6b4f5b4325e17"
+pdf = "10mA charger/PCB&SCH/chrg_v1.pdf"
+pcb = "10mA charger/PCB&SCH/CHRG_V1.brd"
+license = "GPL-3.0"
+group = "cardreaderfactory"
+
+[[project]]
+name = "planta-twittera-rev2"  # orcad, makers-upv/planta-twittera-rev2
+repo = "https://github.com/makers-upv/planta-twittera-rev2"
+commit = "8601421acc45c915c122360a04bfca1d21ba863b"
+pdf = "electronics/1. Schematic/Planta Twittera Rev2 - Schematic.pdf"
+pcb = "electronics/2. PCB/180708_planta-twittera-rev2_gerbers.brd"
+license = "MIT"
+group = "makers-upv"
+
+[[project]]
+name = "hc32f4a0core"  # orcad, nczyw/Hc32F4A0Core
+repo = "https://github.com/nczyw/Hc32F4A0Core"
+commit = "ca328872d278001cc44f71fc2ac404d8852f6227"
+pdf = "Hc32F4A0Core/hc32f4a0core.pdf"
+pcb = "HC32F4A0Core_PCB/HC21F4A0Core.brd"
+license = "Apache-2.0"
+group = "nczyw"
+
+[[project]]
+name = "cornell-cm-rev2-hw"  # orcad, apollo-lhc/Cornell_CM_Rev2_HW
+repo = "https://github.com/apollo-lhc/Cornell_CM_Rev2_HW"
+commit = "5aa5e78e233f592325d126411bca93215c8b428c"
+pdf = "PCB_Rev2B/Schematic_6089-119-revb_13Feb2023.pdf"
+pcb = "PCB_Rev2B/6089-119-RevB_08.brd"
+license = "none"
+group = "apollo-lhc"
+
+[[project]]
+name = "spinali-mcxn-t1-shields"  # orcad, CogniPilot/spinali_mcxn_t1_shields
+repo = "https://github.com/CogniPilot/spinali_mcxn_t1_shields"
+commit = "e536cf61f34d4fd4a3dbb6f81acb9e96b2b23345"
+pdf = "docs/mcu/mcxn/FRDM-MCXN947-Design-Files/PDF/spf-90818_c.pdf"
+pcb = "docs/mcu/mcxn/FRDM-MCXN947-Design-Files/Design Files/LAY_90818_C.brd"
+license = "none"
+group = "nxp"

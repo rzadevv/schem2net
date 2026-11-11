@@ -1,5 +1,5 @@
 {
- "status": "pinned: runner at the commit that merged the protocol, image built and archived; the panel manifest, discovery log and seal join it in the commit that freezes the panel",
+ "status": "frozen: runner, image and panel pinned; the panel has not been read",
  "protocol": "docs/evaluation-protocol.md",
  "runner": {
   "commit": "0b1b6911d50322433df11171a0ed87b6c9b2cad6",
@@ -75,5 +75,27 @@
   "interval": "95% percentile, paired",
   "silent_margin": 0.001,
   "pin_margin": -0.002
+ },
+ "panel": {
+  "corpus": "h",
+  "manifest": "bench/corpus_h.toml",
+  "manifest_sha256": "7f4455b5da2c2db0c5520701b8e1549a1a1066ce5a5b1eb30694a31858458ac5",
+  "seal": "bench/verified_h.json",
+  "seal_sha256": "b2a0e1e5146316eeea8b7c3b1bfb0f3c108f6d0ab676cea809e320104e52f8e2",
+  "discovery_log": "bench/discovery_h.json",
+  "discovery_log_sha256": "b9f4ed18ce860ee969976b30fd3a3e8b6ea9d5b298a193ae6b0903d98db4cd0f",
+  "searches_registered": "9758ca0, committed 2026-11-10T22:38:18Z, before the first search (22:39:00Z)",
+  "designs": 59,
+  "groups": 59,
+  "by_generator": {
+   "kicad": 12,
+   "eagle": 12,
+   "easyeda": 12,
+   "altium": 15,
+   "orcad": 8
+  },
+  "sealed_with": "verify-corpus with the licence-file fix (#11) and the build-provenance check (#12), every design rebuilt first; the frozen runner's seal, drift and hash checks admit all 59",
+  "resealed": "2026-11-11, before any reading: the seal of a29674cb4daf was rewritten when the panel was rebuilt for the provenance check; decisions, reasons and content hashes are unchanged, only KiCad export times differ",
+  "amended": "2026-11-11, before any reading: tjd33/team14 excluded (TI XDS110 design family shared with corpus F's LAUNCHXL-CC1310) and not replaced; seal 7c81309788ab regenerated, the other 129 records unchanged"
  }
 }
