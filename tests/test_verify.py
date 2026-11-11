@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import shutil
 import subprocess
 from dataclasses import replace
 
@@ -8,6 +9,8 @@ import pypdfium2 as pdfium
 import pytest
 
 from schem2net import export, kicad
+from schem2net.bench import corpus as corpora
+from schem2net.bench import verify as verifying
 from schem2net.bench.corpus import Corpus, Project
 from schem2net.bench.verify import _words, check_sealed, verify
 from schem2net.ir import Component, Design, Net, Pin, Source
@@ -81,6 +84,13 @@ def records(bench, projects, *args, **kwargs):
 REFS = ["R1", "R2", "C1", "C2", "U1", "U2"]
 
 
+@pytest.fixture
+def unchecked_builds(monkeypatch):
+    """Builds made by hand of repositories never cloned, for tests of other rules:
+    build provenance has tests of its own."""
+    monkeypatch.setattr(verifying, "_built_from", lambda *args: [])
+
+
 def test_an_export_is_verified_and_hashed(bench):
     built(bench, "ok", REFS, [])
     found = records(bench, [Project(name="ok", license="MIT")])["ok"]
@@ -109,37 +119,106 @@ def test_a_published_pdf_must_print_the_truths_parts_and_names(bench):
     assert found["unread"]["reasons"][0].startswith("evidence: no readable text")
 
 
-def test_a_pdf_older_than_its_source_is_quarantined(bench):
-    repo = bench / "cache" / "repos" / "me_board"
+def board_repo(bench, owner):
+    """A repository holding board.sch and board.pdf, cloned as build-corpus clones it."""
+    repo = bench / "cache" / "repos" / f"{owner}_board"
     repo.mkdir(parents=True)
     git(repo, "init", "-q")
-    (repo / "board.sch").write_text('<eagle version="9.6.2"><sheet></sheet></eagle>')
-    (repo / "board.pdf").write_text("old print")
+    git(repo, "remote", "add", "origin", f"https://github.com/{owner}/board")
+    return repo
+
+
+def built_from(bench, repo, project, refs, words, when="2026-01-15T00:00:00"):
+    """A build of the project as build-corpus makes it: the repository's PDF, the
+    truth, and the inputs it used. The PDF is committed first, as published."""
+    out = built(bench, project.name, refs, words)
+    (repo / "board.pdf").write_bytes((out / "schematic.pdf").read_bytes())
     git(repo, "add", ".")
-    git(repo, "commit", "-qm", "draw")
+    git(repo, "commit", "-qm", "print", when=when)
+    return recorded(repo, replace(project, commit=git(repo, "rev-parse", "HEAD")), out)
+
+
+def recorded(repo, project, out):
+    used = {"schematic_file": repo / "board.sch", "pdf_file": out / "schematic.pdf"}
+    corpora._record_inputs(project, out, used)
+    return project
+
+
+def test_a_pdf_older_than_its_source_is_quarantined(bench):
+    repo = board_repo(bench, "me")
+    (repo / "board.sch").write_text('<eagle version="9.6.2"><sheet></sheet></eagle>')
+    project = Project(
+        name="stale", repo="https://github.com/me/board",
+        eagle="board.sch", pdf="board.pdf", license="CERN-OHL-S-2.0",
+    )  # fmt: skip
+    project = built_from(bench, repo, project, REFS, REFS)
     (repo / "board.sch").write_text('<eagle version="9.6.2"><sheet></sheet>changed</eagle>')
     git(repo, "commit", "-qam", "edit", when="2026-02-01T00:00:00")
     head = git(repo, "rev-parse", "HEAD")
-    built(bench, "stale", REFS, REFS)
-    project = Project(
-        name="stale", repo="https://github.com/me/board", commit=head,
-        eagle="board.sch", pdf="board.pdf", license="CERN-OHL-S-2.0",
-    )  # fmt: skip
+    project = recorded(repo, replace(project, commit=head), bench / "build" / "p" / "stale")
     found = records(bench, [project])["stale"]
-    assert "mismatch: the PDF is older than the source's last change" in found["reasons"]
+    assert found["reasons"] == ["mismatch: the PDF is older than the source's last change"]
     assert found["files"]["schematic_file"].startswith("git:")
     assert found["source_version"] == "9.6.2" and found["license_file"] is None
 
     # Printed again after the change, its text outlined: hard to read, not a mismatch.
-    (repo / "board.pdf").write_text("new print")
-    git(repo, "commit", "-qam", "print", when="2026-03-01T00:00:00")
-    fresh = replace(project, name="fresh", commit=git(repo, "rev-parse", "HEAD"))
-    built(bench, "fresh", ["R7", "R8"], [])
+    fresh = replace(project, name="fresh")
+    fresh = built_from(bench, repo, fresh, ["R7", "R8"], [], when="2026-03-01T00:00:00")
     found = records(bench, [fresh], tier="independent", holdout_share=1.0)["fresh"]
     assert found["decision"] == "verified" and found["evidence"] == "revision only"
 
 
-def test_used_sources_copies_and_missing_files_are_kept_out(bench):
+def test_a_build_is_of_the_manifests_files_at_its_commit(bench):
+    """Two repositories with files of the same names: a build of one is no build of
+    the other, and a build that does not say what it was made from is not trusted."""
+    projects = []
+    for owner, refs in (("a", REFS), ("b", ["R7", "R8"])):
+        repo = board_repo(bench, owner)
+        (repo / "board.sch").write_text(f'<eagle version="9.6.2"><sheet></sheet>{owner}</eagle>')
+        project = Project(
+            name=owner, repo=f"https://github.com/{owner}/board",
+            eagle="board.sch", pdf="board.pdf", license="MIT",
+        )  # fmt: skip
+        projects.append(built_from(bench, repo, project, refs, refs))
+    a, b = projects
+    assert all(r["reasons"] == [] for r in records(bench, projects).values())
+
+    # a's folder holding b's build, as a renamed project's stale folder can.
+    shutil.rmtree(bench / "build" / "p" / "a")
+    shutil.copytree(bench / "build" / "p" / "b", bench / "build" / "p" / "a")
+    found = records(bench, [a])["a"]
+    assert found["decision"] == "quarantine"
+    assert set(found["reasons"]) >= {
+        "provenance: the built PDF is not the manifest's PDF at its commit",
+        "provenance: built from another repository or commit than the manifest's",
+        "provenance: the built schematic is not the manifest's at its commit",
+    }
+    # Nor when the only clone at hand is the other repository's.
+    shutil.rmtree(bench / "cache" / "repos" / "a_board")
+    found = records(bench, [a])["a"]
+    assert set(found["reasons"]) >= {
+        "provenance: no clone of the manifest's repository to check against",
+        "provenance: built from another repository or commit than the manifest's",
+    }
+    (bench / "build" / "p" / "a" / corpora.INPUTS).unlink()
+    found = records(bench, [a])["a"]
+    assert (
+        "provenance: the build does not record what it was made from; rebuild it"
+        in found["reasons"]
+    )
+
+
+def test_a_build_never_uses_another_repositorys_cached_checkout(tmp_path):
+    cache = tmp_path / "cache" / "board"
+    cache.mkdir(parents=True)
+    git(cache, "init", "-q")
+    git(cache, "remote", "add", "origin", "https://github.com/b/board")
+    project = Project(name="board", repo="https://github.com/a/board", commit="0" * 40)
+    with pytest.raises(ValueError, match="holds https://github.com/b/board"):
+        corpora._checkout(project, cache)
+
+
+def test_used_sources_copies_and_missing_files_are_kept_out(bench, unchecked_builds):
     old = bench / "build" / "a" / "old"
     old.mkdir(parents=True)
     truth(old / "truth.net", REFS)
@@ -187,7 +266,7 @@ def test_an_independent_corpus_is_held_out_whole(bench):
         records(bench, [], tier="final")
 
 
-def test_a_seal_holds_the_corpus_whole(bench):
+def test_a_seal_holds_the_corpus_whole(bench, unchecked_builds):
     out = built(bench, "ok", REFS, [])
     built(bench, "other", ["R7", "R8"], [])
     text = (out / "truth.net").read_text()
@@ -220,7 +299,7 @@ def test_a_seal_holds_the_corpus_whole(bench):
     assert check_sealed(seal(bench, [ok, other]), sealed) == ["ok: quarantine, now verified"]
 
 
-def test_a_rendering_must_have_its_designs_netlist(bench):
+def test_a_rendering_must_have_its_designs_netlist(bench, unchecked_builds):
     built(bench, "base", REFS, [])
     built(bench, "bw", REFS, [])
     built(bench, "v7", REFS[:4], [])
