@@ -314,3 +314,23 @@ def test_parts_not_printed_by_design_are_no_mismatch(bench):
     text = records(bench, [project])["board"]["text"]
     assert text["refs_unprinted"] == ["H1", "H2"] and text["refs_channel"] == ["1U3", "2U3"]
     assert text["refs_missing"] == ["R101"]
+
+
+def test_a_licence_is_a_file_at_the_top_whatever_the_names_beside_it(tmp_path):
+    from schem2net.bench.verify import _license_file
+
+    def git(*args):
+        return subprocess.run(["git", "-C", str(tmp_path), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()  # fmt: skip
+
+    git("init", "-q")
+    (tmp_path / "Eagle Licence").mkdir()
+    (tmp_path / "Eagle Licence" / "key.txt").write_text("x")
+    (tmp_path / "board.sch").write_text("x")
+    git("add", ".")
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "a")
+    assert _license_file(tmp_path, git("rev-parse", "HEAD")) is None
+    (tmp_path / "COPYING").write_text("terms")
+    git("add", ".")
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "b")
+    assert _license_file(tmp_path, git("rev-parse", "HEAD"))["path"] == "COPYING"
