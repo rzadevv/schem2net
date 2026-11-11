@@ -1,5 +1,5 @@
 {
- "status": "pinned: runner at the commit that merged the protocol, image built and archived; the panel manifest, discovery log and seal join it in the commit that freezes the panel",
+ "status": "frozen: runner, image and panel pinned; the panel has not been read",
  "protocol": "docs/evaluation-protocol.md",
  "runner": {
   "commit": "0b1b6911d50322433df11171a0ed87b6c9b2cad6",
@@ -75,5 +75,25 @@
   "interval": "95% percentile, paired",
   "silent_margin": 0.001,
   "pin_margin": -0.002
+ },
+ "panel": {
+  "corpus": "h",
+  "manifest": "bench/corpus_h.toml",
+  "manifest_sha256": "58bbf2f0e2a5aadbb7704c7287dabc60859f2f6a5ef9c88f51cbdf9cb35e5d68",
+  "seal": "bench/verified_h.json",
+  "seal_sha256": "a29674cb4daf644ece59ceea616680bd85abcae7aa625f3b3b848c6d4d5edb68",
+  "discovery_log": "bench/discovery_h.json",
+  "discovery_log_sha256": "e6112a4f87d445db3b7391a2e8a8aa593073dc56191ea71c82c4b05a31640da9",
+  "searches_registered": "9758ca0, committed 2026-11-10T22:38:18Z, before the first search (22:39:00Z)",
+  "designs": 60,
+  "groups": 60,
+  "by_generator": {
+   "kicad": 12,
+   "eagle": 12,
+   "easyeda": 12,
+   "altium": 15,
+   "orcad": 9
+  },
+  "sealed_with": "verify-corpus with the licence-file fix (Read licence files from a tree whose names have spaces); the frozen runner's seal, drift and hash checks admit all 60"
  }
 }
