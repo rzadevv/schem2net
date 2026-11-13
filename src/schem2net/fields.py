@@ -125,6 +125,7 @@ def annotate(symbols: list[Symbol], scene: Scene, profile: Profile, runs: Runs |
         index.add(k, (*end, *end))
     for symbol in symbols:
         if symbol.power:
+            symbol.power_ambiguous = symbol.power_hidden and _is_tee(symbol, scene)
             symbol.anchors = _anchors(symbol, scene, ends, len(wired), index)
     values = _values_by_order(scene, profile)
     likely = designators.likelihood(scene, symbols, runs, profile)

@@ -2970,3 +2970,73 @@ def test_pin_names_that_look_like_references_do_not_separate_pins_from_their_bod
     assert part.ref == "U1"
     assert len(part.pins) == 2
     assert set(part.shapes) == {0, 1, 2}
+
+
+def _inferred_power_fixture(sign, named, completion, rules):
+    """Known component terminals isolate power inference from reference/text recovery."""
+    b = SceneBuilder()
+    if sign == "tee":
+        b.shape((10, 7.46), (10, 6.19))
+        b.shape((8.73, 6.19), (11.27, 6.19))
+    elif sign == "triangle":
+        b.shape((10, 7.46), (10, 6.19), (11.27, 6.19), (10, 4.92), (8.73, 6.19), (10, 6.19))
+    else:
+        b.shape((10, 7.46), (10, 6.19))
+        for y, half in [(6.19, 1.27), (5.55, 0.9), (4.92, 0.5)]:
+            b.shape((10 - half, y), (10 + half, y))
+    box = geometry.bbox_of([p for s in b.scene.shapes for p in s.points])
+    power = symbols.Symbol(list(range(len(b.scene.shapes))), box, body=box)
+    if named:
+        b.field("SUPPLY_A", 7, 2.5)
+    b.scene.wires = [((10, 7.46), (20, 7.46))]
+    positions = [10, 20]
+    if completion != "complete":
+        b.scene.wires.append(((20, 7.46), (30, 7.46)))
+    if completion == "recovered":
+        positions.append(30)
+    parts = [
+        symbols.Symbol(
+            [],
+            (x - 0.5, 7.46, x + 0.5, 9),
+            ref=f"J{i}",
+            pins=[symbols.Pin(i, ((x, 9), (x, 7.46)), "1", "read")],
+        )
+        for i, x in enumerate(positions, 1)
+    ]
+    fields.annotate([power], b.scene, rules, None)
+    netlister = Netlister()
+    netlister.add_page(b.scene, [power, *parts])
+    return power, netlister.result()
+
+
+@pytest.mark.parametrize("generator", ["altium", "kicad", "eagle", "easyeda", "orcad"])
+@pytest.mark.parametrize("completion", ["complete", "dangling", "recovered"])
+@pytest.mark.parametrize(
+    "sign,named", [("tee", False), ("tee", True), ("triangle", False), ("bars", False)]
+)
+def test_power_name_uncertainty_survives_connectivity_recovery(generator, completion, sign, named):
+    """A bare tee can be a ground or an unnamed supply; geometry cannot choose its name.
+
+    Repairing a wire removes dangling evidence, but cannot resolve that identity.
+    Distinctive ground signs and explicitly read names carry no such ambiguity.
+    This fixture does not call the text-role classifier.
+    """
+    rules = profile.load(generator)
+    power, found = _inferred_power_fixture(sign, named, completion, rules)
+    (net,) = found.nets
+    expected_name = "SUPPLY_A" if named else rules.ground_signs.get(sign, rules.unnamed_ground)
+    assert power.power == net.name == expected_name
+    assert power.power_hidden == (not named)
+    assert set(net.pins) == {("J1", "1"), ("J2", "1")} | (
+        {("J3", "1")} if completion == "recovered" else set()
+    )
+    assert [i.kind for i in found.issues] == (["dangling_wire"] if completion == "dangling" else [])
+    evidence = {e.type for e in net.evidence}
+    ambiguous = sign == "tee" and not named
+    assert ("hidden_name" in evidence) == ambiguous
+    if completion == "dangling":
+        assert net.confidence == nets.WEIGHTS["dangling"]
+    elif ambiguous:
+        assert net.confidence == nets.WEIGHTS["hidden_name"]
+    else:
+        assert net.confidence >= 0.8

@@ -35,8 +35,8 @@ WEIGHTS = {
     "shared_pin": 0.95,  # one pin drawn in several units
     "dangling": 0.6,  # a wire end touching nothing: often a connection that was missed
     # A page known by a power name only where it is hidden, such as a ground sign's,
-    # joined to the pages of that name: the name is the generator's usual one, and
-    # modules of one design may each name their ground apart.
+    # joined to the pages of that name: modules may name their ground apart. Also
+    # used where an unnamed tee's geometry cannot establish its supply identity.
     "hidden_name": 0.7,
 }
 LONE_PIN_CONFIDENCE = 0.5
@@ -205,7 +205,8 @@ class Netlister:
                 key = self._key(symbol.power)
                 if symbol.power_hidden:
                     self.hidden_pages[key].add(page)
-                    self.join(node, ("hidden", page, key), "global_name")
+                    kind = "hidden_name" if symbol.power_ambiguous else "global_name"
+                    self.join(node, ("hidden", page, key), kind)
                 else:
                     self.printed_pages[key].add(page)
                     self.join(node, ("global", key), "global_name")

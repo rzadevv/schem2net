@@ -273,6 +273,17 @@ def recolour(page: Page, profile: Profile, models=None) -> Page:
         if texts
         else []
     )
+    text_role = {id(t): r for t, r in zip(texts, text_roles, strict=True)}
+    groups = _runs(texts)
+    # Rejoining repairs disagreement between fragments. An already consistent run
+    # keeps its original prediction and fragment-based neighbourhood features.
+    if any(len({text_role[id(t)] for t in pieces}) > 1 for _, pieces in groups):
+        whole = [joined for joined, _ in groups]
+        joined_roles = texts_model.predict(text_features(whole, paths, path_roles))
+        for (_, pieces), r in zip(groups, joined_roles, strict=True):
+            if len({text_role[id(t)] for t in pieces}) > 1:
+                for t in pieces:
+                    text_role[id(t)] = int(r)
     # Copies of one path, which the page may hold, take the role found for the first.
     role_of = {_shape_key(p): r for p, r in zip(paths, path_roles, strict=True)}
 
@@ -282,9 +293,7 @@ def recolour(page: Page, profile: Profile, models=None) -> Page:
             return p
         return replace(p, stroke=colour if p.stroke else None, fill=colour if p.fill else None)
 
-    text_colour = {
-        id(t): _colour(profile, TEXT_ROLES, r) for t, r in zip(texts, text_roles, strict=True)
-    }
+    text_colour = {id(t): _colour(profile, TEXT_ROLES, text_role[id(t)]) for t in texts}
     return replace(
         page,
         paths=[coloured(p) for p in page.paths],
