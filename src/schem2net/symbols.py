@@ -77,8 +77,9 @@ class Symbol:
     unit: str | None = None
     value: str | None = None
     power: str | None = None  # net name, for power symbols
-    power_hidden: bool = False  # the name is not printed: the generator's usual one
+    power_hidden: bool = False  # no name was read: use the generator's usual one
     anchors: list[Point] = field(default_factory=list)  # where a power symbol connects
+    power_ambiguous: bool = False  # an unread name on a bare tee could be another supply
 
 
 def find(scene: Scene, profile: Profile) -> list[Symbol]:
