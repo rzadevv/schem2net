@@ -120,7 +120,11 @@ board drawings, tables and raster pages are reported as skipped.
 
 The reader refuses more than 1,000 pages and stops pages exceeding 1.5 million
 visited drawing objects or 32 nested forms. Ingestion and analysis each have a
-1,200-second page budget on POSIX main threads. Native PDFium calls can delay
+1,200-second page budget on POSIX main threads. Drawing reconstruction refuses
+vector bus ranges exceeding 10,000 members before expansion, including reversed
+ranges and hierarchical sheet pins. This exits with code 1 and preserves existing
+output, including without `--strict`; no partial design is returned for that input.
+Native PDFium calls can delay
 signal handling. Threads and platforms without interval timers have no such
 budget; there is no hard in-process memory ceiling. Use an outer subprocess
 limit for untrusted or unusually large documents. Native Windows/macOS resource

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from schem2net import (
     bookmarks,
+    buses,
     fields,
     grid,
     ingest,
@@ -238,6 +239,8 @@ def _extract(
                 raise ValueError(f"more than {pdf.MAX_OBJECTS} drawing objects")
             with pdf.time_limit(PAGE_SECONDS):
                 _read_page(result, design, rules, printed, region, len(doc.pages))
+        except buses.LimitError as e:
+            raise pdf.InputError(f"{design.source.file}: page {result.page.number}: {e}") from None
         except Exception as e:  # one page the reader trips on: the others are still read
             result.scene, result.symbols = None, []
             detail = f"{type(e).__name__}: {e}"
@@ -256,7 +259,10 @@ def _extract(
             library.resolve(result.symbols, parts, by_name, result.scene.fields)
     for result in read:
         fields.names_apart(result.symbols)
-        netlister.add_page(result.scene, result.symbols)
+        try:
+            netlister.add_page(result.scene, result.symbols)
+        except buses.LimitError as e:
+            raise pdf.InputError(f"{design.source.file}: page {result.page.number}: {e}") from None
     found = netlister.result()
     design.components = found.components
     design.nets = found.nets

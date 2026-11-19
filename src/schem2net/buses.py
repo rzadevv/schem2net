@@ -15,6 +15,11 @@ from schem2net.scene import name_key
 
 VECTOR = re.compile(r"^(.*?)\[(\d+)\.\.(\d+)\]$")
 GROUP = re.compile(r"^(.*?)\{(.*)\}$")
+MAX_VECTOR_MEMBERS = 10_000  # bound expansion of a short range declaration
+
+
+class LimitError(ValueError):
+    """A bus declaration cannot be expanded within the reader's limits."""
 
 
 @dataclass(frozen=True)
@@ -31,8 +36,13 @@ class Bus:
 def parse(name: str) -> Bus | None:
     """The bus a name stands for, or None for a plain net name."""
     if m := VECTOR.match(name):
-        first, last = int(m[2]), int(m[3])
+        try:
+            first, last = int(m[2]), int(m[3])
+        except ValueError:
+            raise LimitError("vector bus endpoints exceed integer conversion limits") from None
         first, last = sorted((first, last))
+        if last - first + 1 > MAX_VECTOR_MEMBERS:
+            raise LimitError(f"vector bus range exceeds {MAX_VECTOR_MEMBERS} members")
         return Bus(name_key(m[1]), tuple(str(i) for i in range(first, last + 1)), True)
     if m := GROUP.match(name):
         prefix, inner = name_key(m[1]), m[2].split()
