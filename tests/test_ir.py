@@ -3,9 +3,12 @@
 import json
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 import pytest
 
+from schem2net import ir
 from schem2net.ir import SCHEMA, Design, Net
 
 
@@ -105,3 +108,47 @@ def test_loading_legacy_ir_without_a_schema_uses_the_current_default(tmp_path, p
     del payload["schema"]
     file.write_text(json.dumps(payload))
     assert Design.load(file).schema_ == SCHEMA
+
+
+def test_concurrent_saves_each_finish_with_a_complete_design(tmp_path, payload, monkeypatch):
+    file = tmp_path / "board.ir.json"
+    first = Design.model_validate(payload)
+    second = Design.model_validate(payload | {"source": {"file": "other.pdf"}})
+    ready, replace = Barrier(2), ir.os.replace
+
+    def overlap(source, target):
+        if target == file:
+            ready.wait(timeout=10)
+        replace(source, target)
+
+    monkeypatch.setattr(ir.os, "replace", overlap)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(lambda design: design.save(file), [first, second]))
+    assert Design.load(file) in (first, second)
+    assert set(tmp_path.iterdir()) == {file}
+
+
+def test_a_failed_save_preserves_the_output_and_cleans_its_temporary_file(
+    tmp_path, payload, monkeypatch
+):
+    file = tmp_path / "board.ir.json"
+    design = Design.model_validate(payload)
+    design.save(file)
+    before = file.read_bytes()
+
+    def fail(source, target):
+        raise OSError("replacement failed")
+
+    monkeypatch.setattr(ir.os, "replace", fail)
+    with pytest.raises(OSError, match="replacement failed"):
+        design.save(file)
+    assert file.read_bytes() == before
+    assert set(tmp_path.iterdir()) == {file}
+
+
+def test_saving_supports_a_long_output_filename(tmp_path, payload):
+    file = tmp_path / ("a" * 220 + ".json")
+    design = Design.model_validate(payload)
+    design.save(file)
+    assert Design.load(file) == design
+    assert set(tmp_path.iterdir()) == {file}

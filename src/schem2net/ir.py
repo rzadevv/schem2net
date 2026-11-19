@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -87,9 +88,14 @@ class Design(BaseModel):
     def save(self, path: str | Path) -> None:
         """Write the whole file or nothing: a failed run leaves an earlier one as it was."""
         path = Path(path)
-        part = path.with_name(f".{path.name}.part")
-        part.write_text(self.model_dump_json(by_alias=True, exclude_none=True, indent=2))
-        os.replace(part, path)
+        part = path.with_name(f".schem2net-{uuid4().hex}.part")
+        stream = part.open("x", encoding="utf-8")
+        try:
+            with stream:
+                stream.write(self.model_dump_json(by_alias=True, exclude_none=True, indent=2))
+            os.replace(part, path)
+        finally:
+            part.unlink(missing_ok=True)
 
     @classmethod
     def load(cls, path: str | Path) -> "Design":
