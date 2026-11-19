@@ -72,6 +72,19 @@ def union_bbox(a: BBox, b: BBox) -> BBox:
     return min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3])
 
 
+def longest_side(box: BBox) -> float:
+    return max(box[2] - box[0], box[3] - box[1])
+
+
+def contains(outer: BBox, inner: BBox) -> bool:
+    return (
+        outer[0] <= inner[0]
+        and outer[1] <= inner[1]
+        and inner[2] <= outer[2]
+        and inner[3] <= outer[3]
+    )
+
+
 def bbox_gap(a: BBox, b: BBox) -> float:
     """Distance between two boxes; 0 if they overlap."""
     dx = max(a[0] - b[2], b[0] - a[2], 0.0)
@@ -176,7 +189,7 @@ class UnionFind:
 
     def groups(self) -> dict:
         out = defaultdict(list)
-        for x in list(self._parent):
+        for x in self._parent:  # Parents are registered; find only compresses existing links.
             out[self.find(x)].append(x)
         return out
 

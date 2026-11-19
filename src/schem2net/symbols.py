@@ -13,7 +13,7 @@ from functools import cache
 import numpy as np
 
 from schem2net import designators, fields, geometry
-from schem2net.geometry import GridIndex, Segment, UnionFind
+from schem2net.geometry import GridIndex, Segment, UnionFind, contains, longest_side
 from schem2net.primitives import BBox, Point
 from schem2net.profile import Profile, learned_arrays, learned_file
 from schem2net.refdes import PART_VALUE, is_common_ref
@@ -95,7 +95,7 @@ def find(scene: Scene, profile: Profile) -> list[Symbol]:
         symbols = _without_frames(runs.join_pieces(symbols))
     else:  # a frame spans all the drawing: gone first, so no piece joins it
         symbols = _join_drawn_together(_without_frames(symbols), scene, profile)
-    if profile.learned_grouping and (model := _grouping_model(profile.name)):
+    if profile.learned_grouping and (model := _forest(learned_file(GROUPS_FILE), profile.name)):
         symbols = _split_unlinked(symbols, scene, model, pins)
     if profile.labels_in_outlines and profile.labels_on_wires:
         recover_labels(scene, [geometry.grown(s.bbox, TOUCH) for s in symbols])
@@ -432,10 +432,6 @@ def _reach(a: Shape, b: Shape) -> float:
     return min(geometry.distance_to_segment(p, s) for p in a.points for s in segs)
 
 
-def _grouping_model(generator: str):
-    return _forest(learned_file(GROUPS_FILE), generator)
-
-
 @cache
 def _forest(path, generator: str):
     arrays = learned_arrays(path)
@@ -708,12 +704,12 @@ def _cosine(s: Segment, t: Segment) -> float:
 
 def _pad(shape: Shape) -> bool:
     """A small filled outline, as a pad drawn in a symbol is."""
-    return shape.filled and shape.closed and _size(shape.bbox) < PAD_SIZE
+    return shape.filled and shape.closed and longest_side(shape.bbox) < PAD_SIZE
 
 
 def _flag(shape) -> bool:
     """A small closed outline, as a port flag is."""
-    return shape.closed and _size(shape.bbox) < FLAG_SIZE
+    return shape.closed and longest_side(shape.bbox) < FLAG_SIZE
 
 
 def _flag_on_tip(chain, a: Point, b: Point, scene: Scene, index: GridIndex) -> bool | None:
@@ -738,7 +734,7 @@ def _body_size(end: Point, own: set[int], scene: Scene, index: GridIndex) -> flo
         if any(
             geometry.distance_to_segment(end, seg) <= tol for seg in geometry.segments(other.points)
         ):
-            best = max(best, _size(other.bbox))
+            best = max(best, longest_side(other.bbox))
     return best
 
 
@@ -855,9 +851,8 @@ def _group(
         body = [scene.shapes[m] for m in members if m not in pins or id(pins[m]) in stubs]
         body_box = _union([s.bbox for s in body]) if body else None
         # A line that ends inside the body is drawing, not a pin.
-        own = list({id(pins[m]): pins[m] for m in members if m in pins}.values())
-        own = [p for p in own if id(p) not in stubs]
-        own = [p for p in own if not _in_body(p, body)]
+        own = {id(pins[m]): pins[m] for m in members if m in pins}
+        own = [p for p in own.values() if id(p) not in stubs and not _in_body(p, body)]
         box = _union([scene.shapes[m].bbox for m in members])
         symbols.append(Symbol(sorted(members), box, own, body=body_box))
     return symbols
@@ -936,7 +931,9 @@ def _join_drawn_together(symbols: list[Symbol], scene: Scene, profile: Profile) 
             joined.union(id(a), id(b))
     # Small pinless bits drawn right after or before a neighbour and almost touching it
     # are more of it: the separate bars of a ground sign under its stem.
-    small = [s for s in symbols if not s.pins and id(s) in spans and _size(s.bbox) < BIT_SIZE]
+    small = [
+        s for s in symbols if not s.pins and id(s) in spans and longest_side(s.bbox) < BIT_SIZE
+    ]
     bits = small if profile.symbols_in_pieces else []
     for bit in bits:
         lo, hi = spans[id(bit)]
@@ -1050,14 +1047,6 @@ def _add_edge_pins(symbols: list[Symbol], scene: Scene, pinless: Profile | None 
 def _without_frames(symbols: list[Symbol]) -> list[Symbol]:
     """Drop the page frame and title block: drawings that hold whole symbols."""
 
-    def holds(outer: BBox, inner: BBox) -> bool:
-        return (
-            outer[0] <= inner[0]
-            and outer[1] <= inner[1]
-            and inner[2] <= outer[2]
-            and inner[3] <= outer[3]
-        )
-
     def frame(s: Symbol) -> bool:
         x0, y0, x1, y1 = s.bbox
         # Whole parts inside a pinless outline establish that it is a section
@@ -1065,13 +1054,13 @@ def _without_frames(symbols: list[Symbol]) -> list[Symbol]:
         if (
             not s.pins
             and min(x1 - x0, y1 - y0) > MIN_BOX
-            and sum(len(t.pins) > 1 and holds(s.bbox, t.bbox) for t in symbols if t is not s)
+            and sum(len(t.pins) > 1 and contains(s.bbox, t.bbox) for t in symbols if t is not s)
             >= FRAME_HOLDS
         ):
             return True
         if min(x1 - x0, y1 - y0) <= FRAME_MIN_SIZE:
             return False
-        held = sum(holds(s.bbox, t.bbox) for t in symbols if t is not s)
+        held = sum(contains(s.bbox, t.bbox) for t in symbols if t is not s)
         return held >= max(FRAME_HOLDS, len(symbols) / 2)  # it holds most of the page
 
     return [s for s in symbols if not frame(s)]
@@ -1167,7 +1156,7 @@ class Runs:
         for k, seg in enumerate(self.scene.wires):
             wires.add(k, geometry.bbox_of(seg))
         for parts in by_run.values():
-            parts = [p for p in parts if p.pins or _size(p.bbox) <= PIECE_MAX_SIZE]
+            parts = [p for p in parts if p.pins or longest_side(p.bbox) <= PIECE_MAX_SIZE]
             # A piece on a wire without real pins is a power port, never part of a symbol
             # with pins. Its stem may pass for a pin drawn in the body colour.
             ports = {id(p) for p in parts if not self._real_pins(p) and self._wired(p, wires)}
@@ -1230,10 +1219,6 @@ def _union(boxes: list[BBox]) -> BBox:
     for other in boxes[1:]:
         box = geometry.union_bbox(box, other)
     return box
-
-
-def _size(box: BBox) -> float:
-    return max(_sides(box))
 
 
 def _sides(box: BBox) -> tuple[float, float]:

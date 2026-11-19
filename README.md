@@ -2,8 +2,7 @@
 
 Recover electrical connectivity from vector schematic PDFs. schem2net reads PDF
 paths, text and drawing order to reconstruct components, physical pins and nets.
-It writes JSON, KiCad netlists and editable schematics, BOMs, SPICE and an HTML
-review report.
+It writes JSON, KiCad netlists and an HTML review report.
 
 The problem is more than recognizing symbols: crossing wires may not connect,
 labels can join distant sheets, and a nearby number may identify the wrong pad.
@@ -36,7 +35,7 @@ as `nsumo.pdf`, then run:
 
 ```sh
 schem2net extract nsumo.pdf -o nsumo.ir.json
-schem2net export nsumo.ir.json --to kicad-net -o nsumo.net
+schem2net export nsumo.ir.json -o nsumo.net
 schem2net report nsumo.pdf -o nsumo.html
 ```
 
@@ -65,10 +64,8 @@ high-confidence net may still have a wrong pad; inspect pin-level issues too.
 Files over 1,000 pages are refused. Object and page-time guards are cooperative,
 not hard process isolation; see [usage and limits](docs/usage.md).
 
-Additional commands include `schematic` for an editable KiCad project, `diff` for
-revision comparisons, and `index-library` for optional pin recovery. The
-[usage guide](docs/usage.md) covers exports, regions, libraries, Python access and
-read-only MCP tools.
+`index-library` provides optional pin recovery. The [usage guide](docs/usage.md) covers
+exports, regions, libraries and Python access.
 
 An optional desktop application, `schem2net-gui`, opens a PDF, runs extraction
 and shows the report beside lists of nets, components and issues. Install it with
@@ -76,18 +73,19 @@ the `gui` extra; see [Desktop application](docs/usage.md#desktop-application).
 
 ## Evaluation
 
-The frozen extractor at `5d2417c` was evaluated once on **63 new designs from 40
-source groups**: 62 generated KiCad PDFs and one native Altium PDF, with 16,341
-connected truth pins. Drawing-only pin accuracy was **91.02%** (95% source-group
-bootstrap interval 88.14–93.66%); **1.10%** of scored truth pins were silently wrong.
-These figures do not establish equal support across all five generators.
+Two frozen independent evaluations are available:
 
-The candidate did not meet its release criteria: silent-error non-inferiority
-remained inconclusive, a high-confidence MCU pad error was confirmed, and generator
-coverage was incomplete. [Full results and protocol](docs/release-2026-11-05.md)
-include missing pins, extras, unsupported references, review quality and failures.
-[Benchmark methodology](docs/benchmark.md) separates this panel from historical
-test/holdout results and the repeatedly optimized development corpus.
+| Report | Panel | Reported pin accuracy | Silent error rate |
+|---|---|---:|---:|
+| [11 November, five generators](docs/independent-evaluation-2026-11-11.md) | 59 designs, 59 source groups | 68.90% | 1.33% |
+| [5 November, mostly KiCad](docs/release-2026-11-05.md) | 63 designs, 40 source groups | 91.02% | 1.10% |
+
+These panels use different designs, extractor commits and protocols; the rows are
+not an improvement trend. The November 5 release criteria were not met. The
+November 11 report shows a small paired gain over its comparator, with substantial
+remaining errors. Both reports include intervals, protocols and limitations.
+[Benchmark methodology](docs/benchmark.md) separates independent panels from the
+repeatedly optimized development corpus and previously observed test/holdout data.
 
 ## Development
 
@@ -103,8 +101,7 @@ make package-check
 See [architecture](docs/pipeline.md) for the extraction stages and algorithms, and
 [development](docs/development.md) for tests, benchmark reproduction and the
 archived engineering comparisons. The runtime dependencies are NumPy, SciPy,
-PDFium, Pydantic and Typer. Scikit-learn is needed for model training, not inference;
-MCP is optional for users.
+PDFium, Pydantic and Typer. Scikit-learn is needed for model training, not inference.
 
 ## License and distribution status
 

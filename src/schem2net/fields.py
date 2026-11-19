@@ -18,7 +18,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from schem2net import designators, geometry
-from schem2net.geometry import GridIndex, Segment, UnionFind
+from schem2net.geometry import GridIndex, Segment, UnionFind, longest_side
 from schem2net.primitives import BBox, Point, Text
 from schem2net.profile import Profile
 from schem2net.refdes import (
@@ -1065,7 +1065,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
         body = [scene.shapes[i] for s in parts for i in s.shapes if i not in own]
         lines = [s for s in body if len(s.points) == 2]
         pads = [s for s in body if s.filled and s.closed]
-        if middle and not _leads_to_bar(middle, lines, pads):  # a transistor's is its control
+        if middle and not _bars_ahead(middle, lines, pads):  # a transistor's is its control
             ends = sorted(
                 (p for p in part_pins if p is not middle), key=lambda p: (down * p.at[1], p.at[0])
             )
@@ -1121,15 +1121,17 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
     own = {p.shape for p in pins}
     body = [scene.shapes[i] for s in parts for i in s.shapes if i not in own]
     lines = [s for s in body if len(s.points) == 2 and not s.closed]
+    pads = [s for s in body if s.filled and s.closed]
     for k, control in enumerate(pins):
         a, b = (p for j, p in enumerate(pins) if j != k)
         u, v, w = (geometry.unit(*p.line) for p in (control, a, b))
         if abs(v[0] * w[0] + v[1] * w[1]) < 0.99 or abs(u[0] * v[0] + u[1] * v[1]) > 0.1:
             continue
-        if not _leads_to_bar(control, lines, [s for s in body if s.filled and s.closed]):
+        bars = _bars_ahead(control, lines, pads)
+        if not bars:
             continue
         arrows = [s for s in body if s.closed and len(_corners(s)) in (3, 4)]
-        arrows = [s for s in arrows if max(_box_sides(s.bbox)) < ARROW_SIZE]
+        arrows = [s for s in arrows if longest_side(s.bbox) < ARROW_SIZE]
         best = None
         for arrow in arrows:
             da, db = _path_lengths(body, arrow, (a.line[0], b.line[0]))
@@ -1141,7 +1143,6 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
         other = b if emitter is a else a
         # A bipolar transistor's emitter and collector leave its base bar on slants. A
         # MOSFET has slants too, in its arrowhead and body diode, but none on its gate.
-        bars = _bars_ahead(control, lines, [s for s in body if s.filled and s.closed])
         slants = any(
             not geometry.is_axis_aligned(tuple(s.points), 0.01)
             and any(geometry.distance_to_segment(p, bar) <= 0.1 for p in s.points for bar in bars)
@@ -1152,14 +1153,9 @@ def _transistor_roles(parts: list[Symbol], scene: Scene) -> list[tuple[Pin, str]
     return []
 
 
-def _leads_to_bar(pin: Pin, lines: list[Shape], pads: list[Shape]) -> bool:
-    """Carried on inwards, perhaps along a lead, the pin meets a bar square to it, as a
-    transistor's base or gate does, in its middle or at its end."""
-    return bool(_bars_ahead(pin, lines, pads))
-
-
 def _bars_ahead(pin: Pin, lines: list[Shape], pads: list[Shape]) -> list[tuple[Point, ...]]:
-    """The bars square to the pin that it meets when carried on inwards."""
+    """Bars the pin meets when carried inwards, square to its lead, at their middle
+    or end, as a transistor's base or gate does."""
     (x, y), (dx, dy) = pin.line[0], geometry.unit(pin.line[1], pin.line[0])
     ahead = [(x + dx * t / 10, y + dy * t / 10) for t in range(int(BAR_REACH * 10) + 1)]
     bars = [tuple(s.points) for s in lines if abs(_cos(s.points, pin.line)) < 0.1]
@@ -1194,10 +1190,6 @@ def _corners(shape: Shape) -> set[Point]:
     return {(round(x, 2), round(y, 2)) for x, y in shape.points}
 
 
-def _box_sides(box: BBox) -> tuple[float, float]:
-    return box[2] - box[0], box[3] - box[1]
-
-
 def _path_lengths(
     body: list[Shape], start: Shape, ends: tuple[Point, Point]
 ) -> tuple[float, float]:
@@ -1219,7 +1211,7 @@ def _path_lengths(
     heads = [
         (s, o)
         for s, o in zip(body, offsets[:-1], strict=True)
-        if s.closed and max(_box_sides(s.bbox)) < ARROW_SIZE
+        if s.closed and longest_side(s.bbox) < ARROW_SIZE
     ]
     for i, j in segs:
         link(i, j)
@@ -1268,10 +1260,10 @@ def _number_rows(symbols: list[Symbol], numbers: list[Text]) -> set[int]:
             if numbered:
                 # Only an end pin numbered, and as the first: its mark sits beside it.
                 end = numbered[0]
-                if len(numbered) > 1 or end not in (row[0], row[-1]) or end.number != "1":
+                if end not in (row[0], row[-1]) or end.number != "1":
                     continue
                 row = row if end is row[0] else row[::-1]
-                a, step = int(end.number), 1
+                a, step = 1, 1
             else:
                 first = _row_mark(row, numbers, used)
                 last = _row_mark(row[::-1], numbers, used)
@@ -1382,7 +1374,7 @@ def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> Non
     index = GridIndex()
     for t, text in enumerate(texts):
         index.add(t, text.bbox)
-    reach = name_gap + max((_size(t) for t in texts), default=1.0) + 1.0
+    reach = name_gap + max((longest_side(t.bbox) for t in texts), default=1.0) + 1.0
     options = []
     for symbol in symbols:
         unnamed = [p for p in symbol.pins if p.number is None]
@@ -1399,7 +1391,7 @@ def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> Non
                 inward = geometry.unit(pin.line[1], pin.line[0])
                 ahead = (c[0] - pin.line[0][0]) * inward[0] + (c[1] - pin.line[0][1]) * inward[1]
                 gap = geometry.distance(c, pin.line[0])
-                if ahead > 0 and gap <= name_gap + max(_size(text), 1.0):
+                if ahead > 0 and gap <= name_gap + max(longest_side(text.bbox), 1.0):
                     options.append((gap, t, id(pin), pin))
     taken, named = set(), set()
     for _, t, key, pin in sorted(options, key=lambda o: o[0]):
@@ -1411,10 +1403,6 @@ def _name_pins(symbols: list[Symbol], texts: list[Text], name_gap: float) -> Non
                 pin.how = "name"
             taken.add(t)
             named.add(key)
-
-
-def _size(text: Text) -> float:
-    return max(text.bbox[2] - text.bbox[0], text.bbox[3] - text.bbox[1])
 
 
 def _triangle_corners(symbol: Symbol, scene: Scene) -> list[Point]:
@@ -1579,8 +1567,9 @@ def _assign_values(
             candidates.append((text.seq if runs else gap, si, ti))
     if runs:  # drawn in turn: the first text after the designator, part by part
         pairs = []
-        for si in range(len(named)):
-            mine = [(cost, ti) for cost, sj, ti in candidates if sj == si and ti not in texts.used]
+        # Candidates were appended component by component.
+        for si, choices in itertools.groupby(candidates, key=lambda c: c[1]):
+            mine = [(cost, ti) for cost, _, ti in choices if ti not in texts.used]
             if mine:
                 _, ti = min(mine)
                 pairs.append((si, ti))
@@ -1599,7 +1588,7 @@ def _read_as_number(symbol: Symbol, text: Text) -> bool:
     word = text.text.strip()
     return any(
         (pin.number == word or len(word) == 1)
-        and geometry.distance_to_segment(c, pin.line) <= PIN_NUMBER_GAP + _size(text)
+        and geometry.distance_to_segment(c, pin.line) <= PIN_NUMBER_GAP + longest_side(text.bbox)
         for pin in symbol.pins
     )
 
@@ -1636,7 +1625,7 @@ def is_pin_name(symbol: Symbol, text: Text, gap: float = PIN_NAME_GAP) -> bool:
     if not (x0 + 0.3 <= c[0] <= x1 - 0.3 and y0 + 0.3 <= c[1] <= y1 - 0.3):
         return False
     # The ink of a narrow last letter, such as 1, stops short of where the text is set.
-    reach = gap + SIDE_BEARING * text.size + _size(text) / 2
+    reach = gap + SIDE_BEARING * text.size + longest_side(text.bbox) / 2
     vertical_text = round(text.angle) % 180 == 90
     return any(
         geometry.distance(c, pin.line[0]) <= reach

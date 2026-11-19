@@ -4,7 +4,6 @@ are shown in the page `schem2net report` writes, driven through `view.js`."""
 
 import json
 import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -52,7 +51,7 @@ from PySide6.QtWidgets import (
 )
 
 from schem2net import __version__, export, library, report
-from schem2net.cli import _stem, _write
+from schem2net.cli import _natural, _stem, _write
 from schem2net.ir import LOW_CONFIDENCE, Design, Net
 
 WORLD = QWebEngineScript.ScriptWorldId.ApplicationWorld  # view.js, apart from the page's
@@ -78,20 +77,6 @@ EXPORTS = [  # menu entry, file type, pattern, suffix, write(window, path)
         lambda w, p: _write(p, export.kicad_netlist(w.design)),
     ),
     ("&JSON…", "schem2net JSON", "*.json", ".ir.json", lambda w, p: w.design.save(p)),
-    (
-        "&Bill of Materials…",
-        "Bill of materials",
-        "*.csv",
-        ".bom.csv",
-        lambda w, p: _write(p, export.bom_csv(w.design)),
-    ),
-    (
-        "&SPICE Netlist…",
-        "SPICE netlist",
-        "*.cir",
-        ".cir",
-        lambda w, p: _write(p, export.spice_netlist(w.design)),
-    ),
     (
         "&HTML Report…",
         "HTML report",
@@ -209,11 +194,6 @@ class Window(QMainWindow):
             self._action(e[0], lambda _=False, e=e: self._export(*e[1:])) for e in EXPORTS
         ]
         self.exports[0].setShortcut(key.Save)
-        self.schematic_action = self._action(
-            "KiCad &Schematic Project…",
-            self.export_schematic,
-            tip="Write an editable KiCad project, one sheet per page",
-        )
         self.zoom_in_action = self._action(
             "Zoom &In",
             lambda: self.zoom(ZOOM_STEP),
@@ -386,8 +366,6 @@ class Window(QMainWindow):
         file.addSeparator()
         exports = file.addMenu("E&xport")
         exports.addActions(self.exports)
-        exports.addSeparator()
-        exports.addAction(self.schematic_action)
         file.addSeparator()
         file.addAction(self.quit_action)
 
@@ -622,7 +600,7 @@ class Window(QMainWindow):
         for net in design.nets:
             item = Item([_net_name(net), str(len(net.pins)), f"{net.confidence:.2f}"])
             item.setData(0, KEY, net.id)
-            item.setData(0, SORT, export._natural(_net_name(net)))
+            item.setData(0, SORT, _natural(_net_name(net)))
             item.setData(1, SORT, len(net.pins))
             item.setData(2, SORT, net.confidence)
             item.setIcon(0, _swatch(report.hue(net.id)))
@@ -635,7 +613,7 @@ class Window(QMainWindow):
         for k, part in enumerate(design.components):  # by index: a designator may repeat
             item = Item([part.ref, part.value or "", str(len(part.pins))])
             item.setData(0, KEY, str(k))
-            item.setData(0, SORT, export._natural(part.ref))
+            item.setData(0, SORT, _natural(part.ref))
             item.setData(2, SORT, len(part.pins))
             item.setTextAlignment(2, Qt.AlignmentFlag.AlignRight)
             self.parts.addTopLevelItem(item)
@@ -991,35 +969,6 @@ class Window(QMainWindow):
         self.folder = Path(path).parent
         self.statusBar().showMessage(f"Wrote {path}", 10000)
 
-    def export_schematic(self):
-        if not self._exportable():
-            return
-        source = self._output("kicad")
-        folder = QFileDialog.getExistingDirectory(
-            self, "Choose a Folder for the KiCad Project", str(self.folder)
-        )
-        if not folder:
-            return
-        names = sorted(p.name for p in source.iterdir())
-        existing = [n for n in names if (Path(folder) / n).exists()]
-        if existing and not self._replace(
-            f"{len(existing)} of the project's files are already in {folder}: "
-            f"{', '.join(existing)}."
-        ):
-            return
-        try:
-            for name in names:
-                part = Path(folder) / f".{name}.part"
-                shutil.copyfile(source / name, part)
-                os.replace(part, Path(folder) / name)
-        except OSError as e:
-            self._error("Export failed", f"{e.filename or folder}: {e.strerror or e}")
-            return
-        self.folder = Path(folder)
-        self.statusBar().showMessage(
-            f"Wrote {Path(folder) / (self.file.stem + '.kicad_pro')}", 10000
-        )
-
     def choose_library(self):
         folder = QFileDialog.getExistingDirectory(
             self, "Choose a Part Library Index", str(self.library or self.folder)
@@ -1083,7 +1032,6 @@ class Window(QMainWindow):
         exportable = self._exportable()
         for action in self.exports:
             action.setEnabled(exportable)
-        self.schematic_action.setEnabled(exportable and self._output("kicad").is_dir())
         self.export_button.setEnabled(exportable)
         self.tabs.setTabEnabled(1, bool(self.report_pages) or self.tabs.currentWidget() is self.web)
         self.find_action.setEnabled(self.design is not None)

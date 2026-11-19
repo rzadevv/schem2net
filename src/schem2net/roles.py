@@ -14,6 +14,7 @@ from functools import cache
 import numpy as np
 
 from schem2net import geometry, scene, strokes
+from schem2net.geometry import contains, longest_side
 from schem2net.primitives import Page, Path, Text
 from schem2net.profile import Profile, learned_arrays, learned_file
 
@@ -100,7 +101,7 @@ def path_features(paths: list[Path], texts: list[Text], touching=None) -> np.nda
     common = max(set(line_widths), key=line_widths.count, default=0.0)
     dots = geometry.GridIndex(cell=2.0)
     for k, p in enumerate(paths):
-        if p.fill and _size(p.bbox) < DOT:
+        if p.fill and longest_side(p.bbox) < DOT:
             dots.add(k, p.bbox)
     text_index = _index([t.bbox for t in texts])
 
@@ -139,7 +140,7 @@ def path_features(paths: list[Path], texts: list[Text], touching=None) -> np.nda
                 length,
                 p.width,
                 widths[k] == common,
-                _size(p.bbox),
+                longest_side(p.bbox),
                 min(x1 - x0, y1 - y0),
                 min(meets),
                 max(meets),
@@ -205,13 +206,13 @@ def text_features(texts: list[Text], paths: list[Path], roles: list[int]) -> np.
         holders = [
             closed[j]
             for j in closed_index.within(t.bbox)
-            if _contains(closed[j].bbox, t.bbox)
-            and _size(closed[j].bbox) < 6 * max(x1 - x0, y1 - y0, 1)
+            if contains(closed[j].bbox, t.bbox)
+            and longest_side(closed[j].bbox) < 6 * max(x1 - x0, y1 - y0, 1)
         ]
-        holder = min(holders, key=lambda p: _size(p.bbox), default=None)
+        holder = min(holders, key=lambda p: longest_side(p.bbox), default=None)
         others = [j for j in text_index.within(grown) if j != k]
         along = _along(t.bbox, [wires[j] for j in wire_index.within(grown)])
-        inside = any(_contains(bodies[j], t.bbox) for j in body_index.within(t.bbox))
+        inside = any(contains(bodies[j], t.bbox) for j in body_index.within(t.bbox))
         rows.append(
             [
                 len(s),
@@ -226,7 +227,7 @@ def text_features(texts: list[Text], paths: list[Path], roles: list[int]) -> np.
                 end_gap,
                 mark_gap,
                 holder is not None,
-                _size(holder.bbox) if holder else 0.0,
+                longest_side(holder.bbox) if holder else 0.0,
                 len(others),
                 along,
                 inside,
@@ -484,18 +485,5 @@ def _gap(box, boxes, near) -> float:
     return min((geometry.bbox_gap(box, boxes[j]) for j in near), default=NEAR)
 
 
-def _contains(outer, inner) -> bool:
-    return (
-        outer[0] <= inner[0]
-        and outer[1] <= inner[1]
-        and inner[2] <= outer[2]
-        and inner[3] <= outer[3]
-    )
-
-
 def _shape_key(p: Path) -> tuple:
     return tuple((round(x, 3), round(y, 3)) for sub in p.subpaths for x, y in sub)
-
-
-def _size(box) -> float:
-    return max(box[2] - box[0], box[3] - box[1])

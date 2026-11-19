@@ -1,14 +1,13 @@
-"""Export, queries and the HTML report, on a small made-up design."""
+"""Export and the HTML report, on a small made-up design."""
 
 import pytest
 import typer
 
-from schem2net import bookmarks, diff, export, kicad, kicad_sch, report, sexpr, symbols
+from schem2net import bookmarks, export, kicad, report, sexpr, symbols
 from schem2net.ir import Component, Design, Issue, Net, Pin, Source
 from schem2net.nets import Netlister
 from schem2net.pipeline import Extraction, PageResult
 from schem2net.primitives import Page
-from schem2net.query import Query
 
 from .test_extract import KICAD, SceneBuilder
 
@@ -42,52 +41,6 @@ def test_kicad_netlist_round_trip(tmp_path):
     assert [c.ref for c in back.components] == ["R10", "R2", "C1", "U1"]
     assert [n.pins for n in back.nets] == [n.pins for n in DESIGN.nets]
     assert back.nets[1].name == "Net-(R10-Pad2)"
-
-
-def test_wire_labels_cover_connected_pieces_and_prefer_open_ends():
-    wires = [
-        ((0, 0), (5, 0)),
-        ((5, 0), (10, 0)),
-        ((20, 0), (25, 0)),
-        ((25, 0), (25, 5)),
-    ]
-    labels = kicad_sch._wire_labels(
-        wires,
-        ["n1", "n1", "n1", None],
-        {"n1": "DATA"},
-        {kicad_sch._key((0, 0)), kicad_sch._key((10, 0))},
-    )
-    assert [str(label[1]) for label in labels] == ["DATA", "DATA"]
-    assert [(float(label[3][1]), float(label[3][2])) for label in labels] == [(0, 0), (20, 0)]
-
-
-def test_wire_label_groups_keep_plain_crossings_apart():
-    wires = [((0, 5), (10, 5)), ((5, 0), (5, 10))]
-    tips = {kicad_sch._key(p) for wire in wires for p in wire}
-    labels = kicad_sch._wire_labels(wires, ["n1", "n1"], {"n1": "DATA"}, tips)
-    assert len(labels) == 2
-
-
-def test_bom_groups_by_value():
-    lines = export.bom_csv(DESIGN).splitlines()
-    assert lines[0] == "References,Value,Quantity"
-    assert "R2 R10,10k,2" in lines
-
-
-def test_queries():
-    q = Query(DESIGN)
-    assert q.net("U1.1")["pins"] == ["R10.2", "U1.1"]
-    assert q.net("gnd") is None and q.net("GND")["id"] == "n1"
-    assert q.pins_of("R10") == [{"pin": "1", "net": "LED"}, {"pin": "2", "net": "n2"}]
-    assert [row["net"] for row in q.trace("U1.1")] == ["n2", "LED", "VIN"]
-    assert [n["id"] for n in q.low_confidence()] == ["n4"]
-    design = DESIGN.model_copy(deep=True)
-    design.issues = [Issue(kind="dangling_wire", page=1), Issue(kind="power_nets_merged")]
-    assert [i["kind"] for i in Query(design).issues("power_nets_merged")] == ["power_nets_merged"]
-    assert q.components_list("R") == [
-        {"ref": "R10", "value": "10k", "pins": 2},
-        {"ref": "R2", "value": "10k", "pins": 2},
-    ]
 
 
 def test_report_draws_each_net():
@@ -135,83 +88,6 @@ def test_netlist_from_altium_bookmarks():
     assert bookmarks.from_outline([(0, "Page 1")], Source(file="x.pdf")) is None
 
 
-def test_kicad_schematic_places_parts_where_they_were_drawn(tmp_path):
-    b = SceneBuilder()
-    b.resistor(10, 10, "R1", "10k")
-    b.resistor(20, 10, "R2", "1k")
-    b.ground(10, 17.54)
-    b.scene.wires.append(((10, 7.46), (20, 7.46)))
-    found = symbols.find(b.scene, KICAD)
-    netlister = Netlister()
-    netlister.add_page(b.scene, found)
-    result = netlister.result()
-    design = Design(source=Source(file="board.pdf"), components=result.components, nets=result.nets)
-    page = Page(number=1, width=100, height=50)
-    extraction = Extraction(design, [PageResult(page, b.scene, found)], result.wire_nets)
-
-    root = kicad_sch.write(extraction, tmp_path, "board")
-
-    sheet = sexpr.parse((tmp_path / "board-page1.kicad_sch").read_text())
-    placed = {sexpr.value(p, "lib_id"): p for p in sexpr.children(sheet, "symbol")}
-    assert set(placed) == {"schem2net:R1", "schem2net:R2"}
-    # Pins keep their drawn positions: the symbol origin plus the pin's offset, y flipped.
-    lib = {s[1]: s for s in sexpr.children(sexpr.child(sheet, "lib_symbols"), "symbol")}
-    unit = sexpr.children(lib["schem2net:R1"], "symbol")[0]
-    _, x, y = sexpr.child(placed["schem2net:R1"], "at")[:3]
-    tips = sorted(
-        (round(float(x) + float(at[1]), 2), round(float(y) - float(at[2]), 2))
-        for at in (sexpr.child(pin, "at") for pin in sexpr.children(unit, "pin"))
-    )
-    assert tips == [(10, 7.46), (10, 17.54)]
-    # GND reaches R1 through a label on its pin, since no wire ends there.
-    assert [lb[1] for lb in sexpr.children(sheet, "global_label")] == ["GND"]
-    assert len(sexpr.children(sheet, "wire")) == 1
-    assert root.name == "board.kicad_sch"
-    assert (tmp_path / "board.kicad_sym").exists() and (tmp_path / "sym-lib-table").exists()
-
-
-def test_spice_netlist():
-    text = export.spice_netlist(DESIGN)
-    lines = text.splitlines()
-    assert "RR10 LED N2 10k" in lines
-    assert "CC1 VIN 0 100n" in lines  # GND is node 0
-    assert "XU1 N2 VIN 0 MCU" in lines
-    assert lines[-1] == ".end"
-
-
-def test_spice_values():
-    values = ["10k", "4.7uF", "1MΩ", "4R7", "2k2", "0R", "22pF", "100pF 50V"]
-    assert [export._spice_value(v) for v in values] == [
-        "10k",
-        "4.7u",
-        "1Meg",
-        "4.7",
-        "2.2k",
-        "0",
-        "22p",
-        "100p",
-    ]
-
-
-def test_diff_reports_changed_parts_and_moved_pins():
-    new = DESIGN.model_copy(deep=True)
-    new.components = [c for c in new.components if c.ref != "R2"] + [part("R3", "1k", "1", "2")]
-    new.components[0].value = "4k7"  # R10
-    gnd, unnamed, led, vin = new.nets
-    gnd.name = "AGND"  # renamed only
-    unnamed.pins = [("R10", "2")]
-    vin.pins = [*vin.pins, ("U1", "1")]
-
-    change = diff.diff(DESIGN, new)
-
-    assert change.added == ["R3"] and change.removed == ["R2"]
-    assert change.revalued == [("R10", "10k", "4k7")]
-    moved = {net.name: (net.joined, net.left) for net in change.nets}
-    assert moved["VIN"] == ([("U1", "1")], [])
-    assert "AGND" not in moved
-    assert diff.diff(DESIGN, DESIGN).empty
-
-
 def test_a_pdf_no_profile_reads_fails_loudly(capsys):
     """A PDF from a tool schem2net does not read gives nothing: say so, and fail."""
     from schem2net import cli
@@ -248,8 +124,8 @@ def test_a_run_that_reads_nothing_leaves_an_earlier_output_as_it_was(tmp_path, m
     assert result.exit_code == 2 and earlier.read_text() == "earlier"
 
     monkeypatch.setattr(pipeline, "extract", lambda *a, **k: DESIGN)
-    result = CliRunner().invoke(cli.app, ["export", str(pdf), "--to", "bom"])
-    assert result.exit_code == 0 and (tmp_path / "board.rev2.bom.csv").exists()
+    result = CliRunner().invoke(cli.app, ["export", str(pdf)])
+    assert result.exit_code == 0 and (tmp_path / "board.rev2.net").exists()
 
 
 def test_guessed_pads_are_named_where_a_netlist_would_hide_them(tmp_path, monkeypatch):
@@ -270,7 +146,7 @@ def test_guessed_pads_are_named_where_a_netlist_would_hide_them(tmp_path, monkey
         issues=[issue],
     )
     monkeypatch.setattr(pipeline, "extract", lambda *a, **k: design)
-    result = CliRunner().invoke(cli.app, ["export", str(pdf), "--to", "kicad-net"])
+    result = CliRunner().invoke(cli.app, ["export", str(pdf)])
     assert result.exit_code == 0 and '(pin "2")' in (tmp_path / "board.net").read_text()
     assert "2 pad numbers are not printed but guessed (D1.1, D1.2)" in result.stderr
 
@@ -307,28 +183,6 @@ def test_nets_of_one_name_are_written_apart():
     tree = sexpr.parse(export.kicad_netlist(design))
     names = [n[2][1] for n in tree[4][1:]]
     assert len(names) == len(set(names)) and "LED_2" in names
-
-    spice = export.spice_netlist(design)
-    assert "RR1 3V3 3V3_2 10k" in spice
-    assert "RR2 AGND 0 1k" in spice
-
-
-def test_bom_values_are_not_taken_for_formulas():
-    design = Design(
-        source=Source(file="x.pdf"),
-        components=[part("R1", '=HYPERLINK("http://x")'), part("R2", "-12V"), part("R3", "+cmd")],
-    )
-    bom = export.bom_csv(design)
-    assert "'=HYPERLINK" in bom and ",-12V," in bom and "'+cmd" in bom
-
-
-def test_trace_passes_a_part_whose_pins_share_a_number():
-    design = Design(
-        source=Source(file="x.pdf"),
-        components=[part("R3", "10k", "1", "1")],
-        nets=[Net(id="n1", name="A", pins=[("R3", "1")])],
-    )
-    assert Query(design).trace("R3.1")
 
 
 def test_a_page_the_reader_trips_on_is_reported_and_the_rest_read(monkeypatch):
@@ -449,7 +303,7 @@ def test_a_pin_with_no_number_stays_on_its_net_under_a_mark():
     assert issue.pins == [("D1", "?1")]
 
     design = Design(source=Source(file="x.pdf"), components=found.components, nets=found.nets)
-    assert "?1" not in export.kicad_netlist(design) + export.spice_netlist(design)
+    assert "?1" not in export.kicad_netlist(design)
 
     from schem2net.bench.score import score
 

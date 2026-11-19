@@ -459,9 +459,7 @@ class Netlister:
             names[find(node)][name] += 1
 
         components: dict[str, Component] = {}
-        self._pin_numbers: dict[str, dict[str, list[tuple]]] = defaultdict(
-            lambda: defaultdict(list)
-        )
+        pin_numbers: dict[str, dict[str, list[tuple]]] = defaultdict(lambda: defaultdict(list))
         members: dict[tuple, set[tuple[str, str]]] = defaultdict(set)
         pages: dict[tuple, set[int]] = defaultdict(set)
         issues = list(self.issues)
@@ -493,7 +491,7 @@ class Netlister:
                 comp.pins.append(PinOut(num=number, name=pin.name, at=pin.at, how="unnumbered"))
             else:
                 number = pin.number
-                self._pin_numbers[symbol.ref][number].append((node, (page, symbol.unit)))
+                pin_numbers[symbol.ref][number].append((node, page, symbol.unit))
                 comp.pins.append(PinOut(num=number, at=pin.at, how=pin.how))
             root = find(node)
             members[root].add((symbol.ref, number))
@@ -585,18 +583,18 @@ class Netlister:
             )
             for node, _, _, _ in drawn:
                 caps[find(node)] = min(caps[find(node)], DUPLICATE_REF_CONFIDENCE)
-        for ref, numbers in self._pin_numbers.items():
+        for ref, numbers in pin_numbers.items():
             if ref in doubled:
                 continue
             for number, drawn in numbers.items():
-                units = Counter(unit for _, unit in drawn)
+                units = Counter((page, unit) for _, page, unit in drawn)
                 if any(n > 1 for n in units.values()):
                     page = drawn[0][0][1]
                     issues.append(Issue(kind="duplicate_pin", page=page, detail=f"{ref}.{number}"))
-                    for node, _ in drawn:
+                    for node, _, _ in drawn:
                         caps[find(node)] = min(caps[find(node)], DUPLICATE_PIN_CONFIDENCE)
 
-        nets, roots = [], {}
+        nets = {}
         for root, pins in members.items():
             if len(pins) < 2 and not kinds[root]:
                 continue  # an unconnected pin, reported below
@@ -607,7 +605,7 @@ class Netlister:
             if sum(not n.startswith(UNNUMBERED) for _, n in pins) < 2:
                 confidence = min(confidence, LONE_PIN_CONFIDENCE)
             seen = [name for name, _ in names[root].most_common()]
-            net = Net(
+            nets[root] = Net(
                 id="",
                 name=seen[0] if seen else None,
                 names_seen=seen,
@@ -616,25 +614,21 @@ class Netlister:
                 evidence=[Evidence(type=k, count=n) for k, n in sorted(kinds[root].items())],
                 pages=sorted(pages[root]),
             )
-            nets.append(net)
-            roots[id(net)] = root
-        nets.sort(key=lambda n: (n.name is None, n.name or "", n.pins))
-        net_of_root = {}
-        for i, net in enumerate(nets, 1):
+        ordered = sorted(nets.values(), key=lambda n: (n.name is None, n.name or "", n.pins))
+        for i, net in enumerate(ordered, 1):
             net.id = f"n{i}"
-            root = roots[id(net)]
-            net_of_root[root] = net.id
-            if root in power_issues:
-                power_issues[root].net = net.id
+        for root, issue in power_issues.items():
+            if root in nets:
+                issue.net = nets[root].id
 
         wire_nets = {
-            (node[1], node[2]): net_of_root[root]
+            (node[1], node[2]): nets[root].id
             for root, group in self.uf.groups().items()
-            if root in net_of_root
+            if root in nets
             for node in group
             if node[0] == "w"
         }
-        return Result(sorted(components.values(), key=lambda c: c.ref), nets, issues, wire_nets)
+        return Result(sorted(components.values(), key=lambda c: c.ref), ordered, issues, wire_nets)
 
 
 def _crosses(p: Point, segments: list[Segment]) -> bool:

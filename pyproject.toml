@@ -22,9 +22,6 @@ schem2net = "schem2net.cli:main"
 schem2net-gui = "schem2net.gui:main"
 
 [project.optional-dependencies]
-mcp = [
-    "mcp>=2.2,<3",
-]
 gui = [
     "pyside6>=6.8,!=6.12.0",  # 6.12.0 under-counts references to None on Python 3.11
 ]
