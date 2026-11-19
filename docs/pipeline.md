@@ -74,7 +74,9 @@ kinds, so final nets can report why terminals were connected.
 Shared endpoints, T contacts and explicit junction dots connect; a plain interior
 crossing does not. Local labels are scoped to their sheet. Global and power names
 connect according to the generator profile. Hierarchical ports match parent and
-child paths. Vector buses map by member position across sheets; group buses map
+child paths. Global vector buses give their declared scalar members global scope
+on pages carrying the declaration. Reversed ranges keep the same ascending member
+order. Vector buses map by member position across hierarchical ports; group buses map
 by member name. Bus labels must not attach to nearby scalar wires merely because
 the text lies close to them.
 

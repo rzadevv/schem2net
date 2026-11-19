@@ -3040,3 +3040,140 @@ def test_power_name_uncertainty_survives_connectivity_recovery(generator, comple
         assert net.confidence == nets.WEIGHTS["hidden_name"]
     else:
         assert net.confidence >= 0.8
+
+
+def _vector_bus_page(
+    reader, page, declaration=None, kind="global", members=("A4", "A5", "A6"), scalar_global=None
+):
+    scene = Scene(page=page, path=f"/Page{page}/")
+    scene.buses = [((80, 25), (80, 110))]
+    if declaration:
+        scene.labels.append(Label(declaration, kind, (81.5, 23.5, 88, 25.5), 0, [(80, 25)]))
+    parts = []
+    for i, member in enumerate(members, 1):
+        y = 30 + 15 * i
+        scene.wires.append(((30, y), (77.46, y)))
+        scene.labels.append(Label(member, "local", (50, y - 1.5, 55, y - 0.2), 0))
+        pin = symbols.Pin(i, ((32.54, y), (30, y)), "1", how="read")
+        parts.append(symbols.Symbol([], (30, y - 1.27, 35.08, y + 1.27), [pin], ref=f"J{page}{i}"))
+    if scalar_global:
+        scene.labels.append(Label(scalar_global, "global", (50, 43.5, 55, 44.8), 0))
+    reader.add_page(scene, parts)
+
+
+@pytest.mark.parametrize(
+    "declarations,kind,joined",
+    [
+        (("A[4..5]", "A[4..5]", None), "global", (4, 5)),
+        (("A[4..5]", "A[4..5]", None), "bus", ()),
+        (("A[4..5]", "A[5..4]", None), "global", (4, 5)),
+        (("A[4..5]", "A[5..6]", None), "global", (5,)),
+        (("A[4..5]", "B[4..5]", None), "global", ()),
+        (("A[4..5]", "A{4 5}", None), "global", ()),
+    ],
+)
+def test_vector_bus_scope_matches_kicad_netlist(declarations, kind, joined):
+    """KiCad 10.0.6 source exports: only declared global members cross sheets.
+
+    The wires need no bus entries. Page 3 has matching scalar names but no bus
+    declaration; A6 is outside the first declaration and must also stay local.
+    """
+    reader = Netlister()
+    for page, declaration in enumerate(declarations, 1):
+        _vector_bus_page(reader, page, declaration, kind)
+    _, found, *_ = reader.result()
+    expected = {frozenset({(f"J{page}{i}", "1")}) for page in (1, 2, 3) for i in (1, 2, 3)}
+    for member in joined:
+        pins = {(f"J{page}{member - 3}", "1") for page in (1, 2)}
+        expected -= {frozenset({pin}) for pin in pins}
+        expected.add(frozenset(pins))
+    assert {frozenset(n.pins) for n in found} == expected
+
+
+def test_global_bus_member_connects_scalar_global_but_not_other_local_sheets():
+    reader = Netlister()
+    _vector_bus_page(reader, 1, "A[4..5]")
+    _vector_bus_page(reader, 2, scalar_global="A4")
+    _vector_bus_page(reader, 3)
+    _, found, *_ = reader.result()
+    groups = {frozenset(n.pins) for n in found}
+    assert frozenset({("J11", "1"), ("J21", "1")}) in groups
+    assert frozenset({("J31", "1")}) in groups
+    assert len(groups) == 8
+
+
+@pytest.mark.parametrize("reversed_range", [False, True])
+def test_global_bus_through_renamed_hierarchical_ports(reversed_range):
+    reader = Netlister()
+    parent = Scene(page=1, path="/")
+    parent.buses = [((80, 25), (80, 65))]
+    parent.labels = [Label("A[4..5]", "global", (81.5, 23.5, 88, 25.5), 0, [(80, 25)])]
+    second = "Y[1..0]" if reversed_range else "Y[0..1]"
+    parent.sheets = [
+        Sheet("Page2", (80, 20, 120, 45), [SheetPin("X[4..5]", (80, 25))]),
+        Sheet("Page3", (80, 60, 120, 85), [SheetPin(second, (80, 65))]),
+    ]
+    reader.add_page(parent, [])
+    _vector_bus_page(reader, 2, "X[4..5]", "hier", ("X4", "X5", "X6"))
+    _vector_bus_page(reader, 3, second, "hier", ("Y0", "Y1", "Y2"))
+    _, found, *_ = reader.result()
+    assert {frozenset(n.pins) for n in found} == {
+        frozenset({("J21", "1"), ("J31", "1")}),
+        frozenset({("J22", "1"), ("J32", "1")}),
+        frozenset({("J23", "1")}),
+        frozenset({("J33", "1")}),
+    }
+
+
+def test_global_vector_label_keeps_its_outline_and_scope():
+    # Rounded KiCad 10.0.6 PDF primitives from an independently authored circuit.
+    outline = [
+        (80, 25),
+        (81.11, 26.27),
+        (88.86, 26.27),
+        (88.86, 25),
+        (88.86, 23.73),
+        (81.11, 23.73),
+        (80, 25),
+    ]
+    page = Page(
+        1,
+        297,
+        210,
+        paths=[
+            Path(0, [outline], 0.1524, (132, 0, 0), None, seq=1),
+            Path(1, [[(80, 25), (80, 110)]], 0.3048, (0, 0, 132), None, seq=2),
+        ],
+        texts=[Text(0, "A[4..5]", (81.45, 23.46, 88.01, 25.43), 1.27, 0, (0, 0, 132), seq=0)],
+    )
+    scene = build_scene(page, KICAD)
+    assert len(scene.labels) == 1
+    assert scene.labels[0].kind == "global"
+    assert scene.labels[0].outline == outline
+    assert scene.shapes == []
+
+
+def test_global_vector_bus_rejoins_members_with_bus_evidence():
+    reader = Netlister()
+    for page in (1, 2):
+        scene = Scene(page=page, path=f"/page{page}/")
+        scene.buses = [((40, 0), (40, 35))]
+        scene.labels = [Label("ADDR[4..5]", "global", (43, 4, 58, 6), 0, [(40, 5)])]
+        parts = []
+        for member, y in ((4, 10), (5, 25)):
+            scene.wires += [((10, y), (38, y)), ((38, y), (40, y + 2))]
+            scene.labels.append(Label(f"ADDR{member}", "local", (24, y - 1.5, 31, y - 0.2), 0))
+            for k, x in enumerate((10, 20)):
+                pin = symbols.Pin(10 * member + k, ((x - 2, y), (x, y)), "1", how="read")
+                parts.append(
+                    symbols.Symbol([], (x - 3, y - 1, x, y + 1), [pin], ref=f"U{page}{member}{k}")
+                )
+        reader.add_page(scene, parts)
+    _, found, issues, _ = reader.result()
+    assert {frozenset(n.pins) for n in found} == {
+        frozenset((f"U{page}{member}{k}", "1") for page in (1, 2) for k in (0, 1))
+        for member in (4, 5)
+    }
+    assert issues == []
+    assert all(n.confidence == nets.WEIGHTS["t_contact"] for n in found)
+    assert all("bus" in {e.type for e in n.evidence} for n in found)

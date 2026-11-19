@@ -236,6 +236,16 @@ class Netlister:
                 self.join(node, ("local", page, key), "local_name")
                 self.local_names[page].add(key)
             bus = busnames.parse(label.text)
+            if bus and bus.vector:
+                if not label.outline or label.kind == "global":
+                    vector_labels.append((node, label, bus))
+                if label.kind == "global":
+                    # Only pages declaring the bus give these scalar names global scope.
+                    for member in busnames.member_nets(bus, set()).values():
+                        member = self._key(member)
+                        self.printed_pages[member].add(page)
+                        self.names[("global", member)] = member
+                        self.join(("local", page, member), ("global", member), "bus")
             if bus and not bus.vector:
                 self.group_names.append((page, node, bus))
             if label.kind == "hier" and scene.path:
@@ -246,8 +256,6 @@ class Netlister:
                 target = _under_label(label, buses, bus_index, [], None, ("b", page))
                 if target:
                     self.join(node, target, "label")
-                    if bus and bus.vector:
-                        vector_labels.append((target, label, bus))
             elif label.outline:
                 tips = [(v, node) for v in _label_tips(label)]
                 (bus_points if bus else points).extend(tips)

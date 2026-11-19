@@ -308,9 +308,11 @@ def build(page: Page, profile: Profile) -> Scene:
                 taken.add(id(text))
         scene.fields = [t for t in scene.fields if id(t) not in taken]
         scene.pin_numbers = [t for t in scene.pin_numbers if id(t) not in taken]
-    for text, outline in _outlined(label_texts["global"], outlines["global"]):
+    global_buses = set()
+    for text, outline in _outlined(label_texts["global"] + bus_texts, outlines["global"]):
         scene.labels.append(Label(text.text, "global", text.bbox, text.angle, outline, text.seq))
         used.add(id(outline))
+        global_buses.add(id(text))
     # A net label text inside an outline is a port, which reaches other sheets. So is
     # text given a colour of its own, when its outline meets a wire.
     wire_index = GridIndex()
@@ -327,8 +329,9 @@ def build(page: Page, profile: Profile) -> Scene:
         if id(text) not in ported:
             scene.labels.append(Label(text.text, "local", text.bbox, text.angle, seq=text.seq))
     # Bus names are drawn in the bus colour, whether they are labels or hierarchical labels.
-    flagged = set()
-    for text, anchor in _flagged(label_texts["hier"] + bus_texts, outlines["hier"]):
+    flagged = set(global_buses)
+    remaining = [t for t in bus_texts if id(t) not in global_buses]
+    for text, anchor in _flagged(label_texts["hier"] + remaining, outlines["hier"]):
         scene.labels.append(Label(text.text, "hier", text.bbox, text.angle, [anchor], text.seq))
         flagged.add(id(text))
     for text in bus_texts:

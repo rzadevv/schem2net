@@ -32,8 +32,8 @@ def parse(name: str) -> Bus | None:
     """The bus a name stands for, or None for a plain net name."""
     if m := VECTOR.match(name):
         first, last = int(m[2]), int(m[3])
-        step = 1 if last >= first else -1
-        return Bus(name_key(m[1]), tuple(str(i) for i in range(first, last + step, step)), True)
+        first, last = sorted((first, last))
+        return Bus(name_key(m[1]), tuple(str(i) for i in range(first, last + 1)), True)
     if m := GROUP.match(name):
         prefix, inner = name_key(m[1]), m[2].split()
         if len(inner) > 1:
