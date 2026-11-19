@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 SCHEMA = "schem2net/ir@0.1"
 LOW_CONFIDENCE = 0.8  # nets below this deserve a look
@@ -13,6 +13,10 @@ LOW_CONFIDENCE = 0.8  # nets below this deserve a look
 UNNUMBERED = "?"
 
 PinRef = tuple[str, str]  # (refdes, pin number), the same key KiCad netlists use
+
+
+class InputError(ValueError):
+    """An external JSON design cannot be read or has inconsistent object links."""
 
 
 class Source(BaseModel):
@@ -56,7 +60,7 @@ class Net(BaseModel):
     name: str | None = None
     names_seen: list[str] = []
     pins: list[PinRef] = []
-    confidence: float = 1.0
+    confidence: float = Field(1.0, ge=0.0, le=1.0)
     evidence: list[Evidence] = []
     pages: list[int] = []
 
@@ -74,7 +78,7 @@ class Issue(BaseModel):
 class Design(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    schema_: str = Field(SCHEMA, alias="schema")
+    schema_: Literal["schem2net/ir@0.1"] = Field(SCHEMA, alias="schema")
     source: Source
     components: list[Component] = []
     nets: list[Net] = []
@@ -89,4 +93,27 @@ class Design(BaseModel):
 
     @classmethod
     def load(cls, path: str | Path) -> "Design":
-        return cls.model_validate_json(Path(path).read_text())
+        """Read external IR, checking the links needed for review and export."""
+        try:
+            design = cls.model_validate_json(Path(path).read_text(encoding="utf-8"))
+        except ValidationError as exc:
+            error = exc.errors(include_input=False)[0]
+            field = ".".join(map(str, error["loc"])) or "JSON"
+            raise InputError(f"{path}: invalid design JSON ({field}: {error['msg']})") from None
+        except UnicodeError:
+            raise InputError(f"{path}: invalid design JSON (expected UTF-8 text)") from None
+
+        refs = {comp.ref for comp in design.components}
+        if len(refs) != len(design.components) or any(not ref.strip() for ref in refs):
+            raise InputError(f"{path}: component references must be nonempty and unique")
+        ids = {net.id for net in design.nets}
+        if len(ids) != len(design.nets) or any(not key.strip() for key in ids):
+            raise InputError(f"{path}: net IDs must be nonempty and unique")
+        missing = {ref for net in design.nets for ref, _ in net.pins} - refs
+        if missing:
+            raise InputError(
+                f"{path}: nets reference unknown components: {', '.join(sorted(missing))}"
+            )
+        if any(issue.net is not None and issue.net not in ids for issue in design.issues):
+            raise InputError(f"{path}: issues reference unknown nets")
+        return design

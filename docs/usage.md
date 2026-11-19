@@ -4,6 +4,11 @@ Install from Git as shown in the [README](../README.md). The CLI accepts a vecto
 schematic PDF; `export` also accepts JSON saved by `extract`.
 Run `schem2net COMMAND --help` for all options.
 
+Loading JSON checks the schema version, confidence range, unique component and
+net identifiers, and links from nets and issues. Invalid input exits with code 1
+and leaves an existing output unchanged. These checks establish structural
+consistency; electrical connections and physical pin identities still need review.
+
 ## Extraction and review
 
 ```sh

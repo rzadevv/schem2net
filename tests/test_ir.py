@@ -1,0 +1,107 @@
+"""Validate external IR without losing supported extraction diagnostics."""
+
+import json
+import subprocess
+import sys
+
+import pytest
+
+from schem2net.ir import SCHEMA, Design, Net
+
+
+@pytest.fixture
+def payload():
+    return {
+        "schema": SCHEMA,
+        "source": {"file": "board.pdf"},
+        "components": [
+            {"ref": "R1", "pins": [{"num": "1"}, {"num": "2"}]},
+            {"ref": "R2", "pins": [{"num": "1"}, {"num": "2"}]},
+        ],
+        "nets": [
+            {"id": "n1", "pins": [["R1", "1"], ["R2", "1"]]},
+            {"id": "n2", "pins": [["R1", "2"], ["R2", "2"]]},
+        ],
+    }
+
+
+INVALID = [
+    ({"schema": "schem2net/ir@999"}, "schema"),
+    ({"nets": [{"id": "n1"}, {"id": "n1"}]}, "net IDs"),
+    ({"nets": [{"id": ""}]}, "net IDs"),
+    ({"components": [{"ref": "R1"}, {"ref": "R1"}]}, "component references"),
+    ({"components": [{"ref": ""}]}, "component references"),
+    ({"nets": [{"id": "n1", "pins": [["UNKNOWN", "1"]]}]}, "unknown components"),
+    ({"issues": [{"kind": "example", "net": "absent"}]}, "unknown nets"),
+    ({"nets": [{"id": "n1", "confidence": 2.0}]}, "confidence"),
+]
+
+
+@pytest.mark.parametrize("replacement,reason", INVALID)
+def test_loading_invalid_ir_explains_the_problem(tmp_path, payload, replacement, reason):
+    file = tmp_path / "board.ir.json"
+    file.write_text(json.dumps(payload | replacement))
+    with pytest.raises(ValueError, match=reason):
+        Design.load(file)
+
+
+@pytest.mark.parametrize("confidence", [-0.01, 1.01, float("nan"), float("inf"), -float("inf")])
+def test_confidence_requires_a_finite_evidence_weight(confidence):
+    with pytest.raises(ValueError, match="confidence"):
+        Net(id="n1", confidence=confidence)
+
+
+@pytest.mark.parametrize("raw", [b"{", b"\xff"])
+def test_loading_malformed_ir_is_a_plain_input_error(tmp_path, raw):
+    file = tmp_path / "board.ir.json"
+    file.write_bytes(raw)
+    with pytest.raises(ValueError, match="invalid design JSON"):
+        Design.load(file)
+
+
+@pytest.mark.parametrize("replacement,reason", INVALID)
+def test_cli_refuses_invalid_ir_without_replacing_output(tmp_path, payload, replacement, reason):
+    file, output = tmp_path / "board.ir.json", tmp_path / "board.net"
+    file.write_text(json.dumps(payload | replacement))
+    output.write_text("existing netlist")
+    result = subprocess.run(
+        [sys.executable, "-c", "from schem2net.cli import main; main()",
+         "export", str(file), "-o", str(output)],
+        capture_output=True, text=True, timeout=30,
+    )  # fmt: skip
+    assert result.returncode == 1
+    assert str(file) in result.stderr and reason in result.stderr
+    assert "Traceback" not in result.stderr
+    assert output.read_text() == "existing netlist"
+
+
+@pytest.mark.parametrize("raw", [b"{", b"\xff"])
+def test_cli_refuses_malformed_ir_plainly(tmp_path, raw):
+    file, output = tmp_path / "board.ir.json", tmp_path / "board.net"
+    file.write_bytes(raw)
+    output.write_text("existing netlist")
+    result = subprocess.run(
+        [sys.executable, "-c", "from schem2net.cli import main; main()",
+         "export", str(file), "-o", str(output)],
+        capture_output=True, text=True, timeout=30,
+    )  # fmt: skip
+    assert result.returncode == 1 and "invalid design JSON" in result.stderr
+    assert "Traceback" not in result.stderr and output.read_text() == "existing netlist"
+
+
+def test_loading_keeps_repeated_units_and_reported_pin_conflicts(tmp_path, payload):
+    file = tmp_path / "board.ir.json"
+    payload["components"][0]["units"] = ["A", "B"]
+    payload["components"][0]["pins"].append({"num": "1"})
+    payload["nets"][1]["pins"][0] = ["R1", "1"]
+    payload["issues"] = [{"kind": "duplicate_pin", "pins": [["R1", "1"]], "net": "n1"}]
+    expected = Design.model_validate(payload)
+    expected.save(file)
+    assert Design.load(file) == expected
+
+
+def test_loading_legacy_ir_without_a_schema_uses_the_current_default(tmp_path, payload):
+    file = tmp_path / "board.ir.json"
+    del payload["schema"]
+    file.write_text(json.dumps(payload))
+    assert Design.load(file).schema_ == SCHEMA

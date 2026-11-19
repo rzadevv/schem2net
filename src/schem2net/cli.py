@@ -12,6 +12,7 @@ import typer
 from schem2net import __version__, library, pdf, pipeline, report, svg
 from schem2net import export as exporters
 from schem2net.ir import LOW_CONFIDENCE, Design
+from schem2net.ir import InputError as DesignInputError
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -35,7 +36,7 @@ def main() -> None:
     """The command line, with input it cannot read told in a line rather than a traceback."""
     try:
         app()
-    except pdf.InputError as e:
+    except (pdf.InputError, DesignInputError) as e:
         typer.echo(f"schem2net: {e}", err=True)
         raise SystemExit(1) from None
     except (FileNotFoundError, IsADirectoryError) as e:
