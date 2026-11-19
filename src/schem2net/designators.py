@@ -188,7 +188,7 @@ def likelihood(
 ) -> dict[int, float] | None:
     """For each text of scene.fields, by id, how likely it is a designator; None where no
     model was learned for the generator."""
-    model = _model(profile.name)
+    model = _forest(learned_file(MODEL_FILE), profile.name)
     if model is None or not scene.fields:
         return None
     rows = features(scene, symbols, runs, profile)
@@ -201,10 +201,6 @@ def probability(model: Forest, rows: np.ndarray) -> np.ndarray:
         return np.full(len(rows), float(model.classes[0]))
     raw = model._raw(rows)
     return 1.0 / (1.0 + np.exp(raw[:, 0] - raw[:, 1]))
-
-
-def _model(generator: str) -> Forest | None:
-    return _forest(learned_file(MODEL_FILE), generator)
 
 
 @cache

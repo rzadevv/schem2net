@@ -4,9 +4,8 @@ stopped at any point. It writes only into the folder it is given:
     python -m schem2net.gui.worker FILE FOLDER [LIBRARY]
 
 design.ir.json, report.html (as `schem2net report` writes it), review.json (the
-report's review queue) and, when the drawing was read, kicad/ (as `schem2net
-schematic` writes it). LIBRARY is a folder written by `schem2net index-library`. It
-imports no Qt.
+report's review queue). LIBRARY is a folder written by `schem2net index-library`.
+It imports no Qt.
 """
 
 import json
@@ -17,7 +16,7 @@ import threading
 import time
 from pathlib import Path
 
-from schem2net import kicad_sch, pdf, pipeline, report
+from schem2net import pdf, pipeline, report
 
 
 def run(file: Path, folder: Path, library: Path | None = None) -> None:
@@ -27,8 +26,6 @@ def run(file: Path, folder: Path, library: Path | None = None) -> None:
         report.render(extraction, report.pictures(file, extraction))
     )
     (folder / "review.json").write_text(json.dumps(report.review(design, extraction)))
-    if design.components and any(result.scene for result in extraction.pages):
-        kicad_sch.write(extraction, folder / "kicad", file.stem)
     design.save(folder / "design.ir.json")  # last: its presence marks a finished run
 
 

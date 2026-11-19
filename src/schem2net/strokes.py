@@ -16,6 +16,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from schem2net import geometry
+from schem2net.geometry import contains, longest_side
 from schem2net.primitives import BBox, Page, Path, Point, Text
 from schem2net.profile import learned_file
 from schem2net.refdes import PART_VALUE
@@ -58,7 +59,7 @@ class Line:
 
 def read(paths: list[Path], font: str) -> tuple[list[Text], set[int]]:
     """Texts found among the strokes, and the seq of every stroke they use."""
-    shapes = _font(font)
+    shapes = _glyphs(learned_file(f"{font}_font.json"))
     texts, used = [], set()
 
     def spelt(line: Line) -> bool:
@@ -117,8 +118,8 @@ def traced(page: Page) -> Page:
             k
             for k in index.within(box)
             if (page.paths[k].stroke or page.paths[k].fill) == t.color
-            and _inside(page.paths[k].bbox, box)
-            and _longest(page.paths[k].bbox) <= LETTER * max(t.size, 0.5)
+            and contains(box, page.paths[k].bbox)
+            and longest_side(page.paths[k].bbox) <= LETTER * max(t.size, 0.5)
         ]
         if _spells(t, [page.paths[k].bbox for k in under]):
             letters.update(under)
@@ -141,19 +142,6 @@ def _spells(text: Text, boxes: list[BBox]) -> bool:
     k = 0 if round(text.angle) % 180 == 0 else 1  # along the reading direction
     ink = max(b[k + 2] for b in boxes) - min(b[k] for b in boxes)
     return ink >= TRACE_SPREAD * (text.bbox[k + 2] - text.bbox[k])
-
-
-def _longest(box: BBox) -> float:
-    return max(box[2] - box[0], box[3] - box[1])
-
-
-def _inside(inner: BBox, outer: BBox) -> bool:
-    return (
-        outer[0] <= inner[0]
-        and outer[1] <= inner[1]
-        and inner[2] <= outer[2]
-        and inner[3] <= outer[3]
-    )
 
 
 def runs_and_lines(paths: list[Path]) -> list[Line]:
@@ -484,10 +472,6 @@ def by_word(text: str, pairs: dict[str, str]) -> str:
             )
         words.append(word)
     return " ".join(words)
-
-
-def _font(name: str) -> list[tuple[str, Shape]]:
-    return _glyphs(learned_file(f"{name}_font.json"))
 
 
 @cache

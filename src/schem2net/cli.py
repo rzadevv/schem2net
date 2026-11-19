@@ -1,16 +1,15 @@
 import json
 import os
+import re
 import sys
-from collections import Counter
 from dataclasses import asdict
-from enum import StrEnum
 from functools import partial
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from schem2net import __version__, kicad_sch, library, pdf, pipeline, report, svg
+from schem2net import __version__, library, pdf, pipeline, report, svg
 from schem2net import export as exporters
 from schem2net.ir import LOW_CONFIDENCE, Design
 
@@ -80,74 +79,22 @@ def extract(
     _say(design)
 
 
-class Format(StrEnum):
-    kicad_net = "kicad-net"
-    bom = "bom"
-    spice = "spice"
-
-
-SUFFIXES = {Format.kicad_net: ".net", Format.bom: ".bom.csv", Format.spice: ".cir"}
-WRITERS = {
-    Format.kicad_net: exporters.kicad_netlist,
-    Format.bom: exporters.bom_csv,
-    Format.spice: exporters.spice_netlist,
-}
-
-
 @app.command()
 def export(
     file: Annotated[Path, typer.Argument(help="A schematic PDF, or JSON written by extract.")],
-    to: Annotated[Format, typer.Option(help="Output format.")] = Format.kicad_net,
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
     region: RegionOption = None,
     library_dir: LibraryOption = None,
     strict: StrictOption = False,
 ) -> None:
-    """Write a KiCad netlist, a bill of materials or a SPICE netlist."""
+    """Write a KiCad netlist."""
     design = _load(file, _region(region), library_dir)
     _refuse(design, strict)
-    text = WRITERS[to](design)
-    output = output or file.with_name(_stem(file) + SUFFIXES[to])
+    text = exporters.kicad_netlist(design)
+    output = output or file.with_name(_stem(file) + ".net")
     _write(output, text)
     typer.echo(output)
     _say(design)
-
-
-@app.command()
-def schematic(
-    file: Annotated[Path, typer.Argument(help="A schematic PDF.")],
-    output: Annotated[Path | None, typer.Option("-o", "--output", help="Project folder.")] = None,
-    library_dir: LibraryOption = None,
-    strict: StrictOption = False,
-) -> None:
-    """Write an editable KiCad project, one sheet per PDF page.
-
-    Parts and wires go where the PDF drew them; the netlist carried in an Altium
-    PDF is not used, since it has no drawing to place.
-    """
-    extraction = pipeline.run(file, embedded=False, library_dir=library_dir)
-    _refuse(extraction.design, strict)
-    output = output or file.with_name(_stem(file) + "-kicad")
-    root = kicad_sch.write(extraction, output, _stem(file))
-    typer.echo(root)
-    _say(extraction.design)
-
-
-@app.command("diff")
-def diff_(
-    old: Annotated[Path, typer.Argument(help="Earlier revision: a PDF or JSON from extract.")],
-    new: Annotated[Path, typer.Argument(help="Later revision.")],
-    library_dir: LibraryOption = None,
-) -> None:
-    """List parts added, removed or changed in value, and pins that moved between nets."""
-    from schem2net import diff as revisions
-
-    typer.echo(
-        revisions.render(
-            revisions.diff(_load(old, None, library_dir), _load(new, None, library_dir))
-        ),
-        nl=False,
-    )
 
 
 def _load(
@@ -181,6 +128,11 @@ def _refuse(design: Design, strict: bool = False) -> None:
                 err=True,
             )
             raise typer.Exit(2)
+
+
+def _natural(ref: str) -> tuple:
+    """Sort key that puts R2 before R10."""
+    return tuple(int(part) if part.isdigit() else part for part in re.split(r"(\d+)", ref))
 
 
 def _stem(file: Path) -> str:
@@ -218,7 +170,7 @@ def _say(design: Design) -> None:
     # weighs the wiring, not which pad it is, so the guess is told apart.
     guessed = sorted(
         {f"{ref}.{num}" for i in issues if i.kind == "pin_number_guessed" for ref, num in i.pins},
-        key=exporters._natural,
+        key=_natural,
     )
     if guessed:
         more = f" and {len(guessed) - 6} more" if len(guessed) > 6 else ""
@@ -268,20 +220,6 @@ def report_(
     _write(output, report.render(extraction, pictures))
     typer.echo(output)
     _say(extraction.design)
-
-
-@app.command("serve-mcp")
-def serve_mcp(
-    file: Annotated[Path, typer.Argument(help="A schematic PDF, or JSON written by extract.")],
-    library_dir: LibraryOption = None,
-) -> None:
-    """Serve a design to agents over MCP (stdio)."""
-    try:
-        from schem2net import mcp_server
-    except ImportError:
-        typer.echo('The MCP server needs the mcp package: install "schem2net[mcp]"', err=True)
-        raise typer.Exit(1) from None
-    mcp_server.build(_load(file, None, library_dir)).run()
 
 
 @app.command()
@@ -570,32 +508,6 @@ def build_models(
         raise typer.BadParameter(f"no such kind: {', '.join(unknown)}")
     for line in learn.learn(kinds or list(learn.KINDS), bench_dir, out_dir, workers, folds):
         typer.echo(line)
-
-
-@app.command("bench-schematic", hidden=True)
-def bench_schematic(
-    corpus: CorpusName = "a",
-    split: Annotated[str, typer.Option(help="dev, test, holdout, or all: dev and test.")] = "dev",
-    bench_dir: BenchDir = Path("bench"),
-    work: Annotated[Path, typer.Option(help="Where to write the projects.")] = Path("bench/out"),
-) -> None:
-    """Check the KiCad schematic export: same netlist read back, and ERC errors."""
-    from schem2net.bench import corpus as corpora
-    from schem2net.bench import roundtrip
-
-    loaded = corpora.load(corpus, bench_dir)
-    projects = [p for p in loaded.projects if loaded.in_split(p, split)]
-    exact, clean, errors = 0, 0, Counter()
-    for project in sorted(projects, key=lambda p: p.name):
-        pdf_file = loaded.build_dir(project) / "schematic.pdf"
-        result = roundtrip.check(pdf_file, work / corpus / project.name)
-        exact += result.pin_accuracy == 1.0
-        clean += not result.erc_errors
-        errors += result.erc_errors
-        found = ", ".join(f"{n} {k}" for k, n in result.erc_errors.most_common()) or "clean"
-        typer.echo(f"{project.name[:32]:32} {_fmt(result.pin_accuracy)}  {found}")
-    typer.echo(f"{len(projects)} designs: {exact} read back exactly, {clean} without ERC errors")
-    typer.echo(", ".join(f"{n} {k}" for k, n in errors.most_common()))
 
 
 def _fmt(value: float | None) -> str:

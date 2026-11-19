@@ -127,11 +127,12 @@ def run(
             pages=len(doc.pages),
         )
     )
-    pages = [PageResult(page) for page in doc.pages]
     carried = bookmarks.read(file, design.source) if embedded else None
     if carried:
-        return Extraction(carried, pages)
-    if generator not in PROFILES:
+        design = carried
+    elif generator in PROFILES:
+        return _extract(doc, design, generator, printed, region, library_dir)
+    else:
         read = _read_as_any(doc, design, region, library_dir)
         if read:
             return read
@@ -150,8 +151,7 @@ def run(
         )
         made = generator if generator != "unknown" else _producer(doc) or "an unknown tool"
         design.issues.append(Issue(kind="no_profile", severity="error", detail=made))
-        return Extraction(design, pages)
-    return _extract(doc, design, generator, printed, region, library_dir)
+    return Extraction(design, [PageResult(page) for page in doc.pages])
 
 
 def _read_as_any(

@@ -34,7 +34,6 @@ def test_the_worker_writes_what_the_command_line_does(tmp_path):
     assert (tmp_path / "report.html").read_text() == expected
     review = json.loads((tmp_path / "review.json").read_text())
     assert review == json.loads(json.dumps(report.review(extraction.design, extraction)))
-    assert (tmp_path / "kicad" / "r.kicad_pro").exists()
 
 
 def test_the_worker_says_why_it_cannot_read_a_file(tmp_path):
@@ -226,7 +225,7 @@ def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatc
 
     file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
     _extracted(app, window, file)
-    names = iter(["r.net", "r.ir.json", "r.bom.csv", "r.cir", "r.html"])
+    names = iter(["r.net", "r.ir.json", "r.html"])
     monkeypatch.setattr(
         QFileDialog, "getSaveFileName", lambda *a, **k: (str(tmp_path / next(names)), "")
     )
@@ -235,8 +234,6 @@ def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatc
     design = pipeline.extract(file)
     assert (tmp_path / "r.net").read_text() == export.kicad_netlist(design)
     assert Design.load(tmp_path / "r.ir.json") == design
-    assert (tmp_path / "r.bom.csv").read_text() == export.bom_csv(design)
-    assert (tmp_path / "r.cir").read_text() == export.spice_netlist(design)
     assert (tmp_path / "r.html").read_text() == window._output("report.html").read_text()
 
     # A name typed without a suffix gets the format's, and asks before replacing a file
@@ -245,16 +242,6 @@ def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatc
     (tmp_path / "r.net").write_text("mine")
     window.exports[0].trigger()
     assert (tmp_path / "r.net").read_text() == "mine"
-
-    project = tmp_path / "project"
-    project.mkdir()
-    monkeypatch.setattr(QFileDialog, "getExistingDirectory", lambda *a, **k: str(project))
-    window.schematic_action.trigger()
-    assert (project / "r.kicad_pro").exists()
-    (project / "r.kicad_sch").write_text("mine")
-    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.No)
-    window.schematic_action.trigger()
-    assert (project / "r.kicad_sch").read_text() == "mine"
 
 
 def test_filtering_issues_by_their_kind_keeps_its_entries(app, window, tmp_path):

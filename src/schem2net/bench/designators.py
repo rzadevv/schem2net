@@ -55,7 +55,3 @@ def train(examples: list[Example]) -> dict[str, np.ndarray]:
         for name, value in _fit(mine).items():
             arrays[f"{generator}.{name}"] = value
     return arrays
-
-
-def save(arrays: dict[str, np.ndarray], path: Path) -> None:
-    np.savez_compressed(path, **arrays)

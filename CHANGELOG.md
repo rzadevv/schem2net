@@ -2,11 +2,16 @@
 
 ## Unreleased
 
+- Remove editable KiCad project generation and its roundtrip command.
+
+- Remove BOM and SPICE exports, revision comparison and MCP support.
+  `export` now writes a KiCad netlist directly, without `--to`.
+
 - Add an optional desktop application, `schem2net-gui`, installed with the `gui` extra.
 
 - Consolidate usage, architecture and development documentation while preserving
   frozen evaluation records and historical comparisons.
-- Test the installed wheel and optional MCP workflow in CI.
+- Test the installed wheel in CI.
 - Keep untracked files and local tool settings out of source distributions.
 - Disable automatic package publication pending learned-asset clearance.
 

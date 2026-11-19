@@ -2,19 +2,12 @@
 
 ## Local checks
 
-Python 3.11+ and uv are required. `make install` installs locked development and
-optional MCP and desktop (`gui`) dependencies. CI tests Python 3.11 and 3.14.
-
-```sh
-make install
-make test
-make lint
-make package-check
-```
+Use the [README setup commands](../README.md#development) to install Python 3.11+
+dependencies and run tests, lint and package checks. CI tests Python 3.11 and 3.14.
 
 `make package-check` builds both distributions, replaces the editable package in
 `.venv` with the wheel, runs the full coverage suite, then exercises installed CLI
-exports and MCP with a disposable synthetic PDF. Distribution inspection rejects
+exports with a disposable synthetic PDF. Distribution inspection rejects
 untracked local files; the sdist has an explicit project-path allowlist so personal
 PDFs and tool settings are not bundled. The target calls `.venv/bin/python`
 directly so uv cannot silently restore the editable installation. Run
@@ -35,7 +28,7 @@ coverage floor is 80%, not a claim that all input styles are reliable.
 
 | Path | Purpose |
 |---|---|
-| `src/schem2net/` | Runtime pipeline, IR, CLI, exporters and queries. |
+| `src/schem2net/` | Runtime pipeline, IR, CLI, exporters and reports. |
 | `src/schem2net/profiles/` | Generator conventions and five bundled learned assets. |
 | `src/schem2net/bench/` | Corpus construction, truth readers, training and scoring. |
 | `tests/` | Unit, property and end-to-end regression tests; synthetic fixtures. |
@@ -62,7 +55,6 @@ make bench-c           # Eagle
 make bench-d           # Olimex, mixed KiCad/Eagle
 make bench-e           # EasyEDA
 make bench-f           # OrCAD
-make bench-schematic   # exported KiCad project round trips
 ```
 
 Default benchmark commands use shipped models. Out-of-fold development runs
@@ -82,7 +74,11 @@ These development gates are regression checks. They are not fresh test accuracy.
 The historical test/holdout data was already observed; do not tune on it or rename
 it as a new independent test. Keep related source revisions in one group.
 
-## Frozen independent experiment
+## Frozen independent experiments
+
+The [November 11 five-generator evaluation](independent-evaluation-2026-11-11.md)
+has its own [protocol](evaluation-protocol.md), [freeze](evaluation-freeze.json),
+and [results](../bench/results_h.json). Corpus H is spent; preserve its outputs.
 
 The [release evaluation](release-2026-11-05.md) identifies the candidate, initial
 and recent baselines, 63 verified new designs, source-group intervals, adverse
@@ -91,8 +87,6 @@ cases and failed/inconclusive gates. Its [registered protocol](release-2026-11-0
 [panel seal](release-2026-11-05-panel.json),
 [input manifest](../bench/release-2026-11-05-panel.json) and
 [results](../bench/release-2026-11-05-results.json) remain the authoritative records.
-The protocol, hashes and machine-readable results have not been rewritten during
-repository cleanup. Only historical-report links in the narrative were updated.
 
 Local `bench/out/release-2026-11-05/evidence.tar.gz` preserves the exact PDFs,
 truth, all 378 predictions, issues, resource measurements and source-verification

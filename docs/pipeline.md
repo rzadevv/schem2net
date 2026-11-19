@@ -15,7 +15,7 @@ colours and drawing order provide evidence about symbols and connectivity.
 | Reconstruct parts | Find physical pin ends, group body graphics, assign references, values and numbers. | `symbols`, `fields`, `designators` |
 | Resolve identities | Reconcile units and optionally match indexed library pins. | `fields`, `library` |
 | Connect | Join wire endpoints, contacts, labels, buses and hierarchical ports; retain evidence and issues. | `nets`, `buses` |
-| Output | Save the IR, export netlists/projects, draw reports or answer queries. | `ir`, `export`, `kicad_sch`, `report`, `query`, `mcp_server` |
+| Output | Save the IR, export netlists or draw reports. | `ir`, `export`, `report` |
 
 An Altium Smart PDF may carry its own netlist in bookmarks. `bookmarks.read`
 provides that direct path; drawing-only evaluation explicitly disables it.
@@ -104,8 +104,7 @@ training-source and distribution questions.
 `ir.Design` holds source metadata, components, pins, nets, evidence and issues.
 `PinRef` is `(reference, physical_pad_number)`. JSON writes are atomic. Exporters
 consume the IR rather than running a separate electrical reconstruction. HTML
-reports combine saved geometry with escaped text; MCP delegates to the same
-read-only `Query` operations.
+reports combine saved geometry with escaped text.
 
 The KiCad, Eagle and EasyEDA CAD readers support benchmark truth construction;
 they are not extra PDF extraction engines. `bench.score` aligns predicted and
@@ -114,7 +113,7 @@ aliases and allowed passive-end swaps are scoring conventions, not corrections
 to the raw prediction. Power-net exclusions from pair F1, singleton handling and
 review metrics are defined in [benchmark methodology](benchmark.md#metrics).
 
-The [independent evaluation](release-2026-11-05.md) is frozen at `5d2417c`.
-Repository presentation and CI changes do not alter that extractor. Future
+The [November 5](release-2026-11-05.md) and
+[November 11](independent-evaluation-2026-11-11.md) evaluations are frozen. Future
 functional changes need development regression checks and a fresh independent
 panel for a new independent-release claim.

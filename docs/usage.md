@@ -1,7 +1,7 @@
 # Usage
 
 Install from Git as shown in the [README](../README.md). The CLI accepts a vector
-schematic PDF; `export`, `diff` and `serve-mcp` also accept JSON saved by `extract`.
+schematic PDF; `export` also accepts JSON saved by `extract`.
 Run `schem2net COMMAND --help` for all options.
 
 ## Extraction and review
@@ -25,24 +25,14 @@ pin identities. The report lists guessed numbers, missing connections and other
 issues separately, with links to their positions on the drawing. Exported netlists
 give guessed pad numbers as real pads; the command line names them when it writes one.
 
-## Exports and revisions
+## Exports
 
 ```sh
-schem2net export board.ir.json --to kicad-net -o board.net
-schem2net export board.ir.json --to bom -o board.bom.csv
-schem2net export board.ir.json --to spice -o board.cir
-schem2net schematic board.pdf -o board-kicad
-schem2net diff old.ir.json new.ir.json
+schem2net export board.ir.json -o board.net
 ```
 
 The KiCad netlist contains numbered terminals; placeholders do not become physical
-pads. Assign footprints in KiCad. `schematic` reconstructs layout and symbol
-shapes into an editable project, always from drawing geometry. It does not prove
-ERC correctness or recover the original symbol libraries. SPICE output is a
-starting point: device models and pin assignments need checking.
-
-`diff` matches components by reference and compares connectivity by shared pins;
-a net-name change alone is not a connection change.
+pads. Assign footprints in KiCad.
 
 ## Optional part libraries
 
@@ -65,32 +55,17 @@ before redistributing an index.
 
 ```python
 from schem2net.pipeline import extract
-from schem2net.query import Query
 
 design = extract("board.pdf", embedded=False)
 design.save("board.ir.json")
-print(Query(design).net("U3.14"))
+print([(part.ref, part.value) for part in design.components])
 ```
 
 By default, `extract` uses a carried Altium netlist if present. `embedded=False`
 forces geometry-based reconstruction, as the drawing-only benchmark does.
-`pipeline.run` additionally returns per-page scenes for rendering and schematic
-export. PDF processing should run in separate processes, not concurrent PDFium
+`pipeline.run` additionally returns per-page scenes for rendering. PDF processing should run in separate processes, not concurrent PDFium
 threads. `profile.use_learned(None)` restores shipped models; it does not disable
 them. Overrides are intended for benchmark training/evaluation processes.
-
-## MCP
-
-```sh
-uv tool install "schem2net[mcp] @ git+https://github.com/rzadevv/schem2net"
-schem2net serve-mcp board.ir.json
-```
-
-The server exposes one design over stdio. Its read-only tools are
-`list_components`, `get_net`, `pins_of`, `trace`, `low_confidence`, `issues` and
-`bom`. `get_net` accepts a name or a pin such as `U3.14`; `trace` follows small
-networks through series passives. MCP queries report the extracted design, not
-independent verification of the original circuit.
 
 ## Desktop application
 
@@ -116,13 +91,10 @@ From a checkout, `uv sync --extra gui` then `uv run schem2net-gui`.
   it was read.
 - **File › Part Library** chooses an index made by `index-library`, as `--library`
   does; `SCHEM2NET_LIBRARY` is the default.
-- **File › Export** writes the KiCad netlist (Ctrl+S), JSON, BOM, SPICE, HTML
-  report or an editable KiCad project, as the CLI does.
+- **File › Export** writes the KiCad netlist (Ctrl+S), JSON and the HTML report, as the CLI does.
 
 Nets carried in an Altium PDF are listed but cannot be shown on the drawing, since
-the drawing is not read; the editable KiCad project, which needs the drawing, is
-then not offered (`schem2net schematic` reads the drawing instead). A component
-on several units is shown at its first. The report draws over a raster image of
+the drawing is not read. A component on several units is shown at its first. The report draws over a raster image of
 each page, which softens at high zoom; **Original** stays sharp. The extractor reports no progress, so only a busy
 indicator is shown. PyPI's Qt cannot load distribution theme plugins such as
 KDE's; the application then follows the desktop's light or dark setting through
@@ -137,7 +109,7 @@ Linux installations provide.
 | 2 | No supported generator/profile could read the input. |
 | 3 | No parts were found; with `--strict`, also when any page failed. |
 
-`extract`, `export`, `report` and `schematic` accept `--strict`. Refusal leaves an
+`extract`, `export` and `report` accept `--strict`. Refusal leaves an
 existing output unchanged. Partial readings otherwise retain failed-page issues;
 board drawings, tables and raster pages are reported as skipped.
 

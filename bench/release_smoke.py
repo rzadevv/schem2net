@@ -1,6 +1,5 @@
-"""Installed CLI/MCP checks. With no arguments, create a disposable test fixture."""
+"""Installed CLI checks. With no arguments, create a disposable test fixture."""
 
-import asyncio
 import json
 import os
 import subprocess
@@ -29,35 +28,6 @@ def check_distributions(folder=Path("dist")):
             else:
                 assert path.split("/")[0].endswith(".dist-info"), path
     print("Wheel and sdist contain only project files and generated package metadata")
-
-
-async def mcp_check(cli, ir):
-    from mcp.client import ClientSession
-    from mcp.client.stdio import StdioServerParameters, stdio_client
-
-    params = StdioServerParameters(command=str(cli), args=["serve-mcp", str(ir)])
-    async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
-        initialized = await session.initialize()
-        listed = await session.list_tools()
-        assert {t.name for t in listed.tools} == {
-            "list_components",
-            "get_net",
-            "pins_of",
-            "trace",
-            "low_confidence",
-            "issues",
-            "bom",
-        }
-        result = await session.call_tool("list_components", {"prefix": "R"})
-        assert not result.is_error and "R1" in result.model_dump_json()
-        net = await session.call_tool("get_net", {"name_or_pin": "R1.1"})
-        assert not net.is_error and "R1" in net.model_dump_json()
-        return {
-            "initialize": initialized.model_dump(mode="json"),
-            "tools": [t.name for t in listed.tools],
-            "components": result.model_dump(mode="json"),
-            "net": net.model_dump(mode="json"),
-        }
 
 
 def main(root):
@@ -91,13 +61,14 @@ def main(root):
     command("extract", fixture, "-o", ir)
     first = Design.load(ir)
     assert len(first.components) == 3 and len(first.nets) == 2
-    for fmt, suffix in (("kicad-net", "net"), ("bom", "csv"), ("spice", "cir")):
-        target = out / ("export." + suffix)
-        command("export", ir, "--to", fmt, "-o", target)
-        assert target.stat().st_size > 20
-    assert len(kicad.read_netlist(out / "export.net").components) == 3
-    command("schematic", fixture, "-o", out / "project")
-    assert list((out / "project").glob("*.kicad_sch"))
+    target = out / "export.net"
+    command("export", ir, "-o", target)
+    assert target.stat().st_size > 20
+    back = kicad.read_netlist(target)
+    assert len(back.components) == 3
+    assert sorted(sorted(n.pins) for n in back.nets) == sorted(sorted(n.pins) for n in first.nets)
+    command("report", fixture, "--no-pdf", "-o", out / "report.html")
+    assert "<svg" in (out / "report.html").read_text()
     broken = out / "broken.pdf"
     broken.write_bytes(b"not a PDF")
     command("extract", broken, "-o", ir, expected=1)
@@ -121,7 +92,6 @@ def main(root):
         outputs.append(result.stdout)
     assert outputs[0] == outputs[1]
     assert "/site-packages/schem2net/" in pipeline.__file__
-    mcp = asyncio.run(asyncio.wait_for(mcp_check(cli, ir), timeout=30))
     (out / "checks.json").write_text(
         json.dumps(
             {
@@ -129,12 +99,11 @@ def main(root):
                 "package": pipeline.__file__,
                 "runs": runs,
                 "determinism": True,
-                "mcp": mcp,
             },
             indent=2,
         )
     )
-    print(sys.version.split()[0], "installed CLI, exports, errors, determinism and MCP passed")
+    print(sys.version.split()[0], "installed CLI, exports, errors and determinism passed")
 
 
 if __name__ == "__main__":

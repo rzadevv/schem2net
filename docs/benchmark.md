@@ -446,12 +446,13 @@ capacitors all turned comes right.
 Power nets are recognised by name: names starting with `+` or `-`, voltages
 such as `3V3`, `VCC`, `VDD`, `VSS`, `VBUS` and anything containing `GND`.
 
-## Schematic export
+## Historical schematic export
 
-`schem2net bench-schematic a --split all` writes every design as a KiCad
-project, has kicad-cli read its netlist back and run ERC, and scores that
-netlist against the extraction. A score of 1.0 means the schematic connects
-exactly as extracted.
+Before project generation was retired, this check used kicad-cli to read generated
+netlists back, run ERC and compare their connectivity with the extraction. A score
+of 1.0 meant the generated schematic connected exactly as extracted. The results
+below are historical; the project writer and its checking command are no longer
+provided.
 
 | Corpus | Designs | Read back exactly | No ERC errors |
 |---|---|---|---|
