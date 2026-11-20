@@ -27,6 +27,7 @@ from schem2net.symbols import Symbol
 PROFILES = {"kicad", "altium", "eagle", "easyeda", "orcad"}
 BLACK, WHITE = (0, 0, 0), (255, 255, 255)
 PAGE_SECONDS = pdf.PAGE_SECONDS
+NETLIST_SECONDS = pdf.PAGE_SECONDS
 
 
 @dataclass
@@ -249,21 +250,29 @@ def _extract(
             )
 
     read = [result for result in pages if result.scene is not None]
-    _name_sheets([result.scene for result in read])
-    fields.whole_names([result.symbols for result in read])
-    if rules.pin_library:
-        parts = library.load(library_dir, rules.pin_library)
-        design.source.library = library.fingerprint(library_dir, rules.pin_library)
-        for result in read:
-            by_name = rules.pin_library in library.BY_NAME
-            library.resolve(result.symbols, parts, by_name, result.scene.fields)
-    for result in read:
-        fields.names_apart(result.symbols)
-        try:
-            netlister.add_page(result.scene, result.symbols)
-        except buses.LimitError as e:
-            raise pdf.InputError(f"{design.source.file}: page {result.page.number}: {e}") from None
-    found = netlister.result()
+    try:
+        with pdf.time_limit(NETLIST_SECONDS):
+            _name_sheets([result.scene for result in read])
+            fields.whole_names([result.symbols for result in read])
+            if rules.pin_library:
+                parts = library.load(library_dir, rules.pin_library)
+                design.source.library = library.fingerprint(library_dir, rules.pin_library)
+                for result in read:
+                    by_name = rules.pin_library in library.BY_NAME
+                    library.resolve(result.symbols, parts, by_name, result.scene.fields)
+            for result in read:
+                fields.names_apart(result.symbols)
+                try:
+                    netlister.add_page(result.scene, result.symbols)
+                except buses.LimitError as e:
+                    raise pdf.InputError(
+                        f"{design.source.file}: page {result.page.number}: {e}"
+                    ) from None
+            found = netlister.result()
+    except TimeoutError as e:
+        raise pdf.InputError(
+            f"{design.source.file}: netlist construction timed out ({e})"
+        ) from None
     design.components = found.components
     design.nets = found.nets
     design.issues += found.issues

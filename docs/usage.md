@@ -120,7 +120,11 @@ board drawings, tables and raster pages are reported as skipped.
 
 The reader refuses more than 1,000 pages and stops pages exceeding 1.5 million
 visited drawing objects or 32 nested forms. Ingestion and analysis each have a
-1,200-second page budget on POSIX main threads. Drawing reconstruction refuses
+1,200-second page budget on POSIX main threads. After page analysis, library
+matching and final netlist construction share a separate 1,200-second budget
+across all pages. Expiry refuses the input with code 1 and preserves existing
+output, including without `--strict`.
+Drawing reconstruction refuses
 vector bus ranges exceeding 10,000 members before expansion, including reversed
 ranges and hierarchical sheet pins. This exits with code 1 and preserves existing
 output, including without `--strict`; no partial design is returned for that input.
