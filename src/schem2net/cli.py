@@ -494,14 +494,16 @@ def build_models(
         list[str] | None, typer.Argument(help="roles, designators, groups, font; all if none.")
     ] = None,
     bench_dir: BenchDir = Path("bench"),
-    out_dir: Annotated[Path, typer.Option("-o", "--out-dir")] = Path("src/schem2net/profiles"),
+    out_dir: Annotated[
+        Path, typer.Option("-o", "--out-dir", help="Directory for candidate model files.")
+    ] = Path("bench/out/models"),
     folds: Annotated[
         bool, typer.Option(help="Learn each fold's models without its designs, into fold-K.")
     ] = False,
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
-    """Learn the files of profiles/ from the dev split of each corpus. Needs scikit-learn
-    (the dev dependencies)."""
+    """Learn candidate models from each corpus's dev split into a separate directory.
+    Needs scikit-learn (the dev dependencies)."""
     from schem2net.bench import learn
 
     unknown = sorted(set(kinds or ()) - learn.KINDS.keys())

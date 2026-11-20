@@ -74,6 +74,26 @@ These development gates are regression checks. They are not fresh test accuracy.
 The historical test/holdout data was already observed; do not tune on it or rename
 it as a new independent test. Keep related source revisions in one group.
 
+## Candidate model generation
+
+`schem2net build-models` writes candidates to `bench/out/models` by default,
+including when invoked by `make font` or `make roles`. Use `--out-dir` to choose
+another experiment directory. These commands need the development dependencies
+and built development corpora; they leave the bundled files in
+`src/schem2net/profiles` unchanged unless that directory is explicitly selected.
+
+For out-of-fold development comparisons, generate separate models and pass them
+explicitly to the benchmark:
+
+```sh
+uv run schem2net build-models --folds --out-dir bench/out/folds
+uv run schem2net bench a --split dev --folds bench/out/folds --json candidate-a.json
+```
+
+Ordinary extraction continues to use bundled models. Keep candidate assets in
+ignored experiment folders while checking provenance and A–F development
+regressions; generation alone does not approve replacing or distributing them.
+
 ## Frozen independent experiments
 
 The [November 11 five-generator evaluation](independent-evaluation-2026-11-11.md)
