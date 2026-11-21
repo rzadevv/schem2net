@@ -21,6 +21,7 @@ from schem2net.symbols import Pin, Symbol
 TOL = 0.05  # mm; KiCad places connections exactly
 NO_CONNECT_REACH = 0.3  # mm from a pin's tip to the middle of its no-connect cross, as printed
 LABEL_GAP = 1.5  # mm between a local label's baseline and its wire
+LABEL_TIP_GAP = 0.5  # mm from a bare label's baseline corner to a perpendicular pin tip
 
 WEIGHTS = {
     "exact": 1.0,
@@ -686,7 +687,7 @@ def _under_label(
     pin_index: GridIndex | None,
     node_of: tuple,
 ) -> tuple | None:
-    """The wire or pin a label without an outline sits on: parallel, just below its baseline."""
+    """A bare label's parallel wire/pin, or a unique perpendicular pin tip at an end."""
     x0, y0, x1, y1 = label.bbox
     vertical = round(label.angle) % 180 == 90
     along, across = geometry.reading_frame(label.angle)
@@ -710,7 +711,18 @@ def _under_label(
         overlaps = min(a, b) <= hi + 0.5 and max(a, b) >= lo - 0.5
         if -0.2 <= gap <= LABEL_GAP and overlaps and (best is None or gap < best[0]):
             best = (gap, node)
-    return best[1] if best else None
+    if best:
+        return best[1]
+    tips = []
+    for k in near:
+        seg, node = pin_lines[k]
+        if geometry.is_horizontal(seg) != vertical or _slanted(seg):
+            continue
+        end = geometry.dot(seg[1], along)
+        gap = geometry.dot(seg[1], across) - base
+        if -0.2 <= gap <= LABEL_TIP_GAP and min(abs(end - lo), abs(end - hi)) <= LABEL_TIP_GAP:
+            tips.append(node)
+    return tips[0] if len(tips) == 1 else None
 
 
 def _apart(parts: list[tuple]) -> list[set[int]]:

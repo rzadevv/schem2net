@@ -72,7 +72,9 @@ component pins, local/global names and sheet ports. Join edges retain evidence
 kinds, so final nets can report why terminals were connected.
 
 Shared endpoints, T contacts and explicit junction dots connect; a plain interior
-crossing does not. Local labels are scoped to their sheet. Global and power names
+crossing does not. A bare label can attach directly to a perpendicular pin tip at
+one end of its baseline. Existing parallel matches take precedence; ambiguous pin
+tips remain unattached. Local labels are scoped to their sheet. Global and power names
 connect according to the generator profile. Hierarchical ports match parent and
 child paths. Global vector buses give their declared scalar members global scope
 on pages carrying the declaration. Reversed ranges keep the same ascending member
