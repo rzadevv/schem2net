@@ -57,7 +57,9 @@ handling. Generator drawing order helps where distance alone is ambiguous.
 `fields` assigns references and values using geometry, order and learned
 designator likelihoods, then numbers terminals from nearby text, repeated rows or
 limited shape/position rules. Printed numbers take precedence over inferred
-names. Functional names such as G/S/D can identify a terminal without establishing
+names. Complete `1..N` labels inside connector outlines are read when each aligns
+with a unique pin; existing external pad numbers retain priority.
+Functional names such as G/S/D can identify a terminal without establishing
 a package pad; unresolved numbers stay `?N`. Guessed numbers produce review issues.
 
 Some functions in `fields`, `symbols` and `nets` remain long because they implement

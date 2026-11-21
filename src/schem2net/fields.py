@@ -1008,6 +1008,7 @@ def _number_pins(symbols: list[Symbol], scene: Scene, profile: Profile, taken: s
 
     rest = [k for k in range(len(numbers)) if k not in used]
     used |= {rest[k] for k in _number_rows(symbols, [numbers[k] for k in rest])}
+    _number_inside_connectors(symbols, numbers, used, profile.pin_name_gap)
 
     # Small parts often hide pin numbers. Diodes are numbered from one end of
     # the triangle, other parts from the top or bottom, then the left.
@@ -1241,6 +1242,58 @@ def _path_lengths(
                 heapq.heappush(queue, (d + length, m))
     far = float("inf")
     return best.get(len(nodes) - 2, far), best.get(len(nodes) - 1, far)
+
+
+def _number_inside_connectors(
+    symbols: list[Symbol], numbers: list[Text], used: set[int], name_gap: float
+) -> None:
+    """Read a complete, unambiguous 1..N inventory printed inside a connector.
+
+    Other parts may use numeric signal names. Existing pad readings take priority.
+    """
+    index = _Texts(numbers).index
+    for symbol in symbols:
+        ref = REFDES.match(symbol.ref or "")
+        pins = symbol.pins
+        if not ref or ref.group(1).rstrip("$") not in {"J", "P", "CN", "CON"}:
+            continue
+        if not symbol.body or len(pins) < 2 or any(p.number for p in pins):
+            continue
+        wanted = {str(k) for k in range(1, len(pins) + 1)}
+        printed = [
+            (t, numbers[t])
+            for t in sorted(index.within(symbol.body))
+            if t not in used and numbers[t].text in wanted and _within_outline(symbol, numbers[t])
+        ]
+        if len(printed) != len(pins) or {text.text for _, text in printed} != wanted:
+            continue
+        pairs = []
+        for t, text in printed:
+            c = geometry.center(text.bbox)
+            vertical = round(text.angle) % 180 == 90
+            reach = name_gap + SIDE_BEARING * text.size + longest_side(text.bbox) / 2
+            fits = []
+            for pin in pins:
+                inward = geometry.unit(pin.at, pin.line[0])
+                side = (-inward[1], inward[0])
+                lo, hi = geometry.extent(text.bbox, side)
+                across = geometry.dot(pin.line[0], side)
+                ahead = geometry.dot((c[0] - pin.line[0][0], c[1] - pin.line[0][1]), inward)
+                if (
+                    geometry.is_horizontal(pin.line) != vertical
+                    and ahead > 0
+                    and geometry.distance(c, pin.line[0]) <= reach
+                    and lo - SIDE_BEARING * text.size <= across <= hi + SIDE_BEARING * text.size
+                ):
+                    fits.append(pin)
+            if len(fits) != 1:
+                break
+            pairs.append((fits[0], t))
+        if len(pairs) != len(pins) or len({id(pin) for pin, _ in pairs}) != len(pins):
+            continue
+        for pin, t in pairs:
+            pin.number, pin.how = numbers[t].text, "read"
+            used.add(t)
 
 
 def _number_rows(symbols: list[Symbol], numbers: list[Text]) -> set[int]:
