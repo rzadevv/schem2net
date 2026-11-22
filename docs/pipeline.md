@@ -57,7 +57,9 @@ handling. Generator drawing order helps where distance alone is ambiguous.
 `fields` assigns references and values using geometry, order and learned
 designator likelihoods, then numbers terminals from nearby text, repeated rows or
 limited shape/position rules. Printed numbers take precedence over inferred
-names. Functional names such as G/S/D can identify a terminal without establishing
+names. Complete `1..N` labels inside connector outlines are read when each aligns
+with a unique pin; existing external pad numbers retain priority.
+Functional names such as G/S/D can identify a terminal without establishing
 a package pad; unresolved numbers stay `?N`. Guessed numbers produce review issues.
 
 Some functions in `fields`, `symbols` and `nets` remain long because they implement
@@ -72,9 +74,13 @@ component pins, local/global names and sheet ports. Join edges retain evidence
 kinds, so final nets can report why terminals were connected.
 
 Shared endpoints, T contacts and explicit junction dots connect; a plain interior
-crossing does not. Local labels are scoped to their sheet. Global and power names
+crossing does not. A bare label can attach directly to a perpendicular pin tip at
+one end of its baseline. Existing parallel matches take precedence; ambiguous pin
+tips remain unattached. Local labels are scoped to their sheet. Global and power names
 connect according to the generator profile. Hierarchical ports match parent and
-child paths. Vector buses map by member position across sheets; group buses map
+child paths. Global vector buses give their declared scalar members global scope
+on pages carrying the declaration. Reversed ranges keep the same ascending member
+order. Vector buses map by member position across hierarchical ports; group buses map
 by member name. Bus labels must not attach to nearby scalar wires merely because
 the text lies close to them.
 

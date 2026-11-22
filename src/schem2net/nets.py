@@ -21,6 +21,7 @@ from schem2net.symbols import Pin, Symbol
 TOL = 0.05  # mm; KiCad places connections exactly
 NO_CONNECT_REACH = 0.3  # mm from a pin's tip to the middle of its no-connect cross, as printed
 LABEL_GAP = 1.5  # mm between a local label's baseline and its wire
+LABEL_TIP_GAP = 0.5  # mm from a bare label's baseline corner to a perpendicular pin tip
 
 WEIGHTS = {
     "exact": 1.0,
@@ -236,6 +237,16 @@ class Netlister:
                 self.join(node, ("local", page, key), "local_name")
                 self.local_names[page].add(key)
             bus = busnames.parse(label.text)
+            if bus and bus.vector:
+                if not label.outline or label.kind == "global":
+                    vector_labels.append((node, label, bus))
+                if label.kind == "global":
+                    # Only pages declaring the bus give these scalar names global scope.
+                    for member in busnames.member_nets(bus, set()).values():
+                        member = self._key(member)
+                        self.printed_pages[member].add(page)
+                        self.names[("global", member)] = member
+                        self.join(("local", page, member), ("global", member), "bus")
             if bus and not bus.vector:
                 self.group_names.append((page, node, bus))
             if label.kind == "hier" and scene.path:
@@ -246,8 +257,6 @@ class Netlister:
                 target = _under_label(label, buses, bus_index, [], None, ("b", page))
                 if target:
                     self.join(node, target, "label")
-                    if bus and bus.vector:
-                        vector_labels.append((target, label, bus))
             elif label.outline:
                 tips = [(v, node) for v in _label_tips(label)]
                 (bus_points if bus else points).extend(tips)
@@ -678,7 +687,7 @@ def _under_label(
     pin_index: GridIndex | None,
     node_of: tuple,
 ) -> tuple | None:
-    """The wire or pin a label without an outline sits on: parallel, just below its baseline."""
+    """A bare label's parallel wire/pin, or a unique perpendicular pin tip at an end."""
     x0, y0, x1, y1 = label.bbox
     vertical = round(label.angle) % 180 == 90
     along, across = geometry.reading_frame(label.angle)
@@ -702,7 +711,18 @@ def _under_label(
         overlaps = min(a, b) <= hi + 0.5 and max(a, b) >= lo - 0.5
         if -0.2 <= gap <= LABEL_GAP and overlaps and (best is None or gap < best[0]):
             best = (gap, node)
-    return best[1] if best else None
+    if best:
+        return best[1]
+    tips = []
+    for k in near:
+        seg, node = pin_lines[k]
+        if geometry.is_horizontal(seg) != vertical or _slanted(seg):
+            continue
+        end = geometry.dot(seg[1], along)
+        gap = geometry.dot(seg[1], across) - base
+        if -0.2 <= gap <= LABEL_TIP_GAP and min(abs(end - lo), abs(end - hi)) <= LABEL_TIP_GAP:
+            tips.append(node)
+    return tips[0] if len(tips) == 1 else None
 
 
 def _apart(parts: list[tuple]) -> list[set[int]]:

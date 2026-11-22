@@ -128,6 +128,39 @@ def test_a_run_that_reads_nothing_leaves_an_earlier_output_as_it_was(tmp_path, m
     assert result.exit_code == 0 and (tmp_path / "board.rev2.net").exists()
 
 
+@pytest.mark.parametrize("explicit_output", [False, True])
+def test_model_builds_keep_bundled_assets_unchanged(tmp_path, monkeypatch, explicit_output):
+    from pathlib import Path
+
+    from typer.testing import CliRunner
+
+    from schem2net import cli
+    from schem2net.bench import learn
+
+    monkeypatch.chdir(tmp_path)
+    bundled = Path("src/schem2net/profiles/roles.npz")
+    bundled.parent.mkdir(parents=True)
+    bundled.write_bytes(b"shipped model")
+    output = Path("custom models") if explicit_output else Path("bench/out/models")
+    options = ["--out-dir", str(output), "--folds", "--workers", "1"] if explicit_output else []
+
+    def write_candidate(names, bench_dir, out_dir, workers, folds):
+        assert names == ["roles"] and bench_dir == Path("bench")
+        assert workers == (1 if explicit_output else 2) and folds == explicit_output
+        folder = out_dir / "fold-0" if folds else out_dir
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "roles.npz").write_bytes(b"candidate model")
+        return [str(folder / "roles.npz")]
+
+    monkeypatch.setattr(learn, "learn", write_candidate)
+    result = CliRunner().invoke(cli.app, ["build-models", "roles", *options])
+    assert result.exit_code == 0, result.output
+    assert bundled.read_bytes() == b"shipped model"
+    candidate = output / "fold-0/roles.npz" if explicit_output else output / "roles.npz"
+    assert candidate.read_bytes() == b"candidate model"
+    assert str(candidate) in result.output
+
+
 def test_guessed_pads_are_named_where_a_netlist_would_hide_them(tmp_path, monkeypatch):
     """A guessed pad goes out in the KiCad netlist like a printed one, on a sure net: the
     command says which pads were guessed."""

@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import sys
 from dataclasses import asdict
@@ -11,7 +10,10 @@ import typer
 
 from schem2net import __version__, library, pdf, pipeline, report, svg
 from schem2net import export as exporters
+from schem2net.files import OutputError, protect_source
+from schem2net.files import write_text as _write
 from schem2net.ir import LOW_CONFIDENCE, Design
+from schem2net.ir import InputError as DesignInputError
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -35,7 +37,7 @@ def main() -> None:
     """The command line, with input it cannot read told in a line rather than a traceback."""
     try:
         app()
-    except pdf.InputError as e:
+    except (pdf.InputError, DesignInputError, OutputError) as e:
         typer.echo(f"schem2net: {e}", err=True)
         raise SystemExit(1) from None
     except (FileNotFoundError, IsADirectoryError) as e:
@@ -71,9 +73,10 @@ def extract(
     strict: StrictOption = False,
 ) -> None:
     """Extract a netlist from a schematic PDF and write it as JSON."""
+    output = output or file.with_name(_stem(file) + ".ir.json")
+    protect_source(file, output)
     design = pipeline.extract(file, region=_region(region), library_dir=library_dir)
     _refuse(design, strict)
-    output = output or file.with_name(_stem(file) + ".ir.json")
     design.save(output)
     typer.echo(f"{output}: {len(design.components)} components, {len(design.nets)} nets")
     _say(design)
@@ -88,10 +91,11 @@ def export(
     strict: StrictOption = False,
 ) -> None:
     """Write a KiCad netlist."""
+    output = output or file.with_name(_stem(file) + ".net")
+    protect_source(file, output)
     design = _load(file, _region(region), library_dir)
     _refuse(design, strict)
     text = exporters.kicad_netlist(design)
-    output = output or file.with_name(_stem(file) + ".net")
     _write(output, text)
     typer.echo(output)
     _say(design)
@@ -141,13 +145,6 @@ def _stem(file: Path) -> str:
         if file.name.lower().endswith(suffix):
             return file.name[: -len(suffix)]
     return file.stem
-
-
-def _write(path: Path, text: str) -> None:
-    """Write the whole file or nothing, so a run that fails leaves an earlier one as it was."""
-    part = path.with_name(f".{path.name}.part")
-    part.write_text(text)
-    os.replace(part, path)
 
 
 def _say(design: Design) -> None:
@@ -214,6 +211,7 @@ def report_(
 ) -> None:
     """Write an HTML page showing the extracted nets over the schematic."""
     output = output or file.with_name(_stem(file) + ".html")
+    protect_source(file, output)
     extraction = pipeline.run(file, region=_region(region), library_dir=library_dir)
     _refuse(extraction.design, strict)
     pictures = report.pictures(file, extraction) if pdf_under and not region else {}
@@ -229,11 +227,12 @@ def draw(
     output: Annotated[Path | None, typer.Option("-o", "--output")] = None,
 ) -> None:
     """Draw the primitives of one page as SVG."""
+    output = output or file.with_name(f"{file.stem}.p{page}.svg")
+    protect_source(file, output)
     doc = pdf.read(file)
     if not 1 <= page <= len(doc.pages):
         raise typer.BadParameter(f"the PDF has {len(doc.pages)} pages")
-    output = output or file.with_name(f"{file.stem}.p{page}.svg")
-    output.write_text(svg.render(doc.pages[page - 1]))
+    _write(output, svg.render(doc.pages[page - 1]))
     typer.echo(output)
 
 
@@ -493,14 +492,16 @@ def build_models(
         list[str] | None, typer.Argument(help="roles, designators, groups, font; all if none.")
     ] = None,
     bench_dir: BenchDir = Path("bench"),
-    out_dir: Annotated[Path, typer.Option("-o", "--out-dir")] = Path("src/schem2net/profiles"),
+    out_dir: Annotated[
+        Path, typer.Option("-o", "--out-dir", help="Directory for candidate model files.")
+    ] = Path("bench/out/models"),
     folds: Annotated[
         bool, typer.Option(help="Learn each fold's models without its designs, into fold-K.")
     ] = False,
     workers: Annotated[int, typer.Option(help="designs read at once")] = 2,
 ) -> None:
-    """Learn the files of profiles/ from the dev split of each corpus. Needs scikit-learn
-    (the dev dependencies)."""
+    """Learn candidate models from each corpus's dev split into a separate directory.
+    Needs scikit-learn (the dev dependencies)."""
     from schem2net.bench import learn
 
     unknown = sorted(set(kinds or ()) - learn.KINDS.keys())

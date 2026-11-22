@@ -2,12 +2,18 @@
 
 ## Evidence and current status
 
-The [independent evaluation](release-2026-11-05.md) is the current frozen result:
-63 new designs / 40 groups, predominantly generated KiCad PDFs, 91.02% drawing-only
-pin accuracy. It did not meet all release gates. The [development guide](development.md#engineering-history)
-summarizes the separate, repeatedly optimized 198-design development corpus.
-The historical test/holdout tables below are preserved as originally reported;
-they are not fresh results for the current extractor.
+The latest [frozen independent evaluation](independent-evaluation-2026-11-11.md)
+read 59 designs in 59 source groups across five generators. Drawing-only pin
+accuracy was 68.90% for candidate `56caa06`, compared with 68.69% for `5d2417c`:
+a small gain of 0.21 percentage points, with substantial errors remaining.
+
+The earlier [November 5 evaluation](release-2026-11-05.md) covers a separate
+63-design / 40-group panel, predominantly generated KiCad PDFs, and did not meet
+all release gates. Its accuracy is not directly comparable to the later panel's.
+The [development guide](development.md#engineering-history) summarizes the
+separate, repeatedly optimized 198-design development corpus. These evaluations
+and the historical test/holdout tables below retain their original results and
+extractor versions; they do not measure subsequent extractor changes.
 
 <a id="results"></a>
 
