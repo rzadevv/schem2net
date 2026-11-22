@@ -8,7 +8,7 @@ from threading import Barrier
 
 import pytest
 
-from schem2net import ir
+from schem2net import files
 from schem2net.ir import SCHEMA, Design, Net
 
 
@@ -114,14 +114,14 @@ def test_concurrent_saves_each_finish_with_a_complete_design(tmp_path, payload, 
     file = tmp_path / "board.ir.json"
     first = Design.model_validate(payload)
     second = Design.model_validate(payload | {"source": {"file": "other.pdf"}})
-    ready, replace = Barrier(2), ir.os.replace
+    ready, replace = Barrier(2), files.os.replace
 
     def overlap(source, target):
         if target == file:
             ready.wait(timeout=10)
         replace(source, target)
 
-    monkeypatch.setattr(ir.os, "replace", overlap)
+    monkeypatch.setattr(files.os, "replace", overlap)
     with ThreadPoolExecutor(max_workers=2) as pool:
         list(pool.map(lambda design: design.save(file), [first, second]))
     assert Design.load(file) in (first, second)
@@ -139,7 +139,7 @@ def test_a_failed_save_preserves_the_output_and_cleans_its_temporary_file(
     def fail(source, target):
         raise OSError("replacement failed")
 
-    monkeypatch.setattr(ir.os, "replace", fail)
+    monkeypatch.setattr(files.os, "replace", fail)
     with pytest.raises(OSError, match="replacement failed"):
         design.save(file)
     assert file.read_bytes() == before

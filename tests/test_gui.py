@@ -244,6 +244,26 @@ def test_exports_write_what_the_exporters_give(app, window, tmp_path, monkeypatc
     assert (tmp_path / "r.net").read_text() == "mine"
 
 
+@pytest.mark.parametrize("action", [0, 1, 2])
+@pytest.mark.parametrize("kind", ["same", "symlink", "hardlink"])
+def test_export_cannot_replace_the_open_pdf(app, window, tmp_path, monkeypatch, action, kind):
+    from PySide6.QtWidgets import QFileDialog
+
+    from .test_output_safety import alias_of
+
+    file = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator=KICAD)
+    _extracted(app, window, file)
+    output = alias_of(file, kind)
+    before = file.read_bytes()
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(output), ""))
+    window.exports[action].trigger()
+    assert file.read_bytes() == output.read_bytes() == before
+    assert any("overwrite input" in error for error in window.errors)
+    assert window.design is not None and window.exports[action].isEnabled()
+    if kind == "symlink":
+        assert output.is_symlink()
+
+
 def test_filtering_issues_by_their_kind_keeps_its_entries(app, window, tmp_path):
     from schem2net.gui.app import _filter
 

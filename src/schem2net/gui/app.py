@@ -52,6 +52,7 @@ from PySide6.QtWidgets import (
 
 from schem2net import __version__, export, library, report
 from schem2net.cli import _natural, _stem, _write
+from schem2net.files import protect_source
 from schem2net.ir import LOW_CONFIDENCE, Design, Net
 
 WORLD = QWebEngineScript.ScriptWorldId.ApplicationWorld  # view.js, apart from the page's
@@ -962,6 +963,7 @@ class Window(QMainWindow):
             if Path(path).exists() and not self._replace(f"{path} already exists."):
                 return
         try:
+            protect_source(self.file, Path(path))
             write(self, Path(path))
         except OSError as e:
             self._error("Export failed", f"{path}: {e.strerror or e}")
