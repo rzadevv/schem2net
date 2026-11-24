@@ -19,12 +19,21 @@ def protect_source(source: str | Path, output: str | Path) -> None:
 
 def write_text(path: str | Path, text: str) -> None:
     """Write a complete UTF-8 file, cleaning up only our own temporary file on failure."""
+    _write(path, text)
+
+
+def write_bytes(path: str | Path, data: bytes) -> None:
+    """Replace a file atomically, cleaning up only this writer's temporary file."""
+    _write(path, data)
+
+
+def _write(path: str | Path, data: str | bytes) -> None:
     path = Path(path)
     part = path.with_name(f".schem2net-{uuid4().hex}.part")
-    stream = part.open("x", encoding="utf-8")
+    stream = part.open("x", encoding="utf-8") if isinstance(data, str) else part.open("xb")
     try:
         with stream:
-            stream.write(text)
+            stream.write(data)
         os.replace(part, path)
     finally:
         part.unlink(missing_ok=True)

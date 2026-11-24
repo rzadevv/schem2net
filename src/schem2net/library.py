@@ -17,12 +17,14 @@ import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from functools import cache
+from functools import lru_cache
 from pathlib import Path
+from stat import S_ISREG
 from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 
 from schem2net import sexpr
+from schem2net.files import write_bytes
 from schem2net.geometry import GridIndex
 
 if TYPE_CHECKING:
@@ -192,8 +194,8 @@ def save(library: Library, path: Path) -> None:
         for key, entries in library.items()
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(path, "wt", encoding="utf-8") as f:
-        json.dump(rows, f, separators=(",", ":"))
+    data = json.dumps(rows, separators=(",", ":")).encode("utf-8")
+    write_bytes(path, gzip.compress(data, mtime=0))
 
 
 def path(folder: Path, kind: str = "kicad") -> Path:
@@ -201,22 +203,38 @@ def path(folder: Path, kind: str = "kicad") -> Path:
     return Path(folder) / f"{kind}-symbols.json.gz"
 
 
-@cache
 def fingerprint(folder: Path | None, kind: str = "kicad") -> str | None:
     """Which index a design was read with, as its file name and the start of its hash, so
     two readings of one PDF that differ can be told apart; None where none was used."""
-    if folder is None or not path(folder, kind).is_file():
-        return None
-    index = path(folder, kind)
+    return _fingerprint(*entry) if (entry := _indexed_file(folder, kind)) else None
+
+
+@lru_cache(maxsize=16)
+def _fingerprint(index: Path, stamp: tuple[int, ...]) -> str:
     return f"{index.name} {hashlib.sha256(index.read_bytes()).hexdigest()[:12]}"
 
 
-@cache
 def load(folder: Path | None, kind: str = "kicad") -> Library:
     """The indexed library of a kind in a folder, or an empty one where there is none."""
-    if folder is None or not path(folder, kind).is_file():
-        return {}
-    index = path(folder, kind)
+    return _load(*entry) if (entry := _indexed_file(folder, kind)) else {}
+
+
+def _indexed_file(folder: Path | None, kind: str) -> tuple[Path, tuple[int, ...]] | None:
+    """Key cached reads by file identity as well as size and nanosecond timestamps."""
+    if folder is None:
+        return None
+    index = path(folder, kind).absolute()
+    try:
+        info = index.stat()
+    except FileNotFoundError:
+        return None
+    if not S_ISREG(info.st_mode):
+        return None
+    return index, (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+@lru_cache(maxsize=16)
+def _load(index: Path, stamp: tuple[int, ...]) -> Library:
     with gzip.open(index, "rt", encoding="utf-8") as f:
         rows = json.load(f)
     return {

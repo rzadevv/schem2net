@@ -1,6 +1,11 @@
 """Numbering pins from KiCad's symbol libraries."""
 
-from schem2net import export, fields, library
+import hashlib
+import os
+
+import pytest
+
+from schem2net import export, fields, files, library
 from schem2net.ir import Design, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Text
@@ -216,6 +221,93 @@ def test_no_index_is_read_unless_its_folder_is_given(tmp_path):
     assert library.load(tmp_path, "kicad") == {"r": [("Device:R", pins)]}
     assert library.load(None, "kicad") == {} and library.fingerprint(None, "kicad") is None
     assert library.fingerprint(tmp_path, "kicad").startswith("kicad-symbols.json.gz ")
+
+
+def _indexed_pin(number):
+    return {"r": [("Device:R", [library.LibPin(number, "A", 0, (0.0, 0.0), False)])]}
+
+
+def test_failed_index_serialization_preserves_the_existing_library(tmp_path):
+    index = library.path(tmp_path)
+    library.save(_indexed_pin("1"), index)
+    before = index.read_bytes()
+    broken = {"r": [("Device:R", [library.LibPin("1", object(), 0, (0.0, 0.0), False)])]}
+    with pytest.raises(TypeError):
+        library.save(broken, index)
+    assert index.read_bytes() == before
+    assert set(tmp_path.iterdir()) == {index}
+
+
+def test_failed_index_replacement_preserves_the_existing_library(tmp_path, monkeypatch):
+    index = library.path(tmp_path)
+    library.save(_indexed_pin("1"), index)
+    before = index.read_bytes()
+
+    def fail(*args):
+        raise OSError("replacement failed")
+
+    monkeypatch.setattr(files.os, "replace", fail)
+    with pytest.raises(OSError, match="replacement failed"):
+        library.save(_indexed_pin("2"), index)
+    assert index.read_bytes() == before
+    assert set(tmp_path.iterdir()) == {index}
+
+
+def test_index_save_replaces_a_symlink_without_overwriting_its_target(tmp_path):
+    source = tmp_path / "source.kicad_sym"
+    source.write_text(CHIP)
+    index = library.path(tmp_path)
+    index.symlink_to(source)
+    expected = _indexed_pin("1")
+    library.save(expected, index)
+    assert source.read_text() == CHIP
+    assert not index.is_symlink()
+    assert library.load(tmp_path) == expected
+
+
+@pytest.mark.parametrize("present", [False, True])
+def test_library_cache_refreshes_after_external_index_creation_or_replacement(tmp_path, present):
+    index = library.path(tmp_path)
+    initial = _indexed_pin("1") if present else {}
+    if present:
+        library.save(initial, index)
+    assert library.load(tmp_path) == initial
+    before = library.fingerprint(tmp_path)
+    replacement = tmp_path / "new.json.gz"
+    expected = _indexed_pin("2")
+    library.save(expected, replacement)
+    if present:
+        # Replacing a file need not change its size or modification time.
+        old = index.stat()
+        os.utime(replacement, ns=(old.st_atime_ns, old.st_mtime_ns))
+    replacement.replace(index)
+    assert library.load(tmp_path) == expected
+    expected_hash = hashlib.sha256(index.read_bytes()).hexdigest()[:12]
+    assert library.fingerprint(tmp_path) == f"{index.name} {expected_hash}"
+    assert library.fingerprint(tmp_path) != before
+
+
+def test_library_cache_forgets_a_removed_index(tmp_path):
+    index = library.path(tmp_path)
+    library.save(_indexed_pin("1"), index)
+    assert library.load(tmp_path)
+    assert library.fingerprint(tmp_path)
+    index.unlink()
+    assert library.load(tmp_path) == {}
+    assert library.fingerprint(tmp_path) is None
+
+
+def test_index_symlinks_keep_the_index_name_and_refresh_when_retargeted(tmp_path):
+    index = library.path(tmp_path)
+    for number in ("1", "2"):
+        target = tmp_path / f"version-{number}.gz"
+        expected = _indexed_pin(number)
+        library.save(expected, target)
+        index.unlink(missing_ok=True)
+        index.symlink_to(target)
+        assert library.load(tmp_path) == expected
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()[:12]
+        assert library.fingerprint(tmp_path) == f"{index.name} {digest}"
 
 
 def test_library_pin_names_never_become_board_pad_numbers(tmp_path):

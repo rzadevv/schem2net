@@ -56,6 +56,8 @@ schem2net extract board.pdf --library parts
 KiCad `.kicad_sym`/`.kicad_symdir` libraries and Eagle `.lbr` libraries can be
 indexed. `SCHEM2NET_LIBRARY` supplies the CLI default. Without an index, no part
 library is read. The source record includes the index fingerprint when used.
+Index files are replaced atomically, so a failed rebuild preserves the previous
+index. Python callers refresh cached pins and fingerprints when an index changes.
 
 KiCad library fits can recover hidden or stacked numbers when visible geometry
 and known pins agree. Eagle library lookup supplies names, not package-dependent
