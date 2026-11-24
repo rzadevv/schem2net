@@ -35,6 +35,8 @@ INVALID = [
     ({"components": [{"ref": "R1"}, {"ref": "R1"}]}, "component references"),
     ({"components": [{"ref": ""}]}, "component references"),
     ({"nets": [{"id": "n1", "pins": [["UNKNOWN", "1"]]}]}, "unknown components"),
+    ({"nets": [{"id": "n1", "pins": [["R1", "999"]]}]}, "unknown component pins: R1.999"),
+    ({"components": [{"ref": "R1"}, {"ref": "R2"}]}, "unknown component pins"),
     ({"issues": [{"kind": "example", "net": "absent"}]}, "unknown nets"),
     ({"nets": [{"id": "n1", "confidence": 2.0}]}, "confidence"),
 ]
@@ -98,6 +100,16 @@ def test_loading_keeps_repeated_units_and_reported_pin_conflicts(tmp_path, paylo
     payload["components"][0]["pins"].append({"num": "1"})
     payload["nets"][1]["pins"][0] = ["R1", "1"]
     payload["issues"] = [{"kind": "duplicate_pin", "pins": [["R1", "1"]], "net": "n1"}]
+    expected = Design.model_validate(payload)
+    expected.save(file)
+    assert Design.load(file) == expected
+
+
+@pytest.mark.parametrize("number", ["?1", "A1", "P$1", "001"])
+def test_loading_keeps_declared_placeholder_and_nondecimal_pins(tmp_path, payload, number):
+    file = tmp_path / "board.ir.json"
+    payload["components"][0]["pins"][0]["num"] = number
+    payload["nets"][0]["pins"][0][1] = number
     expected = Design.model_validate(payload)
     expected.save(file)
     assert Design.load(file) == expected

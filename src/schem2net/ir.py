@@ -112,6 +112,11 @@ class Design(BaseModel):
             raise InputError(
                 f"{path}: nets reference unknown components: {', '.join(sorted(missing))}"
             )
+        pins = {(comp.ref, pin.num) for comp in design.components for pin in comp.pins}
+        missing_pins = {pin for net in design.nets for pin in net.pins} - pins
+        if missing_pins:
+            names = ", ".join(f"{ref}.{num}" for ref, num in sorted(missing_pins))
+            raise InputError(f"{path}: nets reference unknown component pins: {names}")
         if any(issue.net is not None and issue.net not in ids for issue in design.issues):
             raise InputError(f"{path}: issues reference unknown nets")
         return design

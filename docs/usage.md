@@ -10,9 +10,11 @@ HTML and SVG outputs use unique temporary files and atomic replacement; failed
 writes preserve an existing output.
 
 Loading JSON checks the schema version, confidence range, unique component and
-net identifiers, and links from nets and issues. Invalid input exits with code 1
-and leaves an existing output unchanged. These checks establish structural
-consistency; electrical connections and physical pin identities still need review.
+net identifiers, and links from nets and issues. Every pin referenced by a net
+must appear in that component's pin list, including placeholders such as `?1`.
+Invalid input exits with code 1 and leaves an existing output unchanged. These
+checks establish structural consistency; electrical connections and physical pin
+identities still need review.
 
 ## Extraction and review
 
