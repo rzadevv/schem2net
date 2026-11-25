@@ -216,7 +216,12 @@ def _fingerprint(index: Path, stamp: tuple[int, ...]) -> str:
 
 def load(folder: Path | None, kind: str = "kicad") -> Library:
     """The indexed library of a kind in a folder, or an empty one where there is none."""
-    return _load(*entry) if (entry := _indexed_file(folder, kind)) else {}
+    return read(folder, kind)[0]
+
+
+def read(folder: Path | None, kind: str = "kicad") -> tuple[Library, str | None]:
+    """Pins and their fingerprint from the same index bytes, or an empty snapshot."""
+    return _load(*entry) if (entry := _indexed_file(folder, kind)) else ({}, None)
 
 
 def _indexed_file(folder: Path | None, kind: str) -> tuple[Path, tuple[int, ...]] | None:
@@ -234,16 +239,17 @@ def _indexed_file(folder: Path | None, kind: str) -> tuple[Path, tuple[int, ...]
 
 
 @lru_cache(maxsize=16)
-def _load(index: Path, stamp: tuple[int, ...]) -> Library:
-    with gzip.open(index, "rt", encoding="utf-8") as f:
-        rows = json.load(f)
-    return {
+def _load(index: Path, stamp: tuple[int, ...]) -> tuple[Library, str]:
+    data = index.read_bytes()
+    rows = json.loads(gzip.decompress(data).decode("utf-8"))
+    parts = {
         key: [
             (symbol, [LibPin(n, nm, u, (x, y), h) for n, nm, u, x, y, h in pins])
             for symbol, pins in entries
         ]
         for key, entries in rows.items()
     }
+    return parts, f"{index.name} {hashlib.sha256(data).hexdigest()[:12]}"
 
 
 # The eight ways a symbol can be turned and mirrored, as (a, b, c, d) in

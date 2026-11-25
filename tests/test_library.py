@@ -2,15 +2,18 @@
 
 import hashlib
 import os
+from pathlib import Path
 
 import pytest
 
-from schem2net import export, fields, files, library
+from schem2net import export, fields, files, library, pipeline
 from schem2net.ir import Design, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Text
 from schem2net.scene import Scene
 from schem2net.symbols import Pin, Symbol
+
+from .conftest import KICAD_INK, resistor_page
 
 CHIP = """(kicad_symbol_lib
   (version 20241209)
@@ -225,6 +228,57 @@ def test_no_index_is_read_unless_its_folder_is_given(tmp_path):
 
 def _indexed_pin(number):
     return {"r": [("Device:R", [library.LibPin(number, "A", 0, (0.0, 0.0), False)])]}
+
+
+@pytest.mark.parametrize("change", ["replace", "remove", "create"])
+def test_extraction_records_the_fingerprint_of_the_pins_it_loaded(tmp_path, monkeypatch, change):
+    folder = tmp_path / "parts"
+    folder.mkdir()
+    index = library.path(folder)
+    expected = {} if change == "create" else _indexed_pin("1")
+    if expected:
+        library.save(expected, index)
+    fingerprint = library.fingerprint(folder)
+
+    def change_after(original):
+        def read(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if change == "remove":
+                index.unlink()
+            else:
+                library.save(_indexed_pin("2"), index)
+            return result
+
+        return read
+
+    # Exercise replacement after the pins are loaded, before extraction uses them.
+    monkeypatch.setattr(library, "read", change_after(library.read))
+    seen = []
+    monkeypatch.setattr(library, "resolve", lambda symbols, parts, *args: seen.append(parts))
+    pdf = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator="Eeschema (KiCad 8.0)")
+    design = pipeline.extract(pdf, embedded=False, library_dir=folder)
+    assert seen == [expected]
+    assert design.source.library == fingerprint
+
+
+def test_snapshot_hashes_the_bytes_it_parsed_when_the_file_changes(tmp_path, monkeypatch):
+    index = library.path(tmp_path)
+    first, second = _indexed_pin("1"), _indexed_pin("2")
+    library.save(first, index)
+    expected = f"{index.name} {hashlib.sha256(index.read_bytes()).hexdigest()[:12]}"
+    read_bytes = Path.read_bytes
+    replaced = []
+
+    def read_then_replace(file):
+        data = read_bytes(file)
+        if file == index and not replaced:
+            replaced.append(True)
+            library.save(second, index)
+        return data
+
+    monkeypatch.setattr(Path, "read_bytes", read_then_replace)
+    assert library.read(tmp_path) == (first, expected)
+    assert library.read(tmp_path) == (second, library.fingerprint(tmp_path))
 
 
 def test_failed_index_serialization_preserves_the_existing_library(tmp_path):

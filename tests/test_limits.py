@@ -28,7 +28,7 @@ def schematic(tmp_path):
     [
         (pipeline, "_name_sheets"),
         (pipeline.fields, "whole_names"),
-        (pipeline.library, "load"),
+        (pipeline.library, "read"),
         (pipeline.library, "resolve"),
         (pipeline.fields, "names_apart"),
         (pipeline.Netlister, "add_page"),

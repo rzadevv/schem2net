@@ -255,8 +255,8 @@ def _extract(
             _name_sheets([result.scene for result in read])
             fields.whole_names([result.symbols for result in read])
             if rules.pin_library:
-                parts = library.load(library_dir, rules.pin_library)
-                design.source.library = library.fingerprint(library_dir, rules.pin_library)
+                parts, fingerprint = library.read(library_dir, rules.pin_library)
+                design.source.library = fingerprint
                 for result in read:
                     by_name = rules.pin_library in library.BY_NAME
                     library.resolve(result.symbols, parts, by_name, result.scene.fields)

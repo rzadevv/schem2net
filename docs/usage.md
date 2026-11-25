@@ -58,6 +58,8 @@ indexed. `SCHEM2NET_LIBRARY` supplies the CLI default. Without an index, no part
 library is read. The source record includes the index fingerprint when used.
 Index files are replaced atomically, so a failed rebuild preserves the previous
 index. Python callers refresh cached pins and fingerprints when an index changes.
+Extraction reads pins and their recorded fingerprint from the same file snapshot,
+so replacing an index during a reading cannot misidentify the library used.
 
 KiCad library fits can recover hidden or stacked numbers when visible geometry
 and known pins agree. Eagle library lookup supplies names, not package-dependent
