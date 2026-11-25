@@ -138,6 +138,8 @@ visited drawing objects or 32 nested forms. Ingestion and analysis each have a
 matching and final netlist construction share a separate 1,200-second budget
 across all pages. Expiry refuses the input with code 1 and preserves existing
 output, including without `--strict`.
+Nested budgets preserve the earliest deadline. A caller's existing POSIX alarm
+and periodic interval remain in effect, with elapsed time deducted on return.
 Drawing reconstruction refuses
 vector bus ranges exceeding 10,000 members before expansion, including reversed
 ranges and hierarchical sheet pins. This exits with code 1 and preserves existing
