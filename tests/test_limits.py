@@ -79,6 +79,21 @@ def test_netlist_budget_is_shared_across_pages(schematic, monkeypatch):
         pipeline.extract(schematic, embedded=False)
 
 
+def test_timeout_inside_library_read_keeps_the_extraction_budget(schematic, tmp_path, monkeypatch):
+    folder = tmp_path / "parts"
+    pipeline.library.save({}, pipeline.library.path(folder))
+    original = pipeline.library._load
+
+    def slow(*args):
+        time.sleep(0.2)
+        return original(*args)
+
+    monkeypatch.setattr(pipeline.library, "_load", slow)
+    monkeypatch.setattr(pipeline, "NETLIST_SECONDS", 0.02)
+    with pytest.raises(pdf.InputError, match="netlist construction timed out"):
+        pipeline.extract(schematic, embedded=False, library_dir=folder)
+
+
 SLOW_GRAPH = """
 import time
 from schem2net import pipeline

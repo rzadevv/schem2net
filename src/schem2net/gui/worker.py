@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 from schem2net import pdf, pipeline, report
+from schem2net.library import InputError as LibraryInputError
 
 
 def run(file: Path, folder: Path, library: Path | None = None) -> None:
@@ -44,7 +45,7 @@ def main() -> None:
     threading.Thread(target=_orphaned, args=(os.getppid(), folder), daemon=True).start()
     try:
         run(file, folder, library)
-    except pdf.InputError as e:
+    except (pdf.InputError, LibraryInputError) as e:
         sys.exit(str(e))
     except FileNotFoundError as e:
         sys.exit(f"{e.filename or e}: no such file")

@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import re
+import zlib
 from collections import defaultdict
 from dataclasses import dataclass, replace
 from functools import lru_cache
@@ -22,6 +23,8 @@ from pathlib import Path
 from stat import S_ISREG
 from typing import TYPE_CHECKING
 from xml.etree import ElementTree
+
+from pydantic import FiniteFloat, NonNegativeInt, TypeAdapter, ValidationError
 
 from schem2net import sexpr
 from schem2net.files import write_bytes
@@ -42,6 +45,12 @@ class LibPin:
 
 
 Library = dict[str, list[tuple[str, list[LibPin]]]]  # value -> (lib:symbol, pins)
+_PinRow = tuple[str, str, NonNegativeInt, FiniteFloat, FiniteFloat, bool]
+_INDEX_ROWS = TypeAdapter(dict[str, list[tuple[str, list[_PinRow]]]])
+
+
+class InputError(ValueError):
+    """An external library index cannot be read or has invalid pin records."""
 
 
 def index(root: Path) -> Library:
@@ -221,7 +230,18 @@ def load(folder: Path | None, kind: str = "kicad") -> Library:
 
 def read(folder: Path | None, kind: str = "kicad") -> tuple[Library, str | None]:
     """Pins and their fingerprint from the same index bytes, or an empty snapshot."""
-    return _load(*entry) if (entry := _indexed_file(folder, kind)) else ({}, None)
+    try:
+        return _load(*entry) if (entry := _indexed_file(folder, kind)) else ({}, None)
+    except ValidationError as exc:
+        error = exc.errors(include_input=False)[0]
+        field = ".".join(map(str, error["loc"])) or "JSON"
+        raise InputError(
+            f"{path(folder, kind)}: invalid library index ({field}: {error['msg']})"
+        ) from None
+    except TimeoutError:
+        raise  # the extraction budget reports this as a netlist construction timeout
+    except (OSError, EOFError, zlib.error) as exc:
+        raise InputError(f"{path(folder, kind)}: cannot read library index ({exc})") from None
 
 
 def _indexed_file(folder: Path | None, kind: str) -> tuple[Path, tuple[int, ...]] | None:
@@ -241,7 +261,7 @@ def _indexed_file(folder: Path | None, kind: str) -> tuple[Path, tuple[int, ...]
 @lru_cache(maxsize=16)
 def _load(index: Path, stamp: tuple[int, ...]) -> tuple[Library, str]:
     data = index.read_bytes()
-    rows = json.loads(gzip.decompress(data).decode("utf-8"))
+    rows = _INDEX_ROWS.validate_json(gzip.decompress(data), strict=True)
     parts = {
         key: [
             (symbol, [LibPin(n, nm, u, (x, y), h) for n, nm, u, x, y, h in pins])

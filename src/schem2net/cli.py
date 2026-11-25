@@ -37,7 +37,7 @@ def main() -> None:
     """The command line, with input it cannot read told in a line rather than a traceback."""
     try:
         app()
-    except (pdf.InputError, DesignInputError, OutputError) as e:
+    except (pdf.InputError, DesignInputError, library.InputError, OutputError) as e:
         typer.echo(f"schem2net: {e}", err=True)
         raise SystemExit(1) from None
     except (FileNotFoundError, IsADirectoryError) as e:
