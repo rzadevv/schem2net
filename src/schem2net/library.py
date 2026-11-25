@@ -15,14 +15,19 @@ import hashlib
 import json
 import os
 import re
+import zlib
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from functools import cache
+from functools import lru_cache
 from pathlib import Path
+from stat import S_ISREG
 from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 
+from pydantic import FiniteFloat, NonNegativeInt, TypeAdapter, ValidationError
+
 from schem2net import sexpr
+from schem2net.files import write_bytes
 from schem2net.geometry import GridIndex
 
 if TYPE_CHECKING:
@@ -40,6 +45,12 @@ class LibPin:
 
 
 Library = dict[str, list[tuple[str, list[LibPin]]]]  # value -> (lib:symbol, pins)
+_PinRow = tuple[str, str, NonNegativeInt, FiniteFloat, FiniteFloat, bool]
+_INDEX_ROWS = TypeAdapter(dict[str, list[tuple[str, list[_PinRow]]]])
+
+
+class InputError(ValueError):
+    """An external library index cannot be read or has invalid pin records."""
 
 
 def index(root: Path) -> Library:
@@ -192,8 +203,8 @@ def save(library: Library, path: Path) -> None:
         for key, entries in library.items()
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(path, "wt", encoding="utf-8") as f:
-        json.dump(rows, f, separators=(",", ":"))
+    data = json.dumps(rows, separators=(",", ":")).encode("utf-8")
+    write_bytes(path, gzip.compress(data, mtime=0))
 
 
 def path(folder: Path, kind: str = "kicad") -> Path:
@@ -201,31 +212,64 @@ def path(folder: Path, kind: str = "kicad") -> Path:
     return Path(folder) / f"{kind}-symbols.json.gz"
 
 
-@cache
 def fingerprint(folder: Path | None, kind: str = "kicad") -> str | None:
     """Which index a design was read with, as its file name and the start of its hash, so
     two readings of one PDF that differ can be told apart; None where none was used."""
-    if folder is None or not path(folder, kind).is_file():
-        return None
-    index = path(folder, kind)
+    return _fingerprint(*entry) if (entry := _indexed_file(folder, kind)) else None
+
+
+@lru_cache(maxsize=16)
+def _fingerprint(index: Path, stamp: tuple[int, ...]) -> str:
     return f"{index.name} {hashlib.sha256(index.read_bytes()).hexdigest()[:12]}"
 
 
-@cache
 def load(folder: Path | None, kind: str = "kicad") -> Library:
     """The indexed library of a kind in a folder, or an empty one where there is none."""
-    if folder is None or not path(folder, kind).is_file():
-        return {}
-    index = path(folder, kind)
-    with gzip.open(index, "rt", encoding="utf-8") as f:
-        rows = json.load(f)
-    return {
+    return read(folder, kind)[0]
+
+
+def read(folder: Path | None, kind: str = "kicad") -> tuple[Library, str | None]:
+    """Pins and their fingerprint from the same index bytes, or an empty snapshot."""
+    try:
+        return _load(*entry) if (entry := _indexed_file(folder, kind)) else ({}, None)
+    except ValidationError as exc:
+        error = exc.errors(include_input=False)[0]
+        field = ".".join(map(str, error["loc"])) or "JSON"
+        raise InputError(
+            f"{path(folder, kind)}: invalid library index ({field}: {error['msg']})"
+        ) from None
+    except TimeoutError:
+        raise  # the extraction budget reports this as a netlist construction timeout
+    except (OSError, EOFError, zlib.error) as exc:
+        raise InputError(f"{path(folder, kind)}: cannot read library index ({exc})") from None
+
+
+def _indexed_file(folder: Path | None, kind: str) -> tuple[Path, tuple[int, ...]] | None:
+    """Key cached reads by file identity as well as size and nanosecond timestamps."""
+    if folder is None:
+        return None
+    index = path(folder, kind).absolute()
+    try:
+        info = index.stat()
+    except FileNotFoundError:
+        return None
+    if not S_ISREG(info.st_mode):
+        return None
+    return index, (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+@lru_cache(maxsize=16)
+def _load(index: Path, stamp: tuple[int, ...]) -> tuple[Library, str]:
+    data = index.read_bytes()
+    rows = _INDEX_ROWS.validate_json(gzip.decompress(data), strict=True)
+    parts = {
         key: [
             (symbol, [LibPin(n, nm, u, (x, y), h) for n, nm, u, x, y, h in pins])
             for symbol, pins in entries
         ]
         for key, entries in rows.items()
     }
+    return parts, f"{index.name} {hashlib.sha256(data).hexdigest()[:12]}"
 
 
 # The eight ways a symbol can be turned and mirrored, as (a, b, c, d) in

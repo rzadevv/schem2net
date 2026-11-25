@@ -1,11 +1,19 @@
 """Numbering pins from KiCad's symbol libraries."""
 
-from schem2net import export, fields, library
+import hashlib
+import os
+from pathlib import Path
+
+import pytest
+
+from schem2net import export, fields, files, library, pipeline
 from schem2net.ir import Design, Source
 from schem2net.nets import Netlister
 from schem2net.primitives import Text
 from schem2net.scene import Scene
 from schem2net.symbols import Pin, Symbol
+
+from .conftest import KICAD_INK, resistor_page
 
 CHIP = """(kicad_symbol_lib
   (version 20241209)
@@ -216,6 +224,144 @@ def test_no_index_is_read_unless_its_folder_is_given(tmp_path):
     assert library.load(tmp_path, "kicad") == {"r": [("Device:R", pins)]}
     assert library.load(None, "kicad") == {} and library.fingerprint(None, "kicad") is None
     assert library.fingerprint(tmp_path, "kicad").startswith("kicad-symbols.json.gz ")
+
+
+def _indexed_pin(number):
+    return {"r": [("Device:R", [library.LibPin(number, "A", 0, (0.0, 0.0), False)])]}
+
+
+@pytest.mark.parametrize("change", ["replace", "remove", "create"])
+def test_extraction_records_the_fingerprint_of_the_pins_it_loaded(tmp_path, monkeypatch, change):
+    folder = tmp_path / "parts"
+    folder.mkdir()
+    index = library.path(folder)
+    expected = {} if change == "create" else _indexed_pin("1")
+    if expected:
+        library.save(expected, index)
+    fingerprint = library.fingerprint(folder)
+
+    def change_after(original):
+        def read(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if change == "remove":
+                index.unlink()
+            else:
+                library.save(_indexed_pin("2"), index)
+            return result
+
+        return read
+
+    # Exercise replacement after the pins are loaded, before extraction uses them.
+    monkeypatch.setattr(library, "read", change_after(library.read))
+    seen = []
+    monkeypatch.setattr(library, "resolve", lambda symbols, parts, *args: seen.append(parts))
+    pdf = resistor_page(KICAD_INK).save(tmp_path / "r.pdf", creator="Eeschema (KiCad 8.0)")
+    design = pipeline.extract(pdf, embedded=False, library_dir=folder)
+    assert seen == [expected]
+    assert design.source.library == fingerprint
+
+
+def test_snapshot_hashes_the_bytes_it_parsed_when_the_file_changes(tmp_path, monkeypatch):
+    index = library.path(tmp_path)
+    first, second = _indexed_pin("1"), _indexed_pin("2")
+    library.save(first, index)
+    expected = f"{index.name} {hashlib.sha256(index.read_bytes()).hexdigest()[:12]}"
+    read_bytes = Path.read_bytes
+    replaced = []
+
+    def read_then_replace(file):
+        data = read_bytes(file)
+        if file == index and not replaced:
+            replaced.append(True)
+            library.save(second, index)
+        return data
+
+    monkeypatch.setattr(Path, "read_bytes", read_then_replace)
+    assert library.read(tmp_path) == (first, expected)
+    assert library.read(tmp_path) == (second, library.fingerprint(tmp_path))
+
+
+def test_failed_index_serialization_preserves_the_existing_library(tmp_path):
+    index = library.path(tmp_path)
+    library.save(_indexed_pin("1"), index)
+    before = index.read_bytes()
+    broken = {"r": [("Device:R", [library.LibPin("1", object(), 0, (0.0, 0.0), False)])]}
+    with pytest.raises(TypeError):
+        library.save(broken, index)
+    assert index.read_bytes() == before
+    assert set(tmp_path.iterdir()) == {index}
+
+
+def test_failed_index_replacement_preserves_the_existing_library(tmp_path, monkeypatch):
+    index = library.path(tmp_path)
+    library.save(_indexed_pin("1"), index)
+    before = index.read_bytes()
+
+    def fail(*args):
+        raise OSError("replacement failed")
+
+    monkeypatch.setattr(files.os, "replace", fail)
+    with pytest.raises(OSError, match="replacement failed"):
+        library.save(_indexed_pin("2"), index)
+    assert index.read_bytes() == before
+    assert set(tmp_path.iterdir()) == {index}
+
+
+def test_index_save_replaces_a_symlink_without_overwriting_its_target(tmp_path):
+    source = tmp_path / "source.kicad_sym"
+    source.write_text(CHIP)
+    index = library.path(tmp_path)
+    index.symlink_to(source)
+    expected = _indexed_pin("1")
+    library.save(expected, index)
+    assert source.read_text() == CHIP
+    assert not index.is_symlink()
+    assert library.load(tmp_path) == expected
+
+
+@pytest.mark.parametrize("present", [False, True])
+def test_library_cache_refreshes_after_external_index_creation_or_replacement(tmp_path, present):
+    index = library.path(tmp_path)
+    initial = _indexed_pin("1") if present else {}
+    if present:
+        library.save(initial, index)
+    assert library.load(tmp_path) == initial
+    before = library.fingerprint(tmp_path)
+    replacement = tmp_path / "new.json.gz"
+    expected = _indexed_pin("2")
+    library.save(expected, replacement)
+    if present:
+        # Replacing a file need not change its size or modification time.
+        old = index.stat()
+        os.utime(replacement, ns=(old.st_atime_ns, old.st_mtime_ns))
+    replacement.replace(index)
+    assert library.load(tmp_path) == expected
+    expected_hash = hashlib.sha256(index.read_bytes()).hexdigest()[:12]
+    assert library.fingerprint(tmp_path) == f"{index.name} {expected_hash}"
+    assert library.fingerprint(tmp_path) != before
+
+
+def test_library_cache_forgets_a_removed_index(tmp_path):
+    index = library.path(tmp_path)
+    library.save(_indexed_pin("1"), index)
+    assert library.load(tmp_path)
+    assert library.fingerprint(tmp_path)
+    index.unlink()
+    assert library.load(tmp_path) == {}
+    assert library.fingerprint(tmp_path) is None
+
+
+def test_index_symlinks_keep_the_index_name_and_refresh_when_retargeted(tmp_path):
+    index = library.path(tmp_path)
+    for number in ("1", "2"):
+        target = tmp_path / f"version-{number}.gz"
+        expected = _indexed_pin(number)
+        library.save(expected, target)
+        index.unlink(missing_ok=True)
+        index.symlink_to(target)
+        assert library.load(tmp_path) == expected
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()[:12]
+        assert library.fingerprint(tmp_path) == f"{index.name} {digest}"
 
 
 def test_library_pin_names_never_become_board_pad_numbers(tmp_path):
