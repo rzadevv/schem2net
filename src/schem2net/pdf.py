@@ -9,6 +9,7 @@ import zlib
 from contextlib import closing, contextmanager
 from dataclasses import replace
 from pathlib import Path as FilePath
+from time import monotonic
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
@@ -89,16 +90,48 @@ def time_limit(seconds: float):
         yield
         return
 
-    def stop(signum, frame):
-        raise TimeoutError(f"read for more than {seconds} s")
+    if not math.isfinite(seconds) or seconds < 0:
+        raise ValueError("time limit must be finite and nonnegative")
+    previous = signal.getsignal(signal.SIGALRM)
+    started = monotonic()
+    # Pause the caller's timer while installing our handler, keeping its deadline.
+    remaining, interval = signal.setitimer(signal.ITIMER_REAL, 0)
+    outer = started + remaining if remaining else math.inf
+    deadline = started + seconds if seconds else math.inf
 
-    previous = signal.signal(signal.SIGALRM, stop)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
+    def arm():
+        next_alarm = min(deadline, outer)
+        delay = max(next_alarm - monotonic(), 1e-6) if math.isfinite(next_alarm) else 0
+        signal.setitimer(signal.ITIMER_REAL, delay)
+
+    def stop(signum, frame):
+        nonlocal outer
+        if outer <= deadline:
+            # Consume the caller's alarm before dispatching it; a returning handler
+            # must not cancel our deadline, and periodic alarms retain their phase.
+            outer = (
+                outer + interval * max(1, math.floor((monotonic() - outer) / interval) + 1)
+                if interval
+                else math.inf
+            )
+            if callable(previous):
+                previous(signum, frame)
+            elif previous == signal.SIG_DFL:
+                signal.signal(signum, signal.SIG_DFL)
+                signal.raise_signal(signum)
+            arm()
+        else:
+            raise TimeoutError(f"read for more than {seconds} s")
+
     try:
+        signal.signal(signal.SIGALRM, stop)
+        arm()
         yield
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, previous)
+        if math.isfinite(outer):
+            signal.setitimer(signal.ITIMER_REAL, max(outer - monotonic(), 1e-6), interval)
 
 
 class _TooLarge(Exception):
